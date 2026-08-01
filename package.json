@@ -1,0 +1,37 @@
+{
+  "name": "orchyn-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for orchyn - AI video analysis for TikTok, Instagram, and YouTube links",
+  "type": "module",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "orchyn-mcp": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "start": "node dist/index.js",
+    "login": "node dist/index.js login",
+    "test": "vitest run",
+    "prepare": "npm run build"
+  },
+  "keywords": ["mcp", "orchyn", "video", "analysis", "tiktok", "instagram", "youtube"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.16.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.1.0"
+  }
+}
