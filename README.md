@@ -1,4 +1,4 @@
-# orchyn-mcp
+# @orchyn/mcp
 
 MCP (Model Context Protocol) server for [orchyn](https://orchyn.com) — fetch,
 discover and understand social posts (TikTok, Instagram, YouTube, X) with your
@@ -16,8 +16,8 @@ orchyn account and orchyn credits.
 **Claude Code / CLI without the plugin**:
 
 ```bash
-claude mcp add orchyn --user -- npx -y orchyn-mcp
-npx orchyn-mcp login   # one-time sign-in (Google)
+claude mcp add orchyn --user -- npx -y @orchyn/mcp
+npx @orchyn/mcp login   # one-time sign-in (Google)
 ```
 
 **Cursor / any stdio MCP client** (`claude_desktop_config.json`, `.mcp.json`, …):
@@ -27,7 +27,7 @@ npx orchyn-mcp login   # one-time sign-in (Google)
   "mcpServers": {
     "orchyn": {
       "command": "npx",
-      "args": ["-y", "orchyn-mcp"],
+      "args": ["-y", "@orchyn/mcp"],
       "env": { "ORCHYN_BASE_URL": "https://api.orchyn.com" }
     }
   }
@@ -64,13 +64,13 @@ npm install
 npm run build
 
 # 1. Sign in with your orchyn account (Google sign-in opens in your browser)
-npx orchyn-mcp login
+npx @orchyn/mcp login
 #    or with email/password:
-npx orchyn-mcp login --email you@example.com --password '...'
+npx @orchyn/mcp login --email you@example.com --password '...'
 
 # 2. Run the server
-npx orchyn-mcp            # stdio (default; for Claude Desktop / Cursor)
-npx orchyn-mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
+npx @orchyn/mcp            # stdio (default; for Claude Desktop / Cursor)
+npx @orchyn/mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
 ```
 
 `login` stores your orchyn tokens in `~/.config/orchyn-mcp/credentials.json`
@@ -79,14 +79,14 @@ prints into a browser manually.
 
 ## Usage in Claude Desktop
 
-After `npx orchyn-mcp login`, add to `claude_desktop_config.json`:
+After `npx @orchyn/mcp login`, add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "orchyn": {
       "command": "npx",
-      "args": ["-y", "orchyn-mcp"]
+      "args": ["-y", "@orchyn/mcp"]
     }
   }
 }
@@ -101,7 +101,7 @@ set the env vars explicitly:
   "mcpServers": {
     "orchyn": {
       "command": "npx",
-      "args": ["-y", "orchyn-mcp"],
+      "args": ["-y", "@orchyn/mcp"],
       "env": {
         "ORCHYN_BASE_URL": "http://localhost:8080"
       }
@@ -119,17 +119,17 @@ In `.mcp.json` (project root) or `~/.cursor/mcp.json`:
   "mcpServers": {
     "orchyn": {
       "command": "npx",
-      "args": ["-y", "orchyn-mcp"]
+      "args": ["-y", "@orchyn/mcp"]
     }
   }
 }
 ```
 
-After adding the server, run `npx orchyn-mcp login` in your terminal — Cursor
+After adding the server, run `npx @orchyn/mcp login` in your terminal — Cursor
 spawns the server with your environment, so it picks up the stored credentials.
 
 For remote/HTTP usage, Cursor can connect to the OAuth-enabled HTTP mode with
-`npx orchyn-mcp --http` running, pointing the server URL at
+`npx @orchyn/mcp --http` running, pointing the server URL at
 `http://localhost:3457/mcp`. Remote clients (including Cursor) discover the
 OAuth endpoints from
 `http://localhost:3457/.well-known/oauth-authorization-server`, open the
@@ -140,7 +140,7 @@ OAuth endpoints from
 Start the HTTP transport:
 
 ```bash
-npx orchyn-mcp --http --port 3457
+npx @orchyn/mcp --http --port 3457
 ```
 
 Python:
@@ -240,14 +240,14 @@ Other hosts are rejected by the tool.
 
 ## Troubleshooting
 
-- **`Not authenticated with orchyn` / 401**: run `npx orchyn-mcp login` or set
+- **`Not authenticated with orchyn` / 401**: run `npx @orchyn/mcp login` or set
   `ORCHYN_ACCESS_TOKEN`.
 - **402 paywall (`Analysis blocked`)**: your orchyn account has no credits
   left. The error includes `reason`, `used`/`max`, and `cost`. Top up or check
   your usage in the orchyn dashboard. The first analysis is covered by the
   free grant.
 - **Expired refresh token**: the stored refresh token was rejected by the
-  orchyn server. Run `npx orchyn-mcp login` again to re-authenticate.
+  orchyn server. Run `npx @orchyn/mcp login` again to re-authenticate.
 - **`Could not reach the orchyn server`**: `ORCHYN_BASE_URL` is unreachable or
   wrong.
 - **Client shows "Bad Request" or connection errors in HTTP mode**: make sure

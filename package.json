@@ -1,5 +1,5 @@
 {
-  "name": "orchyn-mcp",
+  "name": "@orchyn/mcp",
   "version": "1.1.0",
   "description": "MCP server for orchyn - AI video analysis for TikTok, Instagram, and YouTube links",
   "type": "module",
