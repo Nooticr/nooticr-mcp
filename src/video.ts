@@ -8,7 +8,7 @@ import { OrchynClient, JobStatus, VideoJob, OrchynError } from "./orchyn.js";
 export const POLL_INTERVAL_MS = 2000;
 export const POLL_TIMEOUT_MS = 300_000;
 
-const SUPPORTED_HOSTS = new Set([
+const SUPPORTED_HOSTS_VIDEO = new Set([
   "tiktok.com",
   "vm.tiktok.com",
   "instagram.com",
@@ -20,7 +20,14 @@ const SUPPORTED_HOSTS = new Set([
   "m.tiktok.com",
 ]);
 
-export function validateVideoUrl(rawUrl: string): { ok: true; url: string } | { ok: false; error: string } {
+const SUPPORTED_HOSTS_POST = new Set([
+  ...SUPPORTED_HOSTS_VIDEO,
+  "x.com",
+  "twitter.com",
+  "mobile.twitter.com",
+]);
+
+function validateUrl(rawUrl: string, allowed: Set<string>): { ok: true; url: string } | { ok: false; error: string } {
   if (typeof rawUrl !== "string" || rawUrl.trim() === "") {
     return { ok: false, error: "url must be a non-empty string." };
   }
@@ -39,7 +46,7 @@ export function validateVideoUrl(rawUrl: string): { ok: true; url: string } | { 
     // accept all youtube.com paths, incl. /shorts/<id>
     return { ok: true, url: parsed.toString() };
   }
-  if (SUPPORTED_HOSTS.has(host)) {
+  if (allowed.has(host)) {
     return { ok: true, url: parsed.toString() };
   }
   return {
@@ -47,6 +54,14 @@ export function validateVideoUrl(rawUrl: string): { ok: true; url: string } | { 
     error:
       "url host is not supported. Supported: tiktok.com, vm.tiktok.com, instagram.com, instagr.am, youtube.com, youtu.be, m.youtube.com (and /shorts).",
   };
+}
+
+export function validateVideoUrl(rawUrl: string): { ok: true; url: string } | { ok: false; error: string } {
+  return validateUrl(rawUrl, SUPPORTED_HOSTS_VIDEO);
+}
+
+export function validatePostUrl(rawUrl: string): { ok: true; url: string } | { ok: false; error: string } {
+  return validateUrl(rawUrl, SUPPORTED_HOSTS_POST);
 }
 
 export class JobTimeoutError extends Error {

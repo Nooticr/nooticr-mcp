@@ -27,23 +27,7 @@ import {
 import { AuthManager, OrchynAuthError, createHttpTokenProvider, createStdioTokenProvider } from "./auth.js";
 import { OrchynClient, OrchynError, McpProxyResult } from "./orchyn.js";
 import { OAuthManager, type McpSession } from "./oauth.js";
-import { formatPaywallError, runVideoAnalysis, validateVideoUrl } from "./video.js";
-
-const TOOL_NAME = "analyze_video";
-const TOOL_DESCRIPTION =
-  "Start an AI analysis of a TikTok, Instagram, or YouTube video from its link. " +
-  "Requires a connected orchyn account; consumes orchyn credits (first analysis free). " +
-  "Returns the analysis result once finished.";
-
-const TOOL_INPUT_SCHEMA = z
-  .object({
-    url: z
-      .string()
-      .describe(
-        "Public video URL (tiktok.com, instagram.com, youtube.com, youtu.be, or common shortlinks)."
-      ),
-  })
-  .strict();
+import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
 
 // --- social media tools (proxied to the orchyn backend's MCP surface) ---
 
@@ -79,15 +63,22 @@ export interface ServerFactoryOptions {
 export function createServer(opts: ServerFactoryOptions): McpServer {
   const server = new McpServer({
     name: "orchyn-mcp",
-    version: "1.0.0",
+    version: "1.1.0",
   });
 
   server.registerTool(
-    TOOL_NAME,
+    "analyze_post",
     {
-      title: "Analyze Video",
-      description: TOOL_DESCRIPTION,
-      inputSchema: TOOL_INPUT_SCHEMA,
+      title: "Analyze Post",
+      description:
+        "Analyze a social post (video, image, carousel/slideshow) from its link — " +
+        "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
+        "Supports TikTok, Instagram, YouTube and X/Twitter. Returns the full analysis once finished.",
+      inputSchema: z
+        .object({
+          url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X or shortlinks)."),
+        })
+        .strict(),
     },
     async (args: { url: string }, extra) => {
       let session: McpSession | undefined;
@@ -95,8 +86,7 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
         session = opts.resolveSession(extra.authInfo.token);
       }
       const client = opts.makeClient(session);
-
-      const validation = validateVideoUrl(args.url);
+      const validation = validatePostUrl(args.url);
       if (!validation.ok) {
         return {
           content: [{ type: "text", text: `Invalid url: ${validation.error}` }],
@@ -105,31 +95,56 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
       }
       try {
         const result = await runVideoAnalysis(client, validation.url);
-        return {
-          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-        };
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       } catch (err) {
         if (err instanceof OrchynError && err.paywall) {
           return {
-            content: [
-              {
-                type: "text",
-                text: `Analysis blocked: ${formatPaywallError(err)}\n\nHTTP ${err.status}: ${err.message}`,
-              },
-            ],
+            content: [{ type: "text", text: `Analysis blocked: ${formatPaywallError(err)}\n\nHTTP ${err.status}: ${err.message}` }],
             isError: true,
           };
         }
         const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text", text: `Analysis failed: ${msg}` }], isError: true };
+      }
+    }
+  );
+
+  server.registerTool(
+    "analyze_video",
+    {
+      title: "Analyze Video",
+      description: "[Deprecated — use analyze_post] Alias of analyze_post — analyzes any post type.",
+      inputSchema: z
+        .object({
+          url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X or shortlinks)."),
+        })
+        .strict(),
+    },
+    async (args: { url: string }, extra) => {
+      let session: McpSession | undefined;
+      if (extra.authInfo?.token && opts.resolveSession) {
+        session = opts.resolveSession(extra.authInfo.token);
+      }
+      const client = opts.makeClient(session);
+      const validation = validatePostUrl(args.url);
+      if (!validation.ok) {
         return {
-          content: [
-            {
-              type: "text",
-              text: `Video analysis failed: ${msg}`,
-            },
-          ],
+          content: [{ type: "text", text: `Invalid url: ${validation.error}` }],
           isError: true,
         };
+      }
+      try {
+        const result = await runVideoAnalysis(client, validation.url);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      } catch (err) {
+        if (err instanceof OrchynError && err.paywall) {
+          return {
+            content: [{ type: "text", text: `Analysis blocked: ${formatPaywallError(err)}\n\nHTTP ${err.status}: ${err.message}` }],
+            isError: true,
+          };
+        }
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text", text: `Analysis failed: ${msg}` }], isError: true };
       }
     }
   );
