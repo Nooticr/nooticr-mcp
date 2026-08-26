@@ -53,22 +53,21 @@ finishes, and returns the full result (analysis, job metadata, cost) as JSON.
 
 - Node.js >= 18 (tested on Node 22)
 - An orchyn account (created automatically on first sign-in — Google sign-in
-  via `orchyn-mcp login`; the dashboard is **not** required: the server
+  via `npx @orchyn/mcp login`; the dashboard is **not** required: the server
   auto-creates a default workspace + app for new accounts)
-- Access to an orchyn server (default `http://localhost:8080`, see `ORCHYN_BASE_URL`)
+- Access to an orchyn server — defaults to the cloud API
+  (`https://api.orchyn.com`); point `ORCHYN_BASE_URL` at your own deployment
+  for local development
 
 ## Quick start
 
 ```bash
-npm install
-npm run build
-
 # 1. Sign in with your orchyn account (Google sign-in opens in your browser)
 npx @orchyn/mcp login
 #    or with email/password:
 npx @orchyn/mcp login --email you@example.com --password '...'
 
-# 2. Run the server
+# 2. Add it to your MCP client (see install section above) — or run it manually:
 npx @orchyn/mcp            # stdio (default; for Claude Desktop / Cursor)
 npx @orchyn/mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
 ```
@@ -185,7 +184,7 @@ console.log(result.output);
 ```
 
 For a local stdio process with the Agents SDK, use `StdioMCPClient` (Python:
-`StdioMCPClient(command="npx", args=["orchyn-mcp"])`).
+`StdioMCPClient(command="npx", args=["@orchyn/mcp"])`).
 
 ## Command line
 
@@ -202,7 +201,7 @@ orchyn-mcp --help             Show help
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ORCHYN_BASE_URL` | `http://localhost:8080` | orchyn server base URL (trailing slash stripped) |
+| `ORCHYN_BASE_URL` | `https://api.orchyn.com` | orchyn server base URL (trailing slash stripped) |
 | `ORCHYN_ACCESS_TOKEN` | — | orchyn JWT access token; takes priority over the credentials file |
 | `ORCHYN_CREDENTIALS_FILE` | `~/.config/orchyn-mcp/credentials.json` | token store path |
 | `ORCHYN_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
@@ -235,17 +234,20 @@ per the MCP 2025-03-26 spec):
 - TikTok: `tiktok.com/*`, `vm.tiktok.com/*` (and `www.`/`m.` subdomains)
 - Instagram: `instagram.com/*` (reels, posts), `instagr.am/*`
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
+- X/Twitter: `x.com/*`, `twitter.com/*` — supported by `get_social_media` and
+  `understand_social_post` (`analyze_video` covers TikTok/Instagram/YouTube only)
 
-Other hosts are rejected by the tool.
+Other hosts are rejected by the tools.
 
 ## Troubleshooting
 
 - **`Not authenticated with orchyn` / 401**: run `npx @orchyn/mcp login` or set
   `ORCHYN_ACCESS_TOKEN`.
-- **402 paywall (`Analysis blocked`)**: your orchyn account has no credits
-  left. The error includes `reason`, `used`/`max`, and `cost`. Top up or check
-  your usage in the orchyn dashboard. The first analysis is covered by the
-  free grant.
+- **402 paywall / `insufficient MCP credits`**: your orchyn account is out of
+  credits for this tool. Each call costs: `get_social_media` 1,
+  `discover_social_videos` 2, `understand_social_post` 10, `analyze_video`
+  first-call free. Top up via the orchyn dashboard billing page or
+  `POST /billing/mcp-credits/checkout`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   orchyn server. Run `npx @orchyn/mcp login` again to re-authenticate.
 - **`Could not reach the orchyn server`**: `ORCHYN_BASE_URL` is unreachable or

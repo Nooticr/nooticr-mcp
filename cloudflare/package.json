@@ -1,0 +1,22 @@
+{
+  "name": "orchyn-mcp-cloudflare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker hosting of the orchyn MCP server (https://mcp.orchyn.com)",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.16.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250710.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^4.0.0"
+  }
+}

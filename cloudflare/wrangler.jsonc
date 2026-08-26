@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "orchyn-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PUBLIC_URL": "https://mcp.orchyn.com",
+    "ORCHYN_BASE_URL": "https://api.orchyn.com"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "STORE"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_ENDPOINT",
+        "class_name": "McpEndpoint"
+      }
+    ]
+  },
+  "custom_domains": [
+    {
+      "name": "mcp.orchyn.com"
+    }
+  ]
+}
