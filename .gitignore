@@ -4,3 +4,6 @@ dist/
 .DS_Store
 credentials.json
 .env
+
+cloudflare/.wrangler/
+cloudflare/.dev.vars
