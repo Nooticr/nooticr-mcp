@@ -1,14 +1,50 @@
 # orchyn-mcp
 
-MCP (Model Context Protocol) server for [orchyn](https://orchyn.com) — AI video
-analysis of TikTok, Instagram, and YouTube links using your orchyn account and
-orchyn server credits.
+MCP (Model Context Protocol) server for [orchyn](https://orchyn.com) — fetch,
+discover and understand social posts (TikTok, Instagram, YouTube, X) with your
+orchyn account and orchyn credits.
 
-Exposes exactly **one tool**:
+## Install (one link)
 
-| Tool | Description |
-|------|-------------|
-| `analyze_video` | Start an AI analysis of a TikTok, Instagram, or YouTube video from its link. Requires a connected orchyn account; consumes orchyn credits (first analysis free). Returns the analysis result once finished. |
+**Claude Code** — register the marketplace, then install the plugin:
+
+```
+/plugin marketplace add orchynX/mcp
+/plugin install orchyn@orchyn
+```
+
+**Claude Code / CLI without the plugin**:
+
+```bash
+claude mcp add orchyn --user -- npx -y orchyn-mcp
+npx orchyn-mcp login   # one-time sign-in (Google)
+```
+
+**Cursor / any stdio MCP client** (`claude_desktop_config.json`, `.mcp.json`, …):
+
+```json
+{
+  "mcpServers": {
+    "orchyn": {
+      "command": "npx",
+      "args": ["-y", "orchyn-mcp"],
+      "env": { "ORCHYN_BASE_URL": "https://api.orchyn.com" }
+    }
+  }
+}
+```
+
+## Tools
+
+| Tool | Credits | Description |
+|------|---------|-------------|
+| `analyze_video` | first free | Start an AI analysis of a TikTok/Instagram/YouTube video; polls until done and returns the full analysis. |
+| `get_social_media` | 1 | Fetch a post's media from a URL: contentType, title, caption, author, stats, direct media URLs + inline thumbnail image. |
+| `discover_social_videos` | 2 | Find recent videos for a niche (YouTube search; TikTok/Instagram via Apify). |
+| `understand_social_post` | 10 | Import a post URL AND analyze it with multimodal AI over the actual video/images: summary, hook strength, viral triggers, format breakdown, variation ideas. |
+
+All tools require a connected orchyn account and are billed against your
+orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
 
 The server starts the analysis on the orchyn backend, polls until the analysis
 finishes, and returns the full result (analysis, job metadata, cost) as JSON.

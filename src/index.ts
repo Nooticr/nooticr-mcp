@@ -25,7 +25,7 @@ import {
   DEFAULT_PORT,
 } from "./config.js";
 import { AuthManager, OrchynAuthError, createHttpTokenProvider, createStdioTokenProvider } from "./auth.js";
-import { OrchynClient, OrchynError } from "./orchyn.js";
+import { OrchynClient, OrchynError, McpProxyResult } from "./orchyn.js";
 import { OAuthManager, type McpSession } from "./oauth.js";
 import { formatPaywallError, runVideoAnalysis, validateVideoUrl } from "./video.js";
 
@@ -44,6 +44,32 @@ const TOOL_INPUT_SCHEMA = z
       ),
   })
   .strict();
+
+// --- social media tools (proxied to the orchyn backend's MCP surface) ---
+
+type ToolContent =
+  | { type: "text"; text: string }
+  | { type: "image"; data: string; mimeType: string };
+
+function toToolResult(proxy: McpProxyResult): { content: ToolContent[] } {
+  const images = proxy.contentBlocks
+    .filter((c) => c.type === "image")
+    .map((c) => ({
+      type: "image" as const,
+      data: String(c.data ?? ""),
+      mimeType: String(c.mimeType ?? "image/jpeg"),
+    }));
+  const text = JSON.stringify(proxy.structured ?? {}, null, 2);
+  return { content: [...images, { type: "text", text }] };
+}
+
+function toolError(prefix: string, err: unknown): {
+  content: Array<{ type: "text"; text: string }>;
+  isError: true;
+} {
+  const msg = err instanceof Error ? err.message : String(err);
+  return { content: [{ type: "text", text: `${prefix}: ${msg}` }], isError: true };
+}
 
 export interface ServerFactoryOptions {
   makeClient: (session?: McpSession) => OrchynClient;
@@ -107,7 +133,106 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
       }
     }
   );
+
+  server.registerTool(
+    "get_social_media",
+    {
+      title: "Get Social Media",
+      description:
+        "Fetch a social post's media from a TikTok, Instagram, YouTube or X/Twitter URL: " +
+        "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
+        "Returns an inline thumbnail image. Consumes 1 orchyn credit.",
+      inputSchema: z
+        .object({
+          url: z.string().describe("Full public post URL."),
+        })
+        .strict(),
+    },
+    async (args: { url: string }, extra) => {
+      const client = makeClientFor(extra, opts);
+      try {
+        return toToolResult(await client.callTool("get_social_media", { url: args.url }));
+      } catch (err) {
+        return toolError("get_social_media failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "discover_social_videos",
+    {
+      title: "Discover Social Videos",
+      description:
+        "Discover recent videos/posts for a niche. YouTube via search; TikTok & Instagram via Apify. " +
+        "Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
+          keywords: z.string().optional().describe("Optional extra keywords."),
+          limit: z.number().int().optional().describe("Max results (default 6)."),
+          platform: z
+            .enum(["youtube", "tiktok", "instagram", "any"])
+            .optional()
+            .describe("Platform to search (default youtube)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { niche: string; keywords?: string; limit?: number; platform?: string },
+      extra
+    ) => {
+      const client = makeClientFor(extra, opts);
+      try {
+        return toToolResult(await client.callTool("discover_social_videos", { ...args }));
+      } catch (err) {
+        return toolError("discover_social_videos failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "understand_social_post",
+    {
+      title: "Understand Social Post",
+      description:
+        "Import a social post URL AND understand it with multimodal AI over the actual video/images: " +
+        "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
+        "Consumes 10 orchyn credits.",
+      inputSchema: z
+        .object({
+          url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube)."),
+          focus: z
+            .string()
+            .optional()
+            .describe("Extra instruction, e.g. 'focus on the CTA'."),
+        })
+        .strict(),
+    },
+    async (args: { url: string; focus?: string }, extra) => {
+      const client = makeClientFor(extra, opts);
+      try {
+        return toToolResult(await client.callTool("understand_social_post", { ...args }));
+      } catch (err) {
+        return toolError("understand_social_post failed", err);
+      }
+    }
+  );
   return server;
+}
+
+/**
+ * Resolves the per-request OrchynClient: HTTP-mode MCP sessions carry their
+ * own orchyn identity via authInfo; stdio uses the shared logged-in session.
+ */
+function makeClientFor(
+  extra: { authInfo?: { token?: string } },
+  opts: ServerFactoryOptions
+): OrchynClient {
+  let session: McpSession | undefined;
+  if (extra.authInfo?.token && opts.resolveSession) {
+    session = opts.resolveSession(extra.authInfo.token);
+  }
+  return opts.makeClient(session);
 }
 
 // ---------------------------------------------------------------------------

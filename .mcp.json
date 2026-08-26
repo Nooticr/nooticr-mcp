@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "orchyn": {
+      "command": "npx",
+      "args": ["-y", "orchyn-mcp"],
+      "env": {
+        "ORCHYN_BASE_URL": "https://api.orchyn.com"
+      }
+    }
+  }
+}

@@ -83,6 +83,17 @@ export interface JobStatus {
   elapsedMs?: number;
 }
 
+/**
+ * Normalized response of a proxied `tools/call` against the orchyn backend
+ * (`POST /mcp`). `contentBlocks` carries MCP content blocks verbatim —
+ * including inline thumbnail `image` blocks the backend attaches — while
+ * `structured` is the parsed tool payload.
+ */
+export interface McpProxyResult {
+  contentBlocks: Array<{ type: string; [key: string]: unknown }>;
+  structured: unknown;
+}
+
 export class OrchynClient {
   private baseUrl: string;
   private tokenProvider: TokenProvider;
@@ -176,6 +187,51 @@ export class OrchynClient {
       auth: true,
       body: appId !== undefined ? { url, appId } : { url },
     });
+  }
+
+  /**
+   * Proxies a generic orchyn backend MCP tool (`get_social_media`,
+   * `discover_social_videos`, `understand_social_post`, …) through
+   * `POST /mcp` JSON-RPC. The backend enforces per-user credit billing;
+   * tool-level failures surface as OrchynError with the backend message.
+   */
+  async callTool(name: string, args: Record<string, unknown>): Promise<McpProxyResult> {
+    const rpc = await this.request<Record<string, unknown>>("POST", "/mcp", {
+      auth: true,
+      body: {
+        jsonrpc: "2.0",
+        id: Date.now(),
+        method: "tools/call",
+        params: { name, arguments: args },
+      },
+    });
+
+    if (rpc && typeof rpc === "object" && rpc.error !== undefined && rpc.error !== null) {
+      const err = rpc.error as { code?: unknown; message?: unknown };
+      throw new OrchynError(
+        err.code === -32002 ? 402 : 400,
+        typeof err.message === "string" ? err.message : "orchyn MCP tool call failed"
+      );
+    }
+
+    const result = (rpc.result ?? {}) as {
+      content?: Array<{ type: string; [key: string]: unknown }>;
+      structuredContent?: unknown;
+      isError?: boolean;
+    };
+
+    if (result.isError) {
+      const text = result.content
+        ?.filter((c) => c.type === "text")
+        .map((c) => String(c.text ?? ""))
+        .join("\n");
+      throw new OrchynError(400, text || "orchyn MCP tool call failed");
+    }
+
+    return {
+      contentBlocks: result.content ?? [],
+      structured: result.structuredContent,
+    };
   }
 
   async getJob(jobId: string): Promise<JobStatus> {
