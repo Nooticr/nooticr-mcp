@@ -179,12 +179,14 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
       title: "Discover Social Videos",
       description:
         "Discover recent videos/posts for a niche. YouTube via search; TikTok & Instagram via Apify. " +
-        "Consumes 2 orchyn credits.",
+        "Returns inline thumbnails (up to 4) so they show in chat. Say \"next\" to paginate (offset), " +
+        "or \"analyze the 2nd one\" / \"analyze all\" for batch analysis. Consumes 2 orchyn credits.",
       inputSchema: z
         .object({
           niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
           keywords: z.string().optional().describe("Optional extra keywords."),
           limit: z.number().int().optional().describe("Max results (default 6)."),
+          offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."),
           platform: z
             .enum(["youtube", "tiktok", "instagram", "any"])
             .optional()
@@ -193,7 +195,7 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
         .strict(),
     },
     async (
-      args: { niche: string; keywords?: string; limit?: number; platform?: string },
+      args: { niche: string; keywords?: string; limit?: number; offset?: number; platform?: string },
       extra
     ) => {
       const client = makeClientFor(extra, opts);

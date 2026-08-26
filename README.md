@@ -38,16 +38,25 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 | Tool | Credits | Description |
 |------|---------|-------------|
-| `analyze_video` | first free | Start an AI analysis of a TikTok/Instagram/YouTube video; polls until done and returns the full analysis. |
-| `get_social_media` | 1 | Fetch a post's media from a URL: contentType, title, caption, author, stats, direct media URLs + inline thumbnail image. |
-| `discover_social_videos` | 2 | Find recent videos for a niche (YouTube search; TikTok/Instagram via Apify). |
-| `understand_social_post` | 10 | Import a post URL AND analyze it with multimodal AI over the actual video/images: summary, hook strength, viral triggers, format breakdown, variation ideas. |
+| `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow) from a TikTok/Instagram/YouTube/X-Twitter URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
+| `analyze_video` | first free* | **Deprecated alias of `analyze_post`** — kept for backwards compatibility. Use `analyze_post` for new integrations. |
+| `get_social_media` | 1 | Fetch a post's media from a URL: `contentType` (video/image/carousel/slideshow), title, caption, author, stats, direct media URLs **+ inline thumbnail image in chat**. |
+| `discover_social_videos` | 2 | Find recent posts for a niche (YouTube via `yt-dlp` search; TikTok/Instagram via Apify). Returns up to 6 posts with stats **and inline thumbnails** — see *Images in chat* below. |
+| `understand_social_post` | 10 | Import a post URL **and** analyze it with multimodal AI over the actual video/images: factual `whatHappens` description, hook strength, viral triggers, format breakdown, variation ideas, suggested hook/hashtags. Includes inline thumbnails. |
 
-All tools require a connected orchyn account and are billed against your
-orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
+All tools require a connected orchyn account and are billed against your orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
 
-The server starts the analysis on the orchyn backend, polls until the analysis
-finishes, and returns the full result (analysis, job metadata, cost) as JSON.
+`*` `analyze_post`/`analyze_video` bill against **workspace** credits (first free grant); the other three bill against **per-user MCP** credits (never tied to an app/workspace).
+
+## Images in Claude / ChatGPT chat
+
+Every tool that returns posts also renders **inline thumbnails** directly in the chat:
+
+- `get_social_media` / `understand_social_post` / `analyze_post` — up to 4 frames inline (poster + carousel slides). The full `mediaItems[].preview_url` + `thumbnailUrl` stay in `structuredContent` for the model to reason over.
+- `discover_social_videos` — each discovered post shows its thumbnail inline (up to 4 of the 6 results at once). Say **"next"** or **"show more"** — Claude will re-call `discover_social_videos` with a larger `limit` or paginate. Say **"analyze the 2nd one"** — Claude calls `analyze_post` or `understand_social_post` on that URL.
+- **Batch analysis** — ask "analyze all 4" or "understand these 3 in batch" and Claude will call `analyze_post`/`understand_social_post` once per URL in parallel and summarize. For large batches, `discover_social_videos` + a follow-up `analyze_post` per URL is the recommended flow.
+
+> The backend's `analyze_post` now watches the **actual video/images** (direct MP4, YouTube `fileUri`, or 6 carousel frames via Gemini multimodal) — not just the caption. The analysis includes a `whatHappens` field describing exactly what is seen.
 
 ## Prerequisites
 
@@ -229,15 +238,14 @@ per the MCP 2025-03-26 spec):
   orchyn session (valid 1 hour)
 - every MCP RPC validates the Bearer token against the session map
 
-## Supported video URLs
+## Supported URLs
 
 - TikTok: `tiktok.com/*`, `vm.tiktok.com/*` (and `www.`/`m.` subdomains)
-- Instagram: `instagram.com/*` (reels, posts), `instagr.am/*`
+- Instagram: `instagram.com/*` (reels, posts, carousels), `instagr.am/*`
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
-- X/Twitter: `x.com/*`, `twitter.com/*` — supported by `get_social_media` and
-  `understand_social_post` (`analyze_video` covers TikTok/Instagram/YouTube only)
+- X/Twitter: `x.com/*`, `twitter.com/*`
 
-Other hosts are rejected by the tools.
+All tools accept these hosts. `analyze_post` (and its `analyze_video` alias) additionally handles **image, carousel and slideshow** posts — not just video.
 
 ## Troubleshooting
 
@@ -245,9 +253,9 @@ Other hosts are rejected by the tools.
   `ORCHYN_ACCESS_TOKEN`.
 - **402 paywall / `insufficient MCP credits`**: your orchyn account is out of
   credits for this tool. Each call costs: `get_social_media` 1,
-  `discover_social_videos` 2, `understand_social_post` 10, `analyze_video`
-  first-call free. Top up via the orchyn dashboard billing page or
-  `POST /billing/mcp-credits/checkout`.
+  `discover_social_videos` 2, `understand_social_post` 10, `analyze_post`/
+  `analyze_video` first-call free* (see Tools). Top up via the orchyn dashboard
+  billing page or `POST /billing/mcp-credits/checkout`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   orchyn server. Run `npx @orchyn/mcp login` again to re-authenticate.
 - **`Could not reach the orchyn server`**: `ORCHYN_BASE_URL` is unreachable or
