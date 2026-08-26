@@ -530,11 +530,13 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
     return;
   }
 
-  // Browser flow with a loopback listener.
+  // Browser flow: open the orchyn-branded login page (Google + email/password)
+  // at /auth/mcp-login?redirect=<loopback callback>. Both paths converge on a
+  // single ?code= redirect the listener exchanges for JWTs.
   const callbackPath = "/oauth/callback";
   const callbackUrl = `http://127.0.0.1:${opts.port}${callbackPath}`;
-  const googleStart = new URL("/auth/google/start", baseUrl);
-  googleStart.searchParams.set("redirect", callbackUrl);
+  const mcpLoginUrl = new URL("/auth/mcp-login", baseUrl);
+  mcpLoginUrl.searchParams.set("redirect", callbackUrl);
 
   const listener = http.createServer((req, res) => {
     const reqUrl = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -577,12 +579,12 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
   });
 
   process.stdout.write(
-    `Open this URL in your browser to sign in with your orchyn account:\n\n  ${googleStart.toString()}\n\n`
+    `Open this URL in your browser to sign in with your orchyn account:\n\n  ${mcpLoginUrl.toString()}\n\n`
   );
 
   try {
     const { default: open } = await import("open");
-    await open(googleStart.toString());
+    await open(mcpLoginUrl.toString());
   } catch {
     process.stdout.write(
       "Could not open the browser automatically. Copy the URL above into your browser.\n"
