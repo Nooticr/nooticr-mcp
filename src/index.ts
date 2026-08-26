@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * orchyn-mcp — MCP server exposing a single `analyze_video` tool that runs
+ * orchyn-mcp — MCP server exposing `analyze_post` (analyze any post: video/image/carousel) that runs
  * AI video analysis through the user's orchyn account.
  *
  * Modes:
@@ -110,46 +110,6 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
   );
 
   server.registerTool(
-    "analyze_video",
-    {
-      title: "Analyze Video",
-      description: "[Deprecated — use analyze_post] Alias of analyze_post — analyzes any post type.",
-      inputSchema: z
-        .object({
-          url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X or shortlinks)."),
-        })
-        .strict(),
-    },
-    async (args: { url: string }, extra) => {
-      let session: McpSession | undefined;
-      if (extra.authInfo?.token && opts.resolveSession) {
-        session = opts.resolveSession(extra.authInfo.token);
-      }
-      const client = opts.makeClient(session);
-      const validation = validatePostUrl(args.url);
-      if (!validation.ok) {
-        return {
-          content: [{ type: "text", text: `Invalid url: ${validation.error}` }],
-          isError: true,
-        };
-      }
-      try {
-        const result = await runVideoAnalysis(client, validation.url);
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-      } catch (err) {
-        if (err instanceof OrchynError && err.paywall) {
-          return {
-            content: [{ type: "text", text: `Analysis blocked: ${formatPaywallError(err)}\n\nHTTP ${err.status}: ${err.message}` }],
-            isError: true,
-          };
-        }
-        const msg = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: "text", text: `Analysis failed: ${msg}` }], isError: true };
-      }
-    }
-  );
-
-  server.registerTool(
     "get_social_media",
     {
       title: "Get Social Media",
@@ -203,37 +163,6 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
         return toToolResult(await client.callTool("discover_social_posts", { ...args }));
       } catch (err) {
         return toolError("discover_social_posts failed", err);
-      }
-    }
-  );
-
-  server.registerTool(
-    "discover_social_videos",
-    {
-      title: "Discover Social Videos",
-      description: "[Deprecated — use discover_social_posts] Alias of discover_social_posts.",
-      inputSchema: z
-        .object({
-          niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
-          keywords: z.string().optional().describe("Optional extra keywords."),
-          limit: z.number().int().optional().describe("Max results (default 6)."),
-          offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."),
-          platform: z
-            .enum(["youtube", "tiktok", "instagram", "any"])
-            .optional()
-            .describe("Platform to search (default youtube)."),
-        })
-        .strict(),
-    },
-    async (
-      args: { niche: string; keywords?: string; limit?: number; offset?: number; platform?: string },
-      extra
-    ) => {
-      const client = makeClientFor(extra, opts);
-      try {
-        return toToolResult(await client.callTool("discover_social_videos", { ...args }));
-      } catch (err) {
-        return toolError("discover_social_videos failed", err);
       }
     }
   );
