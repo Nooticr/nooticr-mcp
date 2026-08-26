@@ -174,13 +174,44 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
   );
 
   server.registerTool(
+    "discover_social_posts",
+    {
+      title: "Discover Social Posts",
+      description:
+        "Discover recent posts (video, image, carousel, slideshow) for a niche. YouTube via search; TikTok & Instagram via Apify. " +
+        "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
+        "Say \"next\" to paginate (offset), or \"analyze the 2nd one\" / \"analyze all\" for batch analysis. Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
+          keywords: z.string().optional().describe("Optional extra keywords."),
+          limit: z.number().int().optional().describe("Max results (default 6)."),
+          offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."),
+          platform: z
+            .enum(["youtube", "tiktok", "instagram", "any"])
+            .optional()
+            .describe("Platform to search (default youtube)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { niche: string; keywords?: string; limit?: number; offset?: number; platform?: string },
+      extra
+    ) => {
+      const client = makeClientFor(extra, opts);
+      try {
+        return toToolResult(await client.callTool("discover_social_posts", { ...args }));
+      } catch (err) {
+        return toolError("discover_social_posts failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
     "discover_social_videos",
     {
       title: "Discover Social Videos",
-      description:
-        "Discover recent videos/posts for a niche. YouTube via search; TikTok & Instagram via Apify. " +
-        "Returns inline thumbnails (up to 4) so they show in chat. Say \"next\" to paginate (offset), " +
-        "or \"analyze the 2nd one\" / \"analyze all\" for batch analysis. Consumes 2 orchyn credits.",
+      description: "[Deprecated — use discover_social_posts] Alias of discover_social_posts.",
       inputSchema: z
         .object({
           niche: z.string().describe("Niche/topic, e.g. 'fitness'."),

@@ -41,7 +41,8 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 | `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow) from a TikTok/Instagram/YouTube/X-Twitter URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
 | `analyze_video` | first free* | **Deprecated alias of `analyze_post`** — kept for backwards compatibility. Use `analyze_post` for new integrations. |
 | `get_social_media` | 1 | Fetch a post's media from a URL: `contentType` (video/image/carousel/slideshow), title, caption, author, stats, direct media URLs **+ inline thumbnail image in chat**. |
-| `discover_social_videos` | 2 | Find recent posts for a niche (YouTube via `yt-dlp` search; TikTok/Instagram via Apify). Returns up to 6 posts with stats **and inline thumbnails** — see *Images in chat* below. |
+| `discover_social_posts` | 2 | **Preferred.** Find recent posts (video/image/carousel/slideshow) for a niche (YouTube via `yt-dlp` search; TikTok/Instagram via Apify). Each post includes title/caption, views/likes/comments, author, `externalUrl` + **inline thumbnails (4 at a time)** — see *Images in chat* below. Supports `limit`/`offset` pagination (“next”). |
+| `discover_social_videos` | 2 | **Deprecated alias of `discover_social_posts`** — kept for backwards compatibility. |
 | `understand_social_post` | 10 | Import a post URL **and** analyze it with multimodal AI over the actual video/images: factual `whatHappens` description, hook strength, viral triggers, format breakdown, variation ideas, suggested hook/hashtags. Includes inline thumbnails. |
 
 All tools require a connected orchyn account and are billed against your orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
@@ -53,8 +54,8 @@ All tools require a connected orchyn account and are billed against your orchyn 
 Every tool that returns posts also renders **inline thumbnails** directly in the chat:
 
 - `get_social_media` / `understand_social_post` / `analyze_post` — up to 4 frames inline (poster + carousel slides). The full `mediaItems[].preview_url` + `thumbnailUrl` stay in `structuredContent` for the model to reason over.
-- `discover_social_videos` — each discovered post shows its thumbnail inline (up to 4 of the 6 results at once). Say **"next"** or **"show more"** — Claude will re-call `discover_social_videos` with a larger `limit` or paginate. Say **"analyze the 2nd one"** — Claude calls `analyze_post` or `understand_social_post` on that URL.
-- **Batch analysis** — ask "analyze all 4" or "understand these 3 in batch" and Claude will call `analyze_post`/`understand_social_post` once per URL in parallel and summarize. For large batches, `discover_social_videos` + a follow-up `analyze_post` per URL is the recommended flow.
+- `discover_social_posts` — each discovered post shows its thumbnail inline (up to 4 of the 6 results at once) together with its title/caption + views/likes/comments. Say **"next"** or **"show more"** — Claude will re-call `discover_social_posts` with `offset` pagination. Say **"analyze the 2nd one"** — Claude calls `analyze_post` or `understand_social_post` on that URL.
+- **Batch analysis** — ask "analyze all 4" or "understand these 3 in batch" and Claude will call `analyze_post`/`understand_social_post` once per URL in parallel and summarize. For large batches, `discover_social_posts` + a follow-up `analyze_post` per URL is the recommended flow.
 
 > The backend's `analyze_post` now watches the **actual video/images** (direct MP4, YouTube `fileUri`, or 6 carousel frames via Gemini multimodal) — not just the caption. The analysis includes a `whatHappens` field describing exactly what is seen.
 
