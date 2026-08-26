@@ -168,6 +168,42 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
   );
 
   server.registerTool(
+    "check_mcp_credits",
+    {
+      title: "Check MCP Credits",
+      description:
+        "Check your MCP credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools.",
+      inputSchema: z.object({}).strict(),
+    },
+    async (_args: Record<string, never>, extra) => {
+      const client = makeClientFor(extra, opts);
+      try {
+        return toToolResult(await client.callTool("check_mcp_credits", {}));
+      } catch (err) {
+        return toolError("check_mcp_credits failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "buy_mcp_credits",
+    {
+      title: "Buy MCP Credits",
+      description:
+        "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call.",
+      inputSchema: z.object({}).strict(),
+    },
+    async (_args: Record<string, never>, extra) => {
+      const client = makeClientFor(extra, opts);
+      try {
+        return toToolResult(await client.callTool("buy_mcp_credits", {}));
+      } catch (err) {
+        return toolError("buy_mcp_credits failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
     "understand_social_post",
     {
       title: "Understand Social Post",
