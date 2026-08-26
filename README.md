@@ -42,8 +42,8 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 | `get_social_media` | 1 | Fetch a post's media from a URL: `contentType` (video/image/carousel/slideshow), title, caption, author, stats, direct media URLs **+ inline thumbnail image in chat**. |
 | `discover_social_posts` | 2 | **Preferred.** Find recent posts (video/image/carousel/slideshow) for a niche (YouTube via `yt-dlp` search; TikTok/Instagram via Apify). Each post includes title/caption, views/likes/comments, author, `externalUrl` + **inline thumbnails (4 at a time)** — see *Images in chat* below. Supports `limit`/`offset` pagination (“next”). |
 | `understand_social_post` | 10 | Import a post URL **and** analyze it with multimodal AI over the actual video/images: factual `whatHappens` description, hook strength, viral triggers, format breakdown, variation ideas, suggested hook/hashtags. Includes inline thumbnails. |
-| `check_mcp_credits` | free | Check your MCP credit balance, billing URL and pack size — no cost. |
-| `buy_mcp_credits` | free | Get a Stripe Checkout URL to buy a credit pack — open it to pay; credits are added automatically. No cost to call. Also at `https://orchyn.com/settings?tab=billing`. |
+| `check_orchyn_credits` | free | Check your MCP credit balance, billing URL and pack size — no cost. |
+| `buy_orchyn_credits` | free | Get a Stripe Checkout URL to buy a credit pack — open it to pay; credits are added automatically. No cost to call. Also at `https://orchyn.com/settings?tab=billing`. |
 
 All tools require a connected orchyn account and are billed against your orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
 

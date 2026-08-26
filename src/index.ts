@@ -168,7 +168,7 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
   );
 
   server.registerTool(
-    "check_mcp_credits",
+    "check_orchyn_credits",
     {
       title: "Check MCP Credits",
       description:
@@ -178,15 +178,15 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
     async (_args: Record<string, never>, extra) => {
       const client = makeClientFor(extra, opts);
       try {
-        return toToolResult(await client.callTool("check_mcp_credits", {}));
+        return toToolResult(await client.callTool("check_orchyn_credits", {}));
       } catch (err) {
-        return toolError("check_mcp_credits failed", err);
+        return toolError("check_orchyn_credits failed", err);
       }
     }
   );
 
   server.registerTool(
-    "buy_mcp_credits",
+    "buy_orchyn_credits",
     {
       title: "Buy MCP Credits",
       description:
@@ -196,9 +196,9 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
     async (_args: Record<string, never>, extra) => {
       const client = makeClientFor(extra, opts);
       try {
-        return toToolResult(await client.callTool("buy_mcp_credits", {}));
+        return toToolResult(await client.callTool("buy_orchyn_credits", {}));
       } catch (err) {
-        return toolError("buy_mcp_credits failed", err);
+        return toolError("buy_orchyn_credits failed", err);
       }
     }
   );
