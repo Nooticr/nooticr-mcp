@@ -47,7 +47,7 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 All tools require a connected orchyn account and are billed against your orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
 
-`*` `analyze_post`/`analyze_video` bill against **workspace** credits (first free grant); the other three bill against **per-user MCP** credits (never tied to an app/workspace).
+`*` `analyze_post` bills against **workspace** credits (first free grant); the other tools bill against **per-user MCP** credits (never tied to an app/workspace).
 
 ## Images in Claude / ChatGPT chat
 
@@ -246,7 +246,7 @@ per the MCP 2025-03-26 spec):
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
 - X/Twitter: `x.com/*`, `twitter.com/*`
 
-All tools accept these hosts. `analyze_post` (and its `analyze_video` alias) additionally handles **image, carousel and slideshow** posts — not just video.
+All tools accept these hosts and handle **video, image, carousel and slideshow** posts.
 
 ## Troubleshooting
 
@@ -254,9 +254,9 @@ All tools accept these hosts. `analyze_post` (and its `analyze_video` alias) add
   `ORCHYN_ACCESS_TOKEN`.
 - **402 paywall / `insufficient MCP credits`**: your orchyn account is out of
   credits for this tool. Each call costs: `get_social_media` 1,
-  `discover_social_videos` 2, `understand_social_post` 10, `analyze_post`/
-  `analyze_video` first-call free* (see Tools). Top up via the orchyn dashboard
-  billing page or `POST /billing/mcp-credits/checkout`.
+  `discover_social_posts` 2, `understand_social_post` 10, `analyze_post`
+  first-call free* (see Tools). Top up via `buy_orchyn_credits`, `check_orchyn_credits`,
+  or the orchyn dashboard at `https://orchyn.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   orchyn server. Run `npx @orchyn/mcp login` again to re-authenticate.
 - **`Could not reach the orchyn server`**: `ORCHYN_BASE_URL` is unreachable or
