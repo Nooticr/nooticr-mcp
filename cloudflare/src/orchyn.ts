@@ -164,4 +164,24 @@ export class OrchynClient {
     }
     throw new OrchynError(res.status, typeof json.error === "string" ? json.error : `Login failed (${res.status})`, { body });
   }
+
+  static async exchangeCode(baseUrl: string, code: string): Promise<OrchynSession> {
+    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/auth/oauth/complete`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const text = await res.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : undefined;
+    } catch {
+      body = undefined;
+    }
+    const json = (body ?? {}) as Record<string, unknown>;
+    if (res.status >= 200 && res.status < 300) {
+      return body as OrchynSession;
+    }
+    throw new OrchynError(res.status, typeof json.error === "string" ? json.error : `Code exchange failed (${res.status})`, { body });
+  }
 }

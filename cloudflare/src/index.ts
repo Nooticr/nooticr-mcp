@@ -24,6 +24,7 @@ import {
   verifyPkce,
   SCOPE,
   TOKEN_TTL_SECONDS,
+  PENDING_TTL_SECONDS,
 } from "./oauth.js";
 
 export { McpEndpoint } from "./endpoint.js";
@@ -34,11 +35,15 @@ export default {
      const path = url.pathname.replace(/\/+$/, "") || "/";
      const method = request.method;
 
-     if (path === "/.well-known/oauth-authorization-server" && method === "GET") {
-      return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL));
+    if ((path === "/.well-known/oauth-authorization-server" || path === "/.well-known/openid-configuration") && method === "GET") {
+      return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL), {
+        "access-control-allow-origin": "*",
+      });
     }
     if (path === "/.well-known/oauth-protected-resource" && method === "GET") {
-      return jsonResponse(200, protectedResourceMetadata(env.PUBLIC_URL));
+      return jsonResponse(200, protectedResourceMetadata(env.PUBLIC_URL), {
+        "access-control-allow-origin": "*",
+      });
     }
     if (path === "/register" && method === "POST") {
       return handleRegister(request, env);
@@ -55,6 +60,9 @@ export default {
     }
     if (path === "/token" && method === "POST") {
       return handleToken(request, env);
+    }
+    if (path === "/auth/callback" && method === "GET") {
+      return handleAuthCallback(request, env);
     }
     if (path === "/authorize") {
       return method === "GET" ? handleAuthorizeGet(request, env) : handleAuthorizePost(request, env);
@@ -156,22 +164,13 @@ async function handleAuthorizeGet(request: Request, env: Env): Promise<Response>
     return authorizeError(url, p.redirect_uri, "invalid_scope", `Unsupported scope(s). Supported: ${SCOPE}.`);
   }
 
-  return htmlResponse(200, htmlPage("orchyn-mcp: sign in", `
-    <h2>Sign in with your orchyn account</h2>
-    <form method="post" action="/authorize">
-      <input type="hidden" name="response_type" value="${escapeHtml(p.response_type)}" />
-      <input type="hidden" name="client_id" value="${escapeHtml(p.client_id)}" />
-      <input type="hidden" name="redirect_uri" value="${escapeHtml(p.redirect_uri)}" />
-      <input type="hidden" name="code_challenge" value="${escapeHtml(p.code_challenge)}" />
-      <input type="hidden" name="code_challenge_method" value="${escapeHtml(p.code_challenge_method)}" />
-      <input type="hidden" name="scope" value="${escapeHtml(p.scope)}" />
-      <input type="hidden" name="state" value="${escapeHtml(p.state ?? "")}" />
-      <div class="row"><label>Email <input type="email" name="email" autocomplete="username" required /></label></div>
-      <div class="row"><label>Password <input type="password" name="password" autocomplete="current-password" required /></label></div>
-      <div class="row"><button type="submit">Sign in</button></div>
-    </form>
-    <p><small>Your password is sent directly to the orchyn API; the MCP does not store it.</small></p>
-  `));
+  // Delegate to the Rust server's branded login (single source of truth)
+  const authRequestId = randomToken(16);
+  const callbackUrl = `${env.PUBLIC_URL}/auth/callback?state=${encodeURIComponent(authRequestId)}`;
+  const mcpLoginUrl = new URL(`${env.ORCHYN_BASE_URL}/auth/mcp-login`);
+  mcpLoginUrl.searchParams.set("redirect", callbackUrl);
+  await env.STORE.put(`auth_req:${authRequestId}`, JSON.stringify({ ...p, createdAt: Date.now() }), { expirationTtl: PENDING_TTL_SECONDS });
+  return Response.redirect(mcpLoginUrl.toString(), 302);
 }
 
 async function handleAuthorizePost(request: Request, env: Env): Promise<Response> {
@@ -245,6 +244,70 @@ async function handleAuthorizePost(request: Request, env: Env): Promise<Response
   const target = new URL(p.redirect_uri);
   target.searchParams.set("code", mcpAuthCode);
   if (p.state) target.searchParams.set("state", p.state);
+  return Response.redirect(target.toString(), 302);
+}
+
+async function handleAuthCallback(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const state = url.searchParams.get("state");
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+  const errorDesc = url.searchParams.get("error_description");
+  // Load the original OAuth request
+  let reqRaw: string | null = null;
+  let req: ReturnType<typeof getAuthorizeParams> | null = null;
+  if (state) {
+    reqRaw = await env.STORE.get(`auth_req:${state}`);
+    if (reqRaw) {
+      try { req = JSON.parse(reqRaw); } catch {}
+    }
+  }
+  if (error) {
+    if (req && req.redirect_uri) {
+      const target = new URL(req.redirect_uri);
+      target.searchParams.set("error", "access_denied");
+      target.searchParams.set("error_description", errorDesc || error);
+      if (req.state) target.searchParams.set("state", req.state);
+      if (state) await env.STORE.delete(`auth_req:${state}`);
+      return Response.redirect(target.toString(), 302);
+    }
+    return htmlResponse(400, htmlPage("orchyn-mcp: auth failed", `<p>${escapeHtml(errorDesc || error)}</p>`));
+  }
+  if (!state || !code) {
+    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Missing state or code.</p>`));
+  }
+  if (!reqRaw || !req) {
+    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Invalid or expired state. Please try again.</p>`));
+  }
+  if (!req.redirect_uri || !req.code_challenge) {
+    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Invalid state.</p>`));
+  }
+  let session;
+  try {
+    session = await OrchynClient.exchangeCode(env.ORCHYN_BASE_URL, code);
+  } catch (err: any) {
+    const msg = err instanceof Error ? escapeHtml(err.message) : "Code exchange failed";
+    const retryUrl = `${env.ORCHYN_BASE_URL}/auth/mcp-login?redirect=${encodeURIComponent(`${env.PUBLIC_URL}/auth/callback?state=${encodeURIComponent(state)}`)}`;
+    return htmlResponse(200, htmlPage("orchyn-mcp: sign in", `<p style="color:red">Sign-in failed: ${msg}</p><p><a href="${escapeHtml(retryUrl)}">Try again</a></p>`));
+  }
+  const mcpAuthCode = randomToken(32);
+  const pending = {
+    clientId: req.client_id,
+    redirectUri: req.redirect_uri,
+    codeChallenge: req.code_challenge,
+    scopes: req.scope.split(/\s+/).filter(Boolean),
+    mcpAuthCode,
+    clientState: req.state,
+    createdAt: Date.now(),
+    orchynAccessToken: session.accessToken,
+    orchynRefreshToken: session.refreshToken,
+    orchynUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : undefined,
+  };
+  await storePending(env, pending);
+  await env.STORE.delete(`auth_req:${state}`);
+  const target = new URL(req.redirect_uri);
+  target.searchParams.set("code", mcpAuthCode);
+  if (req.state) target.searchParams.set("state", req.state);
   return Response.redirect(target.toString(), 302);
 }
 
