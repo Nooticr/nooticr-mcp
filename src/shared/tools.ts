@@ -127,7 +127,7 @@ export function createMcpServer(
     {
       title: "Discover Social Posts",
       description:
-        "Discover recent posts (video, image, carousel, slideshow) for a niche. YouTube via search; TikTok & Instagram via Apify. " +
+        "Discover recent posts (video, image, carousel, slideshow) for a niche. YouTube via search; TikTok & Instagram via TikHub. " +
         "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
         'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. Consumes 2 orchyn credits.',
       inputSchema: z
@@ -152,6 +152,175 @@ export function createMcpServer(
         return toToolResult(await client.callTool("discover_social_posts", { ...args }));
       } catch (err) {
         return toolError("discover_social_posts failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_user_posts",
+    {
+      title: "Get User Posts",
+      description:
+        "List recent posts by a creator handle (e.g. @zoundsapp on TikTok) via TikHub. Supports TikTok and Instagram. " +
+        "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
+        "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
+          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          limit: z.number().int().optional().describe("Max posts (default 6)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { username: string; platform?: string; limit?: number },
+      extra
+    ) => {
+      const client = await makeClient(extra);
+      try {
+        return toToolResult(await client.callTool("get_user_posts", { ...args }));
+      } catch (err) {
+        return toolError("get_user_posts failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "analyze_creator_profile",
+    {
+      title: "Analyze Creator Profile",
+      description:
+        "Deep-dive a whole creator profile on TikTok or Instagram via TikHub: fetch recent posts, run multimodal Gemini on up to 3, " +
+        "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
+        "engagement patterns, audience insights, variation ideas, collaboration fit. Consumes 15 orchyn credits.",
+      inputSchema: z
+        .object({
+          username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
+          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          limit: z.number().int().optional().describe("Posts to fetch (default 6; first 3 analyzed)."),
+          focus: z.string().optional().describe("Extra instruction for the profile synthesis."),
+        })
+        .strict(),
+    },
+    async (
+      args: { username: string; platform?: string; limit?: number; focus?: string },
+      extra
+    ) => {
+      const client = await makeClient(extra);
+      try {
+        return toToolResult(await client.callTool("analyze_creator_profile", { ...args }));
+      } catch (err) {
+        return toolError("analyze_creator_profile failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_post_comments",
+    {
+      title: "Get Post Comments",
+      description:
+        "Fetch top comments for a TikTok/Instagram post URL via TikHub, plus keyword clusters from TikTok Analytics " +
+        "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          url: z.string().describe("Full public post URL (TikTok/Instagram)."),
+          limit: z.number().int().optional().describe("Max comments (default 20)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { url: string; limit?: number },
+      extra
+    ) => {
+      const client = await makeClient(extra);
+      try {
+        return toToolResult(await client.callTool("get_post_comments", { ...args }));
+      } catch (err) {
+        return toolError("get_post_comments failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "search_creators",
+    {
+      title: "Search Creators",
+      description:
+        "Search creators by niche/keyword on TikTok or Instagram via TikHub — username, nickname, follower count, " +
+        "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
+          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          count: z.number().int().optional().describe("Max creators (default 8)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { keyword: string; platform?: string; count?: number },
+      extra
+    ) => {
+      const client = await makeClient(extra);
+      try {
+        return toToolResult(await client.callTool("search_creators", { ...args }));
+      } catch (err) {
+        return toolError("search_creators failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_similar_creators",
+    {
+      title: "Get Similar Creators",
+      description:
+        "Find lookalike creators for a given handle via TikHub — TikTok similar-user recommendations or Instagram " +
+        "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."),
+          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { username: string; platform?: string },
+      extra
+    ) => {
+      const client = await makeClient(extra);
+      try {
+        return toToolResult(await client.callTool("get_similar_creators", { ...args }));
+      } catch (err) {
+        return toolError("get_similar_creators failed", err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "discover_sounds",
+    {
+      title: "Discover Sounds",
+      description:
+        "Discover trending sounds/music for a keyword on TikTok or Instagram via TikHub — the sound is a huge ranking " +
+        "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits.",
+      inputSchema: z
+        .object({
+          keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
+          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          count: z.number().int().optional().describe("Max sounds (default 6)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { keyword: string; platform?: string; count?: number },
+      extra
+    ) => {
+      const client = await makeClient(extra);
+      try {
+        return toToolResult(await client.callTool("discover_sounds", { ...args }));
+      } catch (err) {
+        return toolError("discover_sounds failed", err);
       }
     }
   );
