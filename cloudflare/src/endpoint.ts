@@ -1,8 +1,22 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+
+// The SDK's WebStandard transport consumes the platform `fetch` Request type.
+// CF workers' `Request` is a generic instantiation of the same interface, but
+// they disagree on the Cf second type arg, so we need a stable alias for the
+// SDK flavor when passing through `handleRequest`.
+type McpRequest = Parameters<
+  WebStandardStreamableHTTPServerTransport["handleRequest"]
+>[0];
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { OrchynClient, jwtExpiry, type TokenProvider } from "../../src/shared/orchyn.js";
 import { createMcpServer } from "../../src/shared/tools.js";
-import { verifyToken, validMcpToken, updateSessionTokens, type McpSession } from "./oauth.js";
+import {
+  verifyToken,
+  validMcpToken,
+  updateSessionTokens,
+  deleteSession,
+  type McpSession,
+} from "./oauth.js";
 
 /** Refresh the orchyn JWT before it expires. The backend mints 15-minute
  * access tokens, so without renewal every login dies a quarter of an hour in
@@ -46,7 +60,11 @@ async function makeClientForSession(
       await updateSessionTokens(env, mcpToken, accessToken, refreshToken, user);
       return true;
     } catch {
-      // Dead refresh token — the client will have to re-authorize.
+      // Dead refresh token — there is no way to renew. Drop the MCP session so
+      // the *next* request fails with a clean 401 from the session layer (the
+      // client re-authorizes) instead of silently sending an expired access
+      // token to the orchyn backend forever.
+      await deleteSession(env, mcpToken).catch(() => {});
       return false;
     }
   };
@@ -65,6 +83,18 @@ async function makeClientForSession(
   return new OrchynClient(env.ORCHYN_BASE_URL, provider);
 }
 
+/**
+ * MCP endpoint for the orchyn-mcp Cloudflare Worker.
+ *
+ * Session handling lives on a Durable Object (one per `mcp-session-id`) so the
+ * MCP `initialize` ↔ handleRequest state is kept per client. Cloudflare may
+ * evict a DO's in-memory JS state while idle; when that happens a brand-new
+ * transport is built per fetch. That is fine — this DO keeps the MCP server
+ * "always initialized" by re-running the initialize handshake internally on a
+ * cold start before dispatching the client's request, so a client's next call
+ * (tools/list, tools/call) works instead of returning
+ * `400 "Server not initialized"`.
+ */
 export class McpEndpoint {
   private ctx: DurableObjectState;
   private env: Env;
@@ -74,6 +104,27 @@ export class McpEndpoint {
   constructor(ctx: DurableObjectState, env: Env) {
     this.ctx = ctx;
     this.env = env;
+  }
+
+  private async ensureServer() {
+    if (this.transport && this.server) return;
+    this.transport = new WebStandardStreamableHTTPServerTransport({
+      // The DO instance *is* the session, so the transport reuses the DO name
+      // (the mcp-session-id). This makes the transport's own session id stable
+      // and lets the SDK validate the Mcp-Session-Id header across evictions
+      // once we re-initialize on cold start.
+      sessionIdGenerator: () => this.ctx.id.name ?? this.ctx.id.toString(),
+      enableJsonResponse: true,
+      onsessioninitialized: () => {},
+    });
+    this.server = createMcpServer(async (ctx) => {
+      // Re-read from KV each call so tokens rotated by a refresh on a
+      // previous tool call (makeClientForSession) are picked up.
+      const t = ctx.authInfo?.token ?? "";
+      const s = await verifyToken(this.env, t);
+      return makeClientForSession(this.env, t, s);
+    });
+    await this.server.connect(this.transport);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -88,38 +139,108 @@ export class McpEndpoint {
       });
     }
 
-    if (!this.transport) {
-      this.transport = new WebStandardStreamableHTTPServerTransport({
-        sessionIdGenerator: () => this.ctx.id.name ?? this.ctx.id.toString(),
-        enableJsonResponse: true,
-        onsessioninitialized: () => {},
-      });
-      this.server = createMcpServer(async (ctx) => {
-        // Re-read from KV each call so tokens rotated by a refresh on a
-        // previous tool call (makeClientForSession) are picked up.
-        const t = ctx.authInfo?.token ?? "";
-        const s = await verifyToken(this.env, t);
-        return makeClientForSession(this.env, t, s);
-      });
-      await this.server.connect(this.transport);
-    }
+    // Lazy-build the server/transport on first fetch to this DO instance.
+    // `ensureServer` is idempotent within the lifetime of one DO instance; a
+    // fresh instance (post-eviction) builds an un-initialized transport, which
+    // the SDK would reject with 400 for any non-initialize request. We fix
+    // that by re-running the initialize handshake internally below.
+    await this.ensureServer();
+    const transport = this.transport!;
+    const server = this.server!;
 
     const authInfo: AuthInfo | undefined = token
       ? {
           token,
           clientId: session?.clientId ?? "orchyn-mcp",
           scopes: session?.scopes ?? ["analyze:video"],
-          expiresAt: session ? Math.floor(session.expiresAt / 1000) : Math.floor(Date.now() / 1000) + 3600,
+          expiresAt: session
+            ? Math.floor(session.expiresAt / 1000)
+            : Math.floor(Date.now() / 1000) + 3600,
         }
       : undefined;
 
+    // Is this the initialize request itself? Then let the transport handle it
+    // normally — the SDK marks the session initialized and returns the id.
+    const method =
+      request.headers.get("mcp-method") ??
+      (await sniffMethod(request.clone() as unknown as McpRequest));
+
+    if (method === "initialize") {
+      return this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+    }
+
+    // Non-initialize request on a fresh (post-eviction) transport: the SDK
+    // requires the session to be initialized first. Re-run initialize so the
+    // transport accepts the client's request, mirroring what the client's
+    // original initialize did. We construct an internal initialize message and
+    // let the SDK's statefulness apply, then dispatch the real request.
+    if (!(transport as unknown as { _initialized?: boolean })._initialized) {
+      // Re-run the initialize handshake internally so a cold (post-eviction)
+      // transport accepts a client's non-initialize request. The transport's
+      // `sessionIdGenerator` returns this DO's name, which matches the
+      // Mcp-Session-Id header Claude sends, so validation passes after init.
+      const initReq = new Request(request.url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+          authorization: request.headers.get("authorization") ?? "",
+          "mcp-session-id": this.ctx.id.name ?? this.ctx.toString(),
+          "mcp-protocol-version": "2025-03-26",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2025-03-26",
+            capabilities: {},
+            clientInfo: { name: "orchyn-mcp", version: "1.0.0" },
+          },
+        }),
+      }) as unknown as McpRequest;
+      const initRes = await transport.handleRequest(initReq, { authInfo });
+      const initText = await initRes.text().catch(() => "");
+      // Whether or not re-init succeeded, hand the real request to the SDK.
+      // If re-init worked the transport is initialized and the request is
+      // accepted; if it didn't, the client still gets a JSON-RPC reply rather
+      // than a hard 400 shell.
+      return this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+    }
+
+    return this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+  }
+
+  private async wrapHandle(
+    transport: WebStandardStreamableHTTPServerTransport,
+    request: McpRequest,
+    authInfo: AuthInfo | undefined
+  ): Promise<Response> {
     try {
-      return await this.transport.handleRequest(request, { authInfo });
+      return await transport.handleRequest(request, { authInfo });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return jsonResponse(500, { error: `Internal error: ${msg}` });
     }
   }
+}
+
+/** Sniffs the JSON-RPC `method` from a request body without consuming it. */
+async function sniffMethod(request: McpRequest): Promise<string> {
+  const cloned = request.clone();
+  const contentType = cloned.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) return "";
+  try {
+    const body = await cloned.text();
+    const parsed = JSON.parse(body);
+    const messages = Array.isArray(parsed) ? parsed : [parsed];
+    for (const m of messages) {
+      if (m && typeof m.method === "string") return m.method;
+    }
+  } catch {
+    return "";
+  }
+  return "";
 }
 
 function bearerToken(request: Request): string | undefined {

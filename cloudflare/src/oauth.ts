@@ -123,6 +123,13 @@ export async function updateSessionTokens(
   }
 }
 
+/** Removes a stored MCP session. Used when the orchyn refresh token dies so
+ * the next request fails fast with a clear re-auth challenge instead of every
+ * call going to the backend with an expired access token. */
+export async function deleteSession(env: Env, token: string): Promise<void> {
+  await env.STORE.delete(sessKey(token));
+}
+
 export async function verifyToken(env: Env, token: string): Promise<McpSession | undefined> {
   const raw = await env.STORE.get(sessKey(token));
   if (!raw) return undefined;
