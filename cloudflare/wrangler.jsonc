@@ -13,7 +13,8 @@
   },
   "kv_namespaces": [
     {
-      "binding": "STORE"
+      "binding": "STORE",
+      "id": "ef3e8501df1641bd9a6d97bca0c40eed"
     }
   ],
   "durable_objects": {
@@ -24,9 +25,16 @@
       }
     ]
   },
-  "custom_domains": [
+  "exports": {
+    "McpEndpoint": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "routes": [
     {
-      "name": "mcp.orchyn.com"
+      "pattern": "mcp.orchyn.com",
+      "custom_domain": true
     }
   ]
 }
