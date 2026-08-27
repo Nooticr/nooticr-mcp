@@ -28,6 +28,7 @@ import { AuthManager, OrchynAuthError, createHttpTokenProvider, createStdioToken
 import { OrchynClient, OrchynError, McpProxyResult } from "./orchyn.js";
 import { OAuthManager, type McpSession } from "./oauth.js";
 import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
+import { TOOL_DEFINITIONS } from "./shared/tools-def.js";
 
 // --- social media tools (proxied to the orchyn backend's MCP surface) ---
 

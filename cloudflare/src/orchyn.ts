@@ -71,6 +71,11 @@ export interface JobStatus {
   elapsedMs?: number;
 }
 
+export interface McpProxyResult {
+  contentBlocks: Array<{ type: string; [key: string]: unknown }>;
+  structured: unknown;
+}
+
 export class OrchynClient {
   private baseUrl: string;
   private token: string;
@@ -143,6 +148,44 @@ export class OrchynClient {
 
   async me(): Promise<OrchynUser> {
     return this.request<OrchynUser>("GET", "/auth/me", { auth: true });
+  }
+
+  async callTool(name: string, args: Record<string, unknown>): Promise<McpProxyResult> {
+    const body = {
+      jsonrpc: "2.0" as const,
+      id: Date.now(),
+      method: "tools/call",
+      params: { name, arguments: args },
+    };
+    const res = await fetch(`${this.baseUrl}/mcp`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${this.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    let rpc: Record<string, any>;
+    try {
+      rpc = text ? JSON.parse(text) : {};
+    } catch {
+      throw new OrchynError(res.status, `Invalid JSON from /mcp`);
+    }
+    if (rpc.error) {
+      const msg = typeof rpc.error.message === "string" ? rpc.error.message : "MCP tool failed";
+      throw new OrchynError(rpc.error.code === -32002 ? 402 : 400, msg);
+    }
+    const result = (rpc.result ?? {}) as { content?: Array<{ type: string; [key: string]: unknown }>; structuredContent?: unknown; isError?: boolean };
+    if (result.isError) {
+      const msg =
+        result.content
+          ?.filter((c) => c.type === "text")
+          .map((c) => String((c as any).text ?? ""))
+          .join("\n") || "MCP tool failed";
+      throw new OrchynError(400, msg);
+    }
+    return { contentBlocks: result.content ?? [], structured: result.structuredContent };
   }
 
   static async login(baseUrl: string, email: string, password: string): Promise<OrchynSession> {

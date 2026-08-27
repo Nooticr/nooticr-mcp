@@ -1,0 +1,42 @@
+import { z } from "zod";
+
+export const TOOL_DEFINITIONS = [
+  {
+    name: "analyze_post",
+    title: "Analyze Post",
+    description: "Analyze a social post (video, image, carousel/slideshow) from its link — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Supports TikTok, Instagram, YouTube and X/Twitter. Returns the full analysis once finished.",
+    inputSchema: z.object({ url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X or shortlinks).") }).strict(),
+  },
+  {
+    name: "get_social_media",
+    title: "Get Social Media",
+    description: "Fetch a social post's media from a TikTok, Instagram, YouTube or X/Twitter URL: contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. Returns an inline thumbnail image. Consumes 1 orchyn credit.",
+    inputSchema: z.object({ url: z.string().describe("Full public post URL.") }).strict(),
+  },
+  {
+    name: "discover_social_posts",
+    title: "Discover Social Posts",
+    description: "Discover recent posts (video, image, carousel, slideshow) for a niche. YouTube via search; TikTok & Instagram via Apify. Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. Say \"next\" to paginate (offset), or \"analyze the 2nd one\" / \"analyze all\" for batch analysis. Consumes 2 orchyn credits.",
+    inputSchema: z.object({ niche: z.string().describe("Niche/topic, e.g. 'fitness'."), keywords: z.string().optional().describe("Optional extra keywords."), limit: z.number().int().optional().describe("Max results (default 6)."), offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."), platform: z.enum(["youtube", "tiktok", "instagram", "any"]).optional().describe("Platform to search (default youtube).") }).strict(),
+  },
+  {
+    name: "understand_social_post",
+    title: "Understand Social Post",
+    description: "Import a social post URL AND understand it with multimodal AI over the actual video/images: summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. Consumes 10 orchyn credits.",
+    inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube)."), focus: z.string().optional().describe("Extra instruction, e.g. 'focus on the CTA'.") }).strict(),
+  },
+  {
+    name: "check_orchyn_credits",
+    title: "Check Orchyn Credits",
+    description: "Check your MCP credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools.",
+    inputSchema: z.object({}).strict(),
+  },
+  {
+    name: "buy_orchyn_credits",
+    title: "Buy Orchyn Credits",
+    description: "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call.",
+    inputSchema: z.object({}).strict(),
+  },
+] as const;
+
+export type ToolName = typeof TOOL_DEFINITIONS[number]["name"];
