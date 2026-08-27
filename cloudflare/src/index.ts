@@ -40,6 +40,19 @@ export default {
     if (path === "/.well-known/oauth-protected-resource" && method === "GET") {
       return jsonResponse(200, protectedResourceMetadata(env.PUBLIC_URL));
     }
+    if (path === "/register" && method === "POST") {
+      return handleRegister(request, env);
+    }
+    if (path === "/register" && method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "POST, OPTIONS",
+          "access-control-allow-headers": "content-type",
+        },
+      });
+    }
     if (path === "/token" && method === "POST") {
       return handleToken(request, env);
     }
@@ -276,6 +289,41 @@ async function handleToken(request: Request, env: Env): Promise<Response> {
     token_type: "Bearer",
     expires_in: TOKEN_TTL_SECONDS,
     scope: pending.scopes.join(" "),
+  });
+}
+
+async function handleRegister(request: Request, _env: Env): Promise<Response> {
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return jsonResponse(400, { error: "invalid_request", error_description: "Invalid JSON body." });
+  }
+  const redirectUris = body.redirect_uris as string[] | undefined;
+  if (!redirectUris || !Array.isArray(redirectUris) || redirectUris.length === 0) {
+    return jsonResponse(400, { error: "invalid_request", error_description: "redirect_uris is required." });
+  }
+  // Validate each redirect_uri (allow any https or loopback, same policy as authorize)
+  for (const uri of redirectUris) {
+    if (typeof uri !== "string" || !isAllowedRedirectUri(uri)) {
+      return jsonResponse(400, { error: "invalid_redirect_uri", error_description: `Invalid redirect_uri: ${uri}` });
+    }
+  }
+  const clientId = `orchyn_${randomToken(16)}`;
+  const now = Math.floor(Date.now() / 1000);
+  // Public client — no secret needed (token_endpoint_auth_method: none)
+  return jsonResponse(201, {
+    client_id: clientId,
+    client_name: (body.client_name as string) || "MCP Client",
+    redirect_uris: redirectUris,
+    grant_types: ["authorization_code"],
+    response_types: ["code"],
+    token_endpoint_auth_method: "none",
+    scope: (body.scope as string) || SCOPE,
+    client_id_issued_at: now,
+    // No client_secret for public clients
+  }, {
+    "access-control-allow-origin": "*",
   });
 }
 

@@ -73,6 +73,7 @@ export function authorizationServerMetadata(publicUrl: string) {
     issuer: publicUrl,
     authorization_endpoint: `${publicUrl}/authorize`,
     token_endpoint: `${publicUrl}/token`,
+    registration_endpoint: `${publicUrl}/register`,
     response_types_supported: ["code"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
