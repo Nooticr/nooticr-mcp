@@ -94,8 +94,19 @@ export function createServer(opts: ServerFactoryOptions): McpServer {
         };
       }
       try {
-        const result = await runVideoAnalysis(client, validation.url);
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        const result = (await runVideoAnalysis(client, validation.url) as unknown) as Record<string, unknown> & {
+          _inlineImages?: Array<{ data: string; mimeType: string }>;
+        };
+        const images = (result._inlineImages ?? []).map((img) => ({
+          type: "image" as const,
+          data: String(img.data),
+          mimeType: String(img.mimeType ?? "image/jpeg"),
+        }));
+        // Remove internal field from JSON shown to model
+        const { _inlineImages: _omit, ...rest } = result;
+        return {
+          content: [...images, { type: "text" as const, text: JSON.stringify(rest, null, 2) }],
+        };
       } catch (err) {
         if (err instanceof OrchynError && err.paywall) {
           return {
