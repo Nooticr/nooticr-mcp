@@ -1,5 +1,5 @@
 /**
- * URL validation + the analyze_video workflow: start the job, then poll until
+ * URL validation + the analyze_post workflow: start the job, then poll until
  * the analysis is done (or fails).
  */
 
@@ -11,13 +11,19 @@ export const POLL_TIMEOUT_MS = 300_000;
 const SUPPORTED_HOSTS_VIDEO = new Set([
   "tiktok.com",
   "vm.tiktok.com",
+  "m.tiktok.com",
   "instagram.com",
   "instagr.am",
   "youtube.com",
   "youtu.be",
   "m.youtube.com",
   "youtube-nocookie.com",
-  "m.tiktok.com",
+  "douyin.com",
+  "xiaohongshu.com",
+  "xhslink.com",
+  "bilibili.com",
+  "m.bilibili.com",
+  "b23.tv",
 ]);
 
 const SUPPORTED_HOSTS_POST = new Set([
@@ -52,7 +58,7 @@ function validateUrl(rawUrl: string, allowed: Set<string>): { ok: true; url: str
   return {
     ok: false,
     error:
-      "url host is not supported. Supported: tiktok.com, vm.tiktok.com, instagram.com, instagr.am, youtube.com, youtu.be, m.youtube.com (and /shorts).",
+      "url host is not supported. Supported: tiktok.com, instagram.com, youtube.com (and /shorts), x.com, twitter.com, douyin.com, xiaohongshu.com, xhslink.com, bilibili.com, b23.tv.",
   };
 }
 

@@ -211,7 +211,7 @@ export class OrchynClient {
   }
 
   async startVideoAnalysis(url: string, appId?: number): Promise<VideoJob> {
-    const res = await this.request<Record<string, unknown>>("POST", "/mcp/analyze-video", {
+    const res = await this.request<Record<string, unknown>>("POST", "/mcp/analyze-post", {
       auth: true,
       body: appId !== undefined ? { url, appId } : { url },
     });

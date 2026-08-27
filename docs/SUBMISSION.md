@@ -1,9 +1,9 @@
 # orchyn-mcp — Platform Submission
 
-`orchyn-mcp` is an MCP server exposing **one tool** — `analyze_video` — that
-starts an AI analysis of a TikTok / Instagram / YouTube video from its link,
-authenticated with the user's orchyn account (OAuth) and billed against the
-user's orchyn server credits.
+`orchyn-mcp` is an MCP server exposing **one tool** — `analyze_post` — that
+starts an AI analysis of a TikTok / Instagram / YouTube / X / Douyin /
+Xiaohongshu / Bilibili video from its link, authenticated with the user's
+orchyn account (OAuth) and billed against the user's orchyn server credits.
 
 This document is the submission package for the three major MCP platforms:
 **Claude Desktop**, **Cursor**, and **OpenAI** (Agents SDK).
@@ -69,8 +69,8 @@ dashboard setup required**.
    `~/.config/orchyn-mcp/credentials.json` written by `login`; alternatively
    set `ORCHYN_ACCESS_TOKEN` in `env`.
 
-3. Restart Claude Desktop. The single tool `analyze_video` appears as
-   **Orchyn: analyze_video** — e.g. *"Analyze this TikTok video:
+3. Restart Claude Desktop. The single tool `analyze_post` appears as
+   **Orchyn: analyze_post** — e.g. *"Analyze this TikTok video:
    https://www.tiktok.com/@x/video/123"*.
 
 ### Option B — remote HTTP + OAuth (multi-user / shared deployment)
@@ -139,7 +139,7 @@ If submitting to the Cursor marketplace, provide:
 {
   "name": "orchyn",
   "description": "Analyze TikTok, Instagram, and YouTube videos with your orchyn AI credits",
-  "tools": ["analyze_video"],
+  "tools": ["analyze_post"],
   "command": "npx",
   "args": ["-y", "orchyn-mcp"],
   "env": { "ORCHYN_BASE_URL": "https://api.orchyn.com" },
@@ -207,7 +207,7 @@ URL must be HTTPS.
 The MCP relies on the orchyn server for identity, credits, and analysis.
 The orchyn backend must expose:
 
-- `POST /mcp/analyze-video` — start analysis (JWT bearer, body `{url, appId?}`);
+- `POST /mcp/analyze-post` — start analysis (JWT bearer, body `{url, appId?}`);
   auto-bootstraps a default workspace + app + onboarding for accounts that
   have none, so new users work immediately
 - `GET /ai/analyze-post?jobId=...` — poll analysis jobs (JWT bearer)
@@ -230,12 +230,14 @@ Environment for the MCP itself:
 
 ## 6. Tool contract
 
-`analyze_video(url: string)` — the only tool.
+`analyze_post(url: string)` — the only tool.
 
-- Accepts public TikTok / Instagram / YouTube links (`tiktok.com`,
-  `vm.tiktok.com`, `instagram.com`, `instagr.am`, `youtube.com`,
-  `youtu.be`, `m.youtube.com` incl. `/shorts/`).
-- Calls `POST /mcp/analyze-video`, which imports the post, debits orchyn
+- Accepts public TikTok / Instagram / YouTube / X / Douyin / Xiaohongshu /
+  Bilibili links (`tiktok.com`, `vm.tiktok.com`, `instagram.com`,
+  `instagr.am`, `youtube.com`, `youtu.be`, `m.youtube.com` incl. `/shorts/`,
+  `x.com`, `twitter.com`, `douyin.com`, `xiaohongshu.com`, `xhslink.com`,
+  `bilibili.com`, `b23.tv`).
+- Calls `POST /mcp/analyze-post`, which imports the post, debits orchyn
   credits (10 per analysis; first analysis free per workspace), and queues an
   analysis job.
 - Polls `GET /ai/analyze-post?jobId=...` until completion and returns the full

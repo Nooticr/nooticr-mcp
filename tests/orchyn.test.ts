@@ -27,7 +27,7 @@ describe("OrchynClient", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${BASE}/mcp/analyze-video`);
+    expect(url).toBe(`${BASE}/mcp/analyze-post`);
     expect(init.method).toBe("POST");
     expect(init.headers.authorization).toBe("Bearer jwt-token");
     expect(init.headers["content-type"]).toBe("application/json");
@@ -172,7 +172,7 @@ describe("OrchynClient", () => {
     vi.stubGlobal("fetch", fetchMock);
     const client = new OrchynClient("http://localhost:8080///", noToken);
     await client.startVideoAnalysis("https://youtu.be/x");
-    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8080/mcp/analyze-video");
+    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8080/mcp/analyze-post");
   });
 
   it("throws a 401 OrchynError when no token is available", async () => {

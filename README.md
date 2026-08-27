@@ -1,8 +1,8 @@
 # @orchyn/mcp
 
 MCP (Model Context Protocol) server for [orchyn](https://orchyn.com) — fetch,
-discover and understand social posts (TikTok, Instagram, YouTube, X) with your
-orchyn account and orchyn credits.
+discover and understand social posts (TikTok, Instagram, YouTube, X/Twitter,
+Douyin, Xiaohongshu, Bilibili) with your orchyn account and orchyn credits.
 
 ## Install (one link)
 
@@ -38,9 +38,9 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 | Tool | Credits | Description |
 |------|---------|-------------|
-| `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow) from a TikTok/Instagram/YouTube/X-Twitter URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
+| `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow) from a TikTok/Instagram/YouTube/X-Twitter/Douyin/Xiaohongshu/Bilibili URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
 | `get_social_media` | 1 | Fetch a post's media from a URL: `contentType` (video/image/carousel/slideshow), title, caption, author, stats, direct media URLs **+ inline thumbnail image in chat**. |
-| `discover_social_posts` | 2 | **Preferred.** Find recent posts (video/image/carousel/slideshow) for a niche (YouTube via `yt-dlp` search; TikTok/Instagram via Apify). Each post includes title/caption, views/likes/comments, author, `externalUrl` + **inline thumbnails (4 at a time)** — see *Images in chat* below. Supports `limit`/`offset` pagination (“next”). |
+| `discover_social_posts` | 2 | **Preferred.** Find recent posts (video/image/carousel/slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili (via TikHub). Each post includes title/caption, views/likes/comments, author, `externalUrl` + **inline thumbnails (4 at a time)** — see *Images in chat* below. Supports `limit`/`offset` pagination (“next”). |
 | `understand_social_post` | 10 | Import a post URL **and** analyze it with multimodal AI over the actual video/images: factual `whatHappens` description, hook strength, viral triggers, format breakdown, variation ideas, suggested hook/hashtags. Includes inline thumbnails. |
 | `check_orchyn_credits` | free | Check your MCP credit balance, billing URL and pack size — no cost. |
 | `buy_orchyn_credits` | free | Get a Stripe Checkout URL to buy a credit pack — open it to pay; credits are added automatically. No cost to call. Also at `https://orchyn.com/settings?tab=billing`. |
@@ -245,6 +245,9 @@ per the MCP 2025-03-26 spec):
 - Instagram: `instagram.com/*` (reels, posts, carousels), `instagr.am/*`
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
 - X/Twitter: `x.com/*`, `twitter.com/*`
+- Douyin: `douyin.com/*`
+- Xiaohongshu: `xiaohongshu.com/*`, `xhslink.com/*`
+- Bilibili: `bilibili.com/*`, `b23.tv/*`
 
 All tools accept these hosts and handle **video, image, carousel and slideshow** posts.
 

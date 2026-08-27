@@ -55,10 +55,10 @@ export function createMcpServer(
       description:
         "Analyze a social post (video, image, carousel/slideshow) from its link — " +
         "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
-        "Supports TikTok, Instagram, YouTube and X/Twitter. Returns the full analysis once finished.",
+        "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished.",
       inputSchema: z
         .object({
-          url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X or shortlinks)."),
+          url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
         })
         .strict(),
     },
@@ -103,7 +103,7 @@ export function createMcpServer(
     {
       title: "Get Social Media",
       description:
-        "Fetch a social post's media from a TikTok, Instagram, YouTube or X/Twitter URL: " +
+        "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: " +
         "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
         "Returns an inline thumbnail image. Consumes 1 orchyn credit.",
       inputSchema: z
@@ -127,7 +127,7 @@ export function createMcpServer(
     {
       title: "Discover Social Posts",
       description:
-        "Discover recent posts (video, image, carousel, slideshow) for a niche. YouTube via search; TikTok & Instagram via TikHub. " +
+        "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili via TikHub. " +
         "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
         'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. Consumes 2 orchyn credits.',
       inputSchema: z
@@ -137,7 +137,7 @@ export function createMcpServer(
           limit: z.number().int().optional().describe("Max results (default 6)."),
           offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."),
           platform: z
-            .enum(["youtube", "tiktok", "instagram", "any"])
+            .enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "any"])
             .optional()
             .describe("Platform to search (default youtube)."),
         })
@@ -161,13 +161,16 @@ export function createMcpServer(
     {
       title: "Get User Posts",
       description:
-        "List recent posts by a creator handle (e.g. @zoundsapp on TikTok) via TikHub. Supports TikTok and Instagram. " +
+        "List recent posts by a creator handle (e.g. @zoundsapp) via TikHub on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter or Bilibili. " +
         "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
         "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits.",
       inputSchema: z
         .object({
           username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
-          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          platform: z
+            .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili"])
+            .optional()
+            .describe("Which platform (default tiktok)."),
           limit: z.number().int().optional().describe("Max posts (default 6)."),
         })
         .strict(),
@@ -190,13 +193,16 @@ export function createMcpServer(
     {
       title: "Analyze Creator Profile",
       description:
-        "Deep-dive a whole creator profile on TikTok or Instagram via TikHub: fetch recent posts, run multimodal Gemini on up to 3, " +
+        "Deep-dive a whole creator profile via TikHub on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter or Bilibili: fetch recent posts, run multimodal Gemini on up to 3, " +
         "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
         "engagement patterns, audience insights, variation ideas, collaboration fit. Consumes 15 orchyn credits.",
       inputSchema: z
         .object({
           username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
-          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          platform: z
+            .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili"])
+            .optional()
+            .describe("Which platform (default tiktok)."),
           limit: z.number().int().optional().describe("Posts to fetch (default 6; first 3 analyzed)."),
           focus: z.string().optional().describe("Extra instruction for the profile synthesis."),
         })
@@ -220,11 +226,11 @@ export function createMcpServer(
     {
       title: "Get Post Comments",
       description:
-        "Fetch top comments for a TikTok/Instagram post URL via TikHub, plus keyword clusters from TikTok Analytics " +
+        "Fetch top comments for a post URL via TikHub on TikTok, Instagram, YouTube, Douyin, X/Twitter or Bilibili, plus keyword clusters from TikTok Analytics " +
         "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits.",
       inputSchema: z
         .object({
-          url: z.string().describe("Full public post URL (TikTok/Instagram)."),
+          url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/Douyin/X/Bilibili)."),
           limit: z.number().int().optional().describe("Max comments (default 20)."),
         })
         .strict(),
@@ -247,12 +253,15 @@ export function createMcpServer(
     {
       title: "Search Creators",
       description:
-        "Search creators by niche/keyword on TikTok or Instagram via TikHub — username, nickname, follower count, " +
+        "Search creators by niche/keyword via TikHub on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, " +
         "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits.",
       inputSchema: z
         .object({
           keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
-          platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
+          platform: z
+            .enum(["tiktok", "instagram", "xiaohongshu", "youtube", "douyin"])
+            .optional()
+            .describe("Which platform (default tiktok)."),
           count: z.number().int().optional().describe("Max creators (default 8)."),
         })
         .strict(),
@@ -368,10 +377,10 @@ export function createMcpServer(
       description:
         "Import a social post URL AND understand it with multimodal AI over the actual video/images: " +
         "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
-        "Consumes 10 orchyn credits.",
+        "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Consumes 10 orchyn credits.",
       inputSchema: z
         .object({
-          url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube)."),
+          url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),
           focus: z
             .string()
             .optional()

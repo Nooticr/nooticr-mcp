@@ -1,6 +1,6 @@
 {
   "name": "orchyn",
-  "description": "Orchyn plugins — social video intelligence for Claude (TikTok/Instagram/YouTube/X import + AI analysis).",
+  "description": "Orchyn plugins — social video intelligence for Claude (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili import + AI analysis).",
   "version": "1.0.0",
   "owner": {
     "name": "Orchyn",
@@ -10,7 +10,7 @@
     {
       "name": "orchyn",
       "source": "./",
-      "description": "Understand social posts: fetch media from TikTok/Instagram/YouTube/X URLs, discover niche videos, run multimodal AI analysis. Requires an orchyn account (orchyn credits).",
+      "description": "Understand social posts: fetch media from TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili URLs, discover niche videos, run multimodal AI analysis. Requires an orchyn account (orchyn credits).",
       "category": "productivity",
       "keywords": [
         "social-media",
