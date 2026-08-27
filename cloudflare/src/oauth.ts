@@ -12,7 +12,10 @@
  */
 
 export const SCOPE = "analyze:video";
-export const TOKEN_TTL_SECONDS = 3600;
+// MCP session lifetime. Sessions now self-renew their orchyn access token, so
+// a login should last as long as the account's refresh token (30 days server-
+// side) rather than forcing a re-login every hour.
+export const TOKEN_TTL_SECONDS = 604800;
 export const PENDING_TTL_SECONDS = 600;
 export const LOGIN_RATE_LIMIT = { max: 10, windowSeconds: 300 };
 
@@ -130,6 +133,33 @@ export async function storeSession(env: Env, token: string, session: McpSession)
   await env.STORE.put(sessKey(token), JSON.stringify(session), {
     expirationTtl: TOKEN_TTL_SECONDS,
   });
+}
+
+/**
+ * Rotates the orchyn tokens inside a stored MCP session and extends its
+ * lifetime. Called after a refresh so the next tool call picks up the fresh
+ * access token instead of a 15-minute-expired one. No-op when the session is
+ * gone (already expired or evicted).
+ */
+export async function updateSessionTokens(
+  env: Env,
+  token: string,
+  accessToken: string,
+  refreshToken?: string,
+  orchynUser?: McpSession["orchynUser"]
+): Promise<void> {
+  const raw = await env.STORE.get(sessKey(token));
+  if (!raw) return;
+  try {
+    const session = JSON.parse(raw) as McpSession;
+    session.orchynAccessToken = accessToken;
+    if (refreshToken) session.orchynRefreshToken = refreshToken;
+    if (orchynUser) session.orchynUser = orchynUser;
+    session.expiresAt = Date.now() + TOKEN_TTL_SECONDS * 1000;
+    await storeSession(env, token, session);
+  } catch {
+    // Leave the session as-is; the 401 path will force the client to re-login.
+  }
 }
 
 export async function verifyToken(env: Env, token: string): Promise<McpSession | undefined> {

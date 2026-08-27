@@ -1,1 +1,1 @@
-../src/video.ts
+../../src/video.ts

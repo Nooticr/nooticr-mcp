@@ -76,28 +76,65 @@ export interface McpProxyResult {
   structured: unknown;
 }
 
+/**
+ * Extracts the `exp` claim (epoch seconds) from an orchyn JWT without
+ * verifying the signature — enough for the worker to decide whether to
+ * refresh before the 15-minute access token expires.
+ */
+export function jwtExpiry(token: string): number | undefined {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return undefined;
+    const pad = payload.length % 4 === 0 ? "" : "=".repeat(4 - (payload.length % 4));
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/") + pad);
+    const claims = JSON.parse(json) as { exp?: unknown };
+    return typeof claims.exp === "number" ? claims.exp : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class OrchynClient {
   private baseUrl: string;
   private token: string;
+  private onUnauthorized?: () => Promise<string | undefined>;
 
-  constructor(baseUrl: string, token: string) {
+  /**
+   * @param onUnauthorized Called when the orchyn API rejects with 401 (access
+   *   token expired). It should redeem the session's refresh token and return
+   *   the new access token, or `undefined` when it cannot. When a new token is
+   *   returned, the failed request is retried once with it.
+   */
+  constructor(baseUrl: string, token: string, onUnauthorized?: () => Promise<string | undefined>) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.token = token;
+    this.onUnauthorized = onUnauthorized;
   }
 
-  private async request<T>(method: string, path: string, opts: { body?: unknown; auth?: boolean } = {}): Promise<T> {
+  private async doRequest(method: string, path: string, opts: { body?: unknown; auth?: boolean }, token: string): Promise<Response> {
     const headers: Record<string, string> = {};
     if (opts.body !== undefined) {
       headers["content-type"] = "application/json";
     }
-    if (opts.auth && this.token) {
-      headers.authorization = `Bearer ${this.token}`;
+    if (opts.auth && token) {
+      headers.authorization = `Bearer ${token}`;
     }
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    return fetch(`${this.baseUrl}${path}`, {
       method,
       headers,
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });
+  }
+
+  private async request<T>(method: string, path: string, opts: { body?: unknown; auth?: boolean } = {}): Promise<T> {
+    let res = await this.doRequest(method, path, opts, this.token);
+    if (res.status === 401 && opts.auth && this.onUnauthorized) {
+      const refreshed = await this.onUnauthorized();
+      if (refreshed) {
+        this.token = refreshed;
+        res = await this.doRequest(method, path, opts, refreshed);
+      }
+    }
     return this.normalizeResponse<T>(res, path);
   }
 
@@ -157,14 +194,14 @@ export class OrchynClient {
       method: "tools/call",
       params: { name, arguments: args },
     };
-    const res = await fetch(`${this.baseUrl}/mcp`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.token}`,
-      },
-      body: JSON.stringify(body),
-    });
+    let res = await this.doRequest("POST", "/mcp", { body, auth: true }, this.token);
+    if (res.status === 401 && this.onUnauthorized) {
+      const refreshed = await this.onUnauthorized();
+      if (refreshed) {
+        this.token = refreshed;
+        res = await this.doRequest("POST", "/mcp", { body, auth: true }, refreshed);
+      }
+    }
     const text = await res.text();
     let rpc: Record<string, any>;
     try {
@@ -186,6 +223,30 @@ export class OrchynClient {
       throw new OrchynError(400, msg);
     }
     return { contentBlocks: result.content ?? [], structured: result.structuredContent };
+  }
+
+  /** Redeems a refresh token for a fresh orchyn session (rotating the refresh token). */
+  static async refreshSession(baseUrl: string, refreshToken: string): Promise<OrchynSession> {
+    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/auth/refresh`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    const text = await res.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : undefined;
+    } catch {
+      body = undefined;
+    }
+    const json = (body ?? {}) as Record<string, unknown>;
+    if (res.status >= 200 && res.status < 300) {
+      if (!json || typeof json.accessToken !== "string") {
+        throw new OrchynError(500, "Refresh succeeded but returned no access token.");
+      }
+      return body as OrchynSession;
+    }
+    throw new OrchynError(res.status, typeof json.error === "string" ? json.error : `Refresh failed (${res.status})`, { body });
   }
 
   static async login(baseUrl: string, email: string, password: string): Promise<OrchynSession> {

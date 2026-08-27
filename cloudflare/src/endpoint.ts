@@ -2,10 +2,10 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { z } from "zod";
-import { OrchynClient, OrchynError } from "./orchyn.js";
+import { OrchynClient, OrchynError, jwtExpiry, type OrchynSession } from "./orchyn.js";
 import { validatePostUrl, runVideoAnalysis, formatPaywallError } from "./video.js";
-import { TOOL_DEFINITIONS } from "../src/shared/tools-def.js";
-import { verifyToken, validMcpToken } from "./oauth.js";
+import { TOOL_DEFINITIONS } from "../../src/shared/tools-def.js";
+import { verifyToken, validMcpToken, updateSessionTokens, type McpSession } from "./oauth.js";
 
 function toToolResult(proxy: { contentBlocks: Array<{ type: string; [key: string]: unknown }>; structured: unknown }): { content: Array<{ type: "text"; text: string } | { type: "image"; data: string; mimeType: string }> } {
   const images = proxy.contentBlocks
@@ -19,7 +19,59 @@ function toolError(prefix: string, err: unknown): { content: Array<{ type: "text
   return { content: [{ type: "text", text: `${prefix}: ${msg}` }], isError: true };
 }
 
-function createServer(env: Env, resolveSession: (token: string) => Promise<{ clientId?: string; scopes?: string[]; orchynAccessToken?: string } | undefined>) {
+/** Refresh the orchyn JWT before it expires. The backend mints 15-minute
+ * access tokens, so without renewal every login dies a quarter of an hour in
+ * and the user must re-authorize. We renew proactively (decoding the JWT's
+ * `exp`) and again whenever the API rejects with 401, persisting the rotated
+ * tokens back into the MCP session in KV. */
+const REFRESH_LEAD_MS = 60_000;
+
+async function makeClientForSession(env: Env, mcpToken: string, session: McpSession | undefined): Promise<OrchynClient> {
+  const staticToken = env.ORCHYN_ACCESS_TOKEN;
+  if (!session) {
+    // Pre-provisioned deployments authenticate with the static worker token.
+    return new OrchynClient(env.ORCHYN_BASE_URL, staticToken ?? "");
+  }
+
+  let accessToken = session.orchynAccessToken;
+  let refreshToken = session.orchynRefreshToken;
+
+  const persist = async (renewed: OrchynSession): Promise<void> => {
+    accessToken = renewed.accessToken;
+    refreshToken = renewed.refreshToken ?? refreshToken;
+    const user = renewed.user
+      ? { id: renewed.user.id, email: renewed.user.email, displayName: renewed.user.displayName }
+      : undefined;
+    await updateSessionTokens(env, mcpToken, accessToken, refreshToken, user);
+  };
+
+  const tryRefresh = async (): Promise<string | undefined> => {
+    if (!refreshToken) return undefined;
+    try {
+      const renewed = await OrchynClient.refreshSession(env.ORCHYN_BASE_URL, refreshToken);
+      await persist(renewed);
+      return accessToken;
+    } catch {
+      // Dead refresh token — the client will have to re-authorize.
+      return undefined;
+    }
+  };
+
+  // Proactively refresh an expired/near-expiry access token before calling.
+  const exp = jwtExpiry(accessToken);
+  if (refreshToken && exp !== undefined && exp * 1000 < Date.now() + REFRESH_LEAD_MS) {
+    await tryRefresh();
+  }
+
+  return new OrchynClient(env.ORCHYN_BASE_URL, accessToken, tryRefresh);
+}
+
+async function clientFor(env: Env, token: string, resolveSession: (t: string) => Promise<McpSession | undefined>): Promise<OrchynClient> {
+  const session = await resolveSession(token);
+  return makeClientForSession(env, token, session);
+}
+
+function createServer(env: Env, resolveSession: (token: string) => Promise<McpSession | undefined>) {
   const server = new McpServer({ name: "orchyn-mcp", version: "1.3.4" });
 
   server.registerTool(
@@ -31,9 +83,7 @@ function createServer(env: Env, resolveSession: (token: string) => Promise<{ cli
     },
     async (args: { url: string }, extra: { authInfo?: AuthInfo }) => {
       const token = extra.authInfo?.token ?? "";
-      const session = await resolveSession(token);
-      const accessToken = (session as any)?.orchynAccessToken ?? env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const client = await clientFor(env, token, resolveSession);
       const validation = validatePostUrl(args.url);
       if (!validation.ok) return { content: [{ type: "text", text: `Invalid url: ${validation.error}` }], isError: true };
       try {
@@ -58,9 +108,7 @@ function createServer(env: Env, resolveSession: (token: string) => Promise<{ cli
     },
     async (args: { url: string }, extra: { authInfo?: AuthInfo }) => {
       const token = extra.authInfo?.token ?? "";
-      const session = await resolveSession(token);
-      const accessToken = (session as any)?.orchynAccessToken ?? env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const client = await clientFor(env, token, resolveSession);
       try { return toToolResult(await client.callTool("get_social_media", { url: args.url })); } catch (err) { return toolError("get_social_media failed", err); }
     }
   );
@@ -74,9 +122,7 @@ function createServer(env: Env, resolveSession: (token: string) => Promise<{ cli
     },
     async (args: { niche: string; keywords?: string; limit?: number; offset?: number; platform?: string }, extra: { authInfo?: AuthInfo }) => {
       const token = extra.authInfo?.token ?? "";
-      const session = await resolveSession(token);
-      const accessToken = (session as any)?.orchynAccessToken ?? env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const client = await clientFor(env, token, resolveSession);
       try { return toToolResult(await client.callTool("discover_social_posts", { ...args })); } catch (err) { return toolError("discover_social_posts failed", err); }
     }
   );
@@ -90,9 +136,7 @@ function createServer(env: Env, resolveSession: (token: string) => Promise<{ cli
     },
     async (args: { url: string; focus?: string }, extra: { authInfo?: AuthInfo }) => {
       const token = extra.authInfo?.token ?? "";
-      const session = await resolveSession(token);
-      const accessToken = (session as any)?.orchynAccessToken ?? env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const client = await clientFor(env, token, resolveSession);
       try { return toToolResult(await client.callTool("understand_social_post", { ...args })); } catch (err) { return toolError("understand_social_post failed", err); }
     }
   );
@@ -106,9 +150,7 @@ function createServer(env: Env, resolveSession: (token: string) => Promise<{ cli
     },
     async (_args: Record<string, never>, extra: { authInfo?: AuthInfo }) => {
       const token = extra.authInfo?.token ?? "";
-      const session = await resolveSession(token);
-      const accessToken = (session as any)?.orchynAccessToken ?? env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const client = await clientFor(env, token, resolveSession);
       try { return toToolResult(await client.callTool("check_orchyn_credits", {})); } catch (err) { return toolError("check_orchyn_credits failed", err); }
     }
   );
@@ -122,9 +164,7 @@ function createServer(env: Env, resolveSession: (token: string) => Promise<{ cli
     },
     async (_args: Record<string, never>, extra: { authInfo?: AuthInfo }) => {
       const token = extra.authInfo?.token ?? "";
-      const session = await resolveSession(token);
-      const accessToken = (session as any)?.orchynAccessToken ?? env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const client = await clientFor(env, token, resolveSession);
       try { return toToolResult(await client.callTool("buy_orchyn_credits", {})); } catch (err) { return toolError("buy_orchyn_credits failed", err); }
     }
   );
@@ -162,8 +202,9 @@ export class McpEndpoint {
         onsessioninitialized: () => {},
       });
       this.server = createServer(this.env, async (t: string) => {
-        const s = t === token ? session : await verifyToken(this.env, t);
-        return s ? { clientId: s.clientId, scopes: s.scopes, orchynAccessToken: s.orchynAccessToken } : undefined;
+        // Always re-read from KV so tokens rotated by a refresh on a previous
+        // tool call (makeClientForSession) are picked up.
+        return verifyToken(this.env, t);
       });
       await this.server.connect(this.transport);
     }
