@@ -35,6 +35,37 @@ describe("OrchynClient", () => {
     expect(job).toMatchObject({ ok: true, jobId: "job-1" });
   });
 
+  it("captures _inlineImages + post from the job response so tools can render the thumbnail", async () => {
+    const post = {
+      title: "A post",
+      thumbnailUrl: "https://example.com/thumb.jpg",
+      stats: { views: 393000 },
+    };
+    const fetchMock = mockFetchOnce(200, {
+      ok: true,
+      jobId: "job-1",
+      state: "pending",
+      post,
+      _inlineImages: [{ data: "aGVsbG8=", mimeType: "image/jpeg" }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new OrchynClient(BASE, noToken);
+    const job = await client.startVideoAnalysis("https://youtu.be/x");
+
+    expect(job.post).toEqual(post);
+    expect(job.inlineImages).toEqual([{ data: "aGVsbG8=", mimeType: "image/jpeg" }]);
+  });
+
+  it("leaves inlineImages undefined when the server returns none", async () => {
+    const fetchMock = mockFetchOnce(200, { ok: true, jobId: "job-1", state: "pending" });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new OrchynClient(BASE, noToken);
+    const job = await client.startVideoAnalysis("https://youtu.be/x");
+    expect(job.inlineImages).toBeUndefined();
+  });
+
   it("builds the getJob request with query param", async () => {
     const fetchMock = mockFetchOnce(200, { ok: true, jobId: "job-1", state: "thinking" });
     vi.stubGlobal("fetch", fetchMock);

@@ -118,6 +118,19 @@ export interface AnalysisResult {
   error?: string;
   elapsedMs?: number;
   job?: VideoJob;
+  /**
+   * The imported social post (title/caption/stats/mediaItems/thumbnailUrl)
+   * the backend attached to the analysis job. Kept at the top level (as the
+   * Rust `/mcp` `understand_social_post` path returns) so tool results carry
+   * the full post alongside the analysis instead of burying it under `job`.
+   */
+  post?: unknown;
+  /**
+   * Inline thumbnail images (`_inlineImages`) from the job response — emitted
+   * as MCP `image` content blocks so Claude web/app renders the post
+   * thumbnail in chat.
+   */
+  inlineImages?: Array<{ data: string; mimeType?: string }>;
 }
 
 /**
@@ -142,6 +155,11 @@ export async function runVideoAnalysis(
     contentPreview: status.contentPreview,
     error: status.error,
     elapsedMs: status.elapsedMs,
+    // Mirror the Rust `/mcp` understand_social_post shape: expose the
+    // imported post + inline thumbnails at the top level so the analysis
+    // tool renders the thumbnail and the full post, not just the analysis.
+    post: job.post,
+    inlineImages: job.inlineImages,
   };
   if (result.ok) {
     result.job = {

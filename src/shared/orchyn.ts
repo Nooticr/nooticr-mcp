@@ -60,6 +60,13 @@ export interface VideoJob {
   cost?: number;
   freeGrant?: boolean;
   post?: unknown;
+  /**
+   * Inline thumbnail images the backend attached to the job response as
+   * `_inlineImages` (base64 data so clients render the post thumbnail in
+   * chat). Preserved verbatim so analysis tools can surface them as MCP
+   * `image` content blocks — otherwise Claude web/app shows no thumbnail.
+   */
+  inlineImages?: Array<{ data: string; mimeType?: string }>;
 }
 
 export interface JobStatus {
@@ -204,10 +211,15 @@ export class OrchynClient {
   }
 
   async startVideoAnalysis(url: string, appId?: number): Promise<VideoJob> {
-    return this.request<VideoJob>("POST", "/mcp/analyze-video", {
+    const res = await this.request<Record<string, unknown>>("POST", "/mcp/analyze-video", {
       auth: true,
       body: appId !== undefined ? { url, appId } : { url },
     });
+    const inline = Array.isArray(res?._inlineImages)
+      ? (res._inlineImages as Array<{ data: string; mimeType?: string }>)
+      : undefined;
+    const job = res as unknown as VideoJob;
+    return { ...job, inlineImages: inline };
   }
 
   /**

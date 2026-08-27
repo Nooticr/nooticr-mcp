@@ -104,6 +104,37 @@ describe("runVideoAnalysis", () => {
     expect(result.job).toMatchObject({ jobId: "job-1", platform: "youtube" });
   });
 
+  it("surfaces the imported post + inline thumbnails at the top level (for chat rendering)", async () => {
+    const post = {
+      title: "A post",
+      thumbnailUrl: "https://example.com/thumb.jpg",
+      stats: { views: 393000 },
+    };
+    const client = fakeClient({});
+    (client.startVideoAnalysis as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      jobId: "job-1",
+      state: "pending",
+      platform: "youtube",
+      post,
+      inlineImages: [{ data: "aGVsbG8=", mimeType: "image/jpeg" }],
+    });
+    (client.getJob as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      jobId: "job-1",
+      state: "done",
+      provider: "gemini-multimodal",
+      analysis: { summary: "Done", hookStrength: 8 },
+    });
+
+    const result = await runVideoAnalysis(client as OrchynClient, "https://youtu.be/x", {
+      pollIntervalMs: 1,
+    });
+
+    expect(result.post).toEqual(post);
+    expect(result.inlineImages).toEqual([{ data: "aGVsbG8=", mimeType: "image/jpeg" }]);
+  });
+
   it("passes appId through to the start call", async () => {
     const client = fakeClient({});
     (client.getJob as ReturnType<typeof vi.fn>).mockResolvedValue({
