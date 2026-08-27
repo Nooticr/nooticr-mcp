@@ -13,12 +13,30 @@
  * the orchyn JWT obtained through the Google sign-in flow.
  */
 
-import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OrchynClient, OrchynSession } from "./orchyn.js";
+import type { OrchynClient, OrchynSession } from "./shared/orchyn.js";
+import {
+  SCOPE,
+  escapeHtml,
+  isAllowedRedirectUri,
+  randomToken,
+  verifyPkce,
+} from "./shared/oauth.js";
 
-export const SCOPE = "analyze:video";
-export const TOKEN_TTL_SECONDS = 3600;
+// Re-export the shared primitives so consumers and tests keep one import path.
+export {
+  SCOPE,
+  verifyPkce,
+  isAllowedRedirectUri,
+  isLoopbackUrl,
+  escapeHtml,
+  generateState,
+} from "./shared/oauth.js";
+
+// MCP session lifetime. Sessions self-renew their orchyn access token, so a
+// login lasts as long as the account's refresh token (30 days server-side)
+// rather than forcing a re-login every hour.
+export const TOKEN_TTL_SECONDS = 604800;
 
 export interface McpSession {
   orchynAccessToken: string;
@@ -42,50 +60,6 @@ interface PendingAuthorization {
   orchynAccessToken?: string;
   orchynRefreshToken?: string;
   orchynUser?: McpSession["orchynUser"];
-}
-
-export function verifyPkce(codeVerifier: string, codeChallenge: string): boolean {
-  if (!codeVerifier || !codeChallenge) return false;
-  const digest = createHash("sha256").update(codeVerifier).digest("base64url");
-  return digest === codeChallenge;
-}
-
-export function isLoopbackUrl(url: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol !== "http:") return false;
-  const host = parsed.hostname;
-  return (
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host === "[::1]" ||
-    host === "::1"
-  );
-}
-
-/** redirect_uri must be loopback (http://localhost|127.0.0.1|[::1]) or any https URL. */
-export function isAllowedRedirectUri(uri: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(uri);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol === "https:") return true;
-  if (parsed.protocol === "http:" && isLoopbackUrl(uri)) return true;
-  return false;
-}
-
-function base64Url(bytes: Buffer): string {
-  return bytes.toString("base64url");
-}
-
-function newToken(): string {
-  return base64Url(randomBytes(32));
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -211,8 +185,8 @@ export class OAuthManager {
         `Unsupported scope(s): ${unsupported.join(", ")}. Supported: ${SCOPE}.`);
     }
 
-    const orchynState = newToken();
-    const mcpAuthCode = newToken();
+    const orchynState = randomToken();
+    const mcpAuthCode = randomToken();
     const pending: PendingAuthorization = {
       orchynState,
       clientId,
@@ -319,14 +293,14 @@ export class OAuthManager {
       return sendJson(res, 400, { error: "invalid_grant", error_description: "redirect_uri does not match the authorization request." });
     }
     const codeVerifier = params.get("code_verifier") ?? "";
-    if (!verifyPkce(codeVerifier, pending.codeChallenge)) {
+    if (!(await verifyPkce(codeVerifier, pending.codeChallenge))) {
       return sendJson(res, 400, { error: "invalid_grant", error_description: "PKCE verification failed." });
     }
 
     this.pendingByMcpCode.delete(code);
     this.pendingByOrchynState.delete(pending.orchynState);
 
-    const accessToken = newToken();
+    const accessToken = randomToken();
     this.sessions.set(accessToken, {
       orchynAccessToken: pending.orchynAccessToken ?? "",
       orchynRefreshToken: pending.orchynRefreshToken,
@@ -361,16 +335,4 @@ export class OAuthManager {
     }
     return sendHtml(res, 400, "orchyn-mcp: bad request", `<p>${escapeHtml(description)}</p>`);
   }
-}
-
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-export function generateState(): string {
-  return randomUUID();
 }

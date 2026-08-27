@@ -1,14 +1,16 @@
 /**
- * Cloudflare Worker client refresh behavior.
+ * Client refresh behavior of the shared orchyn client (used by the Node
+ * package and the Cloudflare Worker).
  *
  * The worker used to hold a static orchyn access token (15-minute TTL) with
  * no renewal, so every login died a quarter of an hour in and forced a fresh
  * OAuth flow. These tests lock in the renewal: a 401 triggers the
- * onUnauthorized callback once and retries with the refreshed token, and the
- * JWT `exp` decoder drives the proactive refresh in `endpoint.ts`.
+ * TokenProvider's onUnauthorized once and retries with the refreshed token,
+ * and the JWT `exp` decoder drives the proactive refresh in the worker's
+ * `makeClientForSession`.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { jwtExpiry, OrchynClient, OrchynError } from "../cloudflare/src/orchyn.js";
+import { jwtExpiry, OrchynClient, OrchynError } from "../src/shared/orchyn.js";
 
 const BASE = "http://localhost:8080";
 
@@ -45,6 +47,7 @@ describe("jwtExpiry", () => {
 describe("OrchynClient 401 refresh (request path)", () => {
   it("retries once with the refreshed token when the API rejects with 401", async () => {
     const calls: string[] = [];
+    let token = "stale-token";
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       const auth = (init?.headers as Record<string, string> | undefined)?.authorization ?? "";
       calls.push(auth);
@@ -55,7 +58,13 @@ describe("OrchynClient 401 refresh (request path)", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new OrchynClient(BASE, "stale-token", async () => "fresh-token");
+    const client = new OrchynClient(BASE, {
+      getAccessToken: async () => token,
+      onUnauthorized: async () => {
+        token = "fresh-token";
+        return true;
+      },
+    });
     const me = await client.me();
 
     expect(calls).toEqual(["Bearer stale-token", "Bearer fresh-token"]);
@@ -63,12 +72,12 @@ describe("OrchynClient 401 refresh (request path)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("surfaces the 401 when no onUnauthorized is provided", async () => {
+  it("surfaces the 401 when the provider has no onUnauthorized", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => jsonResponse(401, { error: "token expired" }))
     );
-    const client = new OrchynClient(BASE, "stale-token");
+    const client = new OrchynClient(BASE, { getAccessToken: async () => "stale-token" });
     await expect(client.me()).rejects.toMatchObject({ status: 401 });
   });
 });
@@ -76,6 +85,7 @@ describe("OrchynClient 401 refresh (request path)", () => {
 describe("OrchynClient 401 refresh (callTool path)", () => {
   it("retries /mcp tools/call with the refreshed token", async () => {
     const calls: string[] = [];
+    let token = "stale-token";
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string, init?: RequestInit) => {
@@ -95,7 +105,13 @@ describe("OrchynClient 401 refresh (callTool path)", () => {
       })
     );
 
-    const client = new OrchynClient(BASE, "stale-token", async () => "fresh-token");
+    const client = new OrchynClient(BASE, {
+      getAccessToken: async () => token,
+      onUnauthorized: async () => {
+        token = "fresh-token";
+        return true;
+      },
+    });
     const result = await client.callTool("check_orchyn_credits", {});
 
     expect(calls).toEqual(["Bearer stale-token", "Bearer fresh-token"]);

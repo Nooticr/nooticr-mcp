@@ -9,7 +9,7 @@
  * Deploy:        wrangler deploy
  */
 
-import { OrchynClient } from "./orchyn.js";
+import { OrchynClient } from "../../src/shared/orchyn.js";
 import {
   authorizationServerMetadata,
   protectedResourceMetadata,
@@ -36,7 +36,7 @@ export default {
      const method = request.method;
 
     if ((path === "/.well-known/oauth-authorization-server" || path === "/.well-known/openid-configuration") && method === "GET") {
-      return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL), {
+      return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL, { registration: true }), {
         "access-control-allow-origin": "*",
       });
     }
@@ -68,7 +68,7 @@ export default {
       return method === "GET" ? handleAuthorizeGet(request, env) : handleAuthorizePost(request, env);
     }
     if (path === "/" && method === "GET") {
-      const meta = authorizationServerMetadata(env.PUBLIC_URL);
+      const meta = authorizationServerMetadata(env.PUBLIC_URL, { registration: true });
       return htmlResponse(200, htmlPage("orchyn-mcp", `
         <h1>orchyn-mcp</h1>
         <p>MCP server is running.</p>

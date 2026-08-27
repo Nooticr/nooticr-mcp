@@ -118,16 +118,16 @@ afterEach(() => {
 });
 
 describe("verifyPkce", () => {
-  it("rejects a base64 (non-sha256) challenge", () => {
+  it("rejects a base64 (non-sha256) challenge", async () => {
     const verifier = TEST_VERIFIER;
     const challenge = Buffer.from(verifier, "utf8").toString("base64");
-    expect(verifyPkce(verifier, challenge)).toBe(false);
-    expect(verifyPkce("", "")).toBe(false);
+    expect(await verifyPkce(verifier, challenge)).toBe(false);
+    expect(await verifyPkce("", "")).toBe(false);
   });
 
   it("round-trips through the real sha256", async () => {
-    expect(verifyPkce(TEST_VERIFIER, TEST_CHALLENGE)).toBe(true);
-    expect(verifyPkce(TEST_VERIFIER + "x", TEST_CHALLENGE)).toBe(false);
+    expect(await verifyPkce(TEST_VERIFIER, TEST_CHALLENGE)).toBe(true);
+    expect(await verifyPkce(TEST_VERIFIER + "x", TEST_CHALLENGE)).toBe(false);
   });
 });
 
@@ -267,7 +267,7 @@ describe("OAuthManager flow", () => {
     expect(tokenRes.status).toBe(200);
     const tokenBody = JSON.parse(tokenRes.body);
     expect(tokenBody.token_type).toBe("Bearer");
-    expect(tokenBody.expires_in).toBe(3600);
+    expect(tokenBody.expires_in).toBe(604800);
     expect(tokenBody.scope).toBe("analyze:video");
 
     // 4. the issued token maps to the orchyn JWT

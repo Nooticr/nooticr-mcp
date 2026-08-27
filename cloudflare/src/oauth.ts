@@ -8,10 +8,35 @@
  * back to the client with a one-time code, exchanged at /token for an MCP
  * access token bound to the user's orchyn session.
  *
- * State lives in KV (codes and sessions are short-lived).
+ * State lives in KV (codes and sessions are short-lived). The pure OAuth
+ * primitives (PKCE, redirect validation, metadata) come from
+ * `src/shared/oauth.ts` — the same code the Node package uses.
  */
 
-export const SCOPE = "analyze:video";
+import {
+  SCOPE,
+  escapeHtml,
+  isAllowedRedirectUri,
+  isLoopbackUrl,
+  randomToken,
+  verifyPkce,
+  authorizationServerMetadata,
+  protectedResourceMetadata,
+} from "../../src/shared/oauth.js";
+
+// Re-export the shared primitives so cloudflare/src/index.ts keeps importing
+// them from one place.
+export {
+  SCOPE,
+  escapeHtml,
+  isAllowedRedirectUri,
+  isLoopbackUrl,
+  randomToken,
+  verifyPkce,
+  authorizationServerMetadata,
+  protectedResourceMetadata,
+} from "../../src/shared/oauth.js";
+
 // MCP session lifetime. Sessions now self-renew their orchyn access token, so
 // a login should last as long as the account's refresh token (30 days server-
 // side) rather than forcing a re-login every hour.
@@ -26,70 +51,6 @@ export interface McpSession {
   clientId: string;
   scopes: string[];
   expiresAt: number;
-}
-
-export function isLoopbackUrl(url: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol !== "http:") return false;
-  const host = parsed.hostname;
-  return host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
-}
-
-/** redirect_uri must be loopback (http://localhost|127.0.0.1|[::1]) or any https URL. */
-export function isAllowedRedirectUri(uri: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(uri);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol === "https:") return true;
-  if (parsed.protocol === "http:" && isLoopbackUrl(uri)) return true;
-  return false;
-}
-
-export function randomToken(bytes = 32): string {
-  const buf = new Uint8Array(bytes);
-  crypto.getRandomValues(buf);
-  let s = "";
-  for (const b of buf) s += String.fromCharCode(b);
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-export async function verifyPkce(codeVerifier: string, codeChallenge: string): Promise<boolean> {
-  if (!codeVerifier || !codeChallenge) return false;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(codeVerifier));
-  const bytes = new Uint8Array(digest);
-  let s = "";
-  for (const b of bytes) s += String.fromCharCode(b);
-  const b64 = btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  return b64 === codeChallenge;
-}
-
-export function authorizationServerMetadata(publicUrl: string) {
-  return {
-    issuer: publicUrl,
-    authorization_endpoint: `${publicUrl}/authorize`,
-    token_endpoint: `${publicUrl}/token`,
-    registration_endpoint: `${publicUrl}/register`,
-    response_types_supported: ["code"],
-    code_challenge_methods_supported: ["S256"],
-    token_endpoint_auth_methods_supported: ["none"],
-    scopes_supported: [SCOPE],
-    grant_types_supported: ["authorization_code"],
-  };
-}
-
-export function protectedResourceMetadata(publicUrl: string) {
-  return {
-    resource: `${publicUrl}/mcp`,
-    authorization_servers: [publicUrl],
-  };
 }
 
 export interface PendingAuthorization {
@@ -190,12 +151,4 @@ export async function isRateLimited(env: Env, ip: string): Promise<boolean> {
   if (count >= LOGIN_RATE_LIMIT.max) return true;
   await env.STORE.put(key, String(count + 1), { expirationTtl: LOGIN_RATE_LIMIT.windowSeconds });
   return false;
-}
-
-export function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
