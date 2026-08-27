@@ -53,7 +53,9 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 All tools require a connected orchyn account and are billed against your orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
 
-`*` `analyze_post` bills against **workspace** credits (first free grant); the other tools bill against **per-user MCP** credits (never tied to an app/workspace).
+**Every tool's first use is free per user** — try any tool once before paying. After the free first use, each call bills your credit balance. **Platform admins always bypass credit debiting** (free calls). `check_orchyn_credits` lists which tools still have a free first use.
+
+`*` `analyze_post` also bills against **workspace** credits (first free grant); the other tools bill against **per-user MCP** credits (never tied to an app/workspace).
 
 ## Images in Claude / ChatGPT chat
 
@@ -262,8 +264,9 @@ All tools accept these hosts and handle **video, image, carousel and slideshow**
 - **`Not authenticated with orchyn` / 401**: run `npx @orchyn/mcp login` or set
   `ORCHYN_ACCESS_TOKEN`.
 - **402 paywall / `insufficient MCP credits`**: your orchyn account is out of
-  credits for this tool. Each call costs: `get_social_media` 1,
-  `discover_social_posts` / `get_user_posts` / `get_post_comments` / `search_creators` /
+  credits for this tool. Every tool has **one free first use per user**; after
+  that each call costs: `get_social_media` 1, `discover_social_posts` /
+  `get_user_posts` / `get_post_comments` / `search_creators` /
   `get_similar_creators` / `discover_sounds` 2 each, `understand_social_post` 10,
   `analyze_creator_profile` 15, `analyze_post` first-call free* (see Tools). Top up
   via `buy_orchyn_credits`, `check_orchyn_credits`, or the orchyn dashboard at
