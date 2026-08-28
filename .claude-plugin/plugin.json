@@ -2,7 +2,7 @@
   "name": "orchyn",
   "title": "Orchyn — social video intelligence",
   "description": "Fetch and understand posts from TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu & Bilibili: media metadata, niche video discovery, and multimodal AI analysis (hooks, viral triggers, variation ideas). Billed in orchyn credits.",
-  "version": "1.3.4",
+  "version": "1.7.1",
   "author": {
     "name": "Orchyn",
     "url": "https://github.com/orchynX"
