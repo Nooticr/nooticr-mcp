@@ -37,10 +37,13 @@ export const ORCHYN_UI_TEMPLATE = `<!DOCTYPE html>
 body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);padding:16px;line-height:1.5;}
 
 /* ─── Loading / Skeleton ─── */
-.loading-container{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:16px;}
-.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+.loading-container{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:12px;}
+.orchyn-logo{animation:logoSpin 3s ease-in-out infinite;}
+@keyframes logoSpin{0%,100%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.1)}}
+.loading-brand{font-size:18px;font-weight:700;letter-spacing:-0.02em;color:var(--fg);}
+.loading-spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:14px;color:var(--muted);animation:pulse 1.5s ease-in-out infinite;}
+.loading-text{font-size:13px;color:var(--muted);animation:pulse 1.5s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
 .skeleton{background:var(--tag);border-radius:var(--radius-sm);overflow:hidden;position:relative;}
@@ -166,14 +169,30 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 <body>
 <div id="app">
   <div class="loading-container">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Loading results…</div>
+    <div class="orchyn-logo">
+      <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+        <g fill="var(--accent)" transform="translate(24 24)">
+          <circle r="4.1"/>
+          <g id="r"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g>
+          <use href="#r" transform="rotate(45)"/>
+          <use href="#r" transform="rotate(90)"/>
+          <use href="#r" transform="rotate(135)"/>
+          <use href="#r" transform="rotate(180)"/>
+          <use href="#r" transform="rotate(225)"/>
+          <use href="#r" transform="rotate(270)"/>
+          <use href="#r" transform="rotate(315)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="loading-brand">Orchyn</div>
+    <div class="loading-text">Analyzing…</div>
   </div>
 </div>
 <script>
 (function(){
   var nextId=1;var pending=new Map();
   var loadingTimer=null;
+  var currentTool="";
 
   function send(method,params){
     var id=nextId++;
@@ -198,6 +217,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       render(d.params);
     }
     if(d.method==="ui/notifications/tool-input-partial"){
+      currentTool=d.params&&d.params.name?d.params.name:"";
       updateProgress(d.params);
     }
   });
@@ -205,7 +225,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   // Show skeleton after 300ms of waiting (feels instant but shows loading for slow tools)
   loadingTimer=setTimeout(function(){
     var app=document.getElementById("app");
-    if(app)app.innerHTML=renderSkeleton();
+    if(app)app.innerHTML=renderSkeleton(currentTool);
   },300);
 
   // Fallback: if no tool-result arrives within 3s, check if data is embedded
@@ -229,11 +249,12 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
         if(decoded&&typeof decoded==="object"){render(decoded);return;}
       }
     }catch(e){}
-    // Last resort: show a minimal card indicating results are available
+    // Last resort: show a branded card indicating results are available
     var app=document.getElementById("app");
-    if(app)app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-      +'<div style="font-size:14px;font-weight:600;margin-bottom:8px">✅ Results ready</div>'
-      +'<div style="font-size:13px;color:var(--muted)">Tool execution complete. See the full response in the chat.</div>'
+    if(app)app.innerHTML='<div class="card card-wide fade-in"><div class="card-body" style="text-align:center;padding:24px">'
+      +'<svg width="28" height="28" viewBox="0 0 48 48" fill="none" style="margin-bottom:8px"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="rf"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#rf" transform="rotate(45)"/><use href="#rf" transform="rotate(90)"/><use href="#rf" transform="rotate(135)"/><use href="#rf" transform="rotate(180)"/><use href="#rf" transform="rotate(225)"/><use href="#rf" transform="rotate(270)"/><use href="#rf" transform="rotate(315)"/></g></svg>'
+      +'<div style="font-size:14px;font-weight:600;margin-bottom:4px">✅ Results ready</div>'
+      +'<div style="font-size:12px;color:var(--muted)">Orchyn analysis complete — see the full response in the chat.</div>'
       +'</div></div>';
   },3000);
 
@@ -257,9 +278,46 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   }
 
   // ─── Skeleton ───
-  function renderSkeleton(){
-    return '<div class="skeleton-gallery stagger">'
-      +Array(3).fill(0).map(function(){
+  // Tools that analyze/fetch a single URL: show 1 wide card skeleton
+  var SINGLE_URL_TOOLS={analyze_post:1,get_social_media:1,understand_social_post:1,get_post_comments:1,analyze_creator_profile:1};
+  // Tools that return galleries: show multiple small card skeletons
+  var GALLERY_TOOLS={discover_social_posts:1,get_user_posts:1,search_creators:1,get_similar_creators:1,discover_sounds:1};
+  // Tools that return credits/checkout: show 1 credit card skeleton
+  var CREDIT_TOOLS={check_orchyn_credits:1,buy_orchyn_credits:1};
+
+  function renderSkeleton(toolName){
+    // Branded header above skeletons
+    var brandHeader='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;justify-content:center">'
+      +'<svg width="20" height="20" viewBox="0 0 48 48" fill="none"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="sb"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#sb" transform="rotate(45)"/><use href="#sb" transform="rotate(90)"/><use href="#sb" transform="rotate(135)"/><use href="#sb" transform="rotate(180)"/><use href="#sb" transform="rotate(225)"/><use href="#sb" transform="rotate(270)"/><use href="#sb" transform="rotate(315)"/></g></svg>'
+      +'<span style="font-size:13px;font-weight:600;color:var(--muted)">Orchyn</span></div>';
+    // Single URL tools → 1 wide card skeleton
+    if(SINGLE_URL_TOOLS[toolName]){
+      return brandHeader+'<div class="fade-in" style="max-width:520px">'
+        +'<div class="skeleton-card" style="width:100%">'
+        +'<div class="skeleton skeleton-thumb" style="height:220px"></div>'
+        +'<div style="padding:14px 16px">'
+        +'<div class="skeleton skeleton-badge"></div>'
+        +'<div class="skeleton skeleton-line" style="width:90%"></div>'
+        +'<div class="skeleton skeleton-line medium"></div>'
+        +'<div style="display:flex;gap:6px;margin-top:10px">'
+        +'<div class="skeleton" style="width:70px;height:28px;border-radius:999px"></div>'
+        +'<div class="skeleton" style="width:60px;height:28px;border-radius:999px"></div>'
+        +'<div class="skeleton" style="width:65px;height:28px;border-radius:999px"></div>'
+        +'</div></div></div></div>';
+    }
+    // Credit tools → credit card skeleton
+    if(CREDIT_TOOLS[toolName]){
+      return brandHeader+'<div class="fade-in" style="max-width:380px">'
+        +'<div class="credits-card" style="margin:0">'
+        +'<div class="skeleton" style="width:120px;height:20px;margin-bottom:14px"></div>'
+        +'<div class="skeleton" style="width:80px;height:40px;margin-bottom:8px"></div>'
+        +'<div class="skeleton" style="width:140px;height:14px"></div>'
+        +'</div></div>';
+    }
+    // Gallery tools → multiple small card skeletons (default)
+    var count=toolName==='discover_sounds'?4:toolName==='search_creators'||toolName==='get_similar_creators'?3:6;
+    return brandHeader+'<div class="skeleton-gallery stagger">'
+      +Array(count).fill(0).map(function(){
         return '<div class="skeleton-card">'
           +'<div class="skeleton skeleton-thumb"></div>'
           +'<div class="skeleton skeleton-badge"></div>'
@@ -437,9 +495,21 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   function updateProgress(params){
     var app=document.getElementById("app");
     if(!app)return;
+    // If we just learned the tool name and the current skeleton is wrong,
+    // re-render with the correct skeleton type
+    var toolName=params&&params.name?params.name:currentTool;
+    if(toolName&&toolName!==currentTool){
+      currentTool=toolName;
+      // Only re-render skeleton if we're still in loading state (no result yet)
+      var el=document.getElementById("app");
+      if(el&&(el.querySelector(".loading-spinner")||el.querySelector(".skeleton"))){
+        el.innerHTML=renderSkeleton(currentTool);
+      }
+    }
     var text=params&&params.arguments?JSON.stringify(params.arguments):"Processing…";
     app.innerHTML='<div class="loading-container fade-in">'
-      +'<div class="loading-spinner"></div>'
+      +'<div class="orchyn-logo"><svg width="36" height="36" viewBox="0 0 48 48" fill="none"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="rp"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#rp" transform="rotate(45)"/><use href="#rp" transform="rotate(90)"/><use href="#rp" transform="rotate(135)"/><use href="#rp" transform="rotate(180)"/><use href="#rp" transform="rotate(225)"/><use href="#rp" transform="rotate(270)"/><use href="#rp" transform="rotate(315)"/></g></svg></div>'
+      +'<div class="loading-brand">Orchyn</div>'
       +'<div class="loading-text">'+esc(text.length>80?text.slice(0,80)+"…":text)+'</div>'
       +'<div class="progress-bar" style="width:200px"><div class="progress-fill" style="width:60%"></div></div>'
       +'</div>';
