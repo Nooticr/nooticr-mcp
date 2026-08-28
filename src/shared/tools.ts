@@ -28,6 +28,49 @@ export interface MakeClientContext {
  authInfo?: AuthInfo;
 }
 
+/**
+ * Rewrite external image URLs to go through the orchyn proxy so they
+ * work inside ChatGPT's sandboxed iframe (CORS + CSP restrictions).
+ */
+function proxyImageUrl(url: string): string {
+ if (!url || url.startsWith("data:")) return url;
+ try {
+  const u = new URL(url);
+  // Only proxy external HTTP(S) URLs — skip our own proxy and data URIs
+  if (u.protocol === "http:" || u.protocol === "https:") {
+   const serverUrl = process.env.ORCHYN_API_URL || process.env.ORCHYN_BASE_URL || "";
+   if (serverUrl && !url.startsWith(serverUrl)) {
+    return `${serverUrl.replace(/\/+$/, "")}/media/proxy?url=${encodeURIComponent(url)}`;
+   }
+  }
+ } catch {}
+ return url;
+}
+
+/** Recursively rewrite URL fields in a structured object for the proxy. */
+function proxyUrls(obj: unknown): unknown {
+ if (typeof obj === "string") {
+  // Check if it looks like a URL
+  if (/^https?:\/\//.test(obj) && !obj.includes("/media/proxy")) {
+   return proxyImageUrl(obj);
+  }
+  return obj;
+ }
+ if (Array.isArray(obj)) return obj.map(proxyUrls);
+ if (obj && typeof obj === "object") {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+   if (["thumbnailUrl", "preview_url", "coverUrl", "avatarUrl", "avatar_thumb", "image_url", "url"].includes(k) && typeof v === "string") {
+    out[k] = proxyImageUrl(v);
+   } else {
+    out[k] = proxyUrls(v);
+   }
+  }
+  return out;
+ }
+ return obj;
+}
+
 function toToolResult(proxy: McpProxyResult): { content: ToolContent[]; structuredContent?: Record<string, unknown> } {
  const images = proxy.contentBlocks
   .filter((c) => c.type === "image")
@@ -45,12 +88,23 @@ function toToolResult(proxy: McpProxyResult): { content: ToolContent[]; structur
   ? rawText.substring(0, rawText.indexOf("\n\n{")).trimEnd()
   : "";
  const structured = proxy.structured as Record<string, unknown> | undefined;
- const textJson = JSON.stringify(structured ?? {}, null, 2);
- const text = htmlPrefix ? `${htmlPrefix}\n\n${textJson}` : textJson;
+ // Proxy thumbnail URLs in structured content for ChatGPT iframe
+ const proxied = structured ? proxyUrls(structured) as Record<string, unknown> : {};
+ const textJson = JSON.stringify(proxied ?? {}, null, 2);
+ // Replace image URLs in HTML with proxied versions
+ const proxiedHtml = htmlPrefix ? proxyImageUrlsInHtml(htmlPrefix) : "";
+ const text = proxiedHtml ? `${proxiedHtml}\n\n${textJson}` : textJson;
  return {
   content: [...images, { type: "text", text }],
-  structuredContent: structured ?? {},
+  structuredContent: proxied ?? {},
  };
+}
+
+/** Replace external image src/href URLs in HTML with proxied versions. */
+function proxyImageUrlsInHtml(html: string): string {
+ return html.replace(/(src|href)="(https?:\/\/[^"']+?)"/g, (_match, attr, url) => {
+  return `${attr}="${proxyImageUrl(url)}"`;
+ });
 }
 
 function toolError(prefix: string, err: unknown): {
@@ -59,6 +113,93 @@ function toolError(prefix: string, err: unknown): {
 } {
  const msg = err instanceof Error ? err.message : String(err);
  return { content: [{ type: "text", text: `${prefix}: ${msg}` }], isError: true };
+}
+
+/** Build an HTML card for analyze_post results. */
+function buildAnalysisHtmlCard(
+ result: Record<string, unknown>,
+ thumbnailUrl: string,
+ platform: string,
+ creatorHandle: string,
+ title: string
+): string {
+ const platformEmoji: Record<string, string> = {
+  tiktok: "🎵", instagram: "📸", youtube: "▶️", twitter: "🐦",
+  x: "🐦", douyin: "🎵", xiaohongshu: "📕", bilibili: "📺",
+ };
+ const platformColor: Record<string, string> = {
+  tiktok: "#000000", instagram: "#E4405F", youtube: "#FF0000",
+  twitter: "#1DA1F2", x: "#000000", douyin: "#000000",
+  xiaohongshu: "#FF2442", bilibili: "#00A1D6",
+ };
+ const emoji = platformEmoji[platform] || "📱";
+ const color = platformColor[platform] || "#6b7280";
+ const post = (result.post ?? {}) as Record<string, unknown>;
+ const analysis = (result.analysis ?? {}) as Record<string, unknown>;
+ const views = typeof post.views === "number" ? post.views.toLocaleString() : "—";
+ const likes = typeof post.likes === "number" ? post.likes.toLocaleString() : "—";
+ const comments = typeof post.comments === "number" ? post.comments.toLocaleString() : "—";
+ const shares = typeof post.shares === "number" ? post.shares.toLocaleString() : "—";
+ const hookStrength = typeof analysis.hookStrength === "number" ? analysis.hookStrength : null;
+ const summary = typeof analysis.summary === "string" ? analysis.summary : "";
+ const whyItWorks = typeof analysis.whyItWorks === "string" ? analysis.whyItWorks : "";
+ const viralTriggers = Array.isArray(analysis.viralTriggers) ? analysis.viralTriggers : [];
+ const variationIdeas = Array.isArray(analysis.variationIdeas) ? analysis.variationIdeas.slice(0, 3) : [];
+ const suggestedHook = typeof analysis.suggestedHook === "string" ? analysis.suggestedHook : "";
+
+ let html = `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden;margin:0 auto">`;
+ // Thumbnail
+ if (thumbnailUrl) {
+  html += `<div style="position:relative"><img src="${thumbnailUrl}" style="width:100%;max-height:400px;object-fit:cover;display:block" onerror="this.style.display='none'" /><div style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">`;
+  html += `<span style="background:${color};color:#fff;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600">${emoji} ${platform}</span>`;
+  html += `</div></div>`;
+ }
+ // Header
+ html += `<div style="padding:16px 20px">`;
+ html += `<div style="font-size:18px;font-weight:700;margin-bottom:4px">📊 AI Post Analysis</div>`;
+ if (creatorHandle) html += `<div style="color:#8b949e;font-size:13px">@${creatorHandle}</div>`;
+ if (title) html += `<div style="color:#c9d1d9;font-size:14px;margin-top:8px;line-height:1.4">${title.slice(0, 150)}</div>`;
+ // Stats
+ html += `<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">`;
+ html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">👁️ ${views}</span>`;
+ html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">❤️ ${likes}</span>`;
+ html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">💬 ${comments}</span>`;
+ html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">🔄 ${shares}</span>`;
+ html += `</div>`;
+ // Hook strength bar
+ if (hookStrength !== null) {
+  const pct = Math.min(hookStrength * 10, 100);
+  const barColor = hookStrength >= 7 ? "#3fb950" : hookStrength >= 4 ? "#d29922" : "#f85149";
+  html += `<div style="margin-top:12px"><div style="font-size:12px;color:#8b949e;margin-bottom:4px">Hook Strength: ${hookStrength}/10</div><div style="background:#21262d;border-radius:999px;height:8px"><div style="background:${barColor};width:${pct}%;height:100%;border-radius:999px"></div></div></div>`;
+ }
+ // Summary
+ if (summary) {
+  html += `<div style="margin-top:14px;padding:12px;background:#161b22;border-radius:8px;border-left:3px solid ${color}"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:4px">📝 Summary</div><div style="font-size:13px;line-height:1.5">${summary}</div></div>`;
+ }
+ // Why it works
+ if (whyItWorks) {
+  html += `<div style="margin-top:10px;padding:12px;background:#161b22;border-radius:8px;border-left:3px solid #3fb950"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:4px">✅ Why It Works</div><div style="font-size:13px;line-height:1.5">${whyItWorks}</div></div>`;
+ }
+ // Viral triggers
+ if (viralTriggers.length > 0) {
+  html += `<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:6px">🔥 Viral Triggers</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
+  viralTriggers.forEach((t) => {
+   html += `<span style="background:#1f6feb33;color:#58a6ff;padding:4px 10px;border-radius:999px;font-size:12px">${t}</span>`;
+  });
+  html += `</div></div>`;
+ }
+ // Suggested hook
+ if (suggestedHook) {
+  html += `<div style="margin-top:10px;padding:12px;background:#161b22;border-radius:8px;border-left:3px solid #d29922"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:4px">💡 Suggested Hook</div><div style="font-size:13px;font-style:italic;line-height:1.5">${suggestedHook}</div></div>`;
+ }
+ // Variation ideas
+ if (variationIdeas.length > 0) {
+  html += `<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:6px">🔄 Variation Ideas</div><ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">`;
+  variationIdeas.forEach((v) => { html += `<li>${v}</li>`; });
+  html += `</ol></div>`;
+ }
+ html += `</div></div>`;
+ return html;
 }
 
 export function createMcpServer(
@@ -142,15 +283,27 @@ export function createMcpServer(
     const result = (await runVideoAnalysis(client, validation.url) as unknown) as Record<string, unknown> & {
      inlineImages?: Array<{ data: string; mimeType?: string }>;
     };
+    // Remove internal field from the JSON shown to the model
+    const { inlineImages: _omit, ...rest } = result;
+    // Proxy thumbnail URLs in structured content for ChatGPT iframe
+    const proxied = proxyUrls(rest) as Record<string, unknown>;
+    // Build HTML card for interactive UI
+    const post = (rest.post ?? {}) as Record<string, unknown>;
+    const analysis = (rest.analysis ?? {}) as Record<string, unknown>;
+    const thumbnailUrl = typeof post.thumbnailUrl === "string" ? proxyImageUrl(post.thumbnailUrl) : "";
+    const platform = String(post.platform ?? rest.platform ?? "");
+    const creatorHandle = String(post.creatorHandle ?? "");
+    const title = String(post.title ?? post.caption ?? "");
+    const htmlCard = buildAnalysisHtmlCard(proxied, thumbnailUrl, platform, creatorHandle, title);
     const images = (result.inlineImages ?? []).map((img) => ({
      type: "image" as const,
      data: String(img.data),
      mimeType: String(img.mimeType ?? "image/jpeg"),
     }));
-    // Remove internal thumbnail field from the JSON shown to the model
-    const { inlineImages: _omit, ...rest } = result;
+    const textJson = JSON.stringify(proxied, null, 2);
     return {
-     content: [...images, { type: "text" as const, text: JSON.stringify(rest, null, 2) }],
+     content: [...images, { type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
+     structuredContent: proxied,
     };
    } catch (err) {
     if (err instanceof OrchynError && err.paywall) {

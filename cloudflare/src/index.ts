@@ -75,7 +75,7 @@ export default {
     if (path === "/" && method === "GET") {
       return htmlResponse(200, landingPage(env));
     }
-    if (path === "/mcp" || path === "") {
+    if (path === "/mcp" || path === "/mcp/" || path === "" || path === "/") {
       return routeToEndpoint(request, env);
     }
     return jsonResponse(404, { error: "Not found" });
@@ -491,8 +491,28 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
 // --- MCP routing ------------------------------------------------------------
 
 async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
+  // Handle CORS preflight for ChatGPT's sandboxed iframe
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-headers": "content-type, authorization, mcp-session-id, mcp-protocol-version, mcp-method",
+        "access-control-max-age": "86400",
+      },
+    });
+  }
   const sid = request.headers.get("mcp-session-id");
   const id = sid ? env.MCP_ENDPOINT.idFromName(sid) : env.MCP_ENDPOINT.idFromName(randomToken(16));
   const stub = env.MCP_ENDPOINT.get(id);
-  return stub.fetch(request);
+  const response = await stub.fetch(request);
+  // Add CORS headers to all MCP responses for ChatGPT's sandbox
+  const headers = new Headers(response.headers);
+  headers.set("access-control-allow-origin", "*");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
