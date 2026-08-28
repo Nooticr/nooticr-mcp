@@ -10,7 +10,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: "get_social_media",
     title: "Get Social Media",
-    description: "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. Returns an inline thumbnail image. Consumes 1 orchyn credit. First use free per user.",
+    description: "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. Returns an inline thumbnail image. In your final response, include the thumbnails as markdown images ![alt](thumbnailUrl) so the user sees them inline in the chat, not just in the tool result. Consumes 1 orchyn credit. In your final response, include the thumbnails as markdown images ![alt](thumbnailUrl) so the user sees them inline in the chat, not just in the tool result. First use free per user.",
     inputSchema: z.object({ url: z.string().describe("Full public post URL.") }).strict(),
   },
   {
