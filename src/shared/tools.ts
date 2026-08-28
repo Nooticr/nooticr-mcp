@@ -28,7 +28,7 @@ export interface MakeClientContext {
  authInfo?: AuthInfo;
 }
 
-function toToolResult(proxy: McpProxyResult): { content: ToolContent[] } {
+function toToolResult(proxy: McpProxyResult): { content: ToolContent[]; structuredContent?: Record<string, unknown> } {
  const images = proxy.contentBlocks
   .filter((c) => c.type === "image")
   .map((c) => ({
@@ -47,7 +47,10 @@ function toToolResult(proxy: McpProxyResult): { content: ToolContent[] } {
  const structured = proxy.structured as Record<string, unknown> | undefined;
  const textJson = JSON.stringify(structured ?? {}, null, 2);
  const text = htmlPrefix ? `${htmlPrefix}\n\n${textJson}` : textJson;
- return { content: [...images, { type: "text", text }] };
+ return {
+  content: [...images, { type: "text", text }],
+  structuredContent: structured ?? {},
+ };
 }
 
 function toolError(prefix: string, err: unknown): {
@@ -80,22 +83,35 @@ export function createMcpServer(
   "Orchyn Interactive View",
   UI_RESOURCE_URI,
   { mimeType: RESOURCE_MIME_TYPE },
-  async () => ({
-   contents: [
-    {
-     uri: UI_RESOURCE_URI,
-     mimeType: RESOURCE_MIME_TYPE,
-     text: ORCHYN_UI_TEMPLATE,
-     _meta: {
-      ui: {
-       csp: {
-        resourceDomains: ["https://*.tiktokcdn.com", "https://*.cdninstagram.com", "https://*.ytimg.com", "https://*.googlevideo.com"],
+  async () => {
+   // Build CSP resourceDomains from env so proxied thumbnails work
+   const domains = [
+    "https://*.tiktokcdn.com",
+    "https://*.cdninstagram.com",
+    "https://*.ytimg.com",
+    "https://*.googlevideo.com",
+   ];
+   const apiUrl = process.env.ORCHYN_API_URL || process.env.ORCHYN_BASE_URL;
+   if (apiUrl && apiUrl.trim()) {
+    domains.push(apiUrl.trim().replace(/\/+$/, ""));
+   }
+   return {
+    contents: [
+     {
+      uri: UI_RESOURCE_URI,
+      mimeType: RESOURCE_MIME_TYPE,
+      text: ORCHYN_UI_TEMPLATE,
+      _meta: {
+       ui: {
+        csp: {
+         resourceDomains: domains,
+        },
        },
       },
      },
-    },
-   ],
-  })
+    ],
+   };
+  }
  );
 
  server.registerTool(
