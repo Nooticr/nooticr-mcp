@@ -13,6 +13,9 @@ import { OrchynClient, OrchynError, type McpProxyResult } from "./orchyn.js";
 import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
+/** Current MCP server version — bumped on every deploy for traceability. */
+export const MCP_SERVER_VERSION = "1.12.1";
+
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
 /** MIME type for MCP Apps HTML resources */
@@ -206,7 +209,7 @@ export function createMcpServer(
  makeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient
 ): McpServer {
  const server = new McpServer(
-  { name: "orchyn-mcp", version: "1.8.0" },
+  { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
   {
    capabilities: {
     resources: {},

@@ -10,6 +10,7 @@
  */
 
 import { OrchynClient } from "../../src/shared/orchyn.js";
+import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import {
   authorizationServerMetadata,
   protectedResourceMetadata,
@@ -71,6 +72,13 @@ export default {
     }
     if (path === "/authorize") {
       return method === "GET" ? handleAuthorizeGet(request, env) : handleAuthorizePost(request, env);
+    }
+    if (path === "/health" && method === "GET") {
+      return jsonResponse(200, {
+        ok: true,
+        mcpVersion: MCP_SERVER_VERSION,
+        protocolVersion: "2025-11-25",
+      });
     }
     if (path === "/" && method === "GET") {
       return htmlResponse(200, landingPage(env));
@@ -497,22 +505,35 @@ async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
       status: 204,
       headers: {
         "access-control-allow-origin": "*",
-        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
         "access-control-allow-headers": "content-type, authorization, mcp-session-id, mcp-protocol-version, mcp-method",
         "access-control-max-age": "86400",
       },
     });
   }
+  // GET /mcp is used by MCP clients (including ChatGPT) to open an SSE stream
+  // for server-initiated notifications. The session-id determines which DO handles it.
   const sid = request.headers.get("mcp-session-id");
   const id = sid ? env.MCP_ENDPOINT.idFromName(sid) : env.MCP_ENDPOINT.idFromName(randomToken(16));
   const stub = env.MCP_ENDPOINT.get(id);
-  const response = await stub.fetch(request);
-  // Add CORS headers to all MCP responses for ChatGPT's sandbox
-  const headers = new Headers(response.headers);
-  headers.set("access-control-allow-origin", "*");
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  try {
+    const response = await stub.fetch(request);
+    // Add CORS headers to all MCP responses for ChatGPT's sandbox
+    const headers = new Headers(response.headers);
+    headers.set("access-control-allow-origin", "*");
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } catch (err) {
+    // If the DO is unavailable (cold start, eviction), return a JSON-RPC error
+    // instead of a hard crash — ChatGPT's connector retries on clean errors.
+    const msg = err instanceof Error ? err.message : String(err);
+    return jsonResponse(502, {
+      jsonrpc: "2.0",
+      error: { code: -32603, message: `MCP endpoint unavailable: ${msg}` },
+      id: null,
+    });
+  }
 }

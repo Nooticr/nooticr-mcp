@@ -9,7 +9,7 @@ type McpRequest = Parameters<
 >[0];
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { OrchynClient, jwtExpiry, type TokenProvider } from "../../src/shared/orchyn.js";
-import { createMcpServer } from "../../src/shared/tools.js";
+import { createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import {
   verifyToken,
   validMcpToken,
@@ -17,6 +17,13 @@ import {
   deleteSession,
   type McpSession,
 } from "./oauth.js";
+
+/**
+ * Protocol version advertised during re-init. Must be >= 2025-11-25 so the
+ * SDK sends proper priming events and supports resumability. ChatGPT sends
+ * the latest protocol version and may reject responses that don't match.
+ */
+const PROTOCOL_VERSION = "2025-11-25";
 
 /** Refresh the orchyn JWT before it expires. The backend mints 15-minute
  * access tokens, so without renewal every login dies a quarter of an hour in
@@ -186,16 +193,16 @@ export class McpEndpoint {
           accept: "application/json, text/event-stream",
           authorization: request.headers.get("authorization") ?? "",
           "mcp-session-id": this.ctx.id.name ?? this.ctx.toString(),
-          "mcp-protocol-version": "2025-03-26",
+          "mcp-protocol-version": PROTOCOL_VERSION,
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
           id: 1,
           method: "initialize",
           params: {
-            protocolVersion: "2025-03-26",
+            protocolVersion: PROTOCOL_VERSION,
             capabilities: {},
-            clientInfo: { name: "orchyn-mcp", version: "1.0.0" },
+            clientInfo: { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
           },
         }),
       }) as unknown as McpRequest;
