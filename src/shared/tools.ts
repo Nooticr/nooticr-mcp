@@ -11,6 +11,14 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { z } from "zod";
 import { OrchynClient, OrchynError, type McpProxyResult } from "./orchyn.js";
 import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
+import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
+
+/** MCP Apps extension identifier */
+const UI_EXTENSION = "io.modelcontextprotocol/ui";
+/** MIME type for MCP Apps HTML resources */
+const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
+/** Single UI resource URI shared by all tools */
+const UI_RESOURCE_URI = "ui://orchyn/view";
 
 type ToolContent =
  | { type: "text"; text: string }
@@ -53,10 +61,42 @@ function toolError(prefix: string, err: unknown): {
 export function createMcpServer(
  makeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient
 ): McpServer {
- const server = new McpServer({
-  name: "orchyn-mcp",
-  version: "1.5.0",
- });
+ const server = new McpServer(
+  { name: "orchyn-mcp", version: "1.8.0" },
+  {
+   capabilities: {
+    resources: {},
+    extensions: {
+     [UI_EXTENSION]: { mimeTypes: [RESOURCE_MIME_TYPE] },
+    },
+   },
+  }
+ );
+
+ // Register the single UI resource that all tools share.
+ // The host reads this resource, renders it in a sandboxed iframe,
+ // and pushes tool results via ui/notifications/tool-result.
+ server.registerResource(
+  "Orchyn Interactive View",
+  UI_RESOURCE_URI,
+  { mimeType: RESOURCE_MIME_TYPE },
+  async () => ({
+   contents: [
+    {
+     uri: UI_RESOURCE_URI,
+     mimeType: RESOURCE_MIME_TYPE,
+     text: ORCHYN_UI_TEMPLATE,
+     _meta: {
+      ui: {
+       csp: {
+        resourceDomains: ["https://*.tiktokcdn.com", "https://*.cdninstagram.com", "https://*.ytimg.com", "https://*.googlevideo.com"],
+       },
+      },
+     },
+    },
+   ],
+  })
+ );
 
  server.registerTool(
   "analyze_post",
@@ -66,6 +106,7 @@ export function createMcpServer(
     "Analyze a social post (video, image, carousel/slideshow) from its link — " +
     "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
     "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
@@ -116,6 +157,7 @@ export function createMcpServer(
     "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: " +
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
     "Returns an inline thumbnail image. Consumes 1 orchyn credit. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -140,6 +182,7 @@ export function createMcpServer(
     "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili. " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. Consumes 2 orchyn credits. First use free per user.',
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
@@ -174,6 +217,7 @@ export function createMcpServer(
     "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter or Bilibili. " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
@@ -206,6 +250,7 @@ export function createMcpServer(
     "Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter or Bilibili: fetch recent posts, run multimodal AI on up to 3, " +
     "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
     "engagement patterns, audience insights, variation ideas, collaboration fit. Consumes 15 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
@@ -238,6 +283,7 @@ export function createMcpServer(
    description:
     "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter or Bilibili, plus keyword clusters from TikTok Analytics " +
     "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/Douyin/X/Bilibili)."),
@@ -265,6 +311,7 @@ export function createMcpServer(
    description:
     "Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, " +
     "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
@@ -296,6 +343,7 @@ export function createMcpServer(
    description:
     "Find lookalike creators for a given handle — TikTok similar-user recommendations or Instagram " +
     "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."),
@@ -323,6 +371,7 @@ export function createMcpServer(
    description:
     "Discover trending sounds/music for a keyword on TikTok or Instagram — the sound is a huge ranking " +
     "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
@@ -350,6 +399,7 @@ export function createMcpServer(
    title: "Check Orchyn Credits",
    description:
     "Check your orchyn credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -368,6 +418,7 @@ export function createMcpServer(
    title: "Buy Orchyn Credits",
    description:
     "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -388,6 +439,7 @@ export function createMcpServer(
     "Import a social post URL AND understand it with multimodal AI over the actual video/images: " +
     "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
     "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Consumes 6 orchyn credits. First use free per user.",
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),
