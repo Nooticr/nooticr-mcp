@@ -140,19 +140,68 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 </style>
 </head>
 <body>
-<div id="app">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;text-align:center;padding:40px 24px;background:var(--panel, #0d1117);color:var(--fg, #e6edf3);font-family:system-ui,-apple-system,sans-serif">
-    <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
-      <g fill="var(--accent, #3fb950)" transform="translate(24 24)"><circle r="4.1"/><g id="ri"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#ri" transform="rotate(45)"/><use href="#ri" transform="rotate(90)"/><use href="#ri" transform="rotate(135)"/><use href="#ri" transform="rotate(180)"/><use href="#ri" transform="rotate(225)"/><use href="#ri" transform="rotate(270)"/><use href="#ri" transform="rotate(315)"/></g>
-    </svg>
-    <div style="margin-top:16px;font-size:18px;font-weight:700">Orchyn</div>
-    <div style="margin-top:8px;font-size:14px;color:#8b949e;max-width:340px;line-height:1.5">Social media intelligence. This view will render your post, creator, and trend results as soon as a tool returns.</div>
-  </div>
-</div>
+<div id="app"></div>
 <script>
 (function(){
   var nextId=1;var pending=new Map();
   var currentTool="";
+
+  // ─── Tool-specific idle view ───
+  // Read ?tool=<name> from the resource URI to show a tailored idle screen.
+  var TOOL_NAMES={
+    analyze_post:"Analyze Post",
+    discover_social_posts:"Discover Social Posts",
+    get_user_posts:"Get User Posts",
+    get_social_media:"Get Social Media",
+    analyze_creator_profile:"Analyze Creator Profile",
+    get_post_comments:"Get Post Comments",
+    search_creators:"Search Creators",
+    get_similar_creators:"Similar Creators",
+    discover_sounds:"Discover Sounds",
+    understand_social_post:"Understand Social Post",
+    check_orchyn_credits:"Check Credits",
+    buy_orchyn_credits:"Buy Credits",
+    compose_sequence:"Compose Sequence",
+    overlay_bake:"Overlay Bake",
+    spawn_variants:"Spawn Variants",
+    bake_job_status:"Bake Job Status",
+    enqueue_publish_job:"Enqueue Publish",
+    schedule_post:"Schedule Post"
+  };
+  var TOOL_DESCS={
+    analyze_post:"Deep analysis of any social media post — hook strength, viral triggers, why it works.",
+    discover_social_posts:"Trending posts from any platform for a given niche.",
+    get_user_posts:"Recent posts from a specific creator handle.",
+    get_social_media:"Get post data from any social media URL.",
+    analyze_creator_profile:"Full creator profile analysis — engagement, audience, content style.",
+    get_post_comments:"Top comments on a post — sentiment, themes, viral threads.",
+    search_creators:"Find creators in a niche by engagement, followers, and content.",
+    get_similar_creators:"Find creators similar to a given handle.",
+    discover_sounds:"Trending sounds and music on TikTok/Instagram.",
+    understand_social_post:"Multimodal understanding of video/image content.",
+    check_orchyn_credits:"View your Orchyn credit balance and free tool usage.",
+    buy_orchyn_credits:"Purchase additional Orchyn credits.",
+    compose_sequence:"AI-powered content composition for social posts.",
+    overlay_bake:"Bake text/image overlays onto video or image.",
+    spawn_variants:"Generate multiple content variants from a single seed.",
+    bake_job_status:"Check the status of a rendering/baking job.",
+    enqueue_publish_job:"Queue a post for publishing to a connected platform.",
+    schedule_post:"Schedule a post for future publishing."
+  };
+  function renderIdle(){
+    var params=new URLSearchParams(window.location.search);
+    var tool=params.get("tool")||"";
+    var label=TOOL_NAMES[tool]||"Interactive View";
+    var desc=TOOL_DESCS[tool]||"Results will appear here as soon as a tool returns.";
+    var app=document.getElementById("app");
+    if(!app)return;
+    app.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;text-align:center;padding:40px 24px;background:var(--panel, #0d1117);color:var(--fg, #e6edf3);font-family:system-ui,-apple-system,sans-serif">'
+      +'<svg width="44" height="44" viewBox="0 0 48 48" fill="none"><g fill="var(--accent, #3fb950)" transform="translate(24 24)"><circle r="4.1"/><g id="ri"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#ri" transform="rotate(45)"/><use href="#ri" transform="rotate(90)"/><use href="#ri" transform="rotate(135)"/><use href="#ri" transform="rotate(180)"/><use href="#ri" transform="rotate(225)"/><use href="#ri" transform="rotate(270)"/><use href="#ri" transform="rotate(315)"/></g></svg>'
+      +'<div style="margin-top:14px;font-size:17px;font-weight:700">'+label+'</div>'
+      +'<div style="margin-top:6px;font-size:13px;color:#8b949e;max-width:340px;line-height:1.5">'+desc+'</div>'
+      +'</div>';
+  }
+  renderIdle();
 
   function send(method,params){
     var id=nextId++;

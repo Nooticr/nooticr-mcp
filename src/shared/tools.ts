@@ -31,7 +31,7 @@ const UI_RESOURCE_URI = "ui://orchyn/view";
  */
 function uiResource(tool: string): string {
  const slug = tool.replace(/[^a-z0-9_]/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
- return `ui://orchyn/${slug || "view"}`;
+ return `ui://orchyn/${slug || "view"}?tool=${encodeURIComponent(tool)}`;
 }
 
 /**
