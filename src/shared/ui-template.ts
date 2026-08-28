@@ -527,10 +527,41 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   }
 
   // ─── Render ───
+  // Hosts deliver the tool result in two shapes:
+  //  - { structuredContent: {...} }  (spec-optional, used when present)
+  //  - { content: [ {type,text,...} ] }  (standard MCP content blocks)
+  // Our results put the HTML card prefix + structured JSON inside the first
+  // text content block, so decode BOTH. If the result is a primitive/string,
+  // surface it as-is.
+  function extractResult(result){
+    if(!result||typeof result!=="object")return result;
+    var sc=result.structuredContent;
+    if(sc&&typeof sc==="object"&&!Array.isArray(sc))return sc;
+    if(Array.isArray(result.content)){
+      var textBlock=null;
+      for(var i=0;i<result.content.length;i++){
+        var c=result.content[i];
+        if(c&&c.type==="text"&&typeof c.text==="string"){textBlock=c.text;break;}
+      }
+      if(typeof textBlock==="string"&&textBlock!==""){
+        // Split "<html>\n\n{json}" — if there's a JSON object after the HTML,
+        // parse it; otherwise show the text itself.
+        var m=/^[\s]*<[^>]+>[\s\S]*?\n\n(\{.*\})[\s]*$/m.exec(textBlock);
+        if(m){try{var parsed=JSON.parse(m[1]);if(parsed&&typeof parsed==="object")return parsed;}catch(e){}}
+        // Single-line HTML (common): keep the whole block as text fallback.
+        if(textBlock.indexOf("<")===0){return { _html: textBlock };}
+        try{var j=JSON.parse(textBlock);if(j&&typeof j==="object")return j;}catch(e2){}
+      }
+    }
+    return result;
+  }
+
   function render(result){
     var app=document.getElementById("app");if(!app)return;
-    var d=result&&result.structuredContent?result.structuredContent:result;
+    var d=extractResult(result);
     if(!d||typeof d!=="object"){app.innerHTML='<div class="json-block fade-in">'+esc(JSON.stringify(d,null,2))+"</div>";return;}
+    // Raw HTML-only result — inject it directly.
+    if(d._html){app.innerHTML=d._html;setTimeout(reportSize,50);return;}
 
     // Analysis
     if(d.analysis&&(d.post||d.url)){app.innerHTML=analysisCard(d);return;}
