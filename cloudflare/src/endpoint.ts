@@ -121,7 +121,9 @@ export class McpEndpoint {
     if (this.transport && this.server) return;
     this.transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: () => this.ctx.id.name ?? this.ctx.id.toString(),
-      enableJsonResponse: true,
+      // enableJsonResponse: true buffers the entire response before sending.
+      // For long-running tools (20-70s), ChatGPT's client times out waiting.
+      // Default (false) streams via SSE, which ChatGPT handles correctly.
       onsessioninitialized: () => {
         this.initialized = true;
         console.log(`[mcp] session initialized for DO ${this.ctx.id.name}`);
