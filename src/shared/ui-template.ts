@@ -215,6 +215,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       clearTimeout(loadingTimer);
       clearTimeout(fallbackTimer);
       render(d.params);
+      setTimeout(reportSize,50);
     }
     if(d.method==="ui/notifications/tool-input-partial"){
       currentTool=d.params&&d.params.name?d.params.name:"";
@@ -270,14 +271,40 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       +'</div></div>';
   },3000);
 
-  // MCP Apps handshake
+  // MCP Apps handshake.
+  // Claude's McpUiInitializeRequestSchema requires appInfo, appCapabilities
+  // and protocolVersion (legacy hosts read capabilities/clientInfo), so send
+  // both shapes. Critically, ui/notifications/initialized must be sent
+  // UNCONDITIONALLY — Claude keeps the widget iframe reserved-but-hidden
+  // until it receives that notification, so a reply we don't recognize must
+  // never deadlock the handshake.
+  var initializedSent=false;
+  function sendInitialized(){
+    if(initializedSent)return;
+    initializedSent=true;
+    window.parent.postMessage({jsonrpc:"2.0",method:"ui/notifications/initialized",params:{}},"*");
+  }
   send("ui/initialize",{
     protocolVersion:"2026-01-26",
+    appInfo:{name:"orchyn-view",version:"2.0.0"},
+    appCapabilities:{availableDisplayModes:["inline"]},
     capabilities:{},
     clientInfo:{name:"orchyn-view",version:"2.0.0"}
-  }).then(function(){
-    window.parent.postMessage({jsonrpc:"2.0",method:"ui/notifications/initialized",params:{}},"*");
-  }).catch(function(){});
+  }).then(sendInitialized).catch(sendInitialized);
+  // Unconditional fallback: never wait on a reply shape we don't recognize.
+  setTimeout(sendInitialized, 500);
+
+  // Report content size so flexible hosts (Claude) size the iframe correctly.
+  // Params MUST be real numbers — claude.ai throws on null/missing width.
+  function reportSize(){
+    try{
+      var h=document.documentElement.scrollHeight||document.body.scrollHeight||400;
+      var w=document.documentElement.scrollWidth||document.body.scrollWidth||400;
+      window.parent.postMessage({jsonrpc:"2.0",method:"ui/notifications/size-changed",params:{height:h,width:w}},"*");
+    }catch(e){}
+  }
+  window.addEventListener("resize",reportSize);
+  setTimeout(reportSize,600);
 
   // ─── Helpers ───
   function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
@@ -564,6 +591,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     if(d.post||d.platform){app.innerHTML=postCard(d.post||d,true);return;}
     // Fallback
     app.innerHTML='<div class="json-block fade-in">'+esc(JSON.stringify(d,null,2))+"</div>";
+    setTimeout(reportSize,50);
   }
 
   function updateProgress(params){

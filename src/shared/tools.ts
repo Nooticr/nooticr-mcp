@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.13.0";
+export const MCP_SERVER_VERSION = "1.14.0";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -22,6 +22,28 @@ const UI_EXTENSION = "io.modelcontextprotocol/ui";
 const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
 /** Single UI resource URI shared by all tools */
 const UI_RESOURCE_URI = "ui://orchyn/view";
+
+/**
+ * claude.ai requires `ui.domain` on the resource == sha256("<MCP endpoint
+ * URL>")[:32] + ".claudemcpcontent.com" — the iframe is only revealed on
+ * that dedicated sandbox origin. The endpoint is the worker's public origin
+ * + "/mcp". stdio runs have no public URL, so the field is omitted and the
+ * host falls back to its default per-conversation origin.
+ */
+async function computeAppDomain(): Promise<string | undefined> {
+ const publicUrl = (process.env.PUBLIC_URL || "").trim().replace(/\/+$/, "");
+ if (!publicUrl) return undefined;
+ try {
+  const endpoint = `${publicUrl}/mcp`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint));
+  const hex = Array.from(new Uint8Array(digest))
+   .map((b) => b.toString(16).padStart(2, "0"))
+   .join("");
+  return `${hex.slice(0, 32)}.claudemcpcontent.com`;
+ } catch {
+  return undefined;
+ }
+}
 
 type ToolContent =
  | { type: "text"; text: string }
@@ -97,13 +119,15 @@ async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolConte
  // JPEG thumbnails (HEIC already transcoded), so convert those URLs to
  // base64 data here — guaranteeing clients render a valid image.
  const imgBlocks = proxy.contentBlocks.filter((c) => c.type === "image");
- const images = await Promise.all(
+ // Skip image blocks whose base64 is empty (fetch failed) — clients reject
+ // them with "could not be processed: Error processing image".
+ const images = (await Promise.all(
   imgBlocks.map((c) =>
    c.url
     ? fetchAsBase64Image(String(c.url), String(c.mimeType ?? "image/jpeg"))
     : Promise.resolve({ type: "image" as const, data: String(c.data ?? ""), mimeType: String(c.mimeType ?? "image/jpeg") })
   )
- );
+ )).filter((img): img is { type: "image"; data: string; mimeType: string } => img.type === "image" && img.data.length > 0);
  // The Rust backend embeds HTML cards directly in the text block
  // (type:"text", text:"<div>...</div>\n\n{json}"). We extract the HTML
  // prefix from the first text contentBlock and prepend it.
@@ -277,8 +301,7 @@ export function createMcpServer(
  server.registerResource(
   "Orchyn Interactive View",
   UI_RESOURCE_URI,
-  { mimeType: RESOURCE_MIME_TYPE },
-  async () => {
+  { mimeType: RESOURCE_MIME_TYPE },   async () => {
    // Build CSP resourceDomains from env so proxied thumbnails work
    const domains = [
     "https://*.tiktokcdn.com",
@@ -292,6 +315,7 @@ export function createMcpServer(
    if (apiUrl && apiUrl.trim()) {
     domains.push(apiUrl.trim().replace(/\/+$/, ""));
    }
+   const domain = await computeAppDomain();
    return {
     contents: [
      {
@@ -300,9 +324,11 @@ export function createMcpServer(
       text: ORCHYN_UI_TEMPLATE,
       _meta: {
        ui: {
+        ...(domain ? { domain } : {}),
         csp: {
          resourceDomains: domains,
         },
+        prefersBorder: false,
        },
       },
      },
@@ -319,7 +345,7 @@ export function createMcpServer(
     "Analyze a social post (video, image, carousel/slideshow) from its link — " +
     "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
     "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
@@ -354,7 +380,9 @@ export function createMcpServer(
     // The backend attaches `_inlineImages` as permanent orchyn public URLs
     // (re-hosted into storage, HEIC already transcoded to JPEG). The SDK's
     // ImageContent only accepts base64 `data`, so fetch each URL and encode it.
-    const images: ToolContent[] = await Promise.all(
+    // Skip image blocks whose base64 is empty (fetch failed) — clients
+    // reject them with "could not be processed: Error processing image".
+    const images: ToolContent[] = (await Promise.all(
      (result.inlineImages ?? [])
       .filter((img) => typeof img === "object" && img !== null)
       .map((img) =>
@@ -362,7 +390,7 @@ export function createMcpServer(
         ? fetchAsBase64Image(String(img.url), String(img.mimeType ?? "image/jpeg"))
         : Promise.resolve({ type: "image" as const, data: String((img as { data?: string }).data ?? ""), mimeType: String(img.mimeType ?? "image/jpeg") })
       )
-    );
+    )).filter((img): img is { type: "image"; data: string; mimeType: string } => img.type === "image" && img.data.length > 0);
     const textJson = JSON.stringify(proxied, null, 2);
     return {
      content: [...images, { type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
@@ -389,7 +417,7 @@ export function createMcpServer(
     "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: " +
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
     "Returns an inline thumbnail image. Consumes 1 orchyn credit. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -414,7 +442,7 @@ export function createMcpServer(
     "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili. " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. Consumes 2 orchyn credits. First use free per user.',
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
@@ -449,7 +477,7 @@ export function createMcpServer(
     "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile public_id, e.g. 'billgates'). " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
@@ -482,7 +510,7 @@ export function createMcpServer(
     "Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn: fetch recent posts, run multimodal AI on up to 3, " +
     "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
     "engagement patterns, audience insights, variation ideas, collaboration fit. Consumes 15 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
@@ -515,7 +543,7 @@ export function createMcpServer(
    description:
     "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
     "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/Douyin/X/Bilibili/LinkedIn)."),
@@ -543,7 +571,7 @@ export function createMcpServer(
    description:
     "Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, " +
     "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
@@ -575,7 +603,7 @@ export function createMcpServer(
    description:
     "Find lookalike creators for a given handle — TikTok similar-user recommendations or Instagram " +
     "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."),
@@ -603,7 +631,7 @@ export function createMcpServer(
    description:
     "Discover trending sounds/music for a keyword on TikTok or Instagram — the sound is a huge ranking " +
     "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
@@ -631,7 +659,7 @@ export function createMcpServer(
    title: "Check Orchyn Credits",
    description:
     "Check your orchyn credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -650,7 +678,7 @@ export function createMcpServer(
    title: "Buy Orchyn Credits",
    description:
     "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -671,7 +699,7 @@ export function createMcpServer(
     "Import a social post URL AND understand it with multimodal AI over the actual video/images: " +
     "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
     "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Consumes 6 orchyn credits. First use free per user.",
-   _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+   _meta: { ui: { resourceUri: UI_RESOURCE_URI }, "ui/resourceUri": UI_RESOURCE_URI },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),

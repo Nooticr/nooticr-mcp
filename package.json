@@ -1,6 +1,6 @@
 {
   "name": "@orchyn/mcp",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "MCP server for orchyn - fetch, discover and understand TikTok/Instagram/YouTube/X/LinkedIn posts with AI (media metadata, niche discovery, hook & viral analysis)",
   "type": "module",
   "main": "dist/index.js",
