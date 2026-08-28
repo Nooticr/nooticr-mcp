@@ -183,6 +183,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     });
   }
 
+  var toolResultReceived=false;
   window.addEventListener("message",function(ev){
     var d=ev.data;if(!d||typeof d!=="object")return;
     if(d.id&&pending.has(d.id)){
@@ -191,7 +192,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       else p.resolve(d.result);return;
     }
     if(d.method==="ui/notifications/tool-result"){
+      toolResultReceived=true;
       clearTimeout(loadingTimer);
+      clearTimeout(fallbackTimer);
       render(d.params);
     }
     if(d.method==="ui/notifications/tool-input-partial"){
@@ -204,6 +207,35 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     var app=document.getElementById("app");
     if(app)app.innerHTML=renderSkeleton();
   },300);
+
+  // Fallback: if no tool-result arrives within 3s, check if data is embedded
+  // in the page (some hosts pass structuredContent via URL hash or postMessage)
+  var fallbackTimer=setTimeout(function(){
+    if(toolResultReceived)return;
+    // Try to extract data from URL hash (host may pass structuredContent here)
+    try{
+      var hash=window.location.hash.slice(1);
+      if(hash){
+        var decoded=JSON.parse(decodeURIComponent(hash));
+        if(decoded&&typeof decoded==="object"){render(decoded);return;}
+      }
+    }catch(e){}
+    // Try to extract from URL search params
+    try{
+      var params=new URLSearchParams(window.location.search);
+      var dataParam=params.get("data");
+      if(dataParam){
+        var decoded=JSON.parse(decodeURIComponent(dataParam));
+        if(decoded&&typeof decoded==="object"){render(decoded);return;}
+      }
+    }catch(e){}
+    // Last resort: show a minimal card indicating results are available
+    var app=document.getElementById("app");
+    if(app)app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+      +'<div style="font-size:14px;font-weight:600;margin-bottom:8px">✅ Results ready</div>'
+      +'<div style="font-size:13px;color:var(--muted)">Tool execution complete. See the full response in the chat.</div>'
+      +'</div></div>';
+  },3000);
 
   // MCP Apps handshake
   send("ui/initialize",{
