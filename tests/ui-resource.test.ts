@@ -74,15 +74,19 @@ describe("MCP Apps resource metadata", () => {
   });
 });
 
-describe("empty image filtering", () => {
-  it("drops image content blocks whose base64 fetch failed", async () => {
+describe("app-view tool results", () => {
+  it("never emits raw image blocks (HTML card carries the media)", async () => {
     const fake = {
       async callTool(_name: string): Promise<McpProxyResult> {
         return {
+          // A real backend emits image blocks + a text block with the HTML card.
+          // Claude's Apps bridge rejects raw image blocks mixed with an app
+          // view ("could not be processed: Error processing image" + blank
+          // iframe), so we must strip them and keep only the text block.
           contentBlocks: [
-            // Unreachable address → fetchAsBase64Image returns empty data.
-            { type: "image", url: "http://127.0.0.1:1/nope.jpg", mimeType: "image/jpeg" },
-            { type: "text", text: "{\"ok\":true}" },
+            { type: "image", url: "https://img.example/thumb.jpg", mimeType: "image/jpeg" },
+            { type: "image", data: "aGVsbG8=", mimeType: "image/jpeg" },
+            { type: "text", text: "<div>card</div>\n\n{\"ok\":true}" },
           ],
           structured: { ok: true },
         };
@@ -95,7 +99,8 @@ describe("empty image filtering", () => {
     const images = content.filter((c) => c.type === "image");
     expect(images).toHaveLength(0);
     const texts = content.filter((c) => c.type === "text");
-    expect(texts.length).toBeGreaterThan(0);
+    expect(texts).toHaveLength(1);
+    expect(String(texts[0].text)).toContain("<div>card</div>");
     await client.close();
   });
 });

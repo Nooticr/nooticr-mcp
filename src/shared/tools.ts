@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.14.0";
+export const MCP_SERVER_VERSION = "1.15.0";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -45,26 +45,7 @@ async function computeAppDomain(): Promise<string | undefined> {
  }
 }
 
-type ToolContent =
- | { type: "text"; text: string }
- | { type: "image"; data: string; mimeType: string };
-
-/** Convert an arbitrary http(s) URL to a base64 MCP `image` data block. */
-async function fetchAsBase64Image(url: string, mimeType: string): Promise<ToolContent> {
- try {
-  const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
-  if (!res.ok) return { type: "image" as const, data: "", mimeType };
-  const buf = await res.arrayBuffer();
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-   bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return { type: "image" as const, data: btoa(bin), mimeType };
- } catch {
-  return { type: "image" as const, data: "", mimeType };
- }
-}
+type ToolContent = { type: "text"; text: string };
 
 export interface MakeClientContext {
  authInfo?: AuthInfo;
@@ -114,23 +95,12 @@ function proxyUrls(obj: unknown): unknown {
 }
 
 async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolContent[]; structuredContent?: Record<string, unknown> }> {
- // The MCP SDK's ImageContent only accepts `data` (base64). The orchyn
- // backend now emits `url` image blocks pointing at permanent, re-hosted
- // JPEG thumbnails (HEIC already transcoded), so convert those URLs to
- // base64 data here — guaranteeing clients render a valid image.
- const imgBlocks = proxy.contentBlocks.filter((c) => c.type === "image");
- // Skip image blocks whose base64 is empty (fetch failed) — clients reject
- // them with "could not be processed: Error processing image".
- const images = (await Promise.all(
-  imgBlocks.map((c) =>
-   c.url
-    ? fetchAsBase64Image(String(c.url), String(c.mimeType ?? "image/jpeg"))
-    : Promise.resolve({ type: "image" as const, data: String(c.data ?? ""), mimeType: String(c.mimeType ?? "image/jpeg") })
-  )
- )).filter((img): img is { type: "image"; data: string; mimeType: string } => img.type === "image" && img.data.length > 0);
- // The Rust backend embeds HTML cards directly in the text block
- // (type:"text", text:"<div>...</div>\n\n{json}"). We extract the HTML
- // prefix from the first text contentBlock and prepend it.
+ // MCP Apps views (ChatGPT & Claude) render the interactive HTML card, which
+ // already embeds all thumbnails/videos. Claude's Apps bridge rejects a tool
+ // result that mixes raw `image` blocks with an app view ("could not be
+ // processed: Error processing image" + blank iframe), so we intentionally
+ // drop the standalone base64 image blocks here and keep only the text block
+ // carrying the HTML card + structured JSON.
  const textBlock = proxy.contentBlocks.find((c) => c.type === "text");
  const rawText = textBlock ? String(textBlock.text ?? "") : "";
  const htmlPrefix = rawText.startsWith("<")
@@ -144,7 +114,7 @@ async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolConte
  const proxiedHtml = htmlPrefix ? proxyImageUrlsInHtml(htmlPrefix) : "";
  const text = proxiedHtml ? `${proxiedHtml}\n\n${textJson}` : textJson;
  return {
-  content: [...images, { type: "text", text }],
+  content: [{ type: "text", text }],
   structuredContent: proxied ?? {},
  };
 }
@@ -377,23 +347,14 @@ export function createMcpServer(
     const creatorHandle = String(post.creatorHandle ?? "");
     const title = String(post.title ?? post.caption ?? "");
     const htmlCard = buildAnalysisHtmlCard(proxied, thumbnailUrl, platform, creatorHandle, title);
-    // The backend attaches `_inlineImages` as permanent orchyn public URLs
-    // (re-hosted into storage, HEIC already transcoded to JPEG). The SDK's
-    // ImageContent only accepts base64 `data`, so fetch each URL and encode it.
-    // Skip image blocks whose base64 is empty (fetch failed) — clients
-    // reject them with "could not be processed: Error processing image".
-    const images: ToolContent[] = (await Promise.all(
-     (result.inlineImages ?? [])
-      .filter((img) => typeof img === "object" && img !== null)
-      .map((img) =>
-       "url" in img && img.url
-        ? fetchAsBase64Image(String(img.url), String(img.mimeType ?? "image/jpeg"))
-        : Promise.resolve({ type: "image" as const, data: String((img as { data?: string }).data ?? ""), mimeType: String(img.mimeType ?? "image/jpeg") })
-      )
-    )).filter((img): img is { type: "image"; data: string; mimeType: string } => img.type === "image" && img.data.length > 0);
+    // The interactive HTML card above already embeds the thumbnail + full
+    // video, so no standalone base64 `image` blocks are emitted. Claude's Apps
+    // bridge rejects raw image blocks mixed with an app view ("could not be
+    // processed: Error processing image" + blank iframe), so we keep only the
+    // text block carrying the card + structured JSON.
     const textJson = JSON.stringify(proxied, null, 2);
     return {
-     content: [...images, { type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
+     content: [{ type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
      structuredContent: proxied,
     };
    } catch (err) {
