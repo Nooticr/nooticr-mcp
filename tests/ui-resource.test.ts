@@ -10,7 +10,7 @@ const EXPECTED_DOMAIN = "4f32726b407d5d9929c7eff16b781080.claudemcpcontent.com";
 
 // Each tool gets its own distinct app resource URI (ext-apps#558) so Claude
 // renders a separated app/session per view instead of sharing one for all tools.
-const RESOURCE_URI = "ui://orchyn/analyze_post?tool=analyze_post";
+const RESOURCE_URI = "ui://orchyn/analyze_post";
 
 afterEach(() => {
   vi.unstubAllEnvs();

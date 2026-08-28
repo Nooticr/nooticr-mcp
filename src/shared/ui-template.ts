@@ -189,8 +189,21 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     schedule_post:"Schedule a post for future publishing."
   };
   function renderIdle(){
+    // Extract tool name from URI path segment (e.g. /ui://orchyn/analyze_post → analyze_post)
+    // or from ?tool= param if the host passes it.
+    var tool="";
     var params=new URLSearchParams(window.location.search);
-    var tool=params.get("tool")||"";
+    tool=params.get("tool")||"";
+    if(!tool){
+      var path=window.location.pathname;
+      var match=path.match(/\/ui:\/\/orchyn\/([a-z_]+)/i);
+      if(match)tool=match[1];
+    }
+    if(!tool){
+      var hash=window.location.hash;
+      var m2=hash.match(/\/ui:\/\/orchyn\/([a-z_]+)/i);
+      if(m2)tool=m2[1];
+    }
     var label=TOOL_NAMES[tool]||"Interactive View";
     var desc=TOOL_DESCS[tool]||"Results will appear here as soon as a tool returns.";
     var app=document.getElementById("app");
