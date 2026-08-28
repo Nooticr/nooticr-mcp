@@ -281,7 +281,9 @@ export function createMcpServer(
  // distinct URI per tool avoids a shared app instance/session colliding
  // between different tools (ext-apps#558). Each URI serves the same generic
  // template, which renders whichever structuredResult the tool delivers.
- const TOOL_URIS = [
+ // Every tool/view gets its own named app resource so it is distinguishable
+ // in MCP controllers by BOTH a unique URI and a unique human-readable name.
+ const TOOL_NAMES = [
   "analyze_post",
   "get_social_media",
   "discover_social_posts",
@@ -294,7 +296,16 @@ export function createMcpServer(
   "check_orchyn_credits",
   "buy_orchyn_credits",
   "understand_social_post",
- ].map(uiResource);
+ ];
+
+ // Human-readable resource name per tool (used in resources/list + tools/list).
+ function resourceName(tool: string): string {
+  const readable = tool
+   .split("_")
+   .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+   .join(" ");
+  return `Orchyn ${readable || "View"}`;
+ }
 
  // Build CSP resourceDomains from env so proxied thumbnails work
  const domains = [
@@ -310,9 +321,10 @@ export function createMcpServer(
   domains.push(apiUrl.trim().replace(/\/+$/, ""));
  }
 
- for (const uri of TOOL_URIS) {
+ for (const tool of TOOL_NAMES) {
+  const uri = uiResource(tool);
   server.registerResource(
-   "Orchyn Interactive View",
+   resourceName(tool),
    uri,
    { mimeType: RESOURCE_MIME_TYPE },
    async () => {

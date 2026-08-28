@@ -89,6 +89,13 @@ describe("MCP Apps resource metadata", () => {
     // the loading state (ext-apps#558: hosts key app state by resourceUri).
     expect(uris.length).toBeGreaterThan(1);
     expect(new Set(uris).size).toBe(uris.length);
+    // Each resource also exposes a distinct human-readable name (not all
+    // "Orchyn Interactive View") so tools are distinguishable in a controller.
+    const listed = await client.listResources();
+    const names = (listed.resources ?? []).map((r) => r.name).filter(Boolean);
+    expect(names.length).toBeGreaterThan(1);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names[0]).not.toBe("Orchyn Interactive View");
     // Each distinct URI is actually readable as an MCP Apps HTML resource.
     for (const uri of uris.slice(0, 2)) {
       const r = await client.readResource({ uri: uri as string });
