@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Sync the HTML template from the npm package to the Rust ui.rs file
-const { ORCHYN_UI_TEMPLATE } = require('./dist/shared/ui-template.js');
+const { ORCHYN_UI_TEMPLATE } = require('../dist/shared/ui-template.js');
 const fs = require('fs');
 
 const RUST_FILE = '/home/ondonda/rust/orchyn-server/crates/mcp/src/ui.rs';
@@ -23,7 +23,10 @@ const content = [
   '',
   '/// The full HTML template. Self-contained \u2014 no external dependencies.',
   '/// Auto-detects the tool result shape and renders the appropriate view.',
-  'pub const UI_TEMPLATE: &str = r##"' + ORCHYN_UI_TEMPLATE + '"##;',
+  '// NOTE: the raw string is delimited with three hashes (r###") because the',
+  '// template body contains "# sequences (SVG href="#r", CSS colors) that',
+  '// would terminate an r#" delimiter early and break the Rust build.',
+  'pub const UI_TEMPLATE: &str = r###"' + ORCHYN_UI_TEMPLATE + '"###;',
   '',
 ].join('\n');
 

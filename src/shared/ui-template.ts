@@ -365,9 +365,26 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       .map(function(s){return'<span class="stat-pill">'+s[1]+" "+fmtNum(s[0])+"</span>";}).join("");
     var handleHtml=handle?'<span class="handle">@'+esc(handle)+"</span>":"";
     var linkHtml=url?'<a href="'+esc(url)+'" target="_blank" class="btn" style="background:'+color+'">View on '+esc(platform)+' →</a>':"";
-    var thumbHtml=thumb?'<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"/>':"";
+    // Prefer video playback over a static thumbnail when the post has one
+    // (videoUrl, or a video mediaItem preview_url). Videos are proxied /
+    // re-hosted to a permanent orchyn URL so they play inside the CSP.
+    var video="";
+    if(typeof p.videoUrl==="string"&&p.videoUrl)video=p.videoUrl;
+    else if(p.mediaItems&&p.mediaItems.length){
+      for(var i=0;i<p.mediaItems.length;i++){
+        if(p.mediaItems[i].kind==="video"&&p.mediaItems[i].preview_url){video=p.mediaItems[i].preview_url;break;}
+      }
+    }
+    var mediaHtml="";
+    var vh=wide?"340px":"200px";
+    if(video){
+      mediaHtml='<video controls preload="metadata" playsinline poster="'+esc(thumb)+'" style="width:100%;height:'+vh+';object-fit:cover;display:block;background:#000">'
+        +'Your browser doesn\'t support video playback.</video>';
+    }else if(thumb){
+      mediaHtml='<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"/>';
+    }
     var ctTag=wide?'<span style="font-size:12px;color:var(--muted);text-transform:capitalize">'+esc(ct)+"</span>":"";
-    return '<div class="'+cls+'">'+thumbHtml+'<div class="card-body">'
+    return '<div class="'+cls+'">'+mediaHtml+'<div class="card-body">'
       +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
       +'<span class="badge" style="background:'+color+'15;color:'+color+'">'+emoji+" "+esc(platform)+"</span>"
       +ctTag+handleHtml+"</div>"

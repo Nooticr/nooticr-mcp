@@ -80,7 +80,7 @@ function proxyUrls(obj: unknown): unknown {
  if (obj && typeof obj === "object") {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-   if (["thumbnailUrl", "preview_url", "coverUrl", "avatarUrl", "avatar_thumb", "image_url", "url"].includes(k) && typeof v === "string") {
+   if (["thumbnailUrl", "preview_url", "coverUrl", "avatarUrl", "avatar_thumb", "image_url", "videoUrl", "video_url", "url"].includes(k) && typeof v === "string") {
     out[k] = proxyImageUrl(v);
    } else {
     out[k] = proxyUrls(v);
@@ -172,12 +172,22 @@ function buildAnalysisHtmlCard(
  const variationIdeas = Array.isArray(analysis.variationIdeas) ? analysis.variationIdeas.slice(0, 3) : [];
  const suggestedHook = typeof analysis.suggestedHook === "string" ? analysis.suggestedHook : "";
 
+ const videoUrl =
+  typeof post.videoUrl === "string"
+   ? post.videoUrl
+   : Array.isArray(post.mediaItems)
+     ? (post.mediaItems as Array<Record<string, unknown>>).find(
+       (m) => m.kind === "video" && typeof m.preview_url === "string"
+      )?.preview_url as string | undefined
+     : undefined;
+
  let html = `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden;margin:0 auto">`;
- // Thumbnail
- if (thumbnailUrl) {
-  html += `<div style="position:relative"><img src="${thumbnailUrl}" style="width:100%;max-height:400px;object-fit:cover;display:block" onerror="this.style.display='none'" /><div style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">`;
-  html += `<span style="background:${color};color:#fff;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600">${emoji} ${platform}</span>`;
-  html += `</div></div>`;
+ // Thumbnail / video
+ const badgeHtml = `<span style="background:${color};color:#fff;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600">${emoji} ${platform}</span>`;
+ if (videoUrl) {
+  html += `<div style="position:relative"><video src="${videoUrl}" controls preload="metadata" playsinline poster="${thumbnailUrl}" style="width:100%;max-height:400px;object-fit:contain;display:block;background:#000" onerror="this.outerHTML='<img src=&quot;${thumbnailUrl}&quot; style=&quot;width:100%;max-height:400px;object-fit:cover;display:block&quot;/>'">Your browser doesn't support video playback.</video><div style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">${badgeHtml}</div></div>`;
+ } else if (thumbnailUrl) {
+  html += `<div style="position:relative"><img src="${thumbnailUrl}" style="width:100%;max-height:400px;object-fit:cover;display:block" onerror="this.style.display='none'" /><div style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">${badgeHtml}</div></div>`;
  }
  // Header
  html += `<div style="padding:16px 20px">`;
