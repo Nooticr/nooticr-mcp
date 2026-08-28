@@ -27,6 +27,23 @@ type ToolContent =
  | { type: "text"; text: string }
  | { type: "image"; data: string; mimeType: string };
 
+/** Convert an arbitrary http(s) URL to a base64 MCP `image` data block. */
+async function fetchAsBase64Image(url: string, mimeType: string): Promise<ToolContent> {
+ try {
+  const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  if (!res.ok) return { type: "image" as const, data: "", mimeType };
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+   bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return { type: "image" as const, data: btoa(bin), mimeType };
+ } catch {
+  return { type: "image" as const, data: "", mimeType };
+ }
+}
+
 export interface MakeClientContext {
  authInfo?: AuthInfo;
 }
@@ -74,14 +91,19 @@ function proxyUrls(obj: unknown): unknown {
  return obj;
 }
 
-function toToolResult(proxy: McpProxyResult): { content: ToolContent[]; structuredContent?: Record<string, unknown> } {
- const images = proxy.contentBlocks
-  .filter((c) => c.type === "image")
-  .map((c) => ({
-   type: "image" as const,
-   data: String(c.data ?? ""),
-   mimeType: String(c.mimeType ?? "image/jpeg"),
-  }));
+async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolContent[]; structuredContent?: Record<string, unknown> }> {
+ // The MCP SDK's ImageContent only accepts `data` (base64). The orchyn
+ // backend now emits `url` image blocks pointing at permanent, re-hosted
+ // JPEG thumbnails (HEIC already transcoded), so convert those URLs to
+ // base64 data here — guaranteeing clients render a valid image.
+ const imgBlocks = proxy.contentBlocks.filter((c) => c.type === "image");
+ const images = await Promise.all(
+  imgBlocks.map((c) =>
+   c.url
+    ? fetchAsBase64Image(String(c.url), String(c.mimeType ?? "image/jpeg"))
+    : Promise.resolve({ type: "image" as const, data: String(c.data ?? ""), mimeType: String(c.mimeType ?? "image/jpeg") })
+  )
+ );
  // The Rust backend embeds HTML cards directly in the text block
  // (type:"text", text:"<div>...</div>\n\n{json}"). We extract the HTML
  // prefix from the first text contentBlock and prepend it.
@@ -284,7 +306,7 @@ export function createMcpServer(
    }
    try {
     const result = (await runVideoAnalysis(client, validation.url) as unknown) as Record<string, unknown> & {
-     inlineImages?: Array<{ data: string; mimeType?: string }>;
+     inlineImages?: Array<{ url?: string; data?: string; mimeType?: string }>;
     };
     // Remove internal field from the JSON shown to the model
     const { inlineImages: _omit, ...rest } = result;
@@ -298,11 +320,18 @@ export function createMcpServer(
     const creatorHandle = String(post.creatorHandle ?? "");
     const title = String(post.title ?? post.caption ?? "");
     const htmlCard = buildAnalysisHtmlCard(proxied, thumbnailUrl, platform, creatorHandle, title);
-    const images = (result.inlineImages ?? []).map((img) => ({
-     type: "image" as const,
-     data: String(img.data),
-     mimeType: String(img.mimeType ?? "image/jpeg"),
-    }));
+    // The backend attaches `_inlineImages` as permanent orchyn public URLs
+    // (re-hosted into storage, HEIC already transcoded to JPEG). The SDK's
+    // ImageContent only accepts base64 `data`, so fetch each URL and encode it.
+    const images: ToolContent[] = await Promise.all(
+     (result.inlineImages ?? [])
+      .filter((img) => typeof img === "object" && img !== null)
+      .map((img) =>
+       "url" in img && img.url
+        ? fetchAsBase64Image(String(img.url), String(img.mimeType ?? "image/jpeg"))
+        : Promise.resolve({ type: "image" as const, data: String((img as { data?: string }).data ?? ""), mimeType: String(img.mimeType ?? "image/jpeg") })
+      )
+    );
     const textJson = JSON.stringify(proxied, null, 2);
     return {
      content: [...images, { type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
@@ -339,7 +368,7 @@ export function createMcpServer(
   async (args: { url: string }, extra) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("get_social_media", { url: args.url }));
+    return await toToolResult(await client.callTool("get_social_media", { url: args.url }));
    } catch (err) {
     return toolError("get_social_media failed", err);
    }
@@ -374,7 +403,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("discover_social_posts", { ...args }));
+    return await toToolResult(await client.callTool("discover_social_posts", { ...args }));
    } catch (err) {
     return toolError("discover_social_posts failed", err);
    }
@@ -407,7 +436,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("get_user_posts", { ...args }));
+    return await toToolResult(await client.callTool("get_user_posts", { ...args }));
    } catch (err) {
     return toolError("get_user_posts failed", err);
    }
@@ -441,7 +470,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("analyze_creator_profile", { ...args }));
+    return await toToolResult(await client.callTool("analyze_creator_profile", { ...args }));
    } catch (err) {
     return toolError("analyze_creator_profile failed", err);
    }
@@ -469,7 +498,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("get_post_comments", { ...args }));
+    return await toToolResult(await client.callTool("get_post_comments", { ...args }));
    } catch (err) {
     return toolError("get_post_comments failed", err);
    }
@@ -501,7 +530,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("search_creators", { ...args }));
+    return await toToolResult(await client.callTool("search_creators", { ...args }));
    } catch (err) {
     return toolError("search_creators failed", err);
    }
@@ -529,7 +558,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("get_similar_creators", { ...args }));
+    return await toToolResult(await client.callTool("get_similar_creators", { ...args }));
    } catch (err) {
     return toolError("get_similar_creators failed", err);
    }
@@ -558,7 +587,7 @@ export function createMcpServer(
   ) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("discover_sounds", { ...args }));
+    return await toToolResult(await client.callTool("discover_sounds", { ...args }));
    } catch (err) {
     return toolError("discover_sounds failed", err);
    }
@@ -577,7 +606,7 @@ export function createMcpServer(
   async (_args: Record<string, never>, extra) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("check_orchyn_credits", {}));
+    return await toToolResult(await client.callTool("check_orchyn_credits", {}));
    } catch (err) {
     return toolError("check_orchyn_credits failed", err);
    }
@@ -596,7 +625,7 @@ export function createMcpServer(
   async (_args: Record<string, never>, extra) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("buy_orchyn_credits", {}));
+    return await toToolResult(await client.callTool("buy_orchyn_credits", {}));
    } catch (err) {
     return toolError("buy_orchyn_credits failed", err);
    }
@@ -625,7 +654,7 @@ export function createMcpServer(
   async (args: { url: string; focus?: string }, extra) => {
    const client = await makeClient(extra);
    try {
-    return toToolResult(await client.callTool("understand_social_post", { ...args }));
+    return await toToolResult(await client.callTool("understand_social_post", { ...args }));
    } catch (err) {
     return toolError("understand_social_post failed", err);
    }

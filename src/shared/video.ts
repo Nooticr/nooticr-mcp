@@ -134,9 +134,9 @@ export interface AnalysisResult {
   /**
    * Inline thumbnail images (`_inlineImages`) from the job response — emitted
    * as MCP `image` content blocks so Claude web/app renders the post
-   * thumbnail in chat.
+   * thumbnail in chat. Each carries a permanent orchyn public `url`.
    */
-  inlineImages?: Array<{ data: string; mimeType?: string }>;
+  inlineImages?: Array<{ url?: string; data?: string; mimeType?: string }>;
 }
 
 /**

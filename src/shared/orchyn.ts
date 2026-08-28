@@ -62,11 +62,11 @@ export interface VideoJob {
   post?: unknown;
   /**
    * Inline thumbnail images the backend attached to the job response as
-   * `_inlineImages` (base64 data so clients render the post thumbnail in
-   * chat). Preserved verbatim so analysis tools can surface them as MCP
-   * `image` content blocks — otherwise Claude web/app shows no thumbnail.
+   * `_inlineImages`. Each entry carries a permanent orchyn public `url`
+   * (the backend re-hosts thumbnails into storage and transcodes HEIC→JPEG)
+   * so clients render a valid public link instead of raw base64 CDN bytes.
    */
-  inlineImages?: Array<{ data: string; mimeType?: string }>;
+  inlineImages?: Array<{ url?: string; data?: string; mimeType?: string }>;
 }
 
 export interface JobStatus {
@@ -216,7 +216,7 @@ export class OrchynClient {
       body: appId !== undefined ? { url, appId } : { url },
     });
     const inline = Array.isArray(res?._inlineImages)
-      ? (res._inlineImages as Array<{ data: string; mimeType?: string }>)
+      ? (res._inlineImages as Array<{ url?: string; data?: string; mimeType?: string }>)
       : undefined;
     const job = res as unknown as VideoJob;
     return { ...job, inlineImages: inline };
