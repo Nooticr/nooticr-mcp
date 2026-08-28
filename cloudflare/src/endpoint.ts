@@ -184,7 +184,16 @@ export class McpEndpoint {
     }
 
     const res = await this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
-    console.log(`[mcp] ${methodLabel} → ${res.status} content-type=${res.headers.get("content-type") ?? "?"}`);
+    const resCT = res.headers.get("content-type") ?? "?";
+    const resCL = res.headers.get("content-length") ?? "?";
+    console.log(`[mcp] ${methodLabel} → ${res.status} ct=${resCT} cl=${resCL}`);
+    // For tool calls, log a snippet of the response body for debugging
+    if (methodLabel === "tools/call") {
+      try {
+        const body = await res.clone().text();
+        console.log(`[mcp] tools/call response (${body.length} bytes): ${body.substring(0, 500)}`);
+      } catch {}
+    }
     return res;
   }
 
@@ -241,11 +250,17 @@ export class McpEndpoint {
     request: McpRequest,
     authInfo: AuthInfo | undefined
   ): Promise<Response> {
+    const start = Date.now();
     try {
-      return await transport.handleRequest(request, { authInfo });
+      const res = await transport.handleRequest(request, { authInfo });
+      const elapsed = Date.now() - start;
+      console.log(`[mcp] wrapHandle took ${elapsed}ms → status=${res.status} ct=${res.headers.get("content-type") ?? "?"}`);
+      return res;
     } catch (err) {
+      const elapsed = Date.now() - start;
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[mcp] handleRequest error:", msg);
+      const stack = err instanceof Error ? err.stack?.substring(0, 300) : "";
+      console.error(`[mcp] wrapHandle ERROR after ${elapsed}ms: ${msg} ${stack}`);
       return jsonResponse(500, {
         jsonrpc: "2.0",
         error: { code: -32603, message: `Internal error: ${msg}` },
