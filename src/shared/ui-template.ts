@@ -222,10 +222,22 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     }
   });
 
-  // Show skeleton after 300ms of waiting (feels instant but shows loading for slow tools)
+  // Show loading state after 300ms — branded spinner until tool name arrives,
+  // then switch to the correct skeleton type.
   loadingTimer=setTimeout(function(){
     var app=document.getElementById("app");
-    if(app)app.innerHTML=renderSkeleton(currentTool);
+    if(!app)return;
+    if(currentTool){
+      // Tool name already known → show correct skeleton
+      app.innerHTML=renderSkeleton(currentTool);
+    }else{
+      // Tool name not yet known → show branded spinner (neutral)
+      app.innerHTML='<div class="loading-container fade-in">'
+        +'<div class="orchyn-logo"><svg width="40" height="40" viewBox="0 0 48 48" fill="none"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="rl"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#rl" transform="rotate(45)"/><use href="#rl" transform="rotate(90)"/><use href="#rl" transform="rotate(135)"/><use href="#rl" transform="rotate(180)"/><use href="#rl" transform="rotate(225)"/><use href="#rl" transform="rotate(270)"/><use href="#rl" transform="rotate(315)"/></g></svg></div>'
+        +'<div class="loading-brand">Orchyn</div>'
+        +'<div class="loading-text">Loading…</div>'
+        +'</div>';
+    }
   },300);
 
   // Fallback: if no tool-result arrives within 3s, check if data is embedded
@@ -509,19 +521,18 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   function updateProgress(params){
     var app=document.getElementById("app");
     if(!app)return;
-    // Learn the tool name and re-render skeleton if wrong
+    // Learn the tool name
     var toolName=params&&params.name?params.name:currentTool;
     if(toolName&&toolName!==currentTool){
       currentTool=toolName;
-      // Re-render with the correct skeleton type if still loading
-      if(app.querySelector(".loading-spinner")||app.querySelector(".skeleton")){
+      // Switch from spinner to correct skeleton if still loading
+      if(app.querySelector(".loading-spinner")||app.querySelector(".loading-container")||app.querySelector(".skeleton")){
         app.innerHTML=renderSkeleton(currentTool);
       }
     }
-    // Add a progress bar below the existing skeleton (don't replace it)
-    var existing=app.innerHTML;
-    if(existing.indexOf("progress-bar")===-1){
-      app.innerHTML=existing+'<div style="text-align:center;margin-top:12px"><div class="progress-bar" style="width:200px;margin:0 auto"><div class="progress-fill" style="width:60%"></div></div></div>';
+    // Add a progress bar below the existing content if not already present
+    if(!app.querySelector(".progress-bar")){
+      app.innerHTML=app.innerHTML+'<div style="text-align:center;margin-top:12px"><div class="progress-bar" style="width:200px;margin:0 auto"><div class="progress-fill" style="width:60%"></div></div></div>';
     }
   }
 
