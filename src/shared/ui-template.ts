@@ -314,7 +314,21 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
         +'<div class="skeleton" style="width:140px;height:14px"></div>'
         +'</div></div>';
     }
-    // Gallery tools → multiple small card skeletons (default)
+    // Gallery tools → multiple small card skeletons
+    // Unknown tool → default to 1 wide card (most common case: single URL tools)
+    if(!toolName||SINGLE_URL_TOOLS[toolName]||CREDIT_TOOLS[toolName]){
+      // Already handled above, but catch unknown tools with single card
+      if(!toolName){
+        return brandHeader+'<div class="fade-in" style="max-width:520px">'
+          +'<div class="skeleton-card" style="width:100%">'
+          +'<div class="skeleton skeleton-thumb" style="height:220px"></div>'
+          +'<div style="padding:14px 16px">'
+          +'<div class="skeleton skeleton-badge"></div>'
+          +'<div class="skeleton skeleton-line" style="width:90%"></div>'
+          +'<div class="skeleton skeleton-line medium"></div>'
+          +'</div></div></div>';
+      }
+    }
     var count=toolName==='discover_sounds'?4:toolName==='search_creators'||toolName==='get_similar_creators'?3:6;
     return brandHeader+'<div class="skeleton-gallery stagger">'
       +Array(count).fill(0).map(function(){
@@ -495,24 +509,20 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   function updateProgress(params){
     var app=document.getElementById("app");
     if(!app)return;
-    // If we just learned the tool name and the current skeleton is wrong,
-    // re-render with the correct skeleton type
+    // Learn the tool name and re-render skeleton if wrong
     var toolName=params&&params.name?params.name:currentTool;
     if(toolName&&toolName!==currentTool){
       currentTool=toolName;
-      // Only re-render skeleton if we're still in loading state (no result yet)
-      var el=document.getElementById("app");
-      if(el&&(el.querySelector(".loading-spinner")||el.querySelector(".skeleton"))){
-        el.innerHTML=renderSkeleton(currentTool);
+      // Re-render with the correct skeleton type if still loading
+      if(app.querySelector(".loading-spinner")||app.querySelector(".skeleton")){
+        app.innerHTML=renderSkeleton(currentTool);
       }
     }
-    var text=params&&params.arguments?JSON.stringify(params.arguments):"Processing…";
-    app.innerHTML='<div class="loading-container fade-in">'
-      +'<div class="orchyn-logo"><svg width="36" height="36" viewBox="0 0 48 48" fill="none"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="rp"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#rp" transform="rotate(45)"/><use href="#rp" transform="rotate(90)"/><use href="#rp" transform="rotate(135)"/><use href="#rp" transform="rotate(180)"/><use href="#rp" transform="rotate(225)"/><use href="#rp" transform="rotate(270)"/><use href="#rp" transform="rotate(315)"/></g></svg></div>'
-      +'<div class="loading-brand">Orchyn</div>'
-      +'<div class="loading-text">'+esc(text.length>80?text.slice(0,80)+"…":text)+'</div>'
-      +'<div class="progress-bar" style="width:200px"><div class="progress-fill" style="width:60%"></div></div>'
-      +'</div>';
+    // Add a progress bar below the existing skeleton (don't replace it)
+    var existing=app.innerHTML;
+    if(existing.indexOf("progress-bar")===-1){
+      app.innerHTML=existing+'<div style="text-align:center;margin-top:12px"><div class="progress-bar" style="width:200px;margin:0 auto"><div class="progress-fill" style="width:60%"></div></div></div>';
+    }
   }
 
   // Global helpers
