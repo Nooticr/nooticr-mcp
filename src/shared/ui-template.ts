@@ -76,7 +76,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .gallery{display:flex;flex-wrap:wrap;gap:10px;}
 .card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:300px;background:var(--card);display:inline-block;vertical-align:top;box-shadow:var(--shadow-sm);transition:var(--transition);cursor:default;}
 .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--muted);}
-.card-wide{max-width:520px;width:100%;}
+.card-wide{width:100%;}
 .card img{width:100%;height:200px;object-fit:cover;display:block;transition:transform .3s ease;}
 .card:hover img{transform:scale(1.02);}
 .card-wide img{max-height:340px;}
@@ -292,7 +292,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       +'<span style="font-size:13px;font-weight:600;color:var(--muted)">Orchyn</span></div>';
     // Single URL tools → 1 wide card skeleton
     if(SINGLE_URL_TOOLS[toolName]){
-      return brandHeader+'<div class="fade-in" style="max-width:520px">'
+      return brandHeader+'<div class="fade-in">'
         +'<div class="skeleton-card" style="width:100%">'
         +'<div class="skeleton skeleton-thumb" style="height:220px"></div>'
         +'<div style="padding:14px 16px">'
