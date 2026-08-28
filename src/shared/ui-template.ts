@@ -2,13 +2,13 @@
  * MCP Apps HTML UI template for Orchyn tools.
  *
  * Features:
- * - Skeleton loading shimmer while tool executes
+ * - Content renders when a tool result arrives (no loading screen)
+ * - Idle/resource-preview state shows a branded ready view
  * - Smooth fade-in transitions when data arrives
  * - Expandable analysis sections (click to expand/collapse)
  * - Click-to-copy on hashtags, hooks, quotes
  * - Hover micro-interactions on cards
  * - Dark/light theme auto-detection
- * - Progress indicator for multi-step tools
  * - Responsive layout
  */
 
@@ -35,29 +35,6 @@ export const ORCHYN_UI_TEMPLATE = `<!DOCTYPE html>
 }}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);padding:16px;line-height:1.5;}
-
-/* ─── Loading / Skeleton ─── */
-.loading-container{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:12px;}
-.orchyn-logo{animation:logoSpin 3s ease-in-out infinite;}
-@keyframes logoSpin{0%,100%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.1)}}
-.loading-brand{font-size:18px;font-weight:700;letter-spacing:-0.02em;color:var(--fg);}
-.loading-spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:13px;color:var(--muted);animation:pulse 1.5s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-
-.skeleton{background:var(--tag);border-radius:var(--radius-sm);overflow:hidden;position:relative;}
-.skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);animation:shimmer 1.5s infinite;}
-@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.skeleton-thumb{width:100%;height:180px;border-radius:var(--radius) var(--radius) 0 0;}
-.skeleton-line{height:14px;margin:8px 14px;border-radius:4px;}
-.skeleton-line.short{width:60%;}
-.skeleton-line.medium{width:80%;}
-.skeleton-badge{width:80px;height:20px;border-radius:999px;margin:12px 14px 0;}
-.skeleton-gallery{display:flex;flex-wrap:wrap;gap:10px;}
-.skeleton-card{width:300px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--card);}
-.skeleton-creator{width:220px;border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--card);}
-.skeleton-avatar{width:48px;height:48px;border-radius:50%;margin-bottom:8px;}
 
 /* ─── Content entrance ─── */
 .fade-in{animation:fadeIn .4s ease-out;}
@@ -118,10 +95,6 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .section-content.open{max-height:600px;padding:10px 12px;}
 .section-text{font-size:13px;color:var(--fg);line-height:1.6;}
 
-/* ─── Progress bar ─── */
-.progress-bar{height:6px;background:var(--tag);border-radius:999px;overflow:hidden;margin:6px 0;}
-.progress-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,var(--blue),var(--green));}
-
 /* ─── Hook strength ─── */
 .hook-bar-track{display:flex;align-items:center;gap:10px;margin-top:6px;}
 .hook-bar{flex:1;height:10px;background:var(--tag);border-radius:999px;overflow:hidden;}
@@ -168,30 +141,17 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 </head>
 <body>
 <div id="app">
-  <div class="loading-container">
-    <div class="orchyn-logo">
-      <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-        <g fill="var(--accent)" transform="translate(24 24)">
-          <circle r="4.1"/>
-          <g id="r"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g>
-          <use href="#r" transform="rotate(45)"/>
-          <use href="#r" transform="rotate(90)"/>
-          <use href="#r" transform="rotate(135)"/>
-          <use href="#r" transform="rotate(180)"/>
-          <use href="#r" transform="rotate(225)"/>
-          <use href="#r" transform="rotate(270)"/>
-          <use href="#r" transform="rotate(315)"/>
-        </g>
-      </svg>
-    </div>
-    <div class="loading-brand">Orchyn</div>
-    <div class="loading-text">Analyzing…</div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;text-align:center;padding:40px 24px;background:var(--panel, #0d1117);color:var(--fg, #e6edf3);font-family:system-ui,-apple-system,sans-serif">
+    <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
+      <g fill="var(--accent, #3fb950)" transform="translate(24 24)"><circle r="4.1"/><g id="ri"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#ri" transform="rotate(45)"/><use href="#ri" transform="rotate(90)"/><use href="#ri" transform="rotate(135)"/><use href="#ri" transform="rotate(180)"/><use href="#ri" transform="rotate(225)"/><use href="#ri" transform="rotate(270)"/><use href="#ri" transform="rotate(315)"/></g>
+    </svg>
+    <div style="margin-top:16px;font-size:18px;font-weight:700">Orchyn</div>
+    <div style="margin-top:8px;font-size:14px;color:#8b949e;max-width:340px;line-height:1.5">Social media intelligence. This view will render your post, creator, and trend results as soon as a tool returns.</div>
   </div>
 </div>
 <script>
 (function(){
   var nextId=1;var pending=new Map();
-  var loadingTimer=null;
   var currentTool="";
 
   function send(method,params){
@@ -208,68 +168,18 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     if(d.id&&pending.has(d.id)){
       var p=pending.get(d.id);pending.delete(d.id);
       if(d.error)p.reject(new Error(d.error.message||JSON.stringify(d.error)));
-      else p.resolve(d.result);return;
+      else p.resolve(d.result);
+      return;
     }
     if(d.method==="ui/notifications/tool-result"){
       toolResultReceived=true;
-      clearTimeout(loadingTimer);
-      clearTimeout(fallbackTimer);
       render(d.params);
       setTimeout(reportSize,50);
     }
     if(d.method==="ui/notifications/tool-input-partial"){
       currentTool=d.params&&d.params.name?d.params.name:"";
-      updateProgress(d.params);
     }
   });
-
-  // Show loading state after 300ms — branded spinner until tool name arrives,
-  // then switch to the correct skeleton type.
-  loadingTimer=setTimeout(function(){
-    var app=document.getElementById("app");
-    if(!app)return;
-    if(currentTool){
-      // Tool name already known → show correct skeleton
-      app.innerHTML=renderSkeleton(currentTool);
-    }else{
-      // Tool name not yet known → show branded spinner (neutral)
-      app.innerHTML='<div class="loading-container fade-in">'
-        +'<div class="orchyn-logo"><svg width="40" height="40" viewBox="0 0 48 48" fill="none"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="rl"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#rl" transform="rotate(45)"/><use href="#rl" transform="rotate(90)"/><use href="#rl" transform="rotate(135)"/><use href="#rl" transform="rotate(180)"/><use href="#rl" transform="rotate(225)"/><use href="#rl" transform="rotate(270)"/><use href="#rl" transform="rotate(315)"/></g></svg></div>'
-        +'<div class="loading-brand">Orchyn</div>'
-        +'<div class="loading-text">Loading…</div>'
-        +'</div>';
-    }
-  },300);
-
-  // Fallback: if no tool-result arrives within 3s, check if data is embedded
-  // in the page (some hosts pass structuredContent via URL hash or postMessage)
-  var fallbackTimer=setTimeout(function(){
-    if(toolResultReceived)return;
-    // Try to extract data from URL hash (host may pass structuredContent here)
-    try{
-      var hash=window.location.hash.slice(1);
-      if(hash){
-        var decoded=JSON.parse(decodeURIComponent(hash));
-        if(decoded&&typeof decoded==="object"){render(decoded);return;}
-      }
-    }catch(e){}
-    // Try to extract from URL search params
-    try{
-      var params=new URLSearchParams(window.location.search);
-      var dataParam=params.get("data");
-      if(dataParam){
-        var decoded=JSON.parse(decodeURIComponent(dataParam));
-        if(decoded&&typeof decoded==="object"){render(decoded);return;}
-      }
-    }catch(e){}
-    // Last resort: show a branded card indicating results are available
-    var app=document.getElementById("app");
-    if(app)app.innerHTML='<div class="card card-wide fade-in"><div class="card-body" style="text-align:center;padding:24px">'
-      +'<svg width="28" height="28" viewBox="0 0 48 48" fill="none" style="margin-bottom:8px"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="rf"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#rf" transform="rotate(45)"/><use href="#rf" transform="rotate(90)"/><use href="#rf" transform="rotate(135)"/><use href="#rf" transform="rotate(180)"/><use href="#rf" transform="rotate(225)"/><use href="#rf" transform="rotate(270)"/><use href="#rf" transform="rotate(315)"/></g></svg>'
-      +'<div style="font-size:14px;font-weight:600;margin-bottom:4px">✅ Results ready</div>'
-      +'<div style="font-size:12px;color:var(--muted)">Orchyn analysis complete — see the full response in the chat.</div>'
-      +'</div></div>';
-  },3000);
 
   // MCP Apps handshake.
   // Claude's McpUiInitializeRequestSchema requires appInfo, appCapabilities
@@ -331,70 +241,6 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 
   function copyText(text){
     navigator.clipboard.writeText(text).catch(function(){});
-  }
-
-  // ─── Skeleton ───
-  // Tools that analyze/fetch a single URL: show 1 wide card skeleton
-  var SINGLE_URL_TOOLS={analyze_post:1,get_social_media:1,understand_social_post:1,get_post_comments:1,analyze_creator_profile:1};
-  // Tools that return galleries: show multiple small card skeletons
-  var GALLERY_TOOLS={discover_social_posts:1,get_user_posts:1,search_creators:1,get_similar_creators:1,discover_sounds:1};
-  // Tools that return credits/checkout: show 1 credit card skeleton
-  var CREDIT_TOOLS={check_orchyn_credits:1,buy_orchyn_credits:1};
-
-  function renderSkeleton(toolName){
-    // Branded header above skeletons
-    var brandHeader='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;justify-content:center">'
-      +'<svg width="20" height="20" viewBox="0 0 48 48" fill="none"><g fill="var(--accent)" transform="translate(24 24)"><circle r="4.1"/><g id="sb"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#sb" transform="rotate(45)"/><use href="#sb" transform="rotate(90)"/><use href="#sb" transform="rotate(135)"/><use href="#sb" transform="rotate(180)"/><use href="#sb" transform="rotate(225)"/><use href="#sb" transform="rotate(270)"/><use href="#sb" transform="rotate(315)"/></g></svg>'
-      +'<span style="font-size:13px;font-weight:600;color:var(--muted)">Orchyn</span></div>';
-    // Single URL tools → 1 wide card skeleton
-    if(SINGLE_URL_TOOLS[toolName]){
-      return brandHeader+'<div class="fade-in">'
-        +'<div class="skeleton-card" style="width:100%">'
-        +'<div class="skeleton skeleton-thumb" style="height:220px"></div>'
-        +'<div style="padding:14px 16px">'
-        +'<div class="skeleton skeleton-badge"></div>'
-        +'<div class="skeleton skeleton-line" style="width:90%"></div>'
-        +'<div class="skeleton skeleton-line medium"></div>'
-        +'<div style="display:flex;gap:6px;margin-top:10px">'
-        +'<div class="skeleton" style="width:70px;height:28px;border-radius:999px"></div>'
-        +'<div class="skeleton" style="width:60px;height:28px;border-radius:999px"></div>'
-        +'<div class="skeleton" style="width:65px;height:28px;border-radius:999px"></div>'
-        +'</div></div></div></div>';
-    }
-    // Credit tools → credit card skeleton
-    if(CREDIT_TOOLS[toolName]){
-      return brandHeader+'<div class="fade-in" style="max-width:380px">'
-        +'<div class="credits-card" style="margin:0">'
-        +'<div class="skeleton" style="width:120px;height:20px;margin-bottom:14px"></div>'
-        +'<div class="skeleton" style="width:80px;height:40px;margin-bottom:8px"></div>'
-        +'<div class="skeleton" style="width:140px;height:14px"></div>'
-        +'</div></div>';
-    }
-    // Gallery tools → multiple small card skeletons
-    // Unknown tool → default to 1 wide card (most common case: single URL tools)
-    if(!toolName||SINGLE_URL_TOOLS[toolName]||CREDIT_TOOLS[toolName]){
-      // Already handled above, but catch unknown tools with single card
-      if(!toolName){
-        return brandHeader+'<div class="fade-in" style="max-width:520px">'
-          +'<div class="skeleton-card" style="width:100%">'
-          +'<div class="skeleton skeleton-thumb" style="height:220px"></div>'
-          +'<div style="padding:14px 16px">'
-          +'<div class="skeleton skeleton-badge"></div>'
-          +'<div class="skeleton skeleton-line" style="width:90%"></div>'
-          +'<div class="skeleton skeleton-line medium"></div>'
-          +'</div></div></div>';
-      }
-    }
-    var count=toolName==='discover_sounds'?4:toolName==='search_creators'||toolName==='get_similar_creators'?3:6;
-    return brandHeader+'<div class="skeleton-gallery stagger">'
-      +Array(count).fill(0).map(function(){
-        return '<div class="skeleton-card">'
-          +'<div class="skeleton skeleton-thumb"></div>'
-          +'<div class="skeleton skeleton-badge"></div>'
-          +'<div class="skeleton skeleton-line medium"></div>'
-          +'<div class="skeleton skeleton-line short"></div>'
-          +'</div>';
-      }).join("")+'</div>';
   }
 
   // ─── Post Card ───
@@ -625,22 +471,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     setTimeout(reportSize,50);
   }
 
+  // tool-input-partial — no loading UI anymore; just retain the tool name in
+  // case future logic needs it. Content only appears via tool-result.
   function updateProgress(params){
-    var app=document.getElementById("app");
-    if(!app)return;
-    // Learn the tool name
-    var toolName=params&&params.name?params.name:currentTool;
-    if(toolName&&toolName!==currentTool){
-      currentTool=toolName;
-      // Switch from spinner to correct skeleton if still loading
-      if(app.querySelector(".loading-spinner")||app.querySelector(".loading-container")||app.querySelector(".skeleton")){
-        app.innerHTML=renderSkeleton(currentTool);
-      }
-    }
-    // Add a progress bar below the existing content if not already present
-    if(!app.querySelector(".progress-bar")){
-      app.innerHTML=app.innerHTML+'<div style="text-align:center;margin-top:12px"><div class="progress-bar" style="width:200px;margin:0 auto"><div class="progress-fill" style="width:60%"></div></div></div>';
-    }
+    var toolName=params&&params.name?params.name:null;
+    if(toolName)currentTool=toolName;
   }
 
   // Global helpers
