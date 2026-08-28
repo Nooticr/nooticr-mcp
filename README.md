@@ -2,7 +2,8 @@
 
 MCP (Model Context Protocol) server for [orchyn](https://orchyn.com) — fetch,
 discover and understand social posts (TikTok, Instagram, YouTube, X/Twitter,
-Douyin, Xiaohongshu, Bilibili) with your orchyn account and orchyn credits.
+Douyin, Xiaohongshu, Bilibili, LinkedIn) with your orchyn account and orchyn
+credits.
 
 ## Install (one link)
 
@@ -38,12 +39,12 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 | Tool | Credits | Description |
 |------|---------|-------------|
-| `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow) from a TikTok/Instagram/YouTube/X-Twitter/Douyin/Xiaohongshu/Bilibili URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
+| `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow, text) from a TikTok/Instagram/YouTube/X-Twitter/Douyin/Xiaohongshu/Bilibili/LinkedIn URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
 | `get_social_media` | 1 | Fetch a post's media from a URL: `contentType` (video/image/carousel/slideshow), title, caption, author, stats, direct media URLs **+ inline thumbnail image in chat**. |
 | `discover_social_posts` | 2 | **Preferred.** Find recent posts (video/image/carousel/slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili. Each post includes title/caption, views/likes/comments, author, `externalUrl` + **inline thumbnails (4 at a time)** — see *Images in chat* below. Supports `limit`/`offset` pagination (“next”). |
-| `get_user_posts` | 2 | List recent posts by a creator handle (e.g. `@zoundsapp`) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter or Bilibili — title/caption, `thumbnailUrl`, `externalUrl`, views/likes/comments, **inline thumbnails (up to 4)**. Use to scan a whole profile or spot patterns across an account. |
-| `analyze_creator_profile` | 15 | Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter or Bilibili: fetches recent posts, runs multimodal AI on up to 3, then synthesizes a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, engagement patterns, audience insights, variation ideas, collaboration fit. |
-| `get_post_comments` | 2 | Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter or Bilibili, plus keyword clusters from TikTok Analytics when available — audience sentiment/audience-signal analysis. |
+| `get_user_posts` | 2 | List recent posts by a creator handle (e.g. `@zoundsapp`) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile `public_id`, e.g. `billgates`) — title/caption, `thumbnailUrl`, `externalUrl`, views/likes/comments, **inline thumbnails (up to 4)**. Use to scan a whole profile or spot patterns across an account. |
+| `analyze_creator_profile` | 15 | Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn: fetches recent posts, runs multimodal AI on up to 3, then synthesizes a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, engagement patterns, audience insights, variation ideas, collaboration fit. |
+| `get_post_comments` | 2 | Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics when available — audience sentiment/audience-signal analysis. |
 | `search_creators` | 2 | Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, signature, verified status. Use to find influencers to vet or analyze. |
 | `get_similar_creators` | 2 | Find lookalike creators for a given handle (TikTok similar-user recommendations or Instagram similar users) — “if this creator works, here are more like them”. |
 | `discover_sounds` | 2 | Discover trending sounds/music for a keyword on TikTok or Instagram — sound choice is a huge ranking signal for TikTok virality. Returns title, artist, duration, play/cover URLs. |
@@ -57,9 +58,23 @@ All tools require a connected orchyn account and are billed against your orchyn 
 
 `*` `analyze_post` also bills against **workspace** credits (first free grant); the other tools bill against **per-user MCP** credits (never tied to an app/workspace).
 
-## Images in Claude / ChatGPT chat
+## Interactive cards in Claude / ChatGPT chat
 
-Every tool that returns posts also renders **inline thumbnails** directly in the chat:
+Every tool that returns posts also renders **inline interactive cards** directly
+in the chat (MCP Apps `ui://orchyn/view` resource rendered in a sandboxed
+iframe):
+
+- **Video posts** (TikTok/IG/YouTube/Douyin/LinkedIn) — an inline `<video>`
+  player with the thumbnail as poster, playing the re-hosted permanent MP4
+  (no expiring CDN tokens).
+- **Carousels / slideshows** — a horizontally scrollable strip of every slide
+  with an image count chip.
+- **Single images** — inline thumbnail.
+- **Text-only posts** (LinkedIn / X) — a styled quote block of the post text.
+- **Official brand marks** — each card shows the platform's real logo
+  (simple-icons) in its brand color instead of an emoji.
+
+Also **inline thumbnails** render for the model / plain-text clients:
 
 - `get_social_media` / `understand_social_post` / `analyze_post` — up to 4 frames inline (poster + carousel slides). The full `mediaItems[].preview_url` + `thumbnailUrl` stay in `structuredContent` for the model to reason over.
 - `discover_social_posts` / `get_user_posts` / `analyze_creator_profile` — each returned post shows its thumbnail inline (up to 4 at once) together with its title/caption + views/likes/comments. Say **"next"** or **"show more"** — Claude will re-call with `offset`/`limit` pagination. Say **"analyze the 2nd one"** — Claude calls `analyze_post` or `understand_social_post` on that URL.
@@ -256,8 +271,10 @@ per the MCP 2025-03-26 spec):
 - Douyin: `douyin.com/*`
 - Xiaohongshu: `xiaohongshu.com/*`, `xhslink.com/*`
 - Bilibili: `bilibili.com/*`, `b23.tv/*`
+- LinkedIn: `linkedin.com/*` (posts, profile URLs)
 
-All tools accept these hosts and handle **video, image, carousel and slideshow** posts.
+All tools accept these hosts and handle **video, image, carousel, slideshow
+and text** posts.
 
 ## Troubleshooting
 
@@ -302,7 +319,7 @@ package for **Claude Desktop**, **Cursor**, and **OpenAI Agents SDK**.
 ```bash
 npm install
 npm run build    # tsc
-npm test         # vitest (54 unit tests, mocked fetch — no network)
+npm test         # vitest (66 unit tests, mocked fetch — no network)
 ```
 
 ## License

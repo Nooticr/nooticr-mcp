@@ -2,8 +2,9 @@
 
 `orchyn-mcp` is an MCP server exposing **one tool** — `analyze_post` — that
 starts an AI analysis of a TikTok / Instagram / YouTube / X / Douyin /
-Xiaohongshu / Bilibili video from its link, authenticated with the user's
-orchyn account (OAuth) and billed against the user's orchyn server credits.
+Xiaohongshu / Bilibili / LinkedIn post (video, image, carousel or text) from
+its link, authenticated with the user's orchyn account (OAuth) and billed
+against the user's orchyn server credits.
 
 This document is the submission package for the three major MCP platforms:
 **Claude Desktop**, **Cursor**, and **OpenAI** (Agents SDK).
@@ -233,10 +234,10 @@ Environment for the MCP itself:
 `analyze_post(url: string)` — the only tool.
 
 - Accepts public TikTok / Instagram / YouTube / X / Douyin / Xiaohongshu /
-  Bilibili links (`tiktok.com`, `vm.tiktok.com`, `instagram.com`,
+  Bilibili / LinkedIn links (`tiktok.com`, `vm.tiktok.com`, `instagram.com`,
   `instagr.am`, `youtube.com`, `youtu.be`, `m.youtube.com` incl. `/shorts/`,
   `x.com`, `twitter.com`, `douyin.com`, `xiaohongshu.com`, `xhslink.com`,
-  `bilibili.com`, `b23.tv`).
+  `bilibili.com`, `b23.tv`, `linkedin.com`).
 - Calls `POST /mcp/analyze-post`, which imports the post, debits orchyn
   credits (10 per analysis; first analysis free per workspace), and queues an
   analysis job.
