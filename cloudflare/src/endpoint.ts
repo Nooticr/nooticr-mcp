@@ -107,6 +107,10 @@ export class McpEndpoint {
   private env: Env;
   private transport?: WebStandardStreamableHTTPServerTransport;
   private server?: ReturnType<typeof createMcpServer>;
+  /** Track whether the transport has completed its initialize handshake.
+   *  The SDK's `_initialized` is private — we maintain our own flag via
+   *  the `onsessioninitialized` callback. */
+  private initialized = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     this.ctx = ctx;
@@ -116,17 +120,14 @@ export class McpEndpoint {
   private async ensureServer() {
     if (this.transport && this.server) return;
     this.transport = new WebStandardStreamableHTTPServerTransport({
-      // The DO instance *is* the session, so the transport reuses the DO name
-      // (the mcp-session-id). This makes the transport's own session id stable
-      // and lets the SDK validate the Mcp-Session-Id header across evictions
-      // once we re-initialize on cold start.
       sessionIdGenerator: () => this.ctx.id.name ?? this.ctx.id.toString(),
       enableJsonResponse: true,
-      onsessioninitialized: () => {},
+      onsessioninitialized: () => {
+        this.initialized = true;
+        console.log(`[mcp] session initialized for DO ${this.ctx.id.name}`);
+      },
     });
     this.server = createMcpServer(async (ctx) => {
-      // Re-read from KV each call so tokens rotated by a refresh on a
-      // previous tool call (makeClientForSession) are picked up.
       const t = ctx.authInfo?.token ?? "";
       const s = await verifyToken(this.env, t);
       return makeClientForSession(this.env, t, s);
@@ -146,14 +147,8 @@ export class McpEndpoint {
       });
     }
 
-    // Lazy-build the server/transport on first fetch to this DO instance.
-    // `ensureServer` is idempotent within the lifetime of one DO instance; a
-    // fresh instance (post-eviction) builds an un-initialized transport, which
-    // the SDK would reject with 400 for any non-initialize request. We fix
-    // that by re-running the initialize handshake internally below.
     await this.ensureServer();
     const transport = this.transport!;
-    const server = this.server!;
 
     const authInfo: AuthInfo | undefined = token
       ? {
@@ -166,56 +161,79 @@ export class McpEndpoint {
         }
       : undefined;
 
-    // Is this the initialize request itself? Then let the transport handle it
-    // normally — the SDK marks the session initialized and returns the id.
+    // Sniff the JSON-RPC method to handle initialize vs. other requests.
     const method =
       request.headers.get("mcp-method") ??
       (await sniffMethod(request.clone() as unknown as McpRequest));
+    const methodLabel = method || "unknown";
+    const contentLength = request.headers.get("content-length") ?? "?";
+    console.log(`[mcp] ${request.method} method=${methodLabel} len=${contentLength} initialized=${this.initialized}`);
 
     if (method === "initialize") {
-      return this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+      const res = await this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+      console.log(`[mcp] initialize → ${res.status}`);
+      return res;
     }
 
-    // Non-initialize request on a fresh (post-eviction) transport: the SDK
-    // requires the session to be initialized first. Re-run initialize so the
-    // transport accepts the client's request, mirroring what the client's
-    // original initialize did. We construct an internal initialize message and
-    // let the SDK's statefulness apply, then dispatch the real request.
-    if (!(transport as unknown as { _initialized?: boolean })._initialized) {
-      // Re-run the initialize handshake internally so a cold (post-eviction)
-      // transport accepts a client's non-initialize request. The transport's
-      // `sessionIdGenerator` returns this DO's name, which matches the
-      // Mcp-Session-Id header Claude sends, so validation passes after init.
-      const initReq = new Request(request.url, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json, text/event-stream",
-          authorization: request.headers.get("authorization") ?? "",
-          "mcp-session-id": this.ctx.id.name ?? this.ctx.toString(),
-          "mcp-protocol-version": PROTOCOL_VERSION,
+    // Non-initialize on a cold transport: re-run the initialize handshake
+    // so the SDK accepts subsequent requests. Only do this ONCE — our own
+    // `initialized` flag tracks it (the SDK's `_initialized` is private).
+    if (!this.initialized) {
+      console.log("[mcp] re-initializing transport (cold DO)");
+      await this.reInitialize(transport, authInfo);
+    }
+
+    const res = await this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+    console.log(`[mcp] ${methodLabel} → ${res.status} content-type=${res.headers.get("content-type") ?? "?"}`);
+    return res;
+  }
+
+  /**
+   * Re-run the MCP initialize + initialized handshake so a cold
+   * (post-eviction) transport accepts non-initialize requests.
+   */
+  private async reInitialize(
+    transport: WebStandardStreamableHTTPServerTransport,
+    authInfo: AuthInfo | undefined
+  ) {
+    const sessionId = this.ctx.id.name ?? this.ctx.id.toString();
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      "mcp-session-id": sessionId,
+      "mcp-protocol-version": PROTOCOL_VERSION,
+    };
+    // 1. Send initialize
+    const initReq = new Request("https://mcp.orchyn.com/mcp", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: PROTOCOL_VERSION,
+          capabilities: {},
+          clientInfo: { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
         },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "initialize",
-          params: {
-            protocolVersion: PROTOCOL_VERSION,
-            capabilities: {},
-            clientInfo: { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
-          },
-        }),
-      }) as unknown as McpRequest;
-      const initRes = await transport.handleRequest(initReq, { authInfo });
-      const initText = await initRes.text().catch(() => "");
-      // Whether or not re-init succeeded, hand the real request to the SDK.
-      // If re-init worked the transport is initialized and the request is
-      // accepted; if it didn't, the client still gets a JSON-RPC reply rather
-      // than a hard 400 shell.
-      return this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
-    }
+      }),
+    }) as unknown as McpRequest;
+    const initRes = await transport.handleRequest(initReq, { authInfo });
+    // Consume the response body so the stream is released
+    await initRes.text().catch(() => "");
 
-    return this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+    // 2. Send initialized notification (required by the protocol)
+    const notifReq = new Request("https://mcp.orchyn.com/mcp", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "notifications/initialized",
+      }),
+    }) as unknown as McpRequest;
+    const notifRes = await transport.handleRequest(notifReq, { authInfo });
+    await notifRes.text().catch(() => "");
+    console.log("[mcp] re-initialization complete");
   }
 
   private async wrapHandle(
@@ -227,7 +245,12 @@ export class McpEndpoint {
       return await transport.handleRequest(request, { authInfo });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return jsonResponse(500, { error: `Internal error: ${msg}` });
+      console.error("[mcp] handleRequest error:", msg);
+      return jsonResponse(500, {
+        jsonrpc: "2.0",
+        error: { code: -32603, message: `Internal error: ${msg}` },
+        id: null,
+      });
     }
   }
 }
