@@ -28,7 +28,17 @@ function toToolResult(proxy: McpProxyResult): { content: ToolContent[] } {
    data: String(c.data ?? ""),
    mimeType: String(c.mimeType ?? "image/jpeg"),
   }));
- const text = JSON.stringify(proxy.structured ?? {}, null, 2);
+ // The Rust backend embeds HTML cards directly in the text block
+ // (type:"text", text:"<div>...</div>\n\n{json}"). We extract the HTML
+ // prefix from the first text contentBlock and prepend it.
+ const textBlock = proxy.contentBlocks.find((c) => c.type === "text");
+ const rawText = textBlock ? String(textBlock.text ?? "") : "";
+ const htmlPrefix = rawText.startsWith("<")
+  ? rawText.substring(0, rawText.indexOf("\n\n{")).trimEnd()
+  : "";
+ const structured = proxy.structured as Record<string, unknown> | undefined;
+ const textJson = JSON.stringify(structured ?? {}, null, 2);
+ const text = htmlPrefix ? `${htmlPrefix}\n\n${textJson}` : textJson;
  return { content: [...images, { type: "text", text }] };
 }
 

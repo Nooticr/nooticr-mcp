@@ -19,6 +19,8 @@ import {
   deletePending,
   storePending,
   storeSession,
+  verifyToken,
+  validMcpToken,
   isRateLimited,
   escapeHtml,
   verifyPkce,
@@ -47,6 +49,9 @@ export default {
     }
     if (path === "/register" && method === "POST") {
       return handleRegister(request, env);
+    }
+    if (path === "/dashboard" && method === "GET") {
+      return handleDashboard(request, env);
     }
     if (path === "/register" && method === "OPTIONS") {
       return new Response(null, {
@@ -97,6 +102,67 @@ function htmlPage(title: string, body: string): string {
     `<h1>${escapeHtml(title)}</h1>${body}</body></html>`;
 }
 
+async function handleDashboard(request: Request, env: Env): Promise<Response> {
+  const token = bearerToken(request) || new URL(request.url).searchParams.get("token") || "";
+  let session: Awaited<ReturnType<typeof verifyToken>> = undefined;
+  let balance: number | null = null;
+  let isAuthed = false;
+  if (token) {
+    session = await verifyToken(env, token);
+    isAuthed = !!session;
+    if (isAuthed && session) {
+      try {
+        // Use the MCP check_credits tool via the Rust server to get balance
+        const client = new OrchynClient(env.ORCHYN_BASE_URL, (session as any).orchynAccessToken ?? "");
+        const res = await client.callTool("check_orchyn_credits", {});
+        const structured = (res as any).structured as Record<string, unknown> | undefined;
+        if (structured && typeof structured.balance === "number") balance = structured.balance as number;
+        else if (typeof (res as any).balance === "number") balance = (res as any).balance;
+      } catch {}
+    }
+  }
+  const title = "Orchyn MCP Dashboard";
+  const body = `
+    <div style="max-width:56rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#14151a">
+      <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:700"><svg width="28" height="28" viewBox="0 0 48 48" fill="none"><g fill="#ff4d23" transform="translate(24 24)"><circle r="4.1"/><g id="r2"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g><use href="#r2" transform="rotate(45)"/><use href="#r2" transform="rotate(90)"/><use href="#r2" transform="rotate(135)"/><use href="#r2" transform="rotate(180)"/><use href="#r2" transform="rotate(225)"/><use href="#r2" transform="rotate(270)"/><use href="#r2" transform="rotate(315)"/></g></svg> Orchyn MCP</div>
+        <div style="display:flex;gap:8px">${isAuthed ? `<span style="font-size:13px;color:#6b7280">Balance: <strong>${balance ?? "—"}</strong> credits</span><a href="/auth/callback?state=logout" style="font-size:13px;color:#6b7280">Log out</a>` : `<a href="/authorize?response_type=code&client_id=dashboard&redirect_uri=${encodeURIComponent(env.PUBLIC_URL + "/dashboard" + new URL(request.url).search)}&code_challenge=dummy&code_challenge_method=S256&scope=analyze:video" style="background:#14151a;color:#fff;padding:8px 14px;border-radius:999px;text-decoration:none;font-size:14px">Sign in</a>`}</div>
+      </header>
+      <h1 style="font-size:32px;letter-spacing:-0.02em;margin:0">Your MCP credits</h1>
+      <p style="color:#6b7280;margin:8px 0 24px">Top up here — same credits work at <a href="https://orchyn.com/settings?tab=billing" style="color:inherit">orchyn.com</a> and via the MCP tools <code>check_orchyn_credits</code> / <code>buy_orchyn_credits</code>.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:16px;margin:24px 0">
+        <div style="border:2px solid #e5e7eb;border-radius:16px;padding:20px"><h3 style="margin:0">Starter</h3><div style="font-size:28px;font-weight:800;margin:8px 0">$12.50</div><div style="color:#6b7280;font-size:13px">500 credits • $0.025/cr</div><button onclick="buy('starter')" style="width:100%;margin-top:12px;background:#fff;border:1px solid #e5e7eb;padding:10px;border-radius:999px;cursor:pointer">Buy Starter</button></div>
+        <div style="border:2px solid #14151a;border-radius:16px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,0.08)"><h3 style="margin:0">Pro</h3><div style="font-size:28px;font-weight:800;margin:8px 0">$40</div><div style="color:#6b7280;font-size:13px">2,000 credits • $0.02/cr</div><button onclick="buy('pro')" style="width:100%;margin-top:12px;background:#14151a;color:#fff;padding:10px;border-radius:999px;cursor:pointer">Buy Pro</button></div>
+        <div style="border:2px solid #e5e7eb;border-radius:16px;padding:20px"><h3 style="margin:0">Scale</h3><div style="font-size:28px;font-weight:800;margin:8px 0">$85</div><div style="color:#6b7280;font-size:13px">5,000 credits • $0.017/cr</div><button onclick="buy('scale')" style="width:100%;margin-top:12px;background:#fff;border:1px solid #e5e7eb;padding:10px;border-radius:999px;cursor:pointer">Buy Scale</button></div>
+      </div>
+      <section style="border:1px solid #e5e7eb;border-radius:12px;padding:16px"><h3 style="margin:0 0 8px">Quick check</h3><p style="margin:0;color:#6b7280;font-size:13px">In Claude, run <code>check_orchyn_credits</code> to see balance, or <code>buy_orchyn_credits</code> to get a Stripe Checkout link instantly.</p><p style="margin:8px 0 0;font-size:13px"><a href="/">← Back to landing</a> • <a href="https://www.npmjs.com/package/@orchyn/mcp" target="_blank">npm @orchyn/mcp</a></p></section>
+    </div>
+    <script>
+      async function buy(tier){
+        const token = new URL(location.href).searchParams.get('token') || '';
+        const headers = token ? { 'authorization': 'Bearer ' + token, 'content-type': 'application/json' } : { 'content-type': 'application/json' };
+        try{
+          const res = await fetch('${env.ORCHYN_BASE_URL}/billing/mcp-credits/checkout', { method: 'POST', headers, body: JSON.stringify({ tier }) });
+          const data = await res.json();
+          if(data.url) { location.href = data.url; } else if(data.checkoutUrl) { location.href = data.checkoutUrl; } else { alert('Checkout failed: ' + (data.error || JSON.stringify(data))); }
+        }catch(e){ alert('Checkout failed: ' + e.message); }
+      }
+      // Auto-buy if ?buy= is present
+      (function(){
+        const buyTier = new URL(location.href).searchParams.get('buy');
+        if(buyTier && typeof buy === 'function'){
+          // If authed (balance was shown), trigger buy after a short delay
+          const isAuthed = document.body.innerHTML.includes('Balance:');
+          if(isAuthed){
+            setTimeout(() => buy(buyTier), 600);
+          }
+        }
+      })();
+    </script>
+  `;
+  return htmlResponse(200, `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>${body}</body></html>`);
+}
+
 function landingPage(env: Env): string {
   const title = "Orchyn MCP — Social intelligence for AI agents";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>` +
@@ -126,10 +192,10 @@ function landingPage(env: Env): string {
     `<main class="wrap">` +
     `<section class="hero"><h1>Give your AI eyes on social</h1><p>Fetch, discover and understand TikTok, Instagram, YouTube, X, Douyin, Xiaohongshu and Bilibili posts — with inline thumbnails and AI analysis — inside Claude, ChatGPT and Cursor.</p><div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="btn btn-primary" href="#install">Add to Claude</a><a class="btn btn-ghost" href="https://www.npmjs.com/package/@orchyn/mcp" target="_blank">npm @orchyn/mcp</a><code>npx -y @orchyn/mcp login</code></div></section>` +
     `<section id="tools" class="grid3"><div class="card"><h3>Analyze Post</h3><p>Video / image / carousel + AI: hook, viral triggers, format, variation ideas.</p></div><div class="card"><h3>Discover Posts</h3><p>Niche search across 7 platforms via TikHub. Say “next” to paginate.</p></div><div class="card"><h3>Understand Post</h3><p>Multimodal AI over actual video/images — whatHappens, audience, script, CTA, safety.</p></div></section>` +
-    `<section id="pricing"><h2 style="font-size:28px;letter-spacing:-0.02em;text-align:center;margin:0">Pricing — 80% margin built in</h2><p style="text-align:center;color:var(--muted);margin:8px 0 0">All calls still hit <code>https://api.orchyn.com</code> — dashboard at <code>orchyn.com/settings?tab=billing</code> tops up the same credits.</p><div class="pricing">` +
-    `<div class="price"><h3>Starter</h3><div class="amt">$12.50</div><div style="color:var(--muted)">500 credits • $0.025 / cr</div><ul><li>get_social_media ×500</li><li>discover ×250</li><li>understand ×83 (at 6cr)</li></ul><a class="btn btn-ghost" style="width:100%;margin-top:16px" href="https://orchyn.com/settings?tab=billing">Get Starter</a></div>` +
-    `<div class="price featured"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--primary);color:var(--primary-fg);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px;border-radius:999px">Most popular</div><h3>Pro</h3><div class="amt">$40</div><div style="color:var(--muted)">2,000 credits • $0.02 / cr</div><ul><li>~333 understands</li><li>~1,000 discovers</li><li>Prioritized support</li></ul><a class="btn btn-primary" style="width:100%;margin-top:16px" href="https://orchyn.com/settings?tab=billing">Get Pro</a></div>` +
-    `<div class="price"><h3>Scale</h3><div class="amt">$85</div><div style="color:var(--muted)">5,000 credits • $0.017 / cr</div><ul><li>~833 understands</li><li>~2,500 discovers</li><li>Best for agents</li></ul><a class="btn btn-ghost" style="width:100%;margin-top:16px" href="https://orchyn.com/settings?tab=billing">Get Scale</a></div>` +
+    `<section id="pricing"><h2 style="font-size:28px;letter-spacing:-0.02em;text-align:center;margin:0">Pricing — 80% margin built in</h2><p style="text-align:center;color:var(--muted);margin:8px 0 0">Credits work across both platforms — top up once, use everywhere.</p><div class="pricing">` +
+    `<div class="price"><h3>Starter</h3><div class="amt">$12.50</div><div style="color:var(--muted)">500 credits • $0.025 / cr</div><ul><li>get_social_media ×500</li><li>discover ×250</li><li>understand ×83 (at 6cr)</li></ul><a class="btn btn-ghost" style="width:100%;margin-top:16px" href="/dashboard?buy=starter">Get Starter</a></div>` +
+    `<div class="price featured"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--primary);color:var(--primary-fg);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px;border-radius:999px">Most popular</div><h3>Pro</h3><div class="amt">$40</div><div style="color:var(--muted)">2,000 credits • $0.02 / cr</div><ul><li>~333 understands</li><li>~1,000 discovers</li><li>Prioritized support</li></ul><a class="btn btn-primary" style="width:100%;margin-top:16px" href="/dashboard?buy=pro">Get Pro</a></div>` +
+    `<div class="price"><h3>Scale</h3><div class="amt">$85</div><div style="color:var(--muted)">5,000 credits • $0.017 / cr</div><ul><li>~833 understands</li><li>~2,500 discovers</li><li>Best for agents</li></ul><a class="btn btn-ghost" style="width:100%;margin-top:16px" href="/dashboard?buy=scale">Get Scale</a></div>` +
     `</div><p style="text-align:center;color:var(--muted);font-size:13px">Check balance anytime: <code>check_orchyn_credits</code> • Top up: <code>buy_orchyn_credits</code> (Stripe Checkout) • First use of each tool is free per user.</p></section>` +
     `<section id="install" style="margin:32px 0"><div class="card"><h3>Install</h3><p><strong>Claude Code:</strong> <code>/plugin marketplace add orchynX/mcp</code> → <code>/plugin install orchyn@orchyn</code></p><p><strong>Claude.ai / ChatGPT:</strong> Add custom connector <code>${escapeHtml(env.PUBLIC_URL)}/mcp</code> → OAuth via <code>${escapeHtml(env.ORCHYN_BASE_URL)}/auth/mcp-login</code></p><p><strong>Cursor:</strong> <code>mcpServers: { orchyn: { command: "npx", args: ["-y","@orchyn/mcp"] } }</code></p></div></section>` +
     `</main><footer><div class="wrap">© Orchyn • <a href="https://orchyn.com/privacy">Privacy</a> • <a href="https://orchyn.com/terms">Terms</a> • <a href="https://orchyn.com">orchyn.com</a></div></footer>` +
