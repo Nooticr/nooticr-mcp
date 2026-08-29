@@ -33,8 +33,9 @@ export const ORCHYN_UI_TEMPLATE = `<!DOCTYPE html>
   --shadow-sm:0 1px 2px rgba(0,0,0,.2);--shadow-md:0 4px 12px rgba(0,0,0,.3);
   --shadow-lg:0 8px 24px rgba(0,0,0,.4);
 }}
+html{overflow-x:hidden;overflow-y:auto}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);padding:16px;line-height:1.5;}
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);padding:16px;line-height:1.5;overflow-x:hidden;}
 
 /* ─── Content entrance ─── */
 .fade-in{animation:fadeIn .4s ease-out;}
@@ -50,8 +51,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .stagger>*:nth-child(8){animation-delay:.4s}
 
 /* ─── Cards ─── */
-.gallery-wrap{position:relative;margin:0 -4px}
-.gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;padding:4px 4px 8px;scrollbar-width:none}
+.gallery-wrap{position:relative;margin:0 -4px;overflow:visible}
+.gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;padding:4px 4px 8px;scrollbar-width:none;width:100%;}
 .gallery::-webkit-scrollbar{display:none}
 .gallery-dots{display:flex;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap}
 .gallery-dots .dot{width:8px;height:8px;border-radius:50%;background:var(--border);border:none;cursor:pointer;transition:var(--transition);padding:0}
@@ -59,8 +60,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-md);cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--fg);transition:var(--transition);opacity:0}
 .gallery-wrap:hover .gallery-nav{opacity:1}
 .gallery-nav:hover{background:var(--accent);color:#fff}
-.gallery-nav.prev{left:-16px}
-.gallery-nav.next{right:-16px}
+.gallery-nav.prev{left:2px}
+.gallery-nav.next{right:2px}
 .card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:380px;min-width:380px;background:var(--card);display:block;box-shadow:var(--shadow-sm);transition:var(--transition);cursor:default;scroll-snap-align:start;flex-shrink:0}
 .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--muted);}
 .card-wide{width:100%;}
