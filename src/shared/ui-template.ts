@@ -196,13 +196,15 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     tool=params.get("tool")||"";
     if(!tool){
       var path=window.location.pathname;
-      var match=path.match(/\/ui:\/\/orchyn\/([a-z_]+)/i);
-      if(match)tool=match[1];
+      var idx=path.indexOf("ui://orchyn/");
+      if(idx>=0){var rest=path.substring(idx+12);var end=rest.length;for(var ci=0;ci<rest.length;ci++){var ch=rest.charCodeAt(ci);if(ch===63||ch===35||ch===47){end=ci;break;}}tool=rest.substring(0,end);}
+
     }
     if(!tool){
       var hash=window.location.hash;
-      var m2=hash.match(/\/ui:\/\/orchyn\/([a-z_]+)/i);
-      if(m2)tool=m2[1];
+      var idx2=hash.indexOf("ui://orchyn/");
+      if(idx2>=0){var rest2=hash.substring(idx2+12);var end2=rest2.length;for(var ci2=0;ci2<rest2.length;ci2++){var ch2=rest2.charCodeAt(ci2);if(ch2===63||ch2===35||ch2===47){end2=ci2;break;}}tool=rest2.substring(0,end2);}
+
     }
     var label=TOOL_NAMES[tool]||"Interactive View";
     var desc=TOOL_DESCS[tool]||"Results will appear here as soon as a tool returns.";
@@ -334,7 +336,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     var bodyText=p.caption||p.text||"";
     if(video){
       mediaHtml='<video controls preload="metadata" playsinline poster="'+esc(thumb)+'" style="width:100%;height:'+vh+';object-fit:cover;display:block;background:#000">'
-        +'Your browser doesn\'t support video playback.</video>';
+        +'Your browser does not support video playback.</video>';
     }else if(images.length>1){
       // Carousel / multi-image gallery — horizontally scrollable strip.
       var strip=images.map(function(u,i){
@@ -452,9 +454,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
         if(c&&c.type==="text"&&typeof c.text==="string"){textBlock=c.text;break;}
       }
       if(typeof textBlock==="string"&&textBlock!==""){
-        // Split "<html>\n\n{json}" — if there's a JSON object after the HTML,
+        // Split "<html>  {json}" — if there's a JSON object after the HTML,
         // parse it; otherwise show the text itself.
-        var m=/^[\s]*<[^>]+>[\s\S]*?\n\n(\{.*\})[\s]*$/m.exec(textBlock);
+        var m=new RegExp("^[\\s]*<[^>]+>[\\s\\S]*?\\n\\n(\\{.*\\})[\\s]*$","m").exec(textBlock);
         if(m){try{var parsed=JSON.parse(m[1]);if(parsed&&typeof parsed==="object")return parsed;}catch(e){}}
         // Single-line HTML (common): keep the whole block as text fallback.
         if(textBlock.indexOf("<")===0){return { _html: textBlock };}
