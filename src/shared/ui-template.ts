@@ -57,6 +57,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .card img{width:100%;height:200px;object-fit:cover;display:block;transition:transform .3s ease;}
 .card:hover img{transform:scale(1.02);}
 .card-wide img{max-height:340px;}
+.card video{width:100%;display:block;background:#000;border:none;outline:none;}
+.card-wide video{max-height:500px;}
 .card-body{padding:14px 16px;}
 
 /* ─── Badges & Tags ─── */
@@ -335,8 +337,25 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     var vh=wide?"340px":"200px";
     var bodyText=p.caption||p.text||"";
     if(video){
-      mediaHtml='<video src="'+esc(video)+'" controls preload="metadata" playsinline poster="'+esc(thumb)+'" style="width:100%;height:'+vh+';object-fit:cover;display:block;background:#000">'
-        +'Your browser does not support video playback.</video>';
+      // Detect aspect ratio from format/platform data.
+      // Short-form vertical: TikTok, Reels, Shorts (9:16) -> taller card
+      // Long-form horizontal: YouTube, LinkedIn, X (16:9) -> standard card
+      var fmt=p.detectedFormat||"";
+      var dur=p.duration||0;
+      var isVertical=false;
+      if(fmt==="Short-form")isVertical=true;
+      else if(fmt==="Long-form")isVertical=false;
+      else if(platform==="tiktok"||platform==="douyin")isVertical=true;
+      else if(platform==="youtube"&&dur>0&&dur<=60)isVertical=true;
+      else if(platform==="instagram")isVertical=true;
+      var videoAR=isVertical?"56.25%":"";
+      var videoMaxH=isVertical?(wide?"500px":"380px"):(wide?"340px":"250px");
+      mediaHtml='<div class="video-wrap" style="width:100%;aspect-ratio:16/9;background:#000;position:relative;overflow:hidden">'
+        +'<video src="'+esc(video)+'" controls preload="metadata" playsinline '
+        +'poster="'+esc(thumb)+'" '
+        +'style="width:100%;height:100%;object-fit:contain;display:block;background:#000" '
+        +'onloadedmetadata="onVideoLoaded(this)"'
+        +'Your browser does not support video playback.</video></div>';
     }else if(images.length>1){
       // Carousel / multi-image gallery — horizontally scrollable strip.
       var strip=images.map(function(u,i){
