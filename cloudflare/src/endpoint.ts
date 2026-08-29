@@ -1,4 +1,5 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { DurableObjectEventStore } from "./eventStore.js";
 
 // The SDK's WebStandard transport consumes the platform `fetch` Request type.
 // CF workers' `Request` is a generic instantiation of the same interface, but
@@ -43,7 +44,8 @@ const REFRESH_LEAD_MS = 60_000;
 async function makeClientForSession(
   env: Env,
   mcpToken: string,
-  session: McpSession | undefined
+  session: McpSession | undefined,
+  idempotencyKey?: string
 ): Promise<OrchynClient> {
   const staticToken = env.ORCHYN_ACCESS_TOKEN;
   if (!session) {
@@ -87,7 +89,7 @@ async function makeClientForSession(
     await doRefresh();
   }
 
-  return new OrchynClient(env.ORCHYN_BASE_URL, provider);
+  return new OrchynClient(env.ORCHYN_BASE_URL, provider, idempotencyKey);
 }
 
 /**
@@ -111,6 +113,8 @@ export class McpEndpoint {
    *  The SDK's `_initialized` is private — we maintain our own flag via
    *  the `onsessioninitialized` callback. */
   private initialized = false;
+  /** Single-flight guard for the cold-start handshake (see reInitialize). */
+  private initializing?: Promise<void>;
 
   constructor(ctx: DurableObjectState, env: Env) {
     this.ctx = ctx;
@@ -126,27 +130,63 @@ export class McpEndpoint {
       // Default (false) streams via SSE, which ChatGPT handles correctly.
       onsessioninitialized: () => {
         this.initialized = true;
+        void this.ctx.storage.put("mcp:initialized", true);
         console.log(`[mcp] session initialized for DO ${this.ctx.id.name}`);
       },
+      // Resumability. Deploying a new Worker version restarts every Durable
+      // Object and kills in-flight SSE streams — that much is unavoidable.
+      // With an event store the client reconnects with `Last-Event-ID` and is
+      // sent everything it missed, so a deploy landing in the middle of a
+      // 20-70s tool call resumes instead of surfacing as a failure.
+      eventStore: new DurableObjectEventStore(this.ctx.storage.sql),
+      // Tell clients how soon to come back after a dropped stream. Without an
+      // explicit value each client picks its own, and some do not retry at all.
+      retryInterval: 1000,
+      // Keep idle streams warm so intermediaries do not cull them.
+      keepAliveMs: 15000,
     });
     this.server = createMcpServer(async (ctx) => {
       const t = ctx.authInfo?.token ?? "";
       const s = await verifyToken(this.env, t);
-      return makeClientForSession(this.env, t, s);
+      // Scope the client's JSON-RPC id to this session so two clients that
+      // both number their requests from 1 cannot share a billing key.
+      const key =
+        ctx.requestId === undefined
+          ? undefined
+          : `${this.ctx.id.name ?? this.ctx.id.toString()}:${String(ctx.requestId)}`;
+      return makeClientForSession(this.env, t, s, key);
     });
     await this.server.connect(this.transport);
   }
 
   async fetch(request: Request): Promise<Response> {
+    // Drain the body FIRST, before any early return. A response sent while
+    // the request stream is still unread abandons that stream, and the
+    // runtime treats it as a fatal error — an unauthenticated POST was enough
+    // to take the whole worker down.
+    const hasBody = request.method !== "GET" && request.method !== "HEAD";
+    const bodyText = hasBody ? await request.text().catch(() => "") : "";
+
     const token = bearerToken(request);
     const session = token ? await verifyToken(this.env, token) : undefined;
     if (!token || !(await validMcpToken(this.env, token))) {
-      return jsonResponse(401, {
-        error: "Unauthorized",
-        error_description:
-          "This MCP server requires OAuth authentication. Fetch an access token from " +
-          `${this.env.PUBLIC_URL}/authorize first.`,
-      });
+      // RFC 9728 / MCP authorization: point the client at the metadata that
+      // tells it where to authenticate, so a connector can discover the flow
+      // from a bare 401 instead of needing it configured out of band.
+      return jsonResponse(
+        401,
+        {
+          error: "Unauthorized",
+          error_description:
+            "This MCP server requires OAuth authentication. Fetch an access token from " +
+            `${this.env.PUBLIC_URL}/authorize first.`,
+        },
+        {
+          "www-authenticate":
+            `Bearer realm="orchyn-mcp", ` +
+            `resource_metadata="${this.env.PUBLIC_URL}/.well-known/oauth-protected-resource"`,
+        }
+      );
     }
 
     await this.ensureServer();
@@ -163,40 +203,172 @@ export class McpEndpoint {
         }
       : undefined;
 
-    // Sniff the JSON-RPC method to handle initialize vs. other requests.
-    const method =
-      request.headers.get("mcp-method") ??
-      (await sniffMethod(request.clone() as unknown as McpRequest));
+    // Read the body ONCE and rebuild the request from it.
+    //
+    // Cloning the request and reading the clone races the transport's own
+    // read of the original: the transport answers a tool call with a
+    // long-lived SSE stream, so the response is already on the wire while the
+    // clone's body is still being drained, and the runtime kills that with
+    // "Can't read from request stream after response has been sent". Handing
+    // the transport a fresh Request built from text we already hold means
+    // only one reader ever touches the stream.
+    const workRequest = (
+      hasBody
+        ? new Request(request.url, {
+            method: request.method,
+            headers: request.headers,
+            body: bodyText,
+          })
+        : request
+    ) as unknown as McpRequest;
+
+    const method = request.headers.get("mcp-method") ?? sniffMethod(bodyText);
     const methodLabel = method || "unknown";
-    const contentLength = request.headers.get("content-length") ?? "?";
-    console.log(`[mcp] ${request.method} method=${methodLabel} len=${contentLength} initialized=${this.initialized}`);
+    console.log(
+      `[mcp] ${request.method} method=${methodLabel} len=${bodyText.length} initialized=${this.initialized}`
+    );
 
     if (method === "initialize") {
-      const res = await this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
+      const res = await this.wrapHandle(transport, workRequest, authInfo);
       console.log(`[mcp] initialize → ${res.status}`);
       return res;
     }
 
-    // Non-initialize on a cold transport: re-run the initialize handshake
-    // so the SDK accepts subsequent requests. Only do this ONCE — our own
-    // `initialized` flag tracks it (the SDK's `_initialized` is private).
-    if (!this.initialized) {
-      console.log("[mcp] re-initializing transport (cold DO)");
-      await this.reInitialize(transport, authInfo);
+    // Replay of a tool call we already answered — see replayToolCall.
+    if (method === "tools/call") {
+      const cached = await this.replayToolCall(bodyText);
+      if (cached) return cached;
     }
 
-    const res = await this.wrapHandle(transport, request as unknown as McpRequest, authInfo);
-    const resCT = res.headers.get("content-type") ?? "?";
-    const resCL = res.headers.get("content-length") ?? "?";
-    console.log(`[mcp] ${methodLabel} → ${res.status} ct=${resCT} cl=${resCL}`);
-    // For tool calls, log a snippet of the response body for debugging
+    // Non-initialize on a cold transport: re-run the initialize handshake so
+    // the SDK accepts subsequent requests instead of answering 404 "Session
+    // not found" — which clients read as "session gone, re-authenticate".
+    //
+    // Single-flighted: after a deploy a client typically replays its open GET
+    // stream and a queued POST at once. Both would pass the `!initialized`
+    // check (the await below yields) and race two handshakes down the same
+    // transport, so the second one errors and the client drops the session.
+    if (!this.initialized) {
+      if (!this.initializing) {
+        console.log("[mcp] re-initializing transport (cold DO)");
+        this.initializing = this.reInitialize(transport, authInfo).finally(() => {
+          this.initializing = undefined;
+        });
+      }
+      await this.initializing;
+    }
+
+    let res = await this.wrapHandle(transport, workRequest, authInfo);
+    console.log(
+      `[mcp] ${methodLabel} → ${res.status} ct=${res.headers.get("content-type") ?? "?"}`
+    );
+    // NOTE: never `res.clone().text()` here. Tool responses are SSE streams
+    // that stay open for the length of the call (20-70s); cloning one buffers
+    // the whole stream, applies backpressure to the live branch, and finishes
+    // reading long after the response was sent — the exact shape of the
+    // "Can't read from request stream after response has been sent" crash.
     if (methodLabel === "tools/call") {
-      try {
-        const body = await res.clone().text();
-        console.log(`[mcp] tools/call response (${body.length} bytes): ${body.substring(0, 500)}`);
-      } catch {}
+      res = this.recordToolCall(bodyText, res);
     }
     return res;
+  }
+
+  /**
+   * Idempotency for tool calls.
+   *
+   * A deploy (or any dropped stream) mid-`tools/call` leaves the client with
+   * no answer, so it retries the same JSON-RPC id. The call is not free: the
+   * orchyn API has already debited MCP credits and done the work. Replaying it
+   * would charge a second time for a result the user never saw.
+   *
+   * So the answer is recorded against the request id and replayed verbatim on
+   * a retry. Entries are scoped to this session's DO and expire quickly — long
+   * enough to cover a redeploy and a client retry, not long enough to make a
+   * genuinely repeated call look like a duplicate.
+   */
+  private static readonly TOOL_CACHE_TTL_MS = 10 * 60 * 1000;
+
+  private toolCacheReady = false;
+
+  private ensureToolCache() {
+    if (this.toolCacheReady) return;
+    this.ctx.storage.sql.exec(
+      `CREATE TABLE IF NOT EXISTS mcp_tool_results (
+         req_key    TEXT PRIMARY KEY,
+         body       TEXT NOT NULL,
+         status     INTEGER NOT NULL,
+         created_at INTEGER NOT NULL
+       )`
+    );
+    this.toolCacheReady = true;
+  }
+
+  /** Return the stored answer for this request id, if we already have one. */
+  private async replayToolCall(bodyText: string): Promise<Response | undefined> {
+    const key = requestKey(bodyText);
+    if (!key) return undefined;
+    this.ensureToolCache();
+    this.ctx.storage.sql.exec(
+      `DELETE FROM mcp_tool_results WHERE created_at < ?`,
+      Date.now() - McpEndpoint.TOOL_CACHE_TTL_MS
+    );
+    const rows = this.ctx.storage.sql
+      .exec<{ body: string; status: number }>(
+        `SELECT body, status FROM mcp_tool_results WHERE req_key = ?`,
+        key
+      )
+      .toArray();
+    if (!rows.length) return undefined;
+    console.log(`[mcp] replaying cached tools/call for ${key} (no re-charge)`);
+    return new Response(rows[0].body, {
+      status: Number(rows[0].status),
+      headers: {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        "mcp-session-id": this.ctx.id.name ?? this.ctx.id.toString(),
+      },
+    });
+  }
+
+  /**
+   * Tee the tool response: the client keeps its live stream, and the copy is
+   * stored so a retry of the same request id can be answered without paying
+   * for the work twice.
+   *
+   * Only the tee is buffered — the branch handed back to the client is passed
+   * straight through, so this adds no latency and applies no backpressure to
+   * the live stream.
+   */
+  private recordToolCall(bodyText: string, res: Response): Response {
+    const key = requestKey(bodyText);
+    if (!key || !res.body || res.status >= 500) return res;
+    const [live, copy] = res.body.tee();
+    this.ctx.waitUntil(
+      (async () => {
+        try {
+          const buffered = await new Response(copy).text();
+          if (!buffered) return;
+          this.ensureToolCache();
+          this.ctx.storage.sql.exec(
+            `INSERT OR REPLACE INTO mcp_tool_results (req_key, body, status, created_at)
+             VALUES (?, ?, ?, ?)`,
+            key,
+            buffered,
+            res.status,
+            Date.now()
+          );
+        } catch (err) {
+          // Losing the cache entry only costs a re-charge on retry; never let
+          // it take down the response the client is already reading.
+          console.log(`[mcp] tool result cache write failed: ${String(err)}`);
+        }
+      })()
+    );
+    return new Response(live, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers,
+    });
   }
 
   /**
@@ -273,13 +445,11 @@ export class McpEndpoint {
 }
 
 /** Sniffs the JSON-RPC `method` from a request body without consuming it. */
-async function sniffMethod(request: McpRequest): Promise<string> {
-  const cloned = request.clone();
-  const contentType = cloned.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) return "";
+/** JSON-RPC method name from an already-read body. Pure — reads no stream. */
+function sniffMethod(bodyText: string): string {
+  if (!bodyText) return "";
   try {
-    const body = await cloned.text();
-    const parsed = JSON.parse(body);
+    const parsed = JSON.parse(bodyText);
     const messages = Array.isArray(parsed) ? parsed : [parsed];
     for (const m of messages) {
       if (m && typeof m.method === "string") return m.method;
@@ -290,6 +460,21 @@ async function sniffMethod(request: McpRequest): Promise<string> {
   return "";
 }
 
+/** JSON-RPC `id` of a single request body, as a stable string key. */
+function requestKey(bodyText: string): string | undefined {
+  if (!bodyText) return undefined;
+  try {
+    const parsed = JSON.parse(bodyText);
+    if (Array.isArray(parsed)) return undefined; // batches are not deduped
+    const id = parsed?.id;
+    if (id === undefined || id === null) return undefined; // a notification
+    const name = parsed?.params?.name;
+    return `${typeof id}:${String(id)}:${String(name ?? "")}`;
+  } catch {
+    return undefined;
+  }
+}
+
 function bearerToken(request: Request): string | undefined {
   const header = request.headers.get("authorization");
   if (!header) return undefined;
@@ -297,9 +482,13 @@ function bearerToken(request: Request): string | undefined {
   return match ? match[1].trim() : undefined;
 }
 
-function jsonResponse(status: number, body: unknown): Response {
+function jsonResponse(
+  status: number,
+  body: unknown,
+  extra: Record<string, string> = {}
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", "Cache-Control": "no-store" },
+    headers: { "content-type": "application/json", "Cache-Control": "no-store", ...extra },
   });
 }

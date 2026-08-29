@@ -60,6 +60,9 @@ type ToolContent = { type: "text"; text: string };
 
 export interface MakeClientContext {
  authInfo?: AuthInfo;
+ /** JSON-RPC id of the in-flight request. A client retrying an interrupted
+  *  call reuses its id, which is what makes the billing key stable. */
+ requestId?: string | number;
 }
 
 /**

@@ -129,10 +129,13 @@ export function jwtExpiry(token: string): number | undefined {
 export class OrchynClient {
   private baseUrl: string;
   private tokenProvider: TokenProvider;
+  /** Stable per-call key so a retried tool call is billed once. */
+  private idempotencyKey?: string;
 
-  constructor(baseUrl: string, tokenProvider: TokenProvider) {
+  constructor(baseUrl: string, tokenProvider: TokenProvider, idempotencyKey?: string) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.tokenProvider = tokenProvider;
+    this.idempotencyKey = idempotencyKey;
   }
 
   private async request<T>(
@@ -142,12 +145,19 @@ export class OrchynClient {
       body?: unknown;
       auth?: boolean;
       token?: string;
+      idempotent?: boolean;
     } = {}
   ): Promise<T> {
     const doRequest = async (accessToken?: string): Promise<Response> => {
       const headers: Record<string, string> = {};
       if (opts.body !== undefined) {
         headers["content-type"] = "application/json";
+      }
+      // Billed calls carry the key so the backend charges a retry once. A
+      // redeploy or dropped stream mid-call leaves the client with no result,
+      // and its retry must not cost the user a second time.
+      if (opts.idempotent && this.idempotencyKey) {
+        headers["idempotency-key"] = this.idempotencyKey;
       }
       if (accessToken) {
         headers.authorization = `Bearer ${accessToken}`;
@@ -231,6 +241,7 @@ export class OrchynClient {
   async callTool(name: string, args: Record<string, unknown>): Promise<McpProxyResult> {
     const rpc = await this.request<Record<string, unknown>>("POST", "/mcp", {
       auth: true,
+      idempotent: true,
       body: {
         jsonrpc: "2.0",
         id: Date.now(),

@@ -7,6 +7,23 @@
   "observability": {
     "enabled": true
   },
+  // Gradual deployments: `wrangler deploy` uploads a new *version* without
+  // sending it traffic, so a bad build is caught before it reaches anyone.
+  // Roll it out with:
+  //
+  //   npm run deploy:version                 # upload, 0% traffic
+  //   npx wrangler versions deploy           # pick versions + split, e.g. 10/90
+  //   npx wrangler deployments status        # watch, then go to 100%
+  //   npx wrangler rollback                  # instant revert
+  //
+  // This does NOT stop a deploy from restarting Durable Objects — nothing
+  // does. It limits how many sessions a given rollout disturbs at once, and
+  // the disconnect itself is absorbed by SSE resumability (see eventStore.ts)
+  // plus idempotent tool calls, so a client reconnects and resumes instead of
+  // erroring or being charged twice.
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
   "vars": {
     "PUBLIC_URL": "https://mcp.orchyn.com",
     "ORCHYN_BASE_URL": "https://api.orchyn.com"

@@ -21,7 +21,8 @@
     "start": "node dist/index.js",
     "login": "node dist/index.js login",
     "test": "vitest run",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test:e2e": "playwright test"
   },
   "keywords": [
     "mcp",
@@ -39,6 +40,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.0.0",
     "typescript": "^5.5.0",
     "vitest": "^3.1.0"
