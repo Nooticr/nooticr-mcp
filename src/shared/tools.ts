@@ -359,7 +359,7 @@ export function createMcpServer(
    description:
     "Analyze a social post (video, image, carousel/slideshow) from its link — " +
     "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
-    "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished. First use free per user.",
+    "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished. AI analysis — 1 free use, then 6 credits per use.",
    _meta: { ui: { resourceUri: uiResource("analyze_post") }, "ui/resourceUri": uiResource("analyze_post") },
    inputSchema: z
     .object({
@@ -422,7 +422,7 @@ export function createMcpServer(
    description:
     "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: " +
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
-    "Returns an inline thumbnail image. Consumes 1 orchyn credit. First use free per user.",
+    "Returns an inline thumbnail image. Consumes 1 orchyn credit (20 free credits included for new users).",
    _meta: { ui: { resourceUri: uiResource("get_social_media") }, "ui/resourceUri": uiResource("get_social_media") },
    inputSchema: z
     .object({
@@ -447,7 +447,7 @@ export function createMcpServer(
    description:
     "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili. " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
-    'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. Consumes 2 orchyn credits. First use free per user.',
+    'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. Consumes 2 orchyn credits (20 free credits included for new users).',
    _meta: { ui: { resourceUri: uiResource("discover_social_posts") }, "ui/resourceUri": uiResource("discover_social_posts") },
    inputSchema: z
     .object({
@@ -482,7 +482,7 @@ export function createMcpServer(
    description:
     "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile public_id, e.g. 'billgates'). " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
-    "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits. First use free per user.",
+    "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits (20 free credits included for new users).",
    _meta: { ui: { resourceUri: uiResource("get_user_posts") }, "ui/resourceUri": uiResource("get_user_posts") },
    inputSchema: z
     .object({
@@ -515,7 +515,7 @@ export function createMcpServer(
    description:
     "Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn: fetch recent posts, run multimodal AI on up to 3, " +
     "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
-    "engagement patterns, audience insights, variation ideas, collaboration fit. Consumes 15 orchyn credits. First use free per user.",
+    "engagement patterns, audience insights, variation ideas, collaboration fit. AI analysis \u2014 1 free use, then 15 credits per use.",
    _meta: { ui: { resourceUri: uiResource("analyze_creator_profile") }, "ui/resourceUri": uiResource("analyze_creator_profile") },
    inputSchema: z
     .object({
@@ -548,7 +548,7 @@ export function createMcpServer(
    title: "Get Post Comments",
    description:
     "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
-    "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits. First use free per user.",
+    "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits (20 free credits included for new users).",
    _meta: { ui: { resourceUri: uiResource("get_post_comments") }, "ui/resourceUri": uiResource("get_post_comments") },
    inputSchema: z
     .object({
@@ -576,7 +576,7 @@ export function createMcpServer(
    title: "Search Creators",
    description:
     "Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, " +
-    "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits. First use free per user.",
+    "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits (20 free credits included for new users).",
    _meta: { ui: { resourceUri: uiResource("search_creators") }, "ui/resourceUri": uiResource("search_creators") },
    inputSchema: z
     .object({
@@ -608,7 +608,7 @@ export function createMcpServer(
    title: "Get Similar Creators",
    description:
     "Find lookalike creators for a given handle — TikTok similar-user recommendations or Instagram " +
-    "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits. First use free per user.",
+    "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits (20 free credits included for new users).",
    _meta: { ui: { resourceUri: uiResource("get_similar_creators") }, "ui/resourceUri": uiResource("get_similar_creators") },
    inputSchema: z
     .object({
@@ -636,7 +636,7 @@ export function createMcpServer(
    title: "Discover Sounds",
    description:
     "Discover trending sounds/music for a keyword on TikTok or Instagram — the sound is a huge ranking " +
-    "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits. First use free per user.",
+    "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits (20 free credits included for new users).",
    _meta: { ui: { resourceUri: uiResource("discover_sounds") }, "ui/resourceUri": uiResource("discover_sounds") },
    inputSchema: z
     .object({
@@ -704,7 +704,7 @@ export function createMcpServer(
    description:
     "Import a social post URL AND understand it with multimodal AI over the actual video/images: " +
     "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
-    "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Consumes 6 orchyn credits. First use free per user.",
+    "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. AI analysis \u2014 1 free use, then 6 credits per use.",
    _meta: { ui: { resourceUri: uiResource("understand_social_post") }, "ui/resourceUri": uiResource("understand_social_post") },
    inputSchema: z
     .object({
