@@ -73,6 +73,12 @@ export const TOOL_DEFINITIONS = [
  description: "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
+ {
+ name: "orchyn_login",
+ title: "Orchyn Login",
+ description: "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
 ] as const;
 
 export type ToolName = typeof TOOL_DEFINITIONS[number]["name"];

@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.17.7";
+export const MCP_SERVER_VERSION = "1.18.1";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -694,6 +694,30 @@ export function createMcpServer(
    } catch (err) {
     return toolError("buy_orchyn_credits failed", err);
    }
+  }
+ );
+
+ server.registerTool(
+  "orchyn_login",
+  {
+   title: "Orchyn Login",
+   description:
+    "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. No cost to call.",
+   inputSchema: z.object({}).strict(),
+  },
+  async (_args: Record<string, never>, _extra) => {
+   const base = process.env.ORCHYN_BASE_URL || "https://api.orchyn.com";
+   const mcpUrl = process.env.MCP_SERVER_URL || "https://mcp.orchyn.com";
+   const redirect = `${mcpUrl}/auth/callback?state=new`;
+   const loginUrl = `${base}/auth/mcp-login?redirect=${encodeURIComponent(redirect)}`;
+   return {
+     content: [{ type: "text" as const, text: JSON.stringify({
+       loginUrl,
+       message: "Open this URL in your browser to sign in. After authentication, your MCP session will be refreshed automatically."
+     }) }],
+     structuredContent: { loginUrl, message: "Open this URL in your browser to sign in." },
+     isError: false,
+   };
   }
  );
 
