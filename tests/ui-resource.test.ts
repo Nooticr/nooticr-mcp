@@ -137,3 +137,63 @@ describe("app-view tool results", () => {
     await client.close();
   });
 });
+
+describe("UI template validity", () => {
+  it("template HTML contains valid JavaScript (no syntax errors)", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const scriptMatch = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    expect(scriptMatch).not.toBeNull();
+    const script = scriptMatch![1];
+
+    // Compile the script to catch any syntax errors — this is the exact
+    // check that would have caught the template-literal escaping bugs
+    // (// comment from broken regex, unescaped apostrophe, etc.)
+    const vm = await import("node:vm");
+    expect(() => vm.compileFunction(script, [], {})).not.toThrow();
+  });
+
+  it("template is valid HTML5 with required structure", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    expect(ORCHYN_UI_TEMPLATE).toContain("<!DOCTYPE html>");
+    expect(ORCHYN_UI_TEMPLATE).toContain("<html");
+    expect(ORCHYN_UI_TEMPLATE).toContain("</html>");
+    expect(ORCHYN_UI_TEMPLATE).toContain("<script>");
+    expect(ORCHYN_UI_TEMPLATE).toContain("</script>");
+    expect(ORCHYN_UI_TEMPLATE).toContain("<style>");
+    expect(ORCHYN_UI_TEMPLATE).toContain("</style>");
+    expect(ORCHYN_UI_TEMPLATE).toContain('id="app"');
+    expect(ORCHYN_UI_TEMPLATE).toContain("ui/initialize");
+    expect(ORCHYN_UI_TEMPLATE).toContain("ui/notifications/initialized");
+  });
+
+  it("template does not contain broken regex patterns (// at start of expression)", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const scriptMatch = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const script = scriptMatch![1];
+    // A broken regex like /ui:\/\/... becomes //ui:\/\/... which is a comment.
+    // Check that no line starts with a bare // followed by a known keyword.
+    const lines = script.split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Skip actual comments (// followed by space or end)
+      if (/^\/\/\s/.test(trimmed) || trimmed === "//") continue;
+      // Flag lines that look like broken regex-turned-comment
+      expect(trimmed).not.toMatch(/^\/\/[a-zA-Z]/);
+    }
+  });
+
+  it("template has no unescaped apostrophes that break JS strings", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const scriptMatch = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const script = scriptMatch![1];
+    // Find single-quoted strings and check for unescaped apostrophes
+    const singleQuoteStrings = script.match(/'[^'\\]*(?:\\.[^'\\]*)*'/g) ?? [];
+    for (const s of singleQuoteStrings) {
+      // Every ' in the string (except the delimiters) should be \'
+      const inner = s.slice(1, -1);
+      // Count unescaped single quotes inside
+      const unescaped = inner.match(/(?<!\\)'/g);
+      expect(unescaped).toBeNull();
+    }
+  });
+});
