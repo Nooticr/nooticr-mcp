@@ -51,14 +51,18 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 
 /* ─── Cards ─── */
 .gallery{display:flex;flex-wrap:wrap;gap:10px;}
-.card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:300px;background:var(--card);display:inline-block;vertical-align:top;box-shadow:var(--shadow-sm);transition:var(--transition);cursor:default;}
+.card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:380px;background:var(--card);display:inline-block;vertical-align:top;box-shadow:var(--shadow-sm);transition:var(--transition);cursor:default;}
 .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--muted);}
 .card-wide{width:100%;}
-.card img{width:100%;height:200px;object-fit:cover;display:block;transition:transform .3s ease;}
+.card img{width:100%;height:260px;object-fit:cover;display:block;transition:transform .3s ease;}
 .card:hover img{transform:scale(1.02);}
 .card-wide img{max-height:340px;}
-.card video{width:100%;display:block;background:#000;border:none;outline:none;}
-.card-wide video{max-height:500px;}
+.card video{width:100%;min-height:220px;max-height:520px;display:block;background:#000;border:none;outline:none;object-fit:contain;}
+.card-wide video{max-height:520px;}
+.video-wrap{width:100%;background:#000;position:relative;overflow:hidden;}
+.video-wrap.v{aspect-ratio:9/16;max-height:520px;}
+.video-wrap.h{aspect-ratio:16/9;max-height:360px;}
+.video-wrap.sq{aspect-ratio:1/1;max-height:440px;}
 .card-body{padding:14px 16px;}
 
 /* ─── Badges & Tags ─── */
@@ -348,13 +352,12 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       else if(platform==="tiktok"||platform==="douyin")isVertical=true;
       else if(platform==="youtube"&&dur>0&&dur<=60)isVertical=true;
       else if(platform==="instagram")isVertical=true;
-      var videoAR=isVertical?"56.25%":"";
-      var videoMaxH=isVertical?(wide?"500px":"380px"):(wide?"340px":"250px");
-      mediaHtml='<div class="video-wrap" style="width:100%;aspect-ratio:16/9;background:#000;position:relative;overflow:hidden">'
+      var arCls=isVertical?"v":"h";
+      var _vc="video-wrap "+arCls;
+      mediaHtml='<div class=""+_vc+"">'
         +'<video src="'+esc(video)+'" controls preload="metadata" playsinline '
         +'poster="'+esc(thumb)+'" '
-        +'style="width:100%;height:100%;object-fit:contain;display:block;background:#000" '
-        +'onloadedmetadata="onVideoLoaded(this)"'
+        +'style="width:100%;height:100%;object-fit:contain;display:block;background:#000">'
         +'Your browser does not support video playback.</video></div>';
     }else if(images.length>1){
       // Carousel / multi-image gallery — horizontally scrollable strip.
@@ -435,7 +438,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       var vt=a.viralTriggers.slice(0,8).map(function(t){return'<span class="tag clickable" onclick="copyText(this.dataset.v)" data-v="'+esc(t)+'">🔥 '+esc(t)+"</span>";}).join("");
       sections+=section("Viral Triggers",vt);
     }
-    if(a.suggestedHook)sections+=section("Suggested Hook",'<div class="quote-box">'+esc(a.suggestedHook)+'<button class="copy-btn" onclick="copyText(\\''+esc(a.suggestedHook).replace(/'/g,"\\\\'")+'\\')">Copy</button></div>',true);
+    if(a.suggestedHook)sections+=section("Suggested Hook",'<div class="quote-box">'+esc(a.suggestedHook)+'<button class="copy-btn" data-copy="'+esc(a.suggestedHook).replace(/"/g,'&quot;')+'">Copy</button></div>',true);
     if(a.suggestedHashtags&&a.suggestedHashtags.length){
       var sh=a.suggestedHashtags.slice(0,10).map(function(t){var clean=t.replace(/^#/,"");return'<span class="tag clickable" onclick="copyText(this.dataset.v)" data-v="#'+esc(clean)+'" style="background:#ede9fe;color:#6d28d9">#'+esc(clean)+"</span>";}).join("");
       sections+=section("Hashtags",sh);
@@ -563,6 +566,10 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 
   // Global helpers
   window.copyText=copyText;
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('.copy-btn[data-copy]');
+    if(btn)copyText(btn.getAttribute('data-copy'));
+  });
   window.toggleSection=function(header){
     header.classList.toggle("open");
     var content=header.nextElementSibling;
