@@ -335,7 +335,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     var vh=wide?"340px":"200px";
     var bodyText=p.caption||p.text||"";
     if(video){
-      mediaHtml='<video controls preload="metadata" playsinline poster="'+esc(thumb)+'" style="width:100%;height:'+vh+';object-fit:cover;display:block;background:#000">'
+      mediaHtml='<video src="'+esc(video)+'" controls preload="metadata" playsinline poster="'+esc(thumb)+'" style="width:100%;height:'+vh+';object-fit:cover;display:block;background:#000">'
         +'Your browser does not support video playback.</video>';
     }else if(images.length>1){
       // Carousel / multi-image gallery — horizontally scrollable strip.
