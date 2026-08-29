@@ -50,8 +50,18 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .stagger>*:nth-child(8){animation-delay:.4s}
 
 /* ─── Cards ─── */
-.gallery{display:flex;flex-wrap:wrap;gap:10px;}
-.card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:380px;background:var(--card);display:inline-block;vertical-align:top;box-shadow:var(--shadow-sm);transition:var(--transition);cursor:default;}
+.gallery-wrap{position:relative;margin:0 -4px}
+.gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;padding:4px 4px 8px;scrollbar-width:none}
+.gallery::-webkit-scrollbar{display:none}
+.gallery-dots{display:flex;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.gallery-dots .dot{width:8px;height:8px;border-radius:50%;background:var(--border);border:none;cursor:pointer;transition:var(--transition);padding:0}
+.gallery-dots .dot.active{background:var(--accent);transform:scale(1.3)}
+.gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-md);cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--fg);transition:var(--transition);opacity:0}
+.gallery-wrap:hover .gallery-nav{opacity:1}
+.gallery-nav:hover{background:var(--accent);color:#fff}
+.gallery-nav.prev{left:-16px}
+.gallery-nav.next{right:-16px}
+.card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:380px;min-width:380px;background:var(--card);display:block;box-shadow:var(--shadow-sm);transition:var(--transition);cursor:default;scroll-snap-align:start;flex-shrink:0}
 .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--muted);}
 .card-wide{width:100%;}
 .card img{width:100%;height:260px;object-fit:cover;display:block;transition:transform .3s ease;}
@@ -488,6 +498,58 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     return result;
   }
 
+  var galleryId=0;
+  function galleryWrap(cardsHtml,count){
+    var id="gal"+(galleryId++);
+    if(count<=1)return cardsHtml;
+    var dots="";
+    for(var i=0;i<count;i++)dots+='<button class="dot'+(i===0?" active":"")+'" data-g="'+id+'" data-i="'+i+'"></button>';
+    return '<div class="gallery-wrap fade-in">'
+      +'<button class="gallery-nav prev" data-gnav="'+id+'" data-dir="-1">\u2039</button>'
+      +'<div class="gallery" id="'+id+'">'+cardsHtml+'</div>'
+      +'<button class="gallery-nav next" data-gnav="'+id+'" data-dir="1">\u203a</button>'
+      +'<div class="gallery-dots" id="'+id+'-dots">'+dots+'</div>'
+      +'</div>';
+  }
+  function initGalleryNav(){
+    document.addEventListener('click',function(e){
+      var navBtn=e.target.closest('.gallery-nav[data-gnav]');
+      if(navBtn){
+        var g=document.getElementById(navBtn.getAttribute('data-gnav'));
+        if(!g)return;
+        var dir=Number(navBtn.getAttribute('data-dir'));
+        var cardW=g.querySelector('.card')?.offsetWidth||380;
+        g.scrollBy({left:dir*(cardW+12),behavior:'smooth'});
+        return;
+      }
+      var dotBtn=e.target.closest('.dot[data-g]');
+      if(dotBtn){
+        var gId=dotBtn.getAttribute('data-g');
+        var g=document.getElementById(gId);
+        var dots=document.getElementById(gId+'-dots');
+        if(!g||!dots)return;
+        var idx=Number(dotBtn.getAttribute('data-i'));
+        var cards=g.querySelectorAll('.card');
+        if(cards[idx])cards[idx].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
+        dots.querySelectorAll('.dot').forEach(function(d){d.classList.remove('active')});
+        dotBtn.classList.add('active');
+      }
+    });
+    document.addEventListener('scroll',function(e){
+      if(!e.target.classList||!e.target.classList.contains('gallery'))return;
+      var g=e.target;var gId=g.id;
+      var dots=document.getElementById(gId+'-dots');
+      if(!dots)return;
+      var cards=g.querySelectorAll('.card');
+      if(!cards.length)return;
+      var scrollLeft=g.scrollLeft;var cardW=cards[0].offsetWidth+12;
+      var active=Math.round(scrollLeft/cardW);
+      active=Math.max(0,Math.min(active,cards.length-1));
+      dots.querySelectorAll('.dot').forEach(function(d,i){d.classList.toggle('active',i===active)});
+    },true);
+  }
+  initGalleryNav();
+
   function render(result){
     var app=document.getElementById("app");if(!app)return;
     var d=extractResult(result);
@@ -500,11 +562,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     // Posts gallery
     if(d.posts&&Array.isArray(d.posts)){
       if(!d.posts.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🔍</div><div class="text">No posts found</div></div>';return;}
-      app.innerHTML='<div class="gallery stagger">'+d.posts.map(function(p){return postCard(p,false);}).join("")+"</div>";return;}
+      app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false);}).join(""),d.posts.length);return;}
     // Creators
     if(d.creators&&Array.isArray(d.creators)){
       if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}
-      app.innerHTML='<div class="gallery stagger">'+d.creators.map(function(c){return creatorCard(c);}).join("")+"</div>";return;}
+      app.innerHTML=galleryWrap(d.creators.map(function(c){return creatorCard(c);}).join(""),d.creators.length);return;}
     // Comments
     if(d.comments&&Array.isArray(d.comments)){
       var ch=d.comments.slice(0,15).map(function(c){
@@ -517,7 +579,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
         +'<div style="font-size:16px;font-weight:700;margin-bottom:12px">💬 Comments ('+d.comments.length+')</div>'+ch+"</div></div>";return;}
     // Sounds
     if(d.sounds&&Array.isArray(d.sounds)){
-      app.innerHTML='<div class="gallery stagger">'+d.sounds.map(function(s){
+      app.innerHTML=galleryWrap(d.sounds.map(function(s){
         var color=pColor(s.platform||"tiktok");
         var cover=s.coverUrl?'<img class="sound-cover" src="'+esc(s.coverUrl)+'" alt="cover" loading="lazy"/>'
           :'<div class="sound-cover" style="background:'+color+'15;display:flex;align-items:center;justify-content:center;font-size:26px">🎵</div>';
@@ -528,7 +590,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
           +'<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.title||"")+"</div>"
           +'<div style="font-size:12px;color:var(--muted)">'+esc(s.artist||s.author||"")+(s.duration?" • "+esc(s.duration):"")+"</div>"
           +playBtn+"</div></div></div>";
-      }).join("")+"</div>";return;}
+      }).join(""),d.sounds.length);return;}
     // Credits
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];
