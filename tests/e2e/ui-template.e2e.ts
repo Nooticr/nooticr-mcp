@@ -494,3 +494,67 @@ test("a second tool call in the same view replaces the first", async ({ page }) 
   expect(final).toContain("tiktok_user1");
   expect(final).not.toContain("instagram_user1");
 });
+
+
+// When a signed platform URL expires there is nothing left to proxy — the link
+// is dead for the server too. The retry target is the resolver, which re-fetches
+// the post and hands back a fresh link (and for YouTube/Bilibili, which publish
+// no stream at all, downloads it once).
+test.describe("self-healing media", () => {
+  const RESOLVE = "https://api.orchyn.com/media/resolve?url=https%3A%2F%2Ftiktok.com%2F%40u%2Fvideo%2F1";
+  const POST = {
+    platform: "tiktok", caption: "c", creatorHandle: "u",
+    externalUrl: "https://tiktok.com/@u/video/1", contentType: "video", views: 1,
+    videoUrl: "https://cdn.example/expired.mp4",
+    videoProxyUrl: "https://api.orchyn.com/media/proxy?url=x",
+    videoFallbackUrl: `${RESOLVE}&kind=video`,
+    musicUrl: "https://cdn.example/expired.mp3",
+    musicFallbackUrl: `${RESOLVE}&kind=music`,
+  };
+
+  test("prefers the resolver over the proxy as the retry target", async ({ page }) => {
+    await page.route("**/expired.mp4", () => { /* hold open */ });
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate(
+      (d) => window.postMessage(
+        { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+      { post: POST });
+    await page.waitForSelector(".mp", { timeout: 5000 });
+
+    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("src")))
+      .toBe(POST.videoUrl);
+    // Not videoProxyUrl: proxying an expired link fails just as surely.
+    expect(await page.evaluate(() => document.querySelector(".mp")?.getAttribute("data-mp-fallback")))
+      .toBe(POST.videoFallbackUrl);
+    expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("data-fallback")))
+      .toBe(POST.musicFallbackUrl);
+  });
+
+  test("swaps to the resolver when the platform link fails", async ({ page }) => {
+    await page.route("**/expired.mp4", () => { /* hold open */ });
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate(
+      (d) => window.postMessage(
+        { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+      { post: POST });
+    await page.waitForSelector(".mp", { timeout: 5000 });
+    await page.evaluate(() => document.querySelector("video")!.dispatchEvent(new Event("error")));
+    await page.waitForTimeout(200);
+    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("src")))
+      .toBe(POST.videoFallbackUrl);
+  });
+
+  test("an expired thumbnail swaps to its fallback", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate(() => {
+      const img = document.createElement("img");
+      img.src = "https://cdn.example/expired.jpg";
+      img.setAttribute("data-fallback", "https://api.orchyn.com/media/resolve?url=x&kind=thumbnail");
+      document.getElementById("app")!.appendChild(img);
+      img.dispatchEvent(new Event("error"));
+    });
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(() => document.querySelector("#app img")?.getAttribute("src")))
+      .toBe("https://api.orchyn.com/media/resolve?url=x&kind=thumbnail");
+  });
+});

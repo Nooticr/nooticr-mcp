@@ -1009,6 +1009,19 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     } else fallback();
   }
 
+  // Images cannot bubble an error, so this listens in the capture phase: any
+  // <img data-fallback> that fails swaps to its fallback once. Thumbnails and
+  // sound covers expire the same way videos do - a TikTok poster lasts about
+  // five hours - and a dead cover is the most visible kind of broken card.
+  document.addEventListener("error",function(e){
+    var el=e.target;
+    if(!el||el.tagName!=="IMG")return;
+    var alt=el.getAttribute("data-fallback")||"";
+    if(!alt||el.getAttribute("src")===alt)return;
+    el.removeAttribute("data-fallback");
+    el.setAttribute("src",alt);
+  },true);
+
   // ─── Player registry ───
   // Exclusivity cannot ride on the audio elements alone: a silent slideshow
   // owns no <audio>, so it would happily keep advancing underneath a video
@@ -1201,8 +1214,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       // One retry through the proxy before admitting defeat: the direct CDN
       // link is tried first, but some hosts refuse a cross-origin request
       // from this frame and only the proxied copy will play.
-      var alt=box.getAttribute("data-mp-fallback")||"";
+      var alt=media.getAttribute("data-fallback")||box.getAttribute("data-mp-fallback")||"";
       if(alt&&media.getAttribute("src")!==alt){
+        media.removeAttribute("data-fallback");
         box.removeAttribute("data-mp-fallback");
         media.setAttribute("src",alt);
         try{media.load();}catch(e){}
@@ -1418,6 +1432,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     pickable=!!pickable&&!!pickUrl;
     var isSlideshow=!video&&images.length>1;
     var music=p.musicUrl||p.musicProxyUrl||"";
+    var musicFallback=(p.musicUrl&&(p.musicFallbackUrl||p.musicProxyUrl))||"";
+    var thumbFallback=(p.thumbnailUrl&&(p.thumbnailFallbackUrl||p.thumbnailProxyUrl))||"";
     var thumb=p.thumbnailUrl||p.thumbnailProxyUrl||"";
     var songLabel=[p.musicTitle||"",p.musicAuthor||""].filter(Boolean).join(" · ");
 
@@ -1496,7 +1512,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       +'<button class="mp-icon mp-mute" type="button" aria-label="Mute" aria-pressed="false">'
       +mpIcon("volume",17)+"</button>"
       +"</div>"
-      +(music?'<audio preload="metadata" src="'+esc(music)+'"></audio>':"")
+      +(music?'<audio preload="metadata" src="'+esc(music)+'"'
+        +(musicFallback?' data-fallback="'+esc(musicFallback)+'"':"")+"></audio>":"")
       +"</div>";
   }
 
@@ -1524,7 +1541,16 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     var rawVideo=typeof p.videoUrl==="string"?p.videoUrl:"";
     if(rawVideo)video=rawVideo;
     else if(typeof p.videoProxyUrl==="string"&&p.videoProxyUrl)video=p.videoProxyUrl;
-    lastVideoFallback=(rawVideo&&typeof p.videoProxyUrl==="string")?p.videoProxyUrl:"";
+    // Some feeds carry no stream at all - Douyin's search endpoint returns a
+    // permalink and a poster and nothing else - but the post detail does. The
+    // resolver fetches it on demand, so the card plays instead of sitting
+    // there as a still image. Only offered where resolution actually works.
+    else if(typeof p.videoFallbackUrl==="string"&&p.videoFallbackUrl
+            &&(p.contentType==="video"||Number(p.duration)>0))video=p.videoFallbackUrl;
+    // The retry target: the resolver re-fetches the post and hands back a
+    // fresh link, which is the only thing that helps once the signed URL has
+    // expired - a proxy of a dead link is just as dead.
+    lastVideoFallback=(rawVideo&&(p.videoFallbackUrl||p.videoProxyUrl))||"";
     if(p.mediaItems&&p.mediaItems.length){
       for(var i=0;i<p.mediaItems.length;i++){
         var m=p.mediaItems[i];
@@ -1551,7 +1577,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
         +(wide&&!hideActions?postAiActions(p):"");
     }
     if(thumb){
-      mediaHtml='<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"/>';
+      var tfb=(p.thumbnailUrl&&(p.thumbnailFallbackUrl||p.thumbnailProxyUrl))||"";
+      mediaHtml='<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"'
+        +(tfb?' data-fallback="'+esc(tfb)+'"':"")+"/>";
     }else if(bodyText){
       // Text-only post (LinkedIn / X) — styled quote block.
       mediaHtml='<div style="padding:16px 18px;border-bottom:1px solid var(--border);background:var(--card)">'
