@@ -168,16 +168,16 @@ export async function runVideoAnalysis(
     inlineImages: job.inlineImages,
   };
   if (result.ok) {
+    // Internal accounting stays internal. appId and workspaceId mean nothing
+    // to a caller, and `cost` is the workspace-credit price of the analysis
+    // job - a different currency from the MCP credits the tool is billed in.
+    // Surfacing it made the tool look like it charged 10 when it charges 6.
     result.job = {
       ok: job.ok,
       jobId: job.jobId,
       state: job.state,
       platform: job.platform,
       provider: job.provider,
-      appId: job.appId,
-      workspaceId: job.workspaceId,
-      cost: job.cost,
-      freeGrant: job.freeGrant,
       post: job.post,
     };
   }
