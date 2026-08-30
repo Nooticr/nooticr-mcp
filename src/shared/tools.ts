@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.24.1";
+export const MCP_SERVER_VERSION = "1.25.0";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -531,7 +531,7 @@ export function createMcpServer(
   {
    title: "Get User Posts",
    description:
-    "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile public_id, e.g. 'billgates'). " +
+    "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile public_id from the URL, e.g. 'williamhgates'). " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use to scan one creator's output; use find_hook_pattern when you want their formula extracted rather than the raw list.",
@@ -637,7 +637,9 @@ export function createMcpServer(
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
      platform: z
-      .enum(["tiktok", "instagram", "xiaohongshu", "youtube", "douyin"])
+      // youtube 400s upstream and douyin returns hollow user objects with no
+      // fields at all, so advertising them only spends a paid call to fail.
+      .enum(["tiktok", "instagram", "xiaohongshu"])
       .optional()
       .describe("Which platform (default tiktok)."),
      count: z.number().int().optional().describe("Max creators (default 8)."),
