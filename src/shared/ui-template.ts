@@ -520,10 +520,35 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   }
 
   /** Skeleton that mirrors the shape of the result the tool will return. */
-  function renderLoading(tool){
+  // The tool-input notifications carry only the arguments, never the tool
+  // name, so when the host does not add one the arguments decide the shape.
+  // Guessing the skeleton wrong costs nothing - it is a placeholder - while
+  // always falling back to a bare text block made every load look the same.
+  function shapeFromArgs(a){
+    if(!a||typeof a!=="object")return null;
+    if(Array.isArray(a.urls))
+      return {kind:"strip",n:Math.min(5,Math.max(2,a.urls.length)),label:"Comparing posts"};
+    if(a.draft)return {kind:"text",n:1,label:"Scoring the draft"};
+    if(a.username)return {kind:"strip",n:3,label:"Loading their posts"};
+    if(a.country||a.days)return {kind:"list",n:6,label:"Reading the trend board"};
+    if(a.niche||a.keyword)return {kind:"strip",n:3,label:"Searching"};
+    if(a.url)return {kind:"post",n:1,label:"Working on the post"};
+    if(a.topic)return {kind:"text",n:1,label:"Writing"};
+    return null;
+  }
+
+  function renderCancelled(reason){
     var app=document.getElementById("app");
     if(!app||toolResultReceived)return;
-    var shape=LOADING_SHAPE[tool]||{kind:"text",n:1,label:"Working"};
+    app.innerHTML='<div class="empty-state fade-in"><div class="icon">x</div><div class="text">'
+      +esc(reason?("Cancelled: "+reason):"The tool call was cancelled")+"</div></div>";
+    setTimeout(reportSize,50);
+  }
+
+  function renderLoading(tool,args){
+    var app=document.getElementById("app");
+    if(!app||toolResultReceived)return;
+    var shape=LOADING_SHAPE[tool]||shapeFromArgs(args)||{kind:"text",n:1,label:"Working"};
     var inner="";
     if(shape.kind==="post"){
       inner='<div style="display:flex;justify-content:center">'+skPostCard()+"</div>";
@@ -596,9 +621,21 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       render(d.params);
       setTimeout(reportSize,50);
     }
-    if(d.method==="ui/notifications/tool-input-partial"){
-      var n=d.params&&d.params.name?d.params.name:"";
-      if(n){currentTool=n;if(!toolResultReceived)renderLoading(n);}
+    // tool-input is the one the spec requires and sends exactly once;
+    // tool-input-partial is optional streaming on top of it. Listening only
+    // for the partial meant a host that does not stream left the view sitting
+    // on its idle placeholder until the result landed, with no shimmer at all.
+    if(d.method==="ui/notifications/tool-input"
+       ||d.method==="ui/notifications/tool-input-partial"){
+      var pp=d.params||{};
+      // The payload is just {arguments}; a host may add the name, so use it
+      // when offered and shape the skeleton from the arguments when not.
+      var n=pp.name||pp.toolName||"";
+      if(n)currentTool=n;
+      if(!toolResultReceived)renderLoading(currentTool,pp.arguments);
+    }
+    if(d.method==="ui/notifications/tool-cancelled"){
+      renderCancelled(d.params&&d.params.reason);
     }
   });
 
@@ -1155,6 +1192,16 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     }
     var media=t.kind==="video"?t.el:t.audio;
     if(media)media.addEventListener("error",function(){
+      // One retry through the proxy before admitting defeat: the direct CDN
+      // link is tried first, but some hosts refuse a cross-origin request
+      // from this frame and only the proxied copy will play.
+      var alt=box.getAttribute("data-mp-fallback")||"";
+      if(alt&&media.getAttribute("src")!==alt){
+        box.removeAttribute("data-mp-fallback");
+        media.setAttribute("src",alt);
+        try{media.load();}catch(e){}
+        return;
+      }
       busy(false);
       if(errBox)errBox.hidden=false;
       stop(false);
@@ -1358,13 +1405,14 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   var mpId=0;
   // Aspect class of the most recent player, so the enclosing card can adopt it.
   var lastPlayerAr="v";
+  var lastVideoFallback="";
   function mediaPlayerHtml(p,images,video,platform,pickable){
     var id="mp"+(mpId++);
     var pickUrl=p.externalUrl||p.url||"";
     pickable=!!pickable&&!!pickUrl;
     var isSlideshow=!video&&images.length>1;
-    var music=p.musicProxyUrl||p.musicUrl||"";
-    var thumb=p.thumbnailProxyUrl||p.thumbnailUrl||"";
+    var music=p.musicUrl||p.musicProxyUrl||"";
+    var thumb=p.thumbnailUrl||p.thumbnailProxyUrl||"";
     var songLabel=[p.musicTitle||"",p.musicAuthor||""].filter(Boolean).join(" · ");
 
     // Shape: vertical is the short-form default; long-form and the desktop
@@ -1415,6 +1463,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     var label=(p.creatorHandle?"@"+p.creatorHandle+" — ":"")+(isSlideshow?"slideshow":"video");
     lastPlayerAr=ar;
     return '<div class="mp '+ar+'" id="'+id+'" data-mp="'+(isSlideshow?"slides":"video")+'"'
+      +(lastVideoFallback?' data-mp-fallback="'+esc(lastVideoFallback)+'"':"")
       +(isSlideshow?' data-slides="'+images.length+'"':"")
       +' tabindex="0" role="group" aria-label="'+esc(label)+'">'
       +'<div class="mp-stage">'+stage
@@ -1449,7 +1498,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     var platform=p.platform||"unknown",color=pColor(platform),brandSvg=pSvg(platform);
     var tcolor=pColorText(platform);
     var title=p.title||p.caption||"",handle=p.creatorHandle||"",url=p.externalUrl||"";
-    var thumb=p.thumbnailProxyUrl||p.thumbnailUrl||"",ct=p.contentType||"post";
+    var thumb=p.thumbnailUrl||p.thumbnailProxyUrl||"",ct=p.contentType||"post";
     var views=p.views||0,likes=p.likes||0,comments=p.comments||0,shares=p.shares||0;
     var cls=wide?"card card-wide":"card";
     var statsHtml=[[views,"eye"],[likes,"heart"],[comments,"comment"],[shares,"share"]]
@@ -1461,13 +1510,15 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     // (videoUrl, or a video mediaItem preview_url). Videos are proxied /
     // re-hosted to a permanent orchyn URL so they play inside the CSP.
     var video="",images=[];
-    // Prefer the proxied companion. The raw videoUrl is a signed, short-lived,
-    // cross-origin CDN link, which this sandboxed frame cannot load - it showed
-    // "This media could not be loaded" while the same post rendered fine in the
-    // server-built HTML card, which proxies it.
+    // Play the platform URL directly. Going through /media/proxy did not fix
+    // playback in practice, and the direct link is one less hop that can fail.
+    // The proxied companion is kept as a fallback: the player retries with it
+    // once if the direct URL errors, which covers the CDNs that refuse a
+    // cross-origin request from this frame.
     var rawVideo=typeof p.videoUrl==="string"?p.videoUrl:"";
-    if(typeof p.videoProxyUrl==="string"&&p.videoProxyUrl)video=p.videoProxyUrl;
-    else if(rawVideo)video=rawVideo;
+    if(rawVideo)video=rawVideo;
+    else if(typeof p.videoProxyUrl==="string"&&p.videoProxyUrl)video=p.videoProxyUrl;
+    lastVideoFallback=(rawVideo&&typeof p.videoProxyUrl==="string")?p.videoProxyUrl:"";
     if(p.mediaItems&&p.mediaItems.length){
       for(var i=0;i<p.mediaItems.length;i++){
         var m=p.mediaItems[i];
@@ -1941,13 +1992,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     if(d.sounds&&Array.isArray(d.sounds)){
       app.innerHTML=galleryWrap(d.sounds.map(function(s,i){
         var color=pColor(s.platform||"tiktok");
-        var coverSrc=s.coverProxyUrl||s.coverUrl||"";
+        var coverSrc=s.coverUrl||s.coverProxyUrl||"";
         var cover=coverSrc?'<img class="sound-cover" src="'+esc(coverSrc)+'" alt="cover" loading="lazy"/>'
           :'<div class="sound-cover" style="background:'+color+'15;display:flex;align-items:center;justify-content:center;font-size:26px">🎵</div>';
         // The raw CDN URL is signed and cross-origin — only the proxied one
         // actually plays in this sandboxed frame. A bare link never played
         // anything in-place, which is why sound cards were silent.
-        var play=s.playProxyUrl||s.playUrl||s.url||"";
+        var play=s.playUrl||s.playProxyUrl||s.url||"";
         var secs=Number(s.duration)||0;
         var meta=[s.artist||s.author||"",secs>0?fmtTime(secs):""].filter(Boolean).join(" • ");
         var player=play
@@ -1993,11 +2044,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     setTimeout(reportSize,50);
   }
 
-  // tool-input-partial — no loading UI anymore; just retain the tool name in
-  // case future logic needs it. Content only appears via tool-result.
   function updateProgress(params){
-    var toolName=params&&params.name?params.name:null;
-    if(toolName){currentTool=toolName;renderLoading(toolName);}
+    var p=params||{};
+    var toolName=p.name||p.toolName||"";
+    if(toolName)currentTool=toolName;
+    renderLoading(currentTool,p.arguments);
   }
 
   // Global helpers

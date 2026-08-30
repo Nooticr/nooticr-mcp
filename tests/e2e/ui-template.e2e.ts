@@ -310,3 +310,141 @@ test("the open button sits in the overlay, not in a footer row", async ({ page }
   expect(geom!.overlaps).toBe(false);
   expect(geom!.openLeftOfPick).toBe(true);
 });
+
+// ui/notifications/tool-input is the one the spec requires and sends exactly
+// once; tool-input-partial is optional streaming on top of it. The view
+// listened only for the partial, and gated the shimmer on a params.name the
+// spec never sends — so hosts left it sitting on the idle placeholder until
+// the result arrived.
+test.describe("loading state", () => {
+  const send = (page: Page, method: string, params: unknown) =>
+    page.evaluate(([m, p]) => window.postMessage({ method: m, params: p }, "*"),
+      [method, params] as [string, unknown]);
+
+  const appText = (page: Page) =>
+    page.evaluate(() => (document.getElementById("app")?.textContent || "").trim());
+
+  test("the required tool-input notification starts the shimmer", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.waitForTimeout(300);
+    expect(await appText(page)).toContain("Results will appear");
+
+    // Exactly the spec payload: arguments only, no tool name.
+    await send(page, "ui/notifications/tool-input", { arguments: { url: "https://tiktok.com/@a/video/1" } });
+    await page.waitForTimeout(250);
+
+    await expect(page.locator(".load-bar")).toBeVisible();
+    expect(await appText(page)).not.toContain("Results will appear");
+  });
+
+  // With no tool name available, the arguments decide the skeleton.
+  for (const [args, label, cards, rows] of [
+    [{ urls: ["a", "b", "c"] }, "Comparing posts", 3, 0],
+    [{ country: "US", days: 7 }, "Reading the trend board", 0, 6],
+    [{ username: "iruy" }, "Loading their posts", 3, 0],
+    [{ url: "https://x" }, "Working on the post", 1, 0],
+  ] as [Record<string, unknown>, string, number, number][]) {
+    test(`shapes the skeleton from ${Object.keys(args).join("+")}`, async ({ page }) => {
+      await page.setContent(ORCHYN_UI_TEMPLATE);
+      await send(page, "ui/notifications/tool-input", { arguments: args });
+      await page.waitForTimeout(250);
+      await expect(page.locator(".load-head")).toContainText(label);
+      await expect(page.locator(".sk-card")).toHaveCount(cards);
+      await expect(page.locator(".sk-row")).toHaveCount(rows);
+    });
+  }
+
+  test("a cancelled call says so instead of shimmering forever", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await send(page, "ui/notifications/tool-input", { arguments: { url: "https://x" } });
+    await page.waitForTimeout(200);
+    await send(page, "ui/notifications/tool-cancelled", { reason: "user stopped it" });
+    await page.waitForTimeout(200);
+    expect(await appText(page)).toContain("Cancelled: user stopped it");
+    await expect(page.locator(".load-bar")).toHaveCount(0);
+  });
+
+  test("the result replaces the shimmer", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await send(page, "ui/notifications/tool-input", { arguments: { country: "US" } });
+    await page.waitForTimeout(200);
+    await send(page, "ui/notifications/tool-result", {
+      structuredContent: {
+        country: "US", days: 7,
+        hashtags: [{ hashtag: "x", posts: 1, views: 2, trend: "rising", url: "https://x.com" }],
+      },
+    });
+    await page.waitForTimeout(350);
+    await expect(page.locator(".load-bar")).toHaveCount(0);
+    expect(await appText(page)).toContain("Trending hashtags");
+  });
+});
+
+// Media plays from the platform URL directly; /media/proxy is only a retry.
+test.describe("media source", () => {
+  const render = async (page: Page, post: Record<string, unknown>) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate(
+      (d) => window.postMessage(
+        { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+      { post },
+    );
+    await page.waitForSelector(".mp", { timeout: 5000 });
+  };
+
+  const BASE = {
+    platform: "tiktok", caption: "c", creatorHandle: "u",
+    externalUrl: "https://www.tiktok.com/@u/video/1", contentType: "video", views: 1,
+  };
+
+  test("plays the platform url, carrying the proxy as a retry", async ({ page }) => {
+    await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4",
+      videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc" });
+    // Read before any load error can swap it.
+    const initial = await page.evaluate(() => ({
+      src: document.querySelector("video")?.getAttribute("src"),
+      fallback: document.querySelector(".mp")?.getAttribute("data-mp-fallback"),
+    }));
+    expect(initial.src).toBe("https://cdn.example/direct.mp4");
+    expect(initial.fallback).toBe("https://api.orchyn.com/media/proxy?url=enc");
+  });
+
+  test("retries through the proxy once, then reports failure", async ({ page }) => {
+    await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4",
+      videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc" });
+    await page.evaluate(() => document.querySelector("video")!.dispatchEvent(new Event("error")));
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("src")))
+      .toBe("https://api.orchyn.com/media/proxy?url=enc");
+    // The retry is spent; a second failure is a real failure.
+    await page.evaluate(() => document.querySelector("video")!.dispatchEvent(new Event("error")));
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(() => document.querySelector(".mp-err")?.hidden)).toBe(false);
+  });
+
+  test("thumbnail, music and sound covers use the platform url", async ({ page }) => {
+    await render(page, { ...BASE, videoUrl: "https://cdn.example/v.mp4",
+      thumbnailUrl: "https://cdn.example/t.jpg",
+      thumbnailProxyUrl: "https://api.orchyn.com/media/proxy?url=t",
+      musicUrl: "https://cdn.example/m.mp3",
+      musicProxyUrl: "https://api.orchyn.com/media/proxy?url=m" });
+    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("poster")))
+      .toBe("https://cdn.example/t.jpg");
+    expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
+      .toBe("https://cdn.example/m.mp3");
+
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate(() => window.postMessage({
+      method: "ui/notifications/tool-result",
+      params: { structuredContent: { sounds: [{
+        title: "t", author: "a", platform: "tiktok",
+        coverUrl: "https://cdn.example/cover.jpg",
+        coverProxyUrl: "https://api.orchyn.com/media/proxy?url=c",
+        playUrl: "https://cdn.example/play.mp3",
+        playProxyUrl: "https://api.orchyn.com/media/proxy?url=p", videoCount: 5 }] } },
+    }, "*"));
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
+      .toBe("https://cdn.example/play.mp3");
+  });
+});
