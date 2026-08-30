@@ -28,6 +28,7 @@ import {
 // them from one place.
 export {
   SCOPE,
+  SCOPES,
   escapeHtml,
   isAllowedRedirectUri,
   isLoopbackUrl,

@@ -17,6 +17,7 @@ import {
   updateSessionTokens,
   deleteSession,
   type McpSession,
+  SCOPES,
 } from "./oauth.js";
 
 /**
@@ -196,7 +197,7 @@ export class McpEndpoint {
       ? {
           token,
           clientId: session?.clientId ?? "orchyn-mcp",
-          scopes: session?.scopes ?? ["analyze:video"],
+          scopes: session?.scopes ?? [...SCOPES],
           expiresAt: session
             ? Math.floor(session.expiresAt / 1000)
             : Math.floor(Date.now() / 1000) + 3600,

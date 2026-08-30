@@ -31,6 +31,7 @@ import {
   SCOPE,
   TOKEN_TTL_SECONDS,
   PENDING_TTL_SECONDS,
+  SCOPES,
 } from "./oauth.js";
 
 export { McpEndpoint } from "./endpoint.js";
@@ -212,7 +213,7 @@ async function handleDashboardCallback(request: Request, env: Env): Promise<Resp
       ? { id: orchyn.user.id, email: orchyn.user.email, displayName: orchyn.user.displayName }
       : undefined,
     clientId: "orchyn-dashboard",
-    scopes: ["analyze:video"],
+    scopes: [...SCOPES],
     expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
   });
   let target = "/dashboard";
