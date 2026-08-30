@@ -19,6 +19,8 @@ import {
   LEGACY_SCOPE,
   SCOPE,
   SCOPES,
+  parseScopes,
+  unsupportedScopes,
   escapeHtml,
   isAllowedRedirectUri,
   randomToken,
@@ -182,12 +184,8 @@ export class OAuthManager {
         "redirect_uri must be a loopback http://localhost, http://127.0.0.1, http://[::1] URL or an https URL.");
     }
     const scope = params.get("scope") ?? SCOPE;
-    const scopes = scope.split(/\s+/).filter(Boolean);
-    // Accept the current scopes and the one issued before they were split.
-    // Clients already connected still request LEGACY_SCOPE, and rejecting it
-    // would break every existing installation on upgrade.
-    const accepted = new Set<string>([...SCOPES, LEGACY_SCOPE]);
-    const unsupported = scopes.filter((s) => !accepted.has(s));
+    const scopes = parseScopes(scope);
+    const unsupported = unsupportedScopes(scope);
     if (unsupported.length > 0) {
       return this.sendAuthorizeError(res, params, "invalid_scope",
         `Unsupported scope(s): ${unsupported.join(", ")}. Supported: ${SCOPES.join(", ")}.`);

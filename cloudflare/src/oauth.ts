@@ -29,6 +29,8 @@ import {
 export {
   SCOPE,
   SCOPES,
+  parseScopes,
+  unsupportedScopes,
   escapeHtml,
   isAllowedRedirectUri,
   isLoopbackUrl,

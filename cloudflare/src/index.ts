@@ -33,6 +33,7 @@ import {
   TOKEN_TTL_SECONDS,
   PENDING_TTL_SECONDS,
   SCOPES,
+  unsupportedScopes,
 } from "./oauth.js";
 
 export { McpEndpoint } from "./endpoint.js";
@@ -352,9 +353,10 @@ async function handleAuthorizeGet(request: Request, env: Env): Promise<Response>
   if (!isAllowedRedirectUri(p.redirect_uri)) {
     return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be a loopback URL or an https URL.</p>`));
   }
-  const scopes = p.scope.split(/\s+/).filter(Boolean);
-  if (scopes.some((s) => s !== SCOPE)) {
-    return authorizeError(url, p.redirect_uri, "invalid_scope", `Unsupported scope(s). Supported: ${SCOPE}.`);
+  const unsupported = unsupportedScopes(p.scope);
+  if (unsupported.length > 0) {
+    return authorizeError(url, p.redirect_uri, "invalid_scope",
+      `Unsupported scope(s): ${unsupported.join(", ")}. Supported: ${SCOPE}.`);
   }
 
   // Delegate to the Rust server's branded login (single source of truth)

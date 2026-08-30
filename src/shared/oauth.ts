@@ -29,6 +29,29 @@ export const SCOPE = SCOPES.join(" ");
 /** Issued before the scopes above existed. Still honoured. */
 export const LEGACY_SCOPE = "analyze:video";
 
+/**
+ * The scopes an authorization request may ask for, split out of the request's
+ * space-delimited `scope` parameter.
+ *
+ * Shared because the worker and the node package each validated this
+ * separately and drifted: the worker compared every individual scope against
+ * the joined string, so once there was more than one scope nothing could ever
+ * match and every authorization was refused with invalid_scope.
+ *
+ * Returns the scopes that are not recognised — empty means the request is fine.
+ * LEGACY_SCOPE is accepted alongside the current ones: clients connected
+ * before the split still ask for it, and refusing it would break every
+ * existing installation on upgrade.
+ */
+export function parseScopes(scope: string | null | undefined): string[] {
+  return (scope ?? "").split(/\s+/).filter(Boolean);
+}
+
+export function unsupportedScopes(scope: string | null | undefined): string[] {
+  const accepted = new Set<string>([...SCOPES, LEGACY_SCOPE]);
+  return parseScopes(scope).filter((s) => !accepted.has(s));
+}
+
 export function isLoopbackUrl(url: string): boolean {
   let parsed: URL;
   try {
