@@ -398,9 +398,13 @@ test.describe("media source", () => {
   };
 
   test("plays the platform url, carrying the proxy as a retry", async ({ page }) => {
+    // Hold the request open rather than letting it fail: an unreachable URL
+    // errors on its own schedule, and the retry below would swap the src out
+    // from under the assertion. Never fulfilling the route means no error
+    // event, so the initial choice is what we actually measure.
+    await page.route("**/direct.mp4", () => { /* deliberately hangs */ });
     await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4",
       videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc" });
-    // Read before any load error can swap it.
     const initial = await page.evaluate(() => ({
       src: document.querySelector("video")?.getAttribute("src"),
       fallback: document.querySelector(".mp")?.getAttribute("data-mp-fallback"),
@@ -447,4 +451,46 @@ test.describe("media source", () => {
     expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
       .toBe("https://cdn.example/play.mp3");
   });
+});
+
+// A view is reused across tool calls. toolResultReceived was set on the first
+// result and never cleared, so every later call skipped the shimmer and left
+// the previous tool's cards on screen — asking for Instagram posts and then
+// TikTok showed the Instagram ones again.
+test("a second tool call in the same view replaces the first", async ({ page }) => {
+  const feed = (platform: string) => ({
+    platform,
+    posts: [1, 2].map((i) => ({
+      platform, caption: `${platform} post ${i}`, creatorHandle: `${platform}_user${i}`,
+      externalUrl: `https://${platform}.com/p/${i}`, contentType: "video",
+      videoUrl: `https://cdn.example/${platform}${i}.mp4`,
+      thumbnailUrl: `https://cdn.example/${platform}${i}.jpg`,
+      views: 1, likes: 2, comments: 3,
+    })),
+  });
+  const send = (method: string, params: unknown) =>
+    page.evaluate(([m, p]) => window.postMessage({ method: m, params: p }, "*"),
+      [method, params] as [string, unknown]);
+  const appText = () =>
+    page.evaluate(() => (document.getElementById("app")?.textContent || "").trim());
+
+  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await send("ui/notifications/tool-input", { arguments: { niche: "fitness", platform: "instagram" } });
+  await page.waitForTimeout(150);
+  await send("ui/notifications/tool-result", { structuredContent: feed("instagram") });
+  await page.waitForTimeout(350);
+  expect(await appText()).toContain("instagram_user1");
+
+  // Same view, new call.
+  await send("ui/notifications/tool-input", { arguments: { niche: "fitness", platform: "tiktok" } });
+  await page.waitForTimeout(200);
+  await expect(page.locator(".load-bar")).toBeVisible();
+  expect(await appText(), "stale results must not sit under the new request")
+    .not.toContain("instagram_user1");
+
+  await send("ui/notifications/tool-result", { structuredContent: feed("tiktok") });
+  await page.waitForTimeout(350);
+  const final = await appText();
+  expect(final).toContain("tiktok_user1");
+  expect(final).not.toContain("instagram_user1");
 });

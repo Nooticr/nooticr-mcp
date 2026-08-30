@@ -632,7 +632,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       // when offered and shape the skeleton from the arguments when not.
       var n=pp.name||pp.toolName||"";
       if(n)currentTool=n;
-      if(!toolResultReceived)renderLoading(currentTool,pp.arguments);
+      // A view is reused across calls, and this flag was set on the first
+      // result and never cleared - so every later call skipped the shimmer
+      // and left the previous tool's cards on screen. Asking for Instagram
+      // posts and then TikTok showed the Instagram ones again. A new input
+      // notification means a new call, so the old result no longer stands.
+      toolResultReceived=false;
+      renderLoading(currentTool,pp.arguments);
     }
     if(d.method==="ui/notifications/tool-cancelled"){
       renderCancelled(d.params&&d.params.reason);
