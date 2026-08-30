@@ -197,3 +197,32 @@ describe("UI template validity", () => {
     }
   });
 });
+
+// The template is embedded twice: in a Rust raw string (crates/mcp/src/ui.rs)
+// where a backslash survives verbatim, and in this TS template literal where
+// the same backslash is consumed. Any backslash therefore means the two hosts
+// serve different JavaScript. A regex here carried \\s escapes for months and
+// matched nothing in the Worker-served copy while working fine in Rust.
+describe("dual-host template safety", () => {
+  it("contains no backslashes at all", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const at: number[] = [];
+    for (let i = 0; i < ORCHYN_UI_TEMPLATE.length; i++) {
+      if (ORCHYN_UI_TEMPLATE[i] === "\\") at.push(i);
+    }
+    const context = at.slice(0, 3).map((i) => ORCHYN_UI_TEMPLATE.slice(i - 60, i + 30));
+    expect(context).toEqual([]);
+  });
+});
+
+// MCP Apps invokes tools with the core "tools/call" method. The template
+// shipped a ui-prefixed name for months; no host answers it, so every in-view
+// action button (Compare, and each AI action) silently fell through to its
+// clipboard fallback and looked broken.
+describe("host bridge methods", () => {
+  it("invokes tools with tools/call and no ui-prefixed variant", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    expect(ORCHYN_UI_TEMPLATE).toContain('send("tools/call"');
+    expect(ORCHYN_UI_TEMPLATE).not.toContain("ui/tool-call");
+  });
+});

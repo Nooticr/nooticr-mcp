@@ -24,17 +24,24 @@ export const ORCHYN_UI_TEMPLATE = `<!DOCTYPE html>
      chat transcript, so it inherits whatever colour the user's client uses
      rather than stamping its own rectangle over it. --bg stays defined for
      the few places that need a solid fill behind media. */
-  --bg:#fafbfc;--fg:#111827;--muted:#6b7280;--border:#e5e7eb;
+  /* Without this the browser paints the iframe canvas white, so on a phone in
+     dark mode the card sat in a white box inside a dark chat. Declaring both
+     schemes lets the UA canvas follow the user's theme instead. */
+  color-scheme:light dark;
+  --bg:#fafbfc;--fg:#111827;--muted:#5f6773;--border:#e5e7eb;
   --card:#fff;--card-hover:#f9fafb;--tag:#f3f4f6;--accent:#14151a;
   --brand:#ff4d23;--brand-2:#ff8a3d;--brand-soft:rgba(255,77,35,.13);
   --shimmer:rgba(255,77,35,.10);--shimmer-hi:rgba(255,77,35,.24);
   --shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);
   --shadow-lg:0 8px 24px rgba(0,0,0,.12);--radius:12px;--radius-sm:8px;
   --transition:all .25s cubic-bezier(.4,0,.2,1);
-  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--blue:#3b82f6;
+  --green:#047857;--amber:#b45309;--red:#dc2626;--blue:#2563eb;
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#0f172a;--fg:#f1f5f9;--muted:#94a3b8;--border:#1e293b;
+  --bg:#0f172a;--fg:#f1f5f9;--muted:#a8b8cc;--border:#334155;
+  /* Accents are lifted in dark mode: the light-mode values sat at about
+     3:1 on the dark card, which is under the 4.5:1 needed for body text. */
+  --green:#34d399;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;
   --card:#1e293b;--card-hover:#273548;--tag:#1e293b;--accent:#e2e8f0;
   --brand:#ff5c33;--brand-2:#ff9351;--brand-soft:rgba(255,92,51,.16);
   --shimmer:rgba(255,255,255,.05);--shimmer-hi:rgba(255,255,255,.13);
@@ -47,6 +54,10 @@ html{overflow-x:hidden;overflow-y:auto}
    overlay (buffering, error) would stay painted and keep swallowing clicks.
    Make the attribute win outright. */
 [hidden]{display:none !important;}
+/* An unstyled anchor falls back to the UA's default link blue, which failed
+   contrast on the dark card - the trending-hashtag rows were near-unreadable.
+   Every link here is styled by its container, so inherit the local colour. */
+a{color:inherit;text-decoration:none;}
 body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transparent;color:var(--fg);padding:10px;line-height:1.5;overflow-x:hidden;max-width:100vw;}
 
 /* ─── Loading state ─── */
@@ -297,6 +308,14 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
   color:transparent;transition:var(--transition)}
 .mp-pick:hover{background:rgba(0,0,0,.66);transform:scale(1.08)}
+/* Sits beside the checkbox so the card footer can go away entirely - the
+   footer button cost a whole row under every card in a gallery. */
+.mp-open{position:absolute;top:9px;right:9px;z-index:3;width:26px;height:26px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.42);backdrop-filter:blur(6px);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+  color:#fff;text-decoration:none;transition:var(--transition)}
+.mp-open:hover{background:rgba(0,0,0,.66);transform:scale(1.08)}
+.mp-open.with-pick{right:43px}
 .mp-pick[aria-pressed="true"]{background:var(--brand,#ff4d23);border-color:#fff;color:#fff}
 .mp.picked{outline:2px solid var(--brand,#ff4d23);outline-offset:-2px}
 /* The slide counter moves down so it never sits under the checkbox. */
@@ -365,7 +384,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 /* Buffering + failure — visible states, not a frozen black frame. */
 .mp-spin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;}
 .mp-spin>i{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:spin .8s linear infinite;}
-.mp-err{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:4;background:rgba(0,0,0,.82);color:#fff;font-size:12px;font-weight:600;text-align:center;padding:16px;}
+/* Purely informational - it has no controls of its own. Left clickable it
+   covered the whole player at z-index 4, so on a post whose video failed
+   to load it swallowed the taps meant for the select-for-comparison
+   checkbox underneath, and the card could not be picked at all. */
+.mp-err{pointer-events:none;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:4;background:rgba(0,0,0,.82);color:#fff;font-size:12px;font-weight:600;text-align:center;padding:16px;}
 
 /* Keyboard focus has to be visible — the player is reachable by Tab. */
 .mp:focus-visible{outline:2px solid #fff;outline-offset:-2px;}
@@ -799,7 +822,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       }else restore("Try in chat");
     };
     var pr=null;
-    try{pr=send("ui/tool-call",{name:tool,arguments:args});}catch(e){}
+    try{pr=send("tools/call",{name:tool,arguments:args});}catch(e){}
     if(pr&&pr.then){
       pr.then(function(){settled=true;restore("Sent ✓");}).catch(fallback);
       setTimeout(fallback,1500);
@@ -809,6 +832,22 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   document.addEventListener("click",function(e){
     var b=e.target.closest&&e.target.closest(".ai-btn[data-ai]");
     if(b&&!b.disabled)runAiTool(b);
+  });
+
+  // A sandboxed view cannot navigate the top-level window, so a plain anchor
+  // does nothing in most hosts - the "Open on ..." buttons and the trending
+  // hashtag rows were all inert. MCP Apps exposes ui/open-link for this.
+  // window.open stays as the fallback for hosts that do allow it.
+  document.addEventListener("click",function(e){
+    var a=e.target.closest&&e.target.closest("a[href]");
+    if(!a)return;
+    var href=a.getAttribute("href")||"";
+    if(href.indexOf("http")!==0)return;
+    e.preventDefault();
+    var popOut=function(){try{window.open(href,"_blank","noopener");}catch(err){}};
+    var pr=null;
+    try{pr=send("ui/open-link",{url:href});}catch(err2){}
+    if(pr&&pr.then)pr.catch(popOut); else popOut();
   });
 
   // ─── Post selection & comparison ───
@@ -887,7 +926,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     return out;
   }
 
-  /** Ask the host to run compare_posts; fall back to copying the URLs. */
+  /** Ask the host to run compare_posts; fall back to copying the URLs.
+   *  The method is "tools/call" - MCP Apps reuses the core MCP method for
+   *  tool invocation rather than defining a prefixed one of its own. This
+   *  used to send a ui-prefixed name that no host answers, so every in-view
+   *  action button silently timed out into the clipboard fallback. */
   function runCompare(){
     var go=document.getElementById("pickgo");
     var urls=pickedUrls().slice(0,5);
@@ -899,7 +942,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     };
     // Preferred path: the host runs the tool for us.
     var p=null;
-    try{ p=send("ui/tool-call",{name:"compare_posts",arguments:{urls:urls}}); }catch(e){}
+    try{ p=send("tools/call",{name:"compare_posts",arguments:{urls:urls}}); }catch(e){}
     var settled=false;
     var fallback=function(){
       if(settled)return; settled=true;
@@ -1187,14 +1230,28 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   // the space the moment the keyboard is dismissed) and let the aspect ratio
   // derive the width from there. Only ever clamps downward from HARD_MAX, so
   // the height we report back to the host can't feed itself.
-  var HARD_MAX=560,RESERVE=96;
+  var HARD_MAX=560,RESERVE=96,NARROW=520;
   function availableHeight(){
     var vv=window.visualViewport;
     return (vv&&vv.height)||window.innerHeight||HARD_MAX;
   }
+  function availableWidth(){
+    var vv=window.visualViewport;
+    return (vv&&vv.width)||document.documentElement.clientWidth||window.innerWidth||0;
+  }
+  // The card takes its width from the stage height via the aspect ratio, so a
+  // short frame collapsed a portrait card to about 112px on a phone while its
+  // 38px controls stayed put - the media ended up narrower than its own
+  // buttons. On a narrow frame the width is the binding constraint, so floor
+  // the stage at whatever keeps the media full-width and let the host scroll.
+  function stageFloor(){
+    var w=availableWidth();
+    if(!w||w>=NARROW)return 200;
+    return Math.min(HARD_MAX,Math.round(Math.max(0,w-20)*16/9));
+  }
   function setStageMax(px){
     document.documentElement.style.setProperty(
-      "--stage-max",Math.max(200,Math.min(HARD_MAX,px))+"px");
+      "--stage-max",Math.max(stageFloor(),Math.min(HARD_MAX,px))+"px");
   }
   function fitViewport(){
     // First pass, before the view exists: reserve a conservative slice for
@@ -1225,6 +1282,22 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 
   function fmtNum(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);}
   function pColor(p){return{tiktok:"#000",douyin:"#000",instagram:"#E4405F",youtube:"#FF0000",xiaohongshu:"#FF2442",x:"#000",twitter:"#1DA1F2",bilibili:"#00A1D6",linkedin:"#0A66C2"}[p]||"#6B7280";}
+  // Brand colours are chosen against a white page. TikTok, Douyin and X are
+  // pure black, so used as label text on the dark card they were invisible.
+  // Keep the brand colour for fills, but lift a too-dark one toward the card
+  // foreground when it has to be read as text in dark mode.
+  function pColorText(p){
+    var c=pColor(p);
+    var dq=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)");
+    if(!dq||!dq.matches)return c;
+    var h=c.replace("#","");
+    if(h.length===3)h=h.charAt(0)+h.charAt(0)+h.charAt(1)+h.charAt(1)+h.charAt(2)+h.charAt(2);
+    var r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+    if(isNaN(r)||isNaN(g)||isNaN(b))return c;
+    if((0.2126*r+0.7152*g+0.0722*b)/255>0.38)return c;
+    var t=0.66;
+    return "rgb("+Math.round(r+(255-r)*t)+","+Math.round(g+(255-g)*t)+","+Math.round(b+(255-b)*t)+")";
+  }
   // Official brand mark (simple-icons path) as an inline SVG that inherits
   // the current text color via fill="currentColor" — matches badge accents.
   // ─── UI icon set ───
@@ -1291,7 +1364,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     pickable=!!pickable&&!!pickUrl;
     var isSlideshow=!video&&images.length>1;
     var music=p.musicProxyUrl||p.musicUrl||"";
-    var thumb=p.thumbnailUrl||"";
+    var thumb=p.thumbnailProxyUrl||p.thumbnailUrl||"";
     var songLabel=[p.musicTitle||"",p.musicAuthor||""].filter(Boolean).join(" · ");
 
     // Shape: vertical is the short-form default; long-form and the desktop
@@ -1352,6 +1425,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       +'<div class="mp-ov">'
       +'<div class="mp-badge">'+pSvg(platform,12)+" "+esc(platform)+"</div>"
       +(pickable?'<button class="mp-pick" type="button" aria-pressed="false" data-pick-id="'+id+'" data-pick="'+esc(pickUrl)+'" title="Select for comparison">'+mpIcon("check",15)+"</button>":"")
+      +(pickUrl?'<a class="mp-open'+(pickable?" with-pick":"")+'" href="'+esc(pickUrl)+'" target="_blank" rel="noopener" title="Open on '+esc(platform)+'" aria-label="Open on '+esc(platform)+'">'+mpIcon("open",14)+"</a>":"")
       +counter+navs
       +'<div class="mp-rail">'+acts+"</div>"
       +'<div class="mp-meta">'+handle+cap+song+"</div>"
@@ -1371,10 +1445,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       +"</div>";
   }
 
-  function postCard(p,wide,pickable){
+  function postCard(p,wide,pickable,hideActions){
     var platform=p.platform||"unknown",color=pColor(platform),brandSvg=pSvg(platform);
+    var tcolor=pColorText(platform);
     var title=p.title||p.caption||"",handle=p.creatorHandle||"",url=p.externalUrl||"";
-    var thumb=p.thumbnailUrl||"",ct=p.contentType||"post";
+    var thumb=p.thumbnailProxyUrl||p.thumbnailUrl||"",ct=p.contentType||"post";
     var views=p.views||0,likes=p.likes||0,comments=p.comments||0,shares=p.shares||0;
     var cls=wide?"card card-wide":"card";
     var statsHtml=[[views,"eye"],[likes,"heart"],[comments,"comment"],[shares,"share"]]
@@ -1386,7 +1461,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     // (videoUrl, or a video mediaItem preview_url). Videos are proxied /
     // re-hosted to a permanent orchyn URL so they play inside the CSP.
     var video="",images=[];
-    if(typeof p.videoUrl==="string"&&p.videoUrl)video=p.videoUrl;
+    // Prefer the proxied companion. The raw videoUrl is a signed, short-lived,
+    // cross-origin CDN link, which this sandboxed frame cannot load - it showed
+    // "This media could not be loaded" while the same post rendered fine in the
+    // server-built HTML card, which proxies it.
+    var rawVideo=typeof p.videoUrl==="string"?p.videoUrl:"";
+    if(typeof p.videoProxyUrl==="string"&&p.videoProxyUrl)video=p.videoProxyUrl;
+    else if(rawVideo)video=rawVideo;
     if(p.mediaItems&&p.mediaItems.length){
       for(var i=0;i<p.mediaItems.length;i++){
         var m=p.mediaItems[i];
@@ -1408,10 +1489,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       // The player already carries the handle, caption and stats as overlay
       // chrome, so the card body underneath is just the outbound link.
       return '<div class="'+cls+' card-media '+lastPlayerAr+'">'+mediaHtml
-        +(url?'<div class="card-foot"><a href="'+esc(url)+'" target="_blank" rel="noopener" class="btn btn-sm" style="background:'+color+'">'+mpIcon("open",13)+"<span>Open on "+esc(platform)+"</span></a></div>":"")
         +"</div>"
         // Only on the single-post view — a gallery of these would be noise.
-        +(wide?postAiActions(p):"");
+        +(wide&&!hideActions?postAiActions(p):"");
     }
     if(thumb){
       mediaHtml='<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"/>';
@@ -1423,7 +1503,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     var ctTag=wide?'<span style="font-size:12px;color:var(--muted);text-transform:capitalize">'+esc(ct)+"</span>":"";
     return '<div class="'+cls+'">'+mediaHtml+'<div class="card-body">'
       +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-      +'<span class="badge" style="background:'+color+'15;color:'+color+';display:inline-flex;align-items:center;gap:4px">'+brandSvg+" "+esc(platform)+"</span>"
+      +'<span class="badge" style="background:'+color+'15;color:'+tcolor+';display:inline-flex;align-items:center;gap:4px">'+brandSvg+" "+esc(platform)+"</span>"
       +ctTag+handleHtml+"</div>"
       +'<div class="title">'+esc(title.length>160?title.slice(0,160)+"…":title)+"</div>"
       +'<div class="stats">'+statsHtml+"</div>"
@@ -1472,7 +1552,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   // view (as this previously did) is throwing away what the user paid for.
   function analysisCard(d){
     var a=d.analysis||{};
-    var postHtml=postCard(d.post||d,true);
+    var postHtml=postCard(d.post||d,true,false,true);
     var out="";
 
     // ── Verdict strip ──
@@ -1578,6 +1658,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       +aiBtn("create_variants","Create variants",JSON.stringify({url:srcUrl}))
       +aiBtn("write_hooks","More hooks",JSON.stringify({url:srcUrl}))
       +aiBtn("repurpose_post","Repurpose",JSON.stringify({url:srcUrl}))
+      +aiBtn("analyze_comments","Read comments",JSON.stringify({url:srcUrl}))
       +'</div><div class="ai-note">Each action runs a tool and spends the credits shown.</div>':"";
 
     if(!out)return postHtml;
@@ -1630,10 +1711,18 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
         if(c&&c.type==="text"&&typeof c.text==="string"){textBlock=c.text;break;}
       }
       if(typeof textBlock==="string"&&textBlock!==""){
-        // Split "<html>  {json}" — if there's a JSON object after the HTML,
-        // parse it; otherwise show the text itself.
-        var m=new RegExp("^[\\s]*<[^>]+>[\\s\\S]*?\\n\\n(\\{.*\\})[\\s]*$","m").exec(textBlock);
-        if(m){try{var parsed=JSON.parse(m[1]);if(parsed&&typeof parsed==="object")return parsed;}catch(e){}}
+        // Split "<html>  {json}" - if there is a JSON object after the HTML,
+        // parse it; otherwise show the text itself. Deliberately not a regex:
+        // this template is embedded in both a Rust raw string and a TS
+        // template literal, and a backslash survives the first but is eaten by
+        // the second, so the escaped pattern this used to carry matched
+        // nothing in the copy the Worker serves.
+        var NL=String.fromCharCode(10);
+        for(var gap=textBlock.indexOf(NL+NL);gap!==-1;gap=textBlock.indexOf(NL+NL,gap+1)){
+          var tail=textBlock.slice(gap+2).trim();
+          if(tail.charAt(0)!=="{")continue;
+          try{var parsed=JSON.parse(tail);if(parsed&&typeof parsed==="object")return parsed;}catch(e){}
+        }
         // Single-line HTML (common): keep the whole block as text fallback.
         if(textBlock.indexOf("<")===0){return { _html: textBlock };}
         try{var j=JSON.parse(textBlock);if(j&&typeof j==="object")return j;}catch(e2){}
