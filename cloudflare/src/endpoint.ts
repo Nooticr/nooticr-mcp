@@ -462,7 +462,33 @@ function sniffMethod(bodyText: string): string {
 }
 
 /** JSON-RPC `id` of a single request body, as a stable string key. */
-function requestKey(bodyText: string): string | undefined {
+/**
+ * Key-order-independent rendering of a value.
+ *
+ * A client retrying a call may serialise the same arguments with the keys in
+ * another order; that is still the same call and must still replay.
+ */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const obj = value as Record<string, unknown>;
+  return `{${Object.keys(obj)
+    .sort()
+    .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
+    .join(",")}}`;
+}
+
+/** FNV-1a, so the key stays short whatever the arguments weigh. */
+function digest(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16);
+}
+
+export function requestKey(bodyText: string): string | undefined {
   if (!bodyText) return undefined;
   try {
     const parsed = JSON.parse(bodyText);
@@ -470,7 +496,12 @@ function requestKey(bodyText: string): string | undefined {
     const id = parsed?.id;
     if (id === undefined || id === null) return undefined; // a notification
     const name = parsed?.params?.name;
-    return `${typeof id}:${String(id)}:${String(name ?? "")}`;
+    // The arguments belong in the key. Without them two different calls that
+    // happen to share a JSON-RPC id collide, and clients reuse ids freely
+    // across a session: searching a niche on TikTok and then asking for the
+    // same on Instagram replayed the TikTok answer verbatim.
+    const args = digest(stableStringify(parsed?.params?.arguments ?? null));
+    return `${typeof id}:${String(id)}:${String(name ?? "")}:${args}`;
   } catch {
     return undefined;
   }
