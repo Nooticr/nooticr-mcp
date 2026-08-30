@@ -10,6 +10,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { requestKey } from "../cloudflare/src/endpoint.js";
+import { argumentsDigest } from "../src/shared/tools.js";
 
 const call = (id: number | string, name: string, args: unknown) =>
   JSON.stringify({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
@@ -48,5 +49,37 @@ describe("tool-call idempotency key", () => {
     expect(requestKey(JSON.stringify([{ jsonrpc: "2.0", id: 1 }]))).toBeUndefined();
     expect(requestKey("")).toBeUndefined();
     expect(requestKey("not json")).toBeUndefined();
+  });
+});
+
+/**
+ * The same flaw existed one layer down, in the billing key.
+ *
+ * The server namespaces the reference by tool name, but the worker supplied
+ * only `${session}:${requestId}` — so two calls to the same tool that shared a
+ * JSON-RPC id shared one charge, and the second ran free. It was masked while
+ * the replay cache collided first; fixing that exposed it.
+ */
+describe("arguments digest", () => {
+  it("distinguishes calls that differ only in their arguments", () => {
+    expect(argumentsDigest({ niche: "fitness", platform: "tiktok" }))
+      .not.toBe(argumentsDigest({ niche: "fitness", platform: "instagram" }));
+  });
+
+  it("is stable for the same arguments, whatever the key order", () => {
+    expect(argumentsDigest({ a: 1, b: [2, { c: 3 }] }))
+      .toBe(argumentsDigest({ b: [2, { c: 3 }], a: 1 }));
+  });
+
+  it("handles the argument-less tools without throwing", () => {
+    expect(argumentsDigest(undefined)).toBe(argumentsDigest(null));
+    expect(argumentsDigest({})).toBeTypeOf("string");
+  });
+
+  it("notices a changed value anywhere in the arguments", () => {
+    const base = { url: "https://tiktok.com/@u/video/1", count: 3 };
+    expect(argumentsDigest(base)).not.toBe(argumentsDigest({ ...base, count: 4 }));
+    expect(argumentsDigest(base)).not.toBe(
+      argumentsDigest({ ...base, url: "https://tiktok.com/@u/video/2" }));
   });
 });

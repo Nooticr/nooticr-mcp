@@ -10,7 +10,7 @@ type McpRequest = Parameters<
 >[0];
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { OrchynClient, jwtExpiry, type TokenProvider } from "../../src/shared/orchyn.js";
-import { createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
+import { argumentsDigest, createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import {
   verifyToken,
   validMcpToken,
@@ -150,11 +150,17 @@ export class McpEndpoint {
       const t = ctx.authInfo?.token ?? "";
       const s = await verifyToken(this.env, t);
       // Scope the client's JSON-RPC id to this session so two clients that
-      // both number their requests from 1 cannot share a billing key.
+      // both number their requests from 1 cannot share a billing key, and
+      // fold in the arguments: the server namespaces this by tool name, but
+      // an id plus a tool name still does not identify a call. Two searches
+      // of the same tool that reused an id shared one charge, so the second
+      // ran free.
       const key =
         ctx.requestId === undefined
           ? undefined
-          : `${this.ctx.id.name ?? this.ctx.id.toString()}:${String(ctx.requestId)}`;
+          : `${this.ctx.id.name ?? this.ctx.id.toString()}:${String(
+              ctx.requestId
+            )}:${argumentsDigest(ctx.arguments)}`;
       return makeClientForSession(this.env, t, s, key);
     });
     await this.server.connect(this.transport);
@@ -462,32 +468,6 @@ function sniffMethod(bodyText: string): string {
 }
 
 /** JSON-RPC `id` of a single request body, as a stable string key. */
-/**
- * Key-order-independent rendering of a value.
- *
- * A client retrying a call may serialise the same arguments with the keys in
- * another order; that is still the same call and must still replay.
- */
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  const obj = value as Record<string, unknown>;
-  return `{${Object.keys(obj)
-    .sort()
-    .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
-    .join(",")}}`;
-}
-
-/** FNV-1a, so the key stays short whatever the arguments weigh. */
-function digest(input: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash.toString(16);
-}
-
 export function requestKey(bodyText: string): string | undefined {
   if (!bodyText) return undefined;
   try {
@@ -500,7 +480,7 @@ export function requestKey(bodyText: string): string | undefined {
     // happen to share a JSON-RPC id collide, and clients reuse ids freely
     // across a session: searching a niche on TikTok and then asking for the
     // same on Instagram replayed the TikTok answer verbatim.
-    const args = digest(stableStringify(parsed?.params?.arguments ?? null));
+    const args = argumentsDigest(parsed?.params?.arguments ?? null);
     return `${typeof id}:${String(id)}:${String(name ?? "")}:${args}`;
   } catch {
     return undefined;

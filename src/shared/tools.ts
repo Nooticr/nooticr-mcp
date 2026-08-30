@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.23.1";
+export const MCP_SERVER_VERSION = "1.23.2";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -63,6 +63,42 @@ export interface MakeClientContext {
  /** JSON-RPC id of the in-flight request. A client retrying an interrupted
   *  call reuses its id, which is what makes the billing key stable. */
  requestId?: string | number;
+ /** The call's arguments. Part of the billing key: an id alone does not
+  *  identify a call, because clients reuse ids across a session, so two
+  *  different searches would otherwise share one charge. */
+ arguments?: unknown;
+}
+
+/**
+ * Key-order-independent rendering of a value.
+ *
+ * A client retrying a call may serialise the same arguments with the keys in
+ * another order; that is still the same call.
+ */
+function stableStringify(value: unknown): string {
+ if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
+ if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+ const obj = value as Record<string, unknown>;
+ return `{${Object.keys(obj)
+  .sort()
+  .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
+  .join(",")}}`;
+}
+
+/**
+ * Short, stable digest of a call's arguments (FNV-1a).
+ *
+ * Used by both keys that identify a tool call: the worker's replay cache and
+ * the billing reference. Neither may key on the JSON-RPC id alone.
+ */
+export function argumentsDigest(value: unknown): string {
+ const input = stableStringify(value ?? null);
+ let hash = 0x811c9dc5;
+ for (let i = 0; i < input.length; i++) {
+  hash ^= input.charCodeAt(i);
+  hash = Math.imul(hash, 0x01000193) >>> 0;
+ }
+ return hash.toString(16);
 }
 
 /**
@@ -383,7 +419,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    const validation = validatePostUrl(args.url);
    if (!validation.ok) {
     return {
@@ -447,7 +483,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_social_media", { url: args.url }));
    } catch (err) {
@@ -484,7 +520,7 @@ export function createMcpServer(
    args: { niche: string; keywords?: string; limit?: number; offset?: number; platform?: string },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("discover_social_posts", { ...args }));
    } catch (err) {
@@ -518,7 +554,7 @@ export function createMcpServer(
    args: { username: string; platform?: string; limit?: number },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_user_posts", { ...args }));
    } catch (err) {
@@ -553,7 +589,7 @@ export function createMcpServer(
    args: { username: string; platform?: string; limit?: number; focus?: string },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("analyze_creator_profile", { ...args }));
    } catch (err) {
@@ -582,7 +618,7 @@ export function createMcpServer(
    args: { url: string; limit?: number },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_post_comments", { ...args }));
    } catch (err) {
@@ -615,7 +651,7 @@ export function createMcpServer(
    args: { keyword: string; platform?: string; count?: number },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("search_creators", { ...args }));
    } catch (err) {
@@ -644,7 +680,7 @@ export function createMcpServer(
    args: { username: string; platform?: string },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_similar_creators", { ...args }));
    } catch (err) {
@@ -674,7 +710,7 @@ export function createMcpServer(
    args: { keyword: string; platform?: string; count?: number },
    extra
   ) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("discover_sounds", { ...args }));
    } catch (err) {
@@ -703,7 +739,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; language?: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_post_transcript", { ...args }));
    } catch (err) {
@@ -732,7 +768,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; limit?: number }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("analyze_comments", { ...args }));
    } catch (err) {
@@ -758,7 +794,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { urls: string[] }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("compare_posts", { ...args }));
    } catch (err) {
@@ -788,7 +824,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { country?: string; days?: number; count?: number; industryId?: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("discover_hashtags", { ...args }));
    } catch (err) {
@@ -815,7 +851,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("analyze_post_fast", { ...args }));
    } catch (err) {
@@ -845,7 +881,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url?: string; topic?: string; count?: number; tone?: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("write_hooks", { ...args }));
    } catch (err) {
@@ -874,7 +910,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; count?: number; angle?: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("create_variants", { ...args }));
    } catch (err) {
@@ -901,7 +937,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { draft: string; platform?: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("score_draft", { ...args }));
    } catch (err) {
@@ -928,7 +964,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; targets?: string[] }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("repurpose_post", { ...args }));
    } catch (err) {
@@ -956,7 +992,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { niche: string; platform?: string; count?: number }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("niche_report", { ...args }));
    } catch (err) {
@@ -984,7 +1020,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { username: string; platform?: string; limit?: number }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("find_hook_pattern", { ...args }));
    } catch (err) {
@@ -1079,7 +1115,7 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; focus?: string }, extra) => {
-   const client = await makeClient(extra);
+   const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("understand_social_post", { ...args }));
    } catch (err) {
