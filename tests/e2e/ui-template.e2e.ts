@@ -413,6 +413,27 @@ test.describe("media source", () => {
     expect(initial.fallback).toBe("https://api.orchyn.com/media/proxy?url=enc");
   });
 
+  // A /media/resolve link makes the server download the whole video with
+  // yt-dlp before it answers. Preloading metadata for every card on screen
+  // therefore starts a full download per card, unprompted -- which is what
+  // got us rate limited by Bilibili on an eight-result page.
+  test("does not preload a resolver-backed video", async ({ page }) => {
+    await page.route("**/media/resolve**", () => { /* deliberately hangs */ });
+    await render(page, { ...BASE, platform: "bilibili", duration: 269,
+      videoFallbackUrl: "https://api.orchyn.com/media/resolve?url=enc&kind=video&sig=s" });
+    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("preload")))
+      .toBe("none");
+  });
+
+  test("still preloads a direct cdn video", async ({ page }) => {
+    // There a preload is a cheap range request, and it is what makes the
+    // first frame appear without a click.
+    await page.route("**/direct.mp4", () => { /* deliberately hangs */ });
+    await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4" });
+    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("preload")))
+      .toBe("metadata");
+  });
+
   test("retries through the proxy once, then reports failure", async ({ page }) => {
     await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4",
       videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc" });

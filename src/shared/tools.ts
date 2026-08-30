@@ -100,6 +100,38 @@ export function argumentsDigest(value: unknown): string {
 }
 
 /**
+ * Fields that must reach the client exactly as the server wrote them.
+ *
+ * The blanket rewrite below is deliberately indiscriminate about *images*,
+ * but these are not images:
+ *  - `externalUrl` is the permalink on the social network. It is handed to
+ *    `ui/open-link` and opened in a real browser tab, so proxying it turns
+ *    "View on bilibili" into a fetch of the page through our image proxy.
+ *  - `embedUrl` is an <iframe> src on the platform's own player origin.
+ *  - the `*FallbackUrl` fields are already our own signed `/media/resolve`
+ *    capability links; wrapping one in `/media/proxy` proxies our own
+ *    resolver and invalidates nothing but the caller's playback.
+ */
+const RAW_URL_KEYS = new Set([
+ "externalUrl",
+ "embedUrl",
+ "videoFallbackUrl",
+ "thumbnailFallbackUrl",
+ "musicFallbackUrl",
+]);
+
+/**
+ * Whether a URL already points at one of our own media endpoints.
+ *
+ * Checked by host-agnostic path, not by prefix: the server may mint these
+ * against a different base than this process knows about, and a prefix test
+ * silently misses that and double-wraps.
+ */
+function isOwnMediaUrl(url: string): boolean {
+ return url.includes("/media/proxy") || url.includes("/media/resolve");
+}
+
+/**
  * Rewrite external image URLs to go through the orchyn proxy so they
  * work inside ChatGPT's sandboxed iframe (CORS + CSP restrictions).
  */
@@ -110,7 +142,7 @@ function proxyImageUrl(url: string): string {
   // Only proxy external HTTP(S) URLs — skip our own proxy and data URIs
   if (u.protocol === "http:" || u.protocol === "https:") {
    const serverUrl = process.env.ORCHYN_API_URL || process.env.ORCHYN_BASE_URL || "";
-   if (serverUrl && !url.startsWith(serverUrl)) {
+   if (serverUrl && !url.startsWith(serverUrl) && !isOwnMediaUrl(url)) {
     return `${serverUrl.replace(/\/+$/, "")}/media/proxy?url=${encodeURIComponent(url)}`;
    }
   }
@@ -119,10 +151,10 @@ function proxyImageUrl(url: string): string {
 }
 
 /** Recursively rewrite URL fields in a structured object for the proxy. */
-function proxyUrls(obj: unknown): unknown {
+export function proxyUrls(obj: unknown): unknown {
  if (typeof obj === "string") {
   // Check if it looks like a URL
-  if (/^https?:\/\//.test(obj) && !obj.includes("/media/proxy")) {
+  if (/^https?:\/\//.test(obj) && !isOwnMediaUrl(obj)) {
    return proxyImageUrl(obj);
   }
   return obj;
@@ -131,7 +163,9 @@ function proxyUrls(obj: unknown): unknown {
  if (obj && typeof obj === "object") {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-   if (["thumbnailUrl", "preview_url", "coverUrl", "avatarUrl", "avatar_thumb", "image_url", "videoUrl", "video_url", "url"].includes(k) && typeof v === "string") {
+   if (RAW_URL_KEYS.has(k)) {
+    out[k] = v;
+   } else if (["thumbnailUrl", "preview_url", "coverUrl", "avatarUrl", "avatar_thumb", "image_url", "videoUrl", "video_url", "url"].includes(k) && typeof v === "string") {
     out[k] = proxyImageUrl(v);
    } else {
     out[k] = proxyUrls(v);

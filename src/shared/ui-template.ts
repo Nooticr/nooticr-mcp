@@ -1454,7 +1454,14 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     // Stage
     var stage="";
     if(video&&!isSlideshow){
-      stage='<video src="'+esc(video)+'" preload="metadata" playsinline'
+      // A /media/resolve link is not a CDN URL: the server downloads the
+      // whole video with yt-dlp before it answers. "metadata" preload starts
+      // that for every card on screen, unprompted - eight Bilibili results
+      // meant eight full downloads nobody asked for, which is what gets us
+      // rate limited. Those wait for play; a real CDN URL still preloads,
+      // because there it costs a range request.
+      var pre=video.indexOf("/media/resolve")>=0?"none":"metadata";
+      stage='<video src="'+esc(video)+'" preload="'+pre+'" playsinline'
         +(thumb?' poster="'+esc(thumb)+'"':"")+"></video>";
     }else{
       for(var i=0;i<images.length;i++)
