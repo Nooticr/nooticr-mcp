@@ -5,7 +5,29 @@
  * node `OAuthManager` validate the same way by construction.
  */
 
-export const SCOPE = "analyze:video";
+/**
+ * Scopes this server grants.
+ *
+ * These describe what access a client is actually asking for, so a reviewer
+ * (or a user on the consent screen) can map them to the tool list:
+ *   social:read    — read public posts, transcripts, comments, creators,
+ *                    sounds and hashtags on the supported networks
+ *   credits:spend  — run the AI tools and open a checkout, both of which
+ *                    draw on the account's credit balance
+ *
+ * The server previously advertised a single `analyze:video`, which described
+ * about a fifth of what the tools do. Scopes are carried on the session but
+ * never used to reject a call, so tokens issued under the old value keep
+ * working; LEGACY_SCOPE is kept so that stays deliberate rather than
+ * accidental.
+ */
+export const SCOPES = ["social:read", "credits:spend"] as const;
+
+/** Space-delimited form, for an `authorize` request. */
+export const SCOPE = SCOPES.join(" ");
+
+/** Issued before the scopes above existed. Still honoured. */
+export const LEGACY_SCOPE = "analyze:video";
 
 export function isLoopbackUrl(url: string): boolean {
   let parsed: URL;
@@ -65,7 +87,7 @@ export function authorizationServerMetadata(
     response_types_supported: ["code"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
-    scopes_supported: [SCOPE],
+    scopes_supported: [...SCOPES],
     grant_types_supported: ["authorization_code"],
   };
 }

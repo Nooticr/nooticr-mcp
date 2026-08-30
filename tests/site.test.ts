@@ -394,3 +394,63 @@ describe("credit packs", () => {
     expect(doc).not.toContain("$12.50");
   });
 });
+
+/**
+ * The version the server reports to clients is a hand-maintained constant,
+ * and it had drifted: /health and serverInfo announced 1.18.1 while the
+ * package was on 1.19.0. Clients and connector reviews read that number.
+ */
+describe("server version", () => {
+  it("matches the published package version", async () => {
+    const { MCP_SERVER_VERSION } = await import("../src/shared/tools.js");
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8"));
+    expect(MCP_SERVER_VERSION).toBe(pkg.version);
+  });
+});
+
+/**
+ * Plugin manifest parity.
+ *
+ * The manifest sat at 1.7.4 while the package reached 1.20.0, and still
+ * described seven platforms and "multimodal AI analysis" — it predated
+ * LinkedIn, transcripts and every tool that creates something. It is the
+ * first thing a marketplace reviewer reads.
+ */
+describe("plugin manifest", () => {
+  async function read(rel: string) {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    return JSON.parse(readFileSync(join(here, "..", rel), "utf8"));
+  }
+
+  it("tracks the published package version", async () => {
+    const plugin = await read(".claude-plugin/plugin.json");
+    const pkg = await read("package.json");
+    expect(plugin.version).toBe(pkg.version);
+  });
+
+  it("names every platform the server supports", async () => {
+    const plugin = await read(".claude-plugin/plugin.json");
+    const blob = `${plugin.description} ${(plugin.keywords ?? []).join(" ")}`.toLowerCase();
+    for (const p of PLATFORMS) {
+      const needle = p.name.toLowerCase().replace("x", "x").split("/")[0];
+      expect(blob, `${p.name} missing from the plugin manifest`).toContain(needle);
+    }
+  });
+
+  it("describes what the tools actually do now", async () => {
+    const plugin = await read(".claude-plugin/plugin.json");
+    const market = await read(".claude-plugin/marketplace.json");
+    for (const d of [plugin.description, market.plugins[0].description]) {
+      // It reads and it creates — the description must not stop at analysis.
+      expect(d).toMatch(/transcript/i);
+      expect(d).toMatch(/hook|variant|draft/i);
+    }
+  });
+});

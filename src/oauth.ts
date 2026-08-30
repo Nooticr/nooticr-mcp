@@ -16,7 +16,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { OrchynClient, OrchynSession } from "./shared/orchyn.js";
 import {
+  LEGACY_SCOPE,
   SCOPE,
+  SCOPES,
   escapeHtml,
   isAllowedRedirectUri,
   randomToken,
@@ -25,7 +27,9 @@ import {
 
 // Re-export the shared primitives so consumers and tests keep one import path.
 export {
+  LEGACY_SCOPE,
   SCOPE,
+  SCOPES,
   verifyPkce,
   isAllowedRedirectUri,
   isLoopbackUrl,
@@ -129,7 +133,7 @@ export class OAuthManager {
       response_types_supported: ["code"],
       code_challenge_methods_supported: ["S256"],
       token_endpoint_auth_methods_supported: ["none"],
-      scopes_supported: [SCOPE],
+      scopes_supported: [...SCOPES],
       grant_types_supported: ["authorization_code"],
     };
   }
@@ -179,10 +183,14 @@ export class OAuthManager {
     }
     const scope = params.get("scope") ?? SCOPE;
     const scopes = scope.split(/\s+/).filter(Boolean);
-    const unsupported = scopes.filter((s) => s !== SCOPE);
+    // Accept the current scopes and the one issued before they were split.
+    // Clients already connected still request LEGACY_SCOPE, and rejecting it
+    // would break every existing installation on upgrade.
+    const accepted = new Set<string>([...SCOPES, LEGACY_SCOPE]);
+    const unsupported = scopes.filter((s) => !accepted.has(s));
     if (unsupported.length > 0) {
       return this.sendAuthorizeError(res, params, "invalid_scope",
-        `Unsupported scope(s): ${unsupported.join(", ")}. Supported: ${SCOPE}.`);
+        `Unsupported scope(s): ${unsupported.join(", ")}. Supported: ${SCOPES.join(", ")}.`);
     }
 
     const orchynState = randomToken();

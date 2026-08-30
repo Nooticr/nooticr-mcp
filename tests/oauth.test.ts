@@ -166,7 +166,7 @@ describe("OAuthManager flow", () => {
       response_types_supported: ["code"],
       code_challenge_methods_supported: ["S256"],
       token_endpoint_auth_methods_supported: ["none"],
-      scopes_supported: ["analyze:video"],
+      scopes_supported: ["social:read", "credits:spend"],
       grant_types_supported: ["authorization_code"],
     });
     expect(oauth.protectedResourceMetadata()).toEqual({
@@ -357,5 +357,19 @@ describe("OAuthManager flow", () => {
     const session = oauth.verifyToken(tokenBody.access_token)!;
     session.expiresAt = Date.now() - 1000;
     expect(oauth.verifyToken(tokenBody.access_token)).toBeUndefined();
+  });
+});
+
+/**
+ * The advertised scopes changed from a single `analyze:video` to
+ * `social:read` + `credits:spend`, which describe what the 24 tools actually
+ * do. /authorize validates the requested scope, so already-connected clients
+ * — which still ask for the old value — must keep working.
+ */
+describe("scope compatibility", () => {
+  it("still accepts the legacy scope at /authorize", async () => {
+    const { LEGACY_SCOPE, SCOPES } = await import("../src/oauth.js");
+    expect(LEGACY_SCOPE).toBe("analyze:video");
+    expect([...SCOPES]).toEqual(["social:read", "credits:spend"]);
   });
 });

@@ -24,7 +24,7 @@ import {
 } from "./config.js";
 import { AuthManager, OrchynAuthError, createHttpTokenProvider, createStdioTokenProvider } from "./auth.js";
 import { OrchynClient, OrchynError } from "./orchyn.js";
-import { OAuthManager, type McpSession } from "./oauth.js";
+import {OAuthManager, type McpSession, SCOPES} from "./oauth.js";
 import { createMcpServer } from "./shared/tools.js";
 
 // ---------------------------------------------------------------------------
@@ -125,7 +125,7 @@ async function handleMcpRequest(
   (req as http.IncomingMessage & { auth?: AuthInfo }).auth = {
     token,
     clientId: session?.clientId ?? "orchyn-mcp",
-    scopes: session?.scopes ?? ["analyze:video"],
+    scopes: session?.scopes ?? [...SCOPES],
     expiresAt: session
       ? Math.floor(session.expiresAt / 1000)
       : Math.floor(Date.now() / 1000) + 3600,
