@@ -1,0 +1,197 @@
+name: CI
+
+# Verify every push, publish the npm package when its version moves, and
+# deploy the Worker.
+#
+# The Worker used to deploy only when someone remembered to run
+# `npm run deploy`, which is how production drifted to 1.18.1 while the repo
+# and npm were on 1.19.0 — the legal pages a connector review fetches were
+# 404 for days. Publishing and deploying now hang off the same green run.
+#
+# Runs on the self-hosted box, like orchyn-server's CI.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: self-hosted
+    outputs:
+      version: ${{ steps.pkg.outputs.version }}
+      published: ${{ steps.pkg.outputs.published }}
+      can_deploy: ${{ steps.cf.outputs.can_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install (root)
+        run: npm ci --no-audit --no-fund
+
+      - name: Install (worker)
+        working-directory: cloudflare
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: |
+          npx tsc --noEmit
+          cd cloudflare && npx tsc --noEmit
+
+      - name: Unit tests
+        run: npx vitest run
+
+      # No --with-deps: that needs sudo, and the runner's system libraries are
+      # already in place. The download is cached between runs.
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Browser end-to-end tests
+        run: npx playwright test
+
+      - name: Build the npm package
+        run: npm run build
+
+      # Catches a broken wrangler config or a missing binding before anything
+      # has been published.
+      - name: Worker build (dry run)
+        working-directory: cloudflare
+        run: npx wrangler deploy --dry-run
+
+      # Publishing the same version twice is a hard error, so decide here
+      # whether this commit actually moved it.
+      - name: Is this version already on npm?
+        id: pkg
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          NAME="$(node -p "require('./package.json').name")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION is already on npm — publish will be skipped."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION is new — it will be published."
+          fi
+
+      # The secrets context cannot be read from a job-level `if`, so the
+      # decision is made here and passed down as an output.
+      - name: Can we deploy the Worker?
+        id: cf
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CF_TOKEN" ]; then
+            echo "can_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Worker deploy skipped::CLOUDFLARE_API_TOKEN is not set, so the Worker was not deployed and mcp.orchyn.com may be behind main. Create a token with Workers Scripts:Edit and add it as a repository secret."
+          fi
+
+      # Drift is what this workflow exists to prevent, so say plainly when
+      # production is behind — even on the runs that cannot fix it themselves.
+      - name: Compare production against this commit
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          LIVE="$(curl -fsS -m 20 https://mcp.orchyn.com/health \
+                  | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).mcpVersion' 2>/dev/null || echo unknown)"
+          echo "repo=${{ steps.pkg.outputs.version }}  live=$LIVE"
+          if [ "$LIVE" != "${{ steps.pkg.outputs.version }}" ] && [ "${{ steps.cf.outputs.can_deploy }}" != "true" ]; then
+            echo "::warning title=Production is behind main::mcp.orchyn.com serves $LIVE, this commit is ${{ steps.pkg.outputs.version }}, and no deploy token is configured."
+          fi
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.verify.outputs.published == 'false'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Tag the release
+        run: |
+          git tag "v${{ needs.verify.outputs.version }}" || exit 0
+          git push origin "v${{ needs.verify.outputs.version }}" || true
+
+  deploy:
+    name: Deploy Worker
+    needs: verify
+    # Deploys every green push to main, whether or not the package version
+    # moved — the Worker and the npm package version independently. Skipped
+    # (not failed) when no token is configured; verify warns in that case.
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.verify.outputs.can_deploy == 'true'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install (worker)
+        working-directory: cloudflare
+        run: npm ci --no-audit --no-fund
+
+      - name: Deploy
+        working-directory: cloudflare
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # The deploy is only real if the live site says so. This is the check
+      # that would have caught 1.18.1 sitting in production for days.
+      - name: Verify what is actually live
+        run: |
+          set -euo pipefail
+          BASE=https://mcp.orchyn.com
+          WANT="${{ needs.verify.outputs.version }}"
+          echo "Waiting for $WANT to serve…"
+          for _ in $(seq 1 30); do
+            sleep 4
+            LIVE="$(curl -fsS -m 20 "$BASE/health" \
+                    | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).mcpVersion' 2>/dev/null || echo "")"
+            [ "$LIVE" = "$WANT" ] && echo "  serving $LIVE" && break
+          done
+          fail=0
+          # Pages a connector review fetches. These were 404 in production.
+          for p in / /documentation /terms /privacy /dashboard /robots.txt /sitemap.xml /health \
+                   /.well-known/oauth-authorization-server \
+                   /.well-known/oauth-protected-resource; do
+            code="$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$BASE$p")"
+            printf '  %-46s %s\n' "$p" "$code"
+            [ "$code" = "200" ] || fail=1
+          done
+          # An unauthenticated MCP call must be a clean 401, not a crash.
+          code="$(curl -s -o /dev/null -m 20 -w '%{http_code}' -X POST "$BASE/mcp" \
+                   -H 'content-type: application/json' \
+                   -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}')"
+          printf '  %-46s %s\n' "POST /mcp (unauthenticated)" "$code"
+          [ "$code" = "401" ] || fail=1
+          if [ "$fail" != "0" ]; then
+            echo "::error::Live smoke test failed — production is not serving what we just deployed."
+            exit 1
+          fi
+          echo "Live smoke test passed."
