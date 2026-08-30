@@ -8,7 +8,12 @@ name: CI
 # and npm were on 1.19.0 — the legal pages a connector review fetches were
 # 404 for days. Publishing and deploying now hang off the same green run.
 #
-# Runs on the self-hosted box, like orchyn-server's CI.
+# Runs on GitHub-hosted runners. The self-hosted box that builds orchyn-server
+# is registered to that repository only, so `runs-on: ubuntu-latest` here queued
+# forever with nothing to pick it up. Nothing in this workflow needs that
+# machine — it is Node, a browser and wrangler — and the runners are free for
+# a public repo. To move it back, register the runner at the organisation
+# level (or add this repo to it) and swap the three runs-on lines.
 
 on:
   push:
@@ -27,7 +32,7 @@ permissions:
 jobs:
   verify:
     name: Verify
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.pkg.outputs.version }}
       published: ${{ steps.pkg.outputs.published }}
@@ -54,10 +59,8 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
-      # No --with-deps: that needs sudo, and the runner's system libraries are
-      # already in place. The download is cached between runs.
       - name: Install Playwright browser
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Browser end-to-end tests
         run: npx playwright test
@@ -117,7 +120,7 @@ jobs:
     name: Publish to npm
     needs: verify
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.verify.outputs.published == 'false'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -144,7 +147,7 @@ jobs:
     if: |
       github.event_name == 'push' && github.ref == 'refs/heads/main'
       && needs.verify.outputs.can_deploy == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
