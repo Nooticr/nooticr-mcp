@@ -558,3 +558,62 @@ test.describe("self-healing media", () => {
       .toBe("https://api.orchyn.com/media/resolve?url=x&kind=thumbnail");
   });
 });
+
+/**
+ * A TikTok photo post carries its slides *and* a server-rendered slideshow
+ * video. The player decided "slideshow" from the absence of a video, so it
+ * picked that video: the stage was a black rectangle while the separate audio
+ * element played on, which is what a caller saw as a black screen with music.
+ * contentType is what actually identifies a photo post.
+ */
+test.describe("slideshow detection", () => {
+  const slides = [1, 2, 3].map((i) => ({ kind: "image", proxy_url: `https://cdn.example/s${i}.jpg` }));
+  const base = { platform: "tiktok", caption: "c", creatorHandle: "u", views: 1 };
+
+  const render = async (page: Page, post: Record<string, unknown>) => {
+    await page.route("**/*.mp4", () => { /* hold open, never errors */ });
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate(
+      (d) => window.postMessage(
+        { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+      { post });
+    await page.waitForSelector(".mp", { timeout: 5000 });
+    return page.evaluate(() => ({
+      hasVideo: !!document.querySelector(".mp-stage video"),
+      slides: document.querySelectorAll(".mp-slide").length,
+      mode: document.querySelector(".mp")?.getAttribute("data-mp"),
+    }));
+  };
+
+  test("a photo post shows its slides, not the rendered video", async ({ page }) => {
+    const m = await render(page, {
+      ...base, contentType: "slideshow",
+      externalUrl: "https://tiktok.com/@u/photo/1",
+      videoUrl: "https://cdn.example/rendered.mp4",
+      musicUrl: "https://cdn.example/m.mp3",
+      mediaItems: slides,
+    });
+    expect(m.hasVideo, "the rendered slideshow video must not be the stage").toBe(false);
+    expect(m.slides).toBe(3);
+    expect(m.mode).toBe("slides");
+  });
+
+  test("a genuine video still plays as a video", async ({ page }) => {
+    const m = await render(page, {
+      ...base, contentType: "video",
+      externalUrl: "https://tiktok.com/@u/video/1",
+      videoUrl: "https://cdn.example/v.mp4",
+    });
+    expect(m.hasVideo).toBe(true);
+    expect(m.mode).toBe("video");
+  });
+
+  test("slides with no video keep working", async ({ page }) => {
+    const m = await render(page, {
+      ...base, contentType: "slideshow",
+      externalUrl: "https://tiktok.com/@u/photo/2", mediaItems: slides,
+    });
+    expect(m.slides).toBe(3);
+    expect(m.mode).toBe("slides");
+  });
+});

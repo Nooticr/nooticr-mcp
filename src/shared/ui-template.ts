@@ -1430,7 +1430,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     var id="mp"+(mpId++);
     var pickUrl=p.externalUrl||p.url||"";
     pickable=!!pickable&&!!pickUrl;
-    var isSlideshow=!video&&images.length>1;
+    // A photo post carries its slides AND a server-rendered slideshow video.
+    // Judging by "no video" alone picked that video, so the stage was a black
+    // rectangle while the separate audio element played on - the caller saw a
+    // black screen with music. contentType is what actually says photo post,
+    // and postCard already worked that out before calling this.
+    var ctype=p.contentType||"";
+    var isSlideshow=images.length>1&&(ctype==="slideshow"||ctype==="carousel"||!video);
     var music=p.musicUrl||p.musicProxyUrl||"";
     var musicFallback=(p.musicUrl&&(p.musicFallbackUrl||p.musicProxyUrl))||"";
     var thumbFallback=(p.thumbnailUrl&&(p.thumbnailFallbackUrl||p.thumbnailProxyUrl))||"";
@@ -1447,7 +1453,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 
     // Stage
     var stage="";
-    if(video){
+    if(video&&!isSlideshow){
       stage='<video src="'+esc(video)+'" preload="metadata" playsinline'
         +(thumb?' poster="'+esc(thumb)+'"':"")+"></video>";
     }else{
