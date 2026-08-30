@@ -138,7 +138,18 @@ const TOOLS: ToolDoc[] = [
   { name: "search_creators", cost: 2, desc: "Find creators by keyword, with follower and engagement data." },
   { name: "get_similar_creators", cost: 2, desc: "Lookalikes for a creator you already know." },
   { name: "discover_sounds", cost: 2, desc: "Trending audio with playable previews and usage counts." },
+  { name: "discover_hashtags", cost: 2, desc: "Trending hashtags with volumes and whether each is rising or cooling." },
+  { name: "get_post_transcript", cost: 1, desc: "The words actually spoken in a post, read from its caption track." },
+  { name: "analyze_post_fast", cost: 2, desc: "The same read, from the transcript instead of the video. A third of the price." },
+  { name: "write_hooks", cost: 2, desc: "Ten alternative opening lines, grounded in a post or a topic." },
+  { name: "score_draft", cost: 2, desc: "Review your own draft before you film it — scores, fixes, a tighter rewrite." },
+  { name: "repurpose_post", cost: 2, desc: "One post into an X thread, LinkedIn post, carousel and YouTube metadata." },
+  { name: "find_hook_pattern", cost: 2, desc: "A creator's repeatable formula, as templates you can reuse." },
+  { name: "create_variants", cost: 3, desc: "Turn a post that worked into variants you could film next." },
+  { name: "niche_report", cost: 3, desc: "What is working in a niche now: formats, hooks, gaps, what to make." },
   { name: "analyze_post", cost: 6, free: true, desc: "AI read of one post: hook, why it travels, format, variations to try." },
+  { name: "analyze_comments", cost: 6, free: true, desc: "What the audience is saying: themes, questions, objections, requests." },
+  { name: "compare_posts", cost: 8, free: true, desc: "Why one post beat another, and the one test to run next." },
   { name: "understand_social_post", cost: 6, free: true, desc: "Multimodal pass over the actual video or images — not just the caption." },
   { name: "analyze_creator_profile", cost: 15, free: true, desc: "Whole-profile teardown: cadence, formats, what consistently works." },
 ];
@@ -197,7 +208,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     // ── tools ──
     `<div class="wrap"><section id="tools">` +
     `<div class="sec-head"><span class="eyebrow">Tools</span>` +
-    `<h2>Ten tools your assistant can call</h2>` +
+    `<h2>Every tool your assistant can call</h2>` +
     `<p>Priced in credits. You are only ever charged for a call that succeeds — failures are refunded automatically.</p></div>` +
     `<div class="grid g3">${tools}</div></section></div>` +
 
@@ -212,9 +223,9 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<h2>Pay for what you use</h2>` +
     `<p>Credits never expire. Top up from your assistant with <code>buy_orchyn_credits</code> or from the dashboard.</p></div>` +
     `<div class="prices">` +
-    `<div class="price"><h3>Starter</h3><div class="amt">$12.50</div>` +
-    `<div class="per">500 credits · $0.025 each</div>` +
-    `<ul><li>500 post lookups</li><li>250 discovery searches</li><li>~83 AI analyses</li></ul>` +
+    `<div class="price"><h3>Starter</h3><div class="amt">$15</div>` +
+    `<div class="per">600 credits · $0.025 each</div>` +
+    `<ul><li>600 post lookups</li><li>300 discovery searches</li><li>~100 AI analyses</li></ul>` +
     `<a class="btn btn-ghost" href="/dashboard?buy=starter">Choose Starter</a></div>` +
     `<div class="price hot"><span class="tag">Most popular</span><h3>Pro</h3><div class="amt">$40</div>` +
     `<div class="per">2,000 credits · $0.020 each</div>` +

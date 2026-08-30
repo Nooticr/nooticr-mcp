@@ -20,8 +20,14 @@ export const ORCHYN_UI_TEMPLATE = `<!DOCTYPE html>
 <title>Orchyn</title>
 <style>
 :root{
+  /* No background is painted on the body: the card sits inside the host's
+     chat transcript, so it inherits whatever colour the user's client uses
+     rather than stamping its own rectangle over it. --bg stays defined for
+     the few places that need a solid fill behind media. */
   --bg:#fafbfc;--fg:#111827;--muted:#6b7280;--border:#e5e7eb;
   --card:#fff;--card-hover:#f9fafb;--tag:#f3f4f6;--accent:#14151a;
+  --brand:#ff4d23;--brand-2:#ff8a3d;--brand-soft:rgba(255,77,35,.13);
+  --shimmer:rgba(255,77,35,.10);--shimmer-hi:rgba(255,77,35,.24);
   --shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);
   --shadow-lg:0 8px 24px rgba(0,0,0,.12);--radius:12px;--radius-sm:8px;
   --transition:all .25s cubic-bezier(.4,0,.2,1);
@@ -30,6 +36,8 @@ export const ORCHYN_UI_TEMPLATE = `<!DOCTYPE html>
 @media(prefers-color-scheme:dark){:root{
   --bg:#0f172a;--fg:#f1f5f9;--muted:#94a3b8;--border:#1e293b;
   --card:#1e293b;--card-hover:#273548;--tag:#1e293b;--accent:#e2e8f0;
+  --brand:#ff5c33;--brand-2:#ff9351;--brand-soft:rgba(255,92,51,.16);
+  --shimmer:rgba(255,255,255,.05);--shimmer-hi:rgba(255,255,255,.13);
   --shadow-sm:0 1px 2px rgba(0,0,0,.2);--shadow-md:0 4px 12px rgba(0,0,0,.3);
   --shadow-lg:0 8px 24px rgba(0,0,0,.4);
 }}
@@ -39,7 +47,45 @@ html{overflow-x:hidden;overflow-y:auto}
    overlay (buffering, error) would stay painted and keep swallowing clicks.
    Make the attribute win outright. */
 [hidden]{display:none !important;}
-body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);padding:10px;line-height:1.5;overflow-x:hidden;max-width:100vw;}
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transparent;color:var(--fg);padding:10px;line-height:1.5;overflow-x:hidden;max-width:100vw;}
+
+/* ─── Loading state ─── */
+/* An indeterminate bar that sweeps back and forth, plus skeletons shaped like
+   whatever the tool is about to return — so the space the answer will occupy
+   is reserved and the card does not jump when the result lands. */
+.load-bar{position:relative;height:3px;border-radius:999px;background:var(--shimmer);
+  overflow:hidden;margin-bottom:14px}
+.load-bar::after{content:"";position:absolute;top:0;bottom:0;width:42%;border-radius:999px;
+  background:linear-gradient(90deg,transparent,var(--brand),var(--brand-2),transparent);
+  animation:sweep 1.35s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes sweep{0%{left:-45%}50%{left:58%}100%{left:-45%}}
+
+.load-head{display:flex;align-items:center;gap:8px;margin-bottom:11px;
+  font-size:12.5px;font-weight:600;color:var(--muted)}
+.load-head .dot{width:7px;height:7px;border-radius:50%;background:var(--brand);
+  animation:pulse 1.2s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+
+.sk{background:var(--shimmer);border-radius:6px;position:relative;overflow:hidden}
+.sk::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,var(--shimmer-hi),transparent);
+  transform:translateX(-100%);animation:shine 1.5s ease-in-out infinite}
+@keyframes shine{to{transform:translateX(100%)}}
+.sk-media{width:100%;aspect-ratio:9/16;max-height:var(--stage-max,420px);border-radius:0}
+.sk-media.h{aspect-ratio:16/9}
+.sk-line{height:11px;margin-top:8px}
+.sk-line.w40{width:40%}.sk-line.w60{width:60%}.sk-line.w80{width:80%}
+.sk-pill{height:22px;width:76px;border-radius:999px;display:inline-block;margin:0 5px 5px 0}
+.sk-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  background:var(--card);width:min(340px,86vw);min-width:min(340px,86vw);flex-shrink:0}
+.sk-body{padding:13px 14px}
+.sk-row{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+.sk-avatar{width:44px;height:44px;border-radius:10px;flex-shrink:0}
+.sk-strip{display:flex;gap:12px;overflow:hidden;padding:2px 0 8px}
+@media(prefers-reduced-motion:reduce){
+  .load-bar::after,.sk::after,.load-head .dot{animation:none}
+  .load-bar::after{left:0;width:100%;opacity:.5}
+}
 
 /* ─── Content entrance ─── */
 .fade-in{animation:fadeIn .4s ease-out;}
@@ -124,9 +170,54 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .section-chevron{font-size:12px;color:var(--muted);transition:transform .2s ease;}
 .section-header.open .section-chevron{transform:rotate(180deg);}
-.section-content{padding:10px 12px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;}
-.section-content.open{max-height:600px;padding:10px 12px;}
+.section-content{padding:0 12px;max-height:0;overflow:hidden;
+  transition:max-height .28s ease,padding .28s ease;}
+.section-content.open{max-height:2400px;padding:11px 12px;}
 .section-text{font-size:13px;color:var(--fg);line-height:1.6;}
+
+/* ─── AI action buttons ─── */
+/* Every button that spends credits says so on its face: the sparkle marks it
+   as an AI action, the price sits next to it. Nothing here charges silently. */
+.ai-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ai-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;
+  border:1px solid var(--border);background:var(--card);color:var(--fg);font:inherit;
+  font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition)}
+.ai-btn:hover:not(:disabled){border-color:var(--brand);
+  background:color-mix(in srgb,var(--brand) 8%,transparent);transform:translateY(-1px)}
+.ai-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.ai-btn .spark{color:var(--brand);display:inline-flex;flex-shrink:0}
+.ai-btn .price{display:inline-flex;align-items:center;font-size:11px;font-weight:700;
+  color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:2px 7px;
+  white-space:nowrap}
+.ai-btn.busy .spark{animation:spin 1.1s linear infinite}
+.ai-note{font-size:11.5px;color:var(--muted);margin-top:8px}
+
+/* ─── AI analysis ─── */
+.an-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;margin-bottom:14px}
+.verdict{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px}
+@media(min-width:420px){.verdict{grid-template-columns:1fr 1fr}}
+.meter{background:var(--tag);border-radius:var(--radius-sm);padding:9px 11px}
+.meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.meter-top b{font-size:14px;letter-spacing:0}
+.meter-track{height:5px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:6px}
+.meter-track>i{display:block;height:100%;border-radius:999px}
+.chiprow{display:flex;flex-wrap:wrap;gap:5px}
+.tag.copyable{cursor:pointer;border:1px solid var(--border);font:inherit;font-size:12px;
+  display:inline-flex;align-items:center;gap:5px}
+.tag.copyable:hover{border-color:var(--accent)}
+.tag.warn{background:color-mix(in srgb,var(--red) 12%,transparent);
+  color:var(--red);border:1px solid color-mix(in srgb,var(--red) 35%,transparent)}
+.lede-box{font-size:13.5px;line-height:1.6;padding:11px 13px;background:var(--tag);
+  border-radius:var(--radius-sm);margin-bottom:12px}
+.steps-list{display:flex;flex-direction:column;gap:8px}
+.step-row{display:grid;grid-template-columns:78px 1fr;gap:10px;align-items:start}
+.step-k{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);padding-top:2px}
+.step-v{font-size:13px;line-height:1.5}
+.an-list{margin:0;padding-left:18px;font-size:13px;line-height:1.55}
+.an-list li{margin:4px 0}
+.clamp6{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ─── Hook strength ─── */
 .hook-bar-track{display:flex;align-items:center;gap:10px;margin-top:6px;}
@@ -141,6 +232,19 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .copy-btn:hover{background:var(--accent);color:#fff;}
 
 /* ─── Comments ─── */
+.theme-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--tag);
+  border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--fg);margin:0 4px 5px 0}
+.theme-chip b{color:var(--brand,var(--blue));font-variant-numeric:tabular-nums}
+.sec-label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:7px}
+.cbadge{font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.cbadge.pin{color:#b45309;background:#fef3c7}
+.cbadge.liked{color:#be185d;background:#fce7f3}
+.cmeta{font-size:11px;color:var(--muted);margin-top:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ctext{font-size:13px;color:var(--fg);line-height:1.45}
+.ctext.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cmore{background:none;border:none;color:var(--blue);font-size:11.5px;font-weight:600;
+  cursor:pointer;padding:3px 0 0;font-family:inherit}
 .comment-row{padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;transition:var(--transition);}
 .comment-row:last-child{border-bottom:none;}
 .comment-row:hover{background:var(--tag);margin:0 -6px;padding:10px 6px;border-radius:var(--radius-sm);}
@@ -188,6 +292,29 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 .mp-badge,.mp-chip,.mp-rail,.mp-meta,.mp-tap,.mp-nav{z-index:1;}
 .mp-ov>*{pointer-events:auto;}
 .mp-badge{position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:700;text-transform:capitalize;}
+.mp-pick{position:absolute;top:9px;right:9px;z-index:3;width:26px;height:26px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.42);backdrop-filter:blur(6px);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+  color:transparent;transition:var(--transition)}
+.mp-pick:hover{background:rgba(0,0,0,.66);transform:scale(1.08)}
+.mp-pick[aria-pressed="true"]{background:var(--brand,#ff4d23);border-color:#fff;color:#fff}
+.mp.picked{outline:2px solid var(--brand,#ff4d23);outline-offset:-2px}
+/* The slide counter moves down so it never sits under the checkbox. */
+.mp-pick~.mp-chip,.mp[data-mp="slides"] .mp-chip{top:42px}
+
+/* Selection menu — appears only once something is picked. */
+.pickbar{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;gap:10px;
+  margin:12px 0 0;padding:10px 12px;border-radius:999px;background:var(--card);
+  border:1px solid var(--border);box-shadow:var(--shadow-lg);animation:fadeIn .2s ease-out}
+.pickbar .n{font-size:13px;font-weight:700;white-space:nowrap}
+.pickbar .sp{flex:1}
+.pickbar button{border-radius:999px;border:1px solid var(--border);background:var(--card);
+  color:var(--fg);font:inherit;font-size:12.5px;font-weight:600;padding:6px 13px;cursor:pointer;
+  white-space:nowrap;transition:var(--transition)}
+.pickbar button.primary{background:var(--brand,#ff4d23);border-color:transparent;color:#fff}
+.pickbar button:hover{filter:brightness(1.08)}
+.pickbar button:disabled{opacity:.5;cursor:not-allowed}
+.pickbar .hint{font-size:11.5px;color:var(--muted)}
 .mp-chip{position:absolute;top:10px;right:10px;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
 
 /* Right-hand action rail — the TikTok/Reels engagement column. */
@@ -330,6 +457,70 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     enqueue_publish_job:"Queue a post for publishing to a connected platform.",
     schedule_post:"Schedule a post for future publishing."
   };
+  /* How many results a tool comes back with, and in what shape — so the
+     skeleton matches the answer instead of being a generic grey box. */
+  var LOADING_SHAPE={
+    get_social_media:        {kind:"post",  n:1, label:"Fetching the post"},
+    get_post_transcript:     {kind:"text",  n:1, label:"Reading the caption track"},
+    analyze_post:            {kind:"post",  n:1, label:"Analysing the post"},
+    understand_social_post:  {kind:"post",  n:1, label:"Watching the video"},
+    analyze_creator_profile: {kind:"list",  n:4, label:"Reading the profile"},
+    compare_posts:           {kind:"strip", n:2, label:"Comparing posts"},
+    discover_social_posts:   {kind:"strip", n:3, label:"Searching posts"},
+    get_user_posts:          {kind:"strip", n:3, label:"Loading their posts"},
+    search_creators:         {kind:"list",  n:5, label:"Finding creators"},
+    get_similar_creators:    {kind:"list",  n:5, label:"Finding similar creators"},
+    discover_sounds:         {kind:"list",  n:4, label:"Finding trending sounds"},
+    discover_hashtags:       {kind:"list",  n:6, label:"Reading the trend board"},
+    get_post_comments:       {kind:"list",  n:6, label:"Loading comments"},
+    analyze_comments:        {kind:"text",  n:1, label:"Reading the comment section"},
+    check_orchyn_credits:    {kind:"text",  n:1, label:"Checking your balance"},
+    buy_orchyn_credits:      {kind:"text",  n:1, label:"Opening checkout"}
+  };
+
+  function skPostCard(){
+    return '<div class="sk-card"><div class="sk sk-media"></div><div class="sk-body">'
+      +'<span class="sk sk-pill" style="width:64px"></span>'
+      +'<div class="sk sk-line w80"></div><div class="sk sk-line w60"></div></div></div>';
+  }
+  function skRow(){
+    return '<div class="sk-row"><div class="sk sk-avatar"></div>'
+      +'<div style="flex:1;min-width:0"><div class="sk sk-line w40"></div>'
+      +'<div class="sk sk-line w80"></div></div></div>';
+  }
+  function skText(){
+    return '<div class="sk sk-line w60"></div><div class="sk sk-line"></div>'
+      +'<div class="sk sk-line"></div><div class="sk sk-line w80"></div>'
+      +'<div style="margin-top:14px"><span class="sk sk-pill"></span>'
+      +'<span class="sk sk-pill" style="width:58px"></span>'
+      +'<span class="sk sk-pill" style="width:92px"></span></div>';
+  }
+
+  /** Skeleton that mirrors the shape of the result the tool will return. */
+  function renderLoading(tool){
+    var app=document.getElementById("app");
+    if(!app||toolResultReceived)return;
+    var shape=LOADING_SHAPE[tool]||{kind:"text",n:1,label:"Working"};
+    var inner="";
+    if(shape.kind==="post"){
+      inner='<div style="display:flex;justify-content:center">'+skPostCard()+"</div>";
+    }else if(shape.kind==="strip"){
+      var cards="";
+      for(var i=0;i<shape.n;i++)cards+=skPostCard();
+      inner='<div class="sk-strip">'+cards+"</div>";
+    }else if(shape.kind==="list"){
+      var rows="";
+      for(var j=0;j<shape.n;j++)rows+=skRow();
+      inner='<div class="card card-wide"><div class="card-body">'+rows+"</div></div>";
+    }else{
+      inner='<div class="card card-wide"><div class="card-body">'+skText()+"</div></div>";
+    }
+    app.innerHTML='<div class="fade-in"><div class="load-bar"></div>'
+      +'<div class="load-head"><span class="dot"></span><span>'
+      +esc(shape.label)+"…</span></div>"+inner+"</div>";
+    setTimeout(reportSize,50);
+  }
+
   function renderIdle(){
     // Extract tool name from URI path segment (e.g. /ui://orchyn/analyze_post → analyze_post)
     // or from ?tool= param if the host passes it.
@@ -383,7 +574,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       setTimeout(reportSize,50);
     }
     if(d.method==="ui/notifications/tool-input-partial"){
-      currentTool=d.params&&d.params.name?d.params.name:"";
+      var n=d.params&&d.params.name?d.params.name:"";
+      if(n){currentTool=n;if(!toolResultReceived)renderLoading(n);}
     }
   });
 
@@ -424,6 +616,18 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 
   // ─── Helpers ───
   function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+  /** "3d" / "2h" for an ISO timestamp — compact enough for a chat panel. */
+  function relTime(iso){
+    var t=Date.parse(iso);
+    if(isNaN(t))return "";
+    var s=Math.floor((Date.now()-t)/1000);
+    if(s<0)return "";
+    if(s<3600)return Math.max(1,Math.floor(s/60))+"m";
+    if(s<86400)return Math.floor(s/3600)+"h";
+    if(s<2592000)return Math.floor(s/86400)+"d";
+    if(s<31536000)return Math.floor(s/2592000)+"mo";
+    return Math.floor(s/31536000)+"y";
+  }
   function fmtTime(sec){sec=Math.max(0,Math.floor(Number(sec)||0));return Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);}
 
   // ─── Audio engine ───
@@ -541,6 +745,182 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     };
     paint();
     return t;
+  }
+
+  // ─── AI actions ───
+  // A button that spends credits must show that it will: sparkle to mark it
+  // as an AI action, and the price on the face. The click asks the host to
+  // run the tool, and falls back to copying a ready prompt where the host
+  // cannot run one from a view.
+  var AI_PRICE={analyze_post_fast:2,write_hooks:2,create_variants:3,score_draft:2,
+    repurpose_post:2,niche_report:3,find_hook_pattern:2,analyze_post:6,
+    analyze_comments:6,compare_posts:8,understand_social_post:6,analyze_creator_profile:15};
+
+  function aiBtn(tool,label,argsJson){
+    var cost=AI_PRICE[tool]||0;
+    return '<button class="ai-btn" type="button" data-ai="'+esc(tool)+'" data-args="'+esc(argsJson)+'">'
+      +'<span class="spark">'+mpIcon("sparkle",13)+"</span><span>"+esc(label)+"</span>"
+      +(cost?'<span class="price">'+cost+" cr</span>":"")+"</button>";
+  }
+
+  /** Buttons offered under a single post. */
+  function postAiActions(p){
+    var url=p&&(p.externalUrl||p.url);
+    if(!url)return "";
+    var a=JSON.stringify({url:url});
+    return '<div class="ai-actions">'
+      +aiBtn("create_variants","Create variants",a)
+      +aiBtn("write_hooks","Write hooks",a)
+      +aiBtn("repurpose_post","Repurpose",a)
+      +aiBtn("analyze_comments","Read comments",a)
+      +"</div>";
+  }
+
+  function runAiTool(btn){
+    var tool=btn.getAttribute("data-ai");
+    var args={};
+    try{args=JSON.parse(btn.getAttribute("data-args")||"{}");}catch(e){}
+    var label=btn.querySelector("span:nth-child(2)");
+    var original=label?label.textContent:"";
+    btn.disabled=true;btn.classList.add("busy");
+    if(label)label.textContent="Working…";
+    var restore=function(text){
+      btn.classList.remove("busy");
+      if(label)label.textContent=text||original;
+      setTimeout(function(){btn.disabled=false;if(label)label.textContent=original;},1600);
+    };
+    var settled=false;
+    var fallback=function(){
+      if(settled)return;settled=true;
+      var ask="Run "+tool+" on "+(args.url||JSON.stringify(args));
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(ask).then(function(){restore("Copied ✓");})
+          .catch(function(){restore("Try in chat");});
+      }else restore("Try in chat");
+    };
+    var pr=null;
+    try{pr=send("ui/tool-call",{name:tool,arguments:args});}catch(e){}
+    if(pr&&pr.then){
+      pr.then(function(){settled=true;restore("Sent ✓");}).catch(fallback);
+      setTimeout(fallback,1500);
+    }else fallback();
+  }
+
+  document.addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest(".ai-btn[data-ai]");
+    if(b&&!b.disabled)runAiTool(b);
+  });
+
+  // ─── Post selection & comparison ───
+  // Comparing posts is the one action that needs more than one card, so the
+  // cards themselves carry the control: a checkbox on the media, and a menu
+  // that only exists once something is picked.
+  var picked = [];
+
+  function pickBarHtml(){
+    return '<div class="pickbar" id="pickbar" hidden>'
+      +'<span class="n"><b id="pickn">0</b> selected</span>'
+      +'<span class="hint" id="pickhint">Pick 2 or more to compare</span>'
+      +'<span class="sp"></span>'
+      +'<button type="button" id="pickclear">Clear</button>'
+      +'<button type="button" id="pickgo" class="primary" disabled>Compare</button>'
+      +"</div>";
+  }
+
+  function syncPickBar(){
+    var bar=document.getElementById("pickbar");
+    if(!bar)return;
+    bar.hidden = picked.length===0;
+    var n=document.getElementById("pickn");
+    if(n)n.textContent=picked.length;
+    var urls=pickedUrls();
+    var go=document.getElementById("pickgo");
+    if(go)go.disabled = urls.length<2 || urls.length>5;
+    var hint=document.getElementById("pickhint");
+    if(hint){
+      hint.textContent = picked.length>5 ? "Compare takes at most 5"
+        : urls.length<2 ? (picked.length>=2 ? "Those are the same post" : "Pick 2 or more to compare")
+        : "Ready to compare";
+    }
+    setTimeout(reportSize,60);
+  }
+
+  function initPicks(){
+    picked=[];
+    document.addEventListener("click",onPickClick);
+    var clear=document.getElementById("pickclear");
+    if(clear)clear.addEventListener("click",function(){
+      picked=[];
+      document.querySelectorAll('.mp-pick[aria-pressed="true"]').forEach(function(b){
+        b.setAttribute("aria-pressed","false");
+        var mp=b.closest(".mp"); if(mp)mp.classList.remove("picked");
+      });
+      syncPickBar();
+    });
+    var go=document.getElementById("pickgo");
+    if(go)go.addEventListener("click",runCompare);
+    syncPickBar();
+  }
+
+  function onPickClick(e){
+    var b=e.target.closest&&e.target.closest(".mp-pick[data-pick]");
+    if(!b)return;
+    e.stopPropagation(); // never let the tap reach the player underneath
+    var id=b.getAttribute("data-pick-id");
+    var i=picked.findIndex(function(x){return x.id===id;});
+    var on=i<0;
+    if(on)picked.push({id:id,url:b.getAttribute("data-pick")});
+    else picked.splice(i,1);
+    b.setAttribute("aria-pressed",on?"true":"false");
+    var mp=b.closest(".mp");
+    if(mp)mp.classList.toggle("picked",on);
+    syncPickBar();
+  }
+
+  /** Distinct URLs from the current selection — the same post picked twice
+   *  is still one post to compare. */
+  function pickedUrls(){
+    var seen=[],out=[];
+    picked.forEach(function(x){
+      if(x.url&&seen.indexOf(x.url)<0){seen.push(x.url);out.push(x.url);}
+    });
+    return out;
+  }
+
+  /** Ask the host to run compare_posts; fall back to copying the URLs. */
+  function runCompare(){
+    var go=document.getElementById("pickgo");
+    var urls=pickedUrls().slice(0,5);
+    if(!go||urls.length<2)return;
+    go.disabled=true; go.textContent="Comparing…";
+    var done=function(label){
+      go.textContent=label;
+      setTimeout(function(){ go.textContent="Compare"; syncPickBar(); },1800);
+    };
+    // Preferred path: the host runs the tool for us.
+    var p=null;
+    try{ p=send("ui/tool-call",{name:"compare_posts",arguments:{urls:urls}}); }catch(e){}
+    var settled=false;
+    var fallback=function(){
+      if(settled)return; settled=true;
+      // Hosts that do not support tool-calls from a view still let the user
+      // paste — so hand them something ready to send.
+      // Build the newline from a char code rather than an escape sequence.
+      // This template is embedded both in a Rust raw string (escapes stay
+      // literal) and a TS template literal (escapes are resolved), so an
+      // escaped newline here becomes a real one in the TS build and breaks
+      // the surrounding string literal. Same reason this comment avoids one.
+      var NL=String.fromCharCode(10);
+      var text="Compare these posts:"+NL+urls.join(NL);
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){done("Copied ✓");})
+          .catch(function(){done("Copy failed");});
+      } else done("Copy failed");
+    };
+    if(p&&p.then){
+      p.then(function(){ settled=true; done("Sent ✓"); }).catch(fallback);
+      setTimeout(fallback,1500);
+    } else fallback();
   }
 
   // ─── Player registry ───
@@ -830,8 +1210,12 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     if(!stage)return;
     var stageH=stage.getBoundingClientRect().height;
     if(!stageH)return;
-    var extra=Math.max(0,(document.body.scrollHeight||0)-stageH);
-    setStageMax(availableHeight()-extra);
+    var bodyH=document.body.scrollHeight||0;
+    // Only shrink the player to fit when the player is what the view is for.
+    // On a mostly-text view (an analysis) the surrounding copy is far taller
+    // than any viewport, and fitting to it collapsed the media to its floor.
+    if(bodyH>stageH*1.8)return;
+    setStageMax(availableHeight()-Math.max(0,bodyH-stageH));
   }
   // The on-screen keyboard shrinks visualViewport; dismissing it gives the
   // height straight back, so the media returns to full size on its own.
@@ -861,7 +1245,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     prev:"M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z",
     next:"M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
     open:"M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z",
-    warn:"M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"
+    warn:"M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z",
+    check:"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
+    sparkle:"M12 2l1.9 5.7L19.6 9.6l-5.7 1.9L12 17.2l-1.9-5.7L4.4 9.6l5.7-1.9L12 2zm6.5 10.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6zM5 14l.7 2 2 .7-2 .7L5 19.4l-.7-2-2-.7 2-.7L5 14z"
   };
   function mpIcon(name,size){
     var s=size||18,d=MP_ICONS[name]||"";
@@ -899,12 +1285,14 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   var mpId=0;
   // Aspect class of the most recent player, so the enclosing card can adopt it.
   var lastPlayerAr="v";
-  function mediaPlayerHtml(p,images,video,platform){
+  function mediaPlayerHtml(p,images,video,platform,pickable){
     var id="mp"+(mpId++);
+    var pickUrl=p.externalUrl||p.url||"";
+    pickable=!!pickable&&!!pickUrl;
     var isSlideshow=!video&&images.length>1;
     var music=p.musicProxyUrl||p.musicUrl||"";
     var thumb=p.thumbnailUrl||"";
-    var songLabel=[p.musicTitle||"",p.musicAuthor||""].filter(Boolean).join(" \u00b7 ");
+    var songLabel=[p.musicTitle||"",p.musicAuthor||""].filter(Boolean).join(" · ");
 
     // Shape: vertical is the short-form default; long-form and the desktop
     // networks are wide; carousels on those networks are square.
@@ -963,6 +1351,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       +"</div>"
       +'<div class="mp-ov">'
       +'<div class="mp-badge">'+pSvg(platform,12)+" "+esc(platform)+"</div>"
+      +(pickable?'<button class="mp-pick" type="button" aria-pressed="false" data-pick-id="'+id+'" data-pick="'+esc(pickUrl)+'" title="Select for comparison">'+mpIcon("check",15)+"</button>":"")
       +counter+navs
       +'<div class="mp-rail">'+acts+"</div>"
       +'<div class="mp-meta">'+handle+cap+song+"</div>"
@@ -982,7 +1371,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       +"</div>";
   }
 
-  function postCard(p,wide){
+  function postCard(p,wide,pickable){
     var platform=p.platform||"unknown",color=pColor(platform),brandSvg=pSvg(platform);
     var title=p.title||p.caption||"",handle=p.creatorHandle||"",url=p.externalUrl||"";
     var thumb=p.thumbnailUrl||"",ct=p.contentType||"post";
@@ -1015,19 +1404,21 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     // Anything playable — a video or a slideshow — goes through the one
     // player, so the controls are the same on every card.
     if(video||isSlideshow||images.length>1){
-      mediaHtml=mediaPlayerHtml(p,images,video,platform);
+      mediaHtml=mediaPlayerHtml(p,images,video,platform,pickable);
       // The player already carries the handle, caption and stats as overlay
       // chrome, so the card body underneath is just the outbound link.
       return '<div class="'+cls+' card-media '+lastPlayerAr+'">'+mediaHtml
         +(url?'<div class="card-foot"><a href="'+esc(url)+'" target="_blank" rel="noopener" class="btn btn-sm" style="background:'+color+'">'+mpIcon("open",13)+"<span>Open on "+esc(platform)+"</span></a></div>":"")
-        +"</div>";
+        +"</div>"
+        // Only on the single-post view — a gallery of these would be noise.
+        +(wide?postAiActions(p):"");
     }
     if(thumb){
       mediaHtml='<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"/>';
     }else if(bodyText){
       // Text-only post (LinkedIn / X) — styled quote block.
       mediaHtml='<div style="padding:16px 18px;border-bottom:1px solid var(--border);background:var(--card)">'
-        +'<div style="font-size:13px;line-height:1.55;color:var(--fg);white-space:pre-line">'+esc(bodyText.length>400?bodyText.slice(0,400)+"\u2026":bodyText)+'</div></div>';
+        +'<div style="font-size:13px;line-height:1.55;color:var(--fg);white-space:pre-line">'+esc(bodyText.length>400?bodyText.slice(0,400)+"…":bodyText)+'</div></div>';
     }
     var ctTag=wide?'<span style="font-size:12px;color:var(--muted);text-transform:capitalize">'+esc(ct)+"</span>":"";
     return '<div class="'+cls+'">'+mediaHtml+'<div class="card-body">'
@@ -1055,7 +1446,10 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
       +'<div style="display:flex;align-items:center"><span style="font-size:14px;font-weight:700">'+esc(nickname)+"</span>"+vBadge+"</div>"
       +'<div class="handle">@'+esc(username)+"</div></div></div>"
       +'<div style="font-size:13px;color:var(--fg);font-weight:600;margin-bottom:6px">'+fmtNum(followers)+" followers</div>"
-      +sig?'<div style="font-size:12px;color:var(--muted);line-height:1.4">'+esc(sig)+"</div>":""
+      // Parenthesised: + binds tighter than the ternary, so without these the whole
+      // concatenation became the condition and the function returned only the
+      // bio — no card, no avatar, no name, no follower count.
+      +(sig?'<div style="font-size:12px;color:var(--muted);line-height:1.4">'+esc(sig)+"</div>":"")
       +"</div>";
   }
 
@@ -1070,57 +1464,161 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   }
 
   // ─── Analysis Card ───
+  // ─── AI analysis ───
+  // Ordered for someone reading in a chat panel: the verdict in one glance,
+  // then the things they can act on or copy, then reference material folded
+  // away. Every field the model produces is surfaced somewhere — the analysis
+  // is the expensive part of the call, so discarding two thirds of it in the
+  // view (as this previously did) is throwing away what the user paid for.
   function analysisCard(d){
-    var a=d.analysis||{},postHtml=postCard(d.post||d,true);var sections="";
-    if(a.summary)sections+=section("Summary",'<div class="section-text">'+esc(a.summary)+"</div>",true);
-    if(a.hookStrength!=null){
-      var hs=Number(a.hookStrength),pct=Math.min(hs/10*100,100);
-      var bc=hs>=7?"var(--green)":hs>=4?"var(--amber)":"var(--red)";
-      sections+='<div class="section" style="margin-bottom:14px"><div style="padding:10px 12px">'
-        +'<div class="section-label" style="margin-bottom:8px">Hook Strength</div>'
-        +'<div class="hook-bar-track">'
-        +'<div class="hook-bar"><div class="hook-bar-fill" style="width:'+pct+"%;background:"+bc+'"></div></div>'
-        +'<span class="hook-score" style="color:'+bc+'">'+hs+"/10</span></div></div></div>";
+    var a=d.analysis||{};
+    var postHtml=postCard(d.post||d,true);
+    var out="";
+
+    // ── Verdict strip ──
+    var meters="";
+    if(a.hookStrength!=null)meters+=meter("Hook strength",Number(a.hookStrength));
+    if(a.commentBaitLevel!=null)meters+=meter("Comment bait",Number(a.commentBaitLevel));
+    if(meters)out+='<div class="verdict">'+meters+"</div>";
+
+    var chips=[];
+    if(a.niche)chips.push(chip(a.niche,"eye"));
+    if(a.trendAlignment)chips.push(chip(a.trendAlignment,"share"));
+    if(a.audioTrack)chips.push(chip(a.audioTrack,"note"));
+    if(a.callToAction)chips.push(chip(a.callToAction,"comment"));
+    if(chips.length)out+='<div class="chiprow">'+chips.join("")+"</div>";
+
+    if(a.summary)out+='<div class="lede-box">'+esc(a.summary)+"</div>";
+
+    // ── Script structure: the most actionable single field ──
+    var sc=a.scriptStructure;
+    if(sc&&(sc.hook||sc.buildUp||sc.payoff||sc.cta)){
+      var steps=[["Hook",sc.hook],["Build-up",sc.buildUp],["Payoff",sc.payoff],["CTA",sc.cta]]
+        .filter(function(x){return x[1];})
+        .map(function(x){
+          return '<div class="step-row"><span class="step-k">'+esc(x[0])+"</span>"
+            +'<span class="step-v">'+esc(x[1])+"</span></div>";
+        }).join("");
+      out+=section("Script structure",'<div class="steps-list">'+steps+"</div>",true);
     }
-    if(a.niche||a.visualStyle){
-      var tags="";
-      if(a.niche)tags+='<span class="tag clickable" onclick="copyText(this.dataset.v)" data-v="'+esc(a.niche)+'">📍 '+esc(a.niche)+"</span>";
-      if(a.visualStyle)tags+='<span class="tag">🎨 '+esc((a.visualStyle||"").slice(0,60))+"</span>";
-      sections+='<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:4px">'+tags+"</div>";
-    }
-    if(a.whyItWorks)sections+=section("Why It Works",'<div class="section-text">'+esc((a.whyItWorks||"").slice(0,400))+"</div>");
-    if(a.emotionalArc)sections+=section("Emotional Arc",'<div class="section-text">'+esc(a.emotionalArc)+"</div>");
-    if(a.viralTriggers&&a.viralTriggers.length){
-      var vt=a.viralTriggers.slice(0,8).map(function(t){return'<span class="tag clickable" onclick="copyText(this.dataset.v)" data-v="'+esc(t)+'">🔥 '+esc(t)+"</span>";}).join("");
-      sections+=section("Viral Triggers",vt);
-    }
-    if(a.suggestedHook)sections+=section("Suggested Hook",'<div class="quote-box">'+esc(a.suggestedHook)+'<button class="copy-btn" data-copy="'+esc(a.suggestedHook).replace(/"/g,'&quot;')+'">Copy</button></div>',true);
+
+    if(a.whyItWorks)out+=section("Why it works",expandable(a.whyItWorks),true);
+
+    // ── Copyables: what a strategist actually lifts from the card ──
+    if(a.suggestedHook)out+=section("Suggested hook",quote(a.suggestedHook),true);
+    if(a.keyQuotes&&a.keyQuotes.length)
+      out+=section("Quotable lines",a.keyQuotes.slice(0,6).map(quote).join(""));
     if(a.suggestedHashtags&&a.suggestedHashtags.length){
-      var sh=a.suggestedHashtags.slice(0,10).map(function(t){var clean=t.replace(/^#/,"");return'<span class="tag clickable" onclick="copyText(this.dataset.v)" data-v="#'+esc(clean)+'" style="background:#ede9fe;color:#6d28d9">#'+esc(clean)+"</span>";}).join("");
-      sections+=section("Hashtags",sh);
+      var tags=a.suggestedHashtags.slice(0,12).map(function(t){
+        var c=String(t).replace(/^#/,"");
+        return '<button class="tag copyable" data-copy="#'+esc(c)+'">#'+esc(c)+"</button>";
+      }).join("");
+      out+=section("Hashtags",'<div class="chiprow">'+tags
+        +'<button class="tag copyable" data-copy="'+esc(a.suggestedHashtags.map(function(t){return "#"+String(t).replace(/^#/,"");}).join(" "))+'">Copy all</button></div>',true);
     }
-    if(a.formatBreakdown)sections+=section("Format Breakdown",'<div class="section-text">'+esc((a.formatBreakdown||"").slice(0,300))+"</div>");
-    if(a.negativeSignals&&a.negativeSignals.length){
-      var ns=a.negativeSignals.slice(0,6).map(function(n){return'<span class="tag" style="background:#fef2f2;color:#991b1b">⚠️ '+esc(n)+"</span>";}).join("");
-      sections+=section("Weaknesses",ns);
+
+    // ── Who it is for ──
+    var ta=a.targetAudience;
+    if(ta&&typeof ta==="object"){
+      var rows=[["Demographics",ta.demographics],["Psychographics",ta.psychographics],["Interests",ta.interests]]
+        .filter(function(x){return x[1];})
+        .map(function(x){return '<div class="step-row"><span class="step-k">'+esc(x[0])+'</span><span class="step-v">'+esc(x[1])+"</span></div>";}).join("");
+      if(rows)out+=section("Target audience",'<div class="steps-list">'+rows+"</div>");
+    }else if(typeof ta==="string"&&ta){
+      out+=section("Target audience",'<div class="section-text">'+esc(ta)+"</div>");
     }
-    if(a.variationIdeas&&a.variationIdeas.length){
-      var vi=a.variationIdeas.slice(0,6).map(function(v){return'<li style="font-size:13px;color:var(--fg);margin:3px 0;padding-left:4px">'+esc(v)+"</li>";}).join("");
-      sections+=section("Variation Ideas",'<ul style="margin:0;padding-left:18px">'+vi+"</ul>");
+
+    // ── On-screen text: per-scene for slideshows ──
+    if(a.overlayTexts&&a.overlayTexts.length){
+      var ov=a.overlayTexts.slice(0,20).map(function(t,i){
+        return '<div class="step-row"><span class="step-k">'+(i+1)+'</span><span class="step-v">'+esc(t)+"</span></div>";
+      }).join("");
+      out+=section("On-screen text",'<div class="steps-list">'+ov+"</div>");
+    }else if(a.overlayText){
+      out+=section("On-screen text",'<div class="section-text">'+esc(a.overlayText)+"</div>");
     }
-    if(!sections)return postHtml;
+
+    // ── Signals ──
+    if(a.viralTriggers&&a.viralTriggers.length)
+      out+=section("Viral triggers",'<div class="chiprow">'
+        +a.viralTriggers.slice(0,10).map(function(t){return '<button class="tag copyable" data-copy="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+"</div>");
+    var es=a.engagementSignals;
+    if(es&&typeof es==="object"&&(es.commentSentiment||es.shareMotivation)){
+      var er=[["Comments","commentSentiment"],["Why shared","shareMotivation"]]
+        .filter(function(x){return es[x[1]];})
+        .map(function(x){return '<div class="step-row"><span class="step-k">'+esc(x[0])+'</span><span class="step-v">'+esc(es[x[1]])+"</span></div>";}).join("");
+      out+=section("Engagement signals",'<div class="steps-list">'+er+"</div>");
+    }
+    if(a.emotionalArc)out+=section("Emotional arc",'<div class="section-text">'+esc(a.emotionalArc)+"</div>");
+
+    // ── What to fix, what to try ──
+    if(a.negativeSignals&&a.negativeSignals.length)
+      out+=section("Weaknesses",'<div class="chiprow">'
+        +a.negativeSignals.slice(0,8).map(function(n){return '<span class="tag warn">'+esc(n)+"</span>";}).join("")+"</div>",true);
+    if(a.variationIdeas&&a.variationIdeas.length)
+      out+=section("Variations to try",bullets(a.variationIdeas,8));
+
+    // ── Reference, folded away ──
+    if(a.formatBreakdown)out+=section("Format breakdown",expandable(a.formatBreakdown));
+    if(a.visualStyle)out+=section("Visual style",'<div class="section-text">'+esc(a.visualStyle)+"</div>");
+    if(a.whatHappens)out+=section("What happens",expandable(a.whatHappens));
+    if(a.coreNarrative)out+=section("Core narrative",expandable(a.coreNarrative));
+    if(a.transcript)out+=section("Transcript",
+      '<div class="section-text" style="white-space:pre-wrap">'+esc(a.transcript)+"</div>"
+      +'<button class="tag copyable" style="margin-top:8px" data-copy="'+esc(a.transcript)+'">Copy transcript</button>');
+    if(a.brandMentions&&a.brandMentions.length)
+      out+=section("Brands mentioned",'<div class="chiprow">'+a.brandMentions.map(function(b){return '<span class="tag">'+esc(b)+"</span>";}).join("")+"</div>");
+    if(a.contentSafetyFlags&&a.contentSafetyFlags.length)
+      out+=section("Brand safety",'<div class="chiprow">'+a.contentSafetyFlags.map(function(f){return '<span class="tag warn">'+esc(f)+"</span>";}).join("")+"</div>");
+
+    // Turn the analysis into the next piece of work rather than ending on it.
+    var src=(d.post||d);
+    var srcUrl=src&&(src.externalUrl||src.url);
+    var follow=srcUrl?'<div class="ai-actions">'
+      +aiBtn("create_variants","Create variants",JSON.stringify({url:srcUrl}))
+      +aiBtn("write_hooks","More hooks",JSON.stringify({url:srcUrl}))
+      +aiBtn("repurpose_post","Repurpose",JSON.stringify({url:srcUrl}))
+      +'</div><div class="ai-note">Each action runs a tool and spends the credits shown.</div>':"";
+
+    if(!out)return postHtml;
     return postHtml+'<div class="card card-wide fade-in" style="margin-top:10px"><div class="card-body">'
-      +'<div style="font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px">📊 AI Analysis</div>'
-      +sections+"</div></div>";
+      +'<div class="an-title">'+mpIcon("eye",16)+"<span>AI analysis</span></div>"+out+follow+"</div></div>";
   }
 
-  // ─── Render ───
-  // Hosts deliver the tool result in two shapes:
-  //  - { structuredContent: {...} }  (spec-optional, used when present)
-  //  - { content: [ {type,text,...} ] }  (standard MCP content blocks)
-  // Our results put the HTML card prefix + structured JSON inside the first
-  // text content block, so decode BOTH. If the result is a primitive/string,
-  // surface it as-is.
+  /** 0-10 score as a labelled bar. */
+  function meter(label,val){
+    var v=Math.max(0,Math.min(10,Number(val)||0));
+    var c=v>=7?"var(--green)":v>=4?"var(--amber)":"var(--red)";
+    return '<div class="meter"><div class="meter-top"><span>'+esc(label)+"</span>"
+      +'<b style="color:'+c+'">'+v+"/10</b></div>"
+      +'<div class="meter-track"><i style="width:'+(v*10)+"%;background:"+c+'"></i></div></div>';
+  }
+
+  function chip(text,icon){
+    return '<button class="tag copyable" data-copy="'+esc(text)+'">'
+      +(icon?mpIcon(icon,11):"")+"<span>"+esc(text)+"</span></button>";
+  }
+
+  function quote(text){
+    return '<div class="quote-box">'+esc(text)
+      +'<button class="copy-btn" data-copy="'+esc(text)+'">Copy</button></div>';
+  }
+
+  function bullets(arr,cap){
+    return '<ul class="an-list">'+arr.slice(0,cap||6).map(function(x){
+      return "<li>"+esc(x)+"</li>";}).join("")+"</ul>";
+  }
+
+  /** Long prose: clamp with an expander instead of cutting it off. */
+  function expandable(text){
+    var t=String(text||"");
+    if(t.length<=260)return '<div class="section-text">'+esc(t)+"</div>";
+    var id="x"+(mpId++);
+    return '<div class="section-text clamp6" data-x="'+id+'">'+esc(t)+"</div>"
+      +'<button class="cmore" data-xmore="'+id+'">Show more</button>';
+  }
+
+
   function extractResult(result){
     if(!result||typeof result!=="object")return result;
     var sc=result.structuredContent;
@@ -1151,9 +1649,9 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
     var dots="";
     for(var i=0;i<count;i++)dots+='<button class="dot'+(i===0?" active":"")+'" data-g="'+id+'" data-i="'+i+'"></button>';
     return '<div class="gallery-wrap fade-in">'
-      +'<button class="gallery-nav prev" data-gnav="'+id+'" data-dir="-1">\u2039</button>'
+      +'<button class="gallery-nav prev" data-gnav="'+id+'" data-dir="-1">‹</button>'
       +'<div class="gallery" id="'+id+'">'+cardsHtml+'</div>'
-      +'<button class="gallery-nav next" data-gnav="'+id+'" data-dir="1">\u203a</button>'
+      +'<button class="gallery-nav next" data-gnav="'+id+'" data-dir="1">›</button>'
       +'<div class="gallery-dots" id="'+id+'-dots">'+dots+'</div>'
       +'</div>';
   }
@@ -1212,24 +1710,144 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
 
     // Analysis
     if(d.analysis&&(d.post||d.url)){app.innerHTML=analysisCard(d);return;}
+    // Post comparison
+    if(d.comparison!==undefined&&d.posts&&Array.isArray(d.posts)){
+      var c=d.comparison||{},win=Number(c.winner)||0;
+      var cards=d.posts.map(function(p,i){
+        var isw=win===i+1;
+        return '<div style="padding:10px 12px;border:1px solid '+(isw?"var(--green)":"var(--border)")+';border-radius:10px;margin-bottom:8px">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:11px;font-weight:700;color:var(--muted)">#'+(i+1)+"</span>"
+          +(isw?'<span style="font-size:10px;font-weight:700;color:var(--green);border:1px solid var(--green);border-radius:4px;padding:0 5px">BEST</span>':"")+"</div>"
+          +'<div style="font-size:13px;line-height:1.4">'+esc((p.title||p.caption||"").slice(0,140))+"</div>"
+          +'<div style="font-size:11.5px;color:var(--muted);margin-top:4px">'+mpIcon("eye",11)+" "+fmtNum(p.views||0)+" · "+mpIcon("heart",11)+" "+fmtNum(p.likes||0)+"</div></div>";
+      }).join("");
+      var diffs=(c.differences||[]).slice(0,5).map(function(x){
+        return '<div style="padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-size:12.5px;font-weight:600">'+esc(x.factor||"")+"</span>"
+          +'<div style="font-size:12.5px;color:var(--muted);margin-top:1px">'+esc(x.detail||"")+"</div></div>";
+      }).join("");
+      var lessons=(c.lessons||[]).length?'<div style="margin-top:14px"><div class="sec-label">Lessons</div><ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted)">'
+        +c.lessons.slice(0,4).map(function(l){return '<li style="margin:4px 0">'+esc(l)+"</li>";}).join("")+"</ul></div>":"";
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:10px">⚖️ Comparing '+d.posts.length+" posts</div>"
+        +cards
+        +(c.winnerReason?'<div style="font-size:13px;margin-top:10px"><b>Why it won:</b> '+esc(c.winnerReason)+"</div>":"")
+        +(diffs?'<div style="margin-top:14px"><div class="sec-label">What differed</div>'+diffs+"</div>":"")
+        +lessons
+        +(c.nextTest?'<div style="margin-top:14px;padding:10px 12px;background:var(--tag);border-radius:10px;font-size:13px"><b>Next test:</b> '+esc(c.nextTest)+"</div>":"")
+        +"</div></div>";
+      return;}
+
     // Posts gallery
     if(d.posts&&Array.isArray(d.posts)){
       if(!d.posts.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🔍</div><div class="text">No posts found</div></div>';return;}
-      app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false);}).join(""),d.posts.length);return;}
+      app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false,true);}).join(""),d.posts.length)+pickBarHtml();initPicks();return;}
     // Creators
     if(d.creators&&Array.isArray(d.creators)){
       if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}
       app.innerHTML=galleryWrap(d.creators.map(function(c){return creatorCard(c);}).join(""),d.creators.length);return;}
-    // Comments
-    if(d.comments&&Array.isArray(d.comments)){
-      var ch=d.comments.slice(0,15).map(function(c){
-        var user=c.username||c.user||"",text=(c.text||c.comment||"").slice(0,140),likes=c.likes||c.likeCount||0;
-        return '<div class="comment-row"><div style="flex:1"><span style="font-size:12px;font-weight:600">@'+esc(user)+"</span>"
-          +'<div style="font-size:13px;color:var(--fg);line-height:1.45;margin-top:3px">'+esc(text)+"</div></div>"
-          +(likes>0?'<span class="stat-pill" style="font-size:11px;white-space:nowrap">'+mpIcon("heart",12)+" "+fmtNum(likes)+"</span>":"")+"</div>";
+    // Transcript
+    if(d.transcript!==undefined||d.available!==undefined&&d.wordCount!==undefined){
+      if(!d.available){
+        app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+          +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:6px">'+mpIcon("note",16)+"<span>Transcript</span></div>"
+          +'<div class="muted" style="font-size:13px;color:var(--muted)">'+esc(d.reason||"No transcript available.")+"</div></div></div>";
+        return;}
+      var meta=[(d.wordCount||0)+" words"];
+      if(d.language)meta.push(esc(d.language));
+      if(d.autoGenerated)meta.push("auto-generated");
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">'+mpIcon("note",16)+"<span>Transcript</span></div>"
+        +'<button class="btn btn-sm" style="background:var(--tag);color:var(--fg)" data-copy="'+esc(d.transcript||"")+'">Copy</button></div>'
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:3px 0 12px">'+meta.join(" · ")+"</div>"
+        +'<div style="font-size:13.5px;line-height:1.65;white-space:pre-wrap">'+esc(d.transcript||"")+"</div>"
+        +"</div></div>";
+      return;}
+
+    // Trending hashtags
+    if(d.hashtags&&Array.isArray(d.hashtags)){
+      if(!d.hashtags.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">#</div><div class="text">No trending hashtags found</div></div>';return;}
+      var hr=d.hashtags.slice(0,30).map(function(t){
+        var dir=t.trend==="rising"?["▲","var(--green)"]:t.trend==="cooling"?["▼","var(--red)"]:["▬","var(--muted)"];
+        return '<a href="'+esc(t.url||"#")+'" target="_blank" rel="noopener" class="comment-row" style="text-decoration:none">'
+          +'<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">#'+esc(t.hashtag)+"</div>"
+          +'<div style="font-size:11.5px;color:var(--muted)">'+fmtNum(t.posts||0)+" posts · "+fmtNum(t.views||0)+" views</div></div>"
+          +'<span style="font-size:11px;font-weight:700;color:'+dir[1]+';white-space:nowrap">'+dir[0]+" "+esc(t.trend||"")+"</span></a>";
       }).join("");
       app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:12px">'+mpIcon("comment",17)+"<span>Comments ("+d.comments.length+")</span></div>"+ch+"</div></div>";return;}
+        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">#<span>Trending hashtags</span></div>'
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">TikTok · '+esc(d.country||"US")+" · last "+(d.days||7)+" days</div>"
+        +hr+"</div></div>";
+      return;}
+
+    // Comment analysis
+    if(d.report&&(d.commentsAnalyzed!==undefined)){
+      var r=d.report;
+      var col=r.sentiment==="positive"?"var(--green)":r.sentiment==="negative"?"var(--red)":"var(--amber)";
+      var list=function(arr,label){
+        if(!arr||!arr.length)return "";
+        return '<div style="margin-top:14px"><div class="sec-label">'+esc(label)+'</div><ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted)">'
+          +arr.slice(0,6).map(function(x){return '<li style="margin:4px 0">'+esc(x)+"</li>";}).join("")+"</ul></div>";
+      };
+      var th=(r.topThemes||[]).slice(0,5).map(function(t){
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border-soft,var(--border))">'
+          +'<div style="font-size:13px;font-weight:600">'+esc(t.theme||"")+"</div>"
+          +'<div style="font-size:12.5px;color:var(--muted);margin-top:2px">'+esc(t.summary||"")+"</div></div>";
+      }).join("");
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:8px">'+mpIcon("comment",16)+"<span>Comment analysis</span></div>"
+        +'<span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:'+col+';border:1px solid '+col+';border-radius:999px;padding:2px 10px">'+esc(r.sentiment||"")+"</span>"
+        +'<div style="font-size:13px;margin-top:8px">'+esc(r.sentimentNote||"")+"</div>"
+        +(th?'<div style="margin-top:14px"><div class="sec-label">Themes</div>'+th+"</div>":"")
+        +list(r.questions,"Questions asked")
+        +list(r.objections,"Objections")
+        +list(r.contentRequests,"Content requests")
+        +list(r.nextVideoIdeas,"Next video ideas")
+        +'<div class="faint" style="font-size:11px;color:var(--muted);margin-top:14px">Based on '+(d.commentsAnalyzed||0)+" comments</div>"
+        +"</div></div>";
+      return;}
+
+    // Comments
+    if(d.comments&&Array.isArray(d.comments)){
+      // Themes first: on a post with thousands of comments, "what do people
+      // keep saying" is the answer someone actually wants. The raw list is
+      // the evidence underneath it.
+      var themes="";
+      if(d.themes&&d.themes.length){
+        themes='<div style="margin-bottom:14px"><div class="sec-label">What people keep mentioning</div><div>'
+          +d.themes.slice(0,12).map(function(t){
+            return '<span class="theme-chip">'+esc(t.keyword||t)
+              +(t.count?"<b>"+t.count+"</b>":"")+"</span>";
+          }).join("")+"</div></div>";
+      }
+      var ch=d.comments.slice(0,25).map(function(c,i){
+        var user=c.username||c.user||"";
+        var text=c.text||c.comment||"";
+        var likes=c.likes||c.likeCount||0, replies=c.replies||0;
+        var badges="";
+        if(c.pinned)badges+='<span class="cbadge pin">PINNED</span>';
+        if(c.creatorLiked)badges+='<span class="cbadge liked">CREATOR LIKED</span>';
+        var meta=[];
+        if(likes>0)meta.push(mpIcon("heart",11)+" "+fmtNum(likes));
+        if(replies>0)meta.push(mpIcon("comment",11)+" "+fmtNum(replies));
+        if(c.postedAt)meta.push(esc(relTime(c.postedAt)));
+        // Long comments clamp to three lines with an expander rather than
+        // being cut mid-sentence — in a chat there is nowhere else to read it.
+        var longish=text.length>180;
+        return '<div class="comment-row" style="flex-direction:column;align-items:stretch">'
+          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+          +'<span style="font-size:12px;font-weight:600">@'+esc(user)+"</span>"+badges+"</div>"
+          +'<div class="ctext'+(longish?" clamp":"")+'" data-c="'+i+'">'+esc(text)+"</div>"
+          +(longish?'<button class="cmore" data-more="'+i+'">Show more</button>':"")
+          +(meta.length?'<div class="cmeta">'+meta.join('<span style="opacity:.5">·</span>')+"</div>":"")
+          +"</div>";
+      }).join("");
+      var extra=d.comments.length>25?'<div class="faint" style="text-align:center;font-size:12px;padding-top:10px;color:var(--muted)">Showing 25 of '+d.comments.length+"</div>":"";
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">'+mpIcon("comment",17)+"<span>Comments ("+d.comments.length+")</span></div>"
+        +(d.summary?'<div class="muted" style="font-size:12.5px;margin:5px 0 14px;color:var(--muted)">'+esc(d.summary)+"</div>":'<div style="height:12px"></div>')
+        +themes+ch+extra+"</div></div>";
+      return;}
     // Sounds
     if(d.sounds&&Array.isArray(d.sounds)){
       app.innerHTML=galleryWrap(d.sounds.map(function(s,i){
@@ -1290,7 +1908,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   // case future logic needs it. Content only appears via tool-result.
   function updateProgress(params){
     var toolName=params&&params.name?params.name:null;
-    if(toolName)currentTool=toolName;
+    if(toolName){currentTool=toolName;renderLoading(toolName);}
   }
 
   // Global helpers
@@ -1298,6 +1916,38 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--
   document.addEventListener('click',function(e){
     var btn=e.target.closest('.copy-btn[data-copy]');
     if(btn)copyText(btn.getAttribute('data-copy'));
+  });
+  // Analysis prose expanders and copy chips.
+  document.addEventListener("click",function(e){
+    if(!e.target.closest)return;
+    var x=e.target.closest(".cmore[data-xmore]");
+    if(x){
+      var t=document.querySelector('.section-text[data-x="'+x.getAttribute("data-xmore")+'"]');
+      if(t){
+        var clamped=t.classList.toggle("clamp6");
+        x.textContent=clamped?"Show more":"Show less";
+        setTimeout(reportSize,60);
+      }
+      return;
+    }
+    var c=e.target.closest(".copyable[data-copy]");
+    if(c){
+      copyText(c.getAttribute("data-copy"));
+      var label=c.textContent;
+      c.textContent="Copied";
+      setTimeout(function(){c.textContent=label;},1200);
+    }
+  });
+
+  // Comment expanders.
+  document.addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest(".cmore[data-more]");
+    if(!b)return;
+    var t=document.querySelector('.ctext[data-c="'+b.getAttribute("data-more")+'"]');
+    if(!t)return;
+    var open=t.classList.toggle("clamp");
+    b.textContent=open?"Show more":"Show less";
+    setTimeout(reportSize,60);
   });
   window.toggleSection=function(header){
     header.classList.toggle("open");

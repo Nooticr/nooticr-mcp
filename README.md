@@ -1,9 +1,16 @@
 # @orchyn/mcp
 
-MCP (Model Context Protocol) server for [orchyn](https://orchyn.com) — fetch,
-discover and understand social posts (TikTok, Instagram, YouTube, X/Twitter,
-Douyin, Xiaohongshu, Bilibili, LinkedIn) with your orchyn account and orchyn
-credits.
+MCP (Model Context Protocol) server for [orchyn](https://orchyn.com).
+
+Gives an AI assistant three things: it can **read** real social posts across
+eight networks (TikTok, Instagram, YouTube, X/Twitter, LinkedIn, Douyin,
+Xiaohongshu, Bilibili), **understand** them — transcript, hook, script
+structure, comment themes, why one post beat another — and **make** something
+from what it learned: hooks, variants to film, a scored draft, a repurposed
+thread.
+
+Runs over stdio locally or as a hosted connector at `https://mcp.orchyn.com/mcp`.
+Billed against your orchyn credits; new accounts get 20 free.
 
 ## Install (one link)
 
@@ -37,26 +44,69 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-| Tool | Credits | Description |
-|------|---------|-------------|
-| `analyze_post` | first free* | **Preferred.** Analyze any post (video, image, carousel/slideshow, text) from a TikTok/Instagram/YouTube/X-Twitter/Douyin/Xiaohongshu/Bilibili/LinkedIn URL — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Returns a `jobId` to poll via `GET /ai/analyze-post`. *First analysis free per workspace via the dashboard free grant.* |
-| `get_social_media` | 1 | Fetch a post's media from a URL: `contentType` (video/image/carousel/slideshow), title, caption, author, stats, direct media URLs **+ inline thumbnail image in chat**. |
-| `discover_social_posts` | 2 | **Preferred.** Find recent posts (video/image/carousel/slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili. Each post includes title/caption, views/likes/comments, author, `externalUrl` + **inline thumbnails (4 at a time)** — see *Images in chat* below. Supports `limit`/`offset` pagination (“next”). |
-| `get_user_posts` | 2 | List recent posts by a creator handle (e.g. `@zoundsapp`) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile `public_id`, e.g. `billgates`) — title/caption, `thumbnailUrl`, `externalUrl`, views/likes/comments, **inline thumbnails (up to 4)**. Use to scan a whole profile or spot patterns across an account. |
-| `analyze_creator_profile` | 15 | Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn: fetches recent posts, runs multimodal AI on up to 3, then synthesizes a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, engagement patterns, audience insights, variation ideas, collaboration fit. |
-| `get_post_comments` | 2 | Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics when available — audience sentiment/audience-signal analysis. |
-| `search_creators` | 2 | Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, signature, verified status. Use to find influencers to vet or analyze. |
-| `get_similar_creators` | 2 | Find lookalike creators for a given handle (TikTok similar-user recommendations or Instagram similar users) — “if this creator works, here are more like them”. |
-| `discover_sounds` | 2 | Discover trending sounds/music for a keyword on TikTok or Instagram — sound choice is a huge ranking signal for TikTok virality. Returns title, artist, duration, play/cover URLs. |
-| `understand_social_post` | 10 | Import a post URL **and** analyze it with multimodal AI over the actual video/images: factual `whatHappens` description, hook strength, viral triggers, format breakdown, variation ideas, suggested hook/hashtags. Includes inline thumbnails. |
-| `check_orchyn_credits` | free | Check your MCP credit balance, billing URL and pack size — no cost. |
-| `buy_orchyn_credits` | free | Get a Stripe Checkout URL to buy a credit pack — open it to pay; credits are added automatically. No cost to call. Also at `https://orchyn.com/settings?tab=billing`. |
+24 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+match what the server actually charges.
 
-All tools require a connected orchyn account and are billed against your orchyn credit balance (`POST /billing/mcp-credits/checkout` tops up).
+### Read a post
 
-**Every tool's first use is free per user** — try any tool once before paying. After the free first use, each call bills your credit balance. **Platform admins always bypass credit debiting** (free calls). `check_orchyn_credits` lists which tools still have a free first use.
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
+| `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
+| `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
-`*` `analyze_post` also bills against **workspace** credits (first free grant); the other tools bill against **per-user MCP** credits (never tied to an app/workspace).
+### Understand a post
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `analyze_post_fast` | 2 | The full analysis built from transcript, caption and stats instead of video frames — **a third the price**. Weaker on visual style, just as strong on hook, script, CTA and audience. The sensible default. |
+| `analyze_post` | 6 (first use free) | The same analysis with the video actually watched. Use when the visuals are the point — framing, editing, on-screen text. |
+| `understand_social_post` | 6 (first use free) | A factual description of what physically happens on screen. Use when you need the events, not the strategy. |
+| `analyze_comments` | 6 (first use free) | The comment section synthesised: sentiment, recurring themes, questions asked, objections raised, content requested, and follow-up ideas. Use when the goal is what to make next. |
+| `compare_posts` | 8 (first use free) | Two to five posts side by side: which won, what actually differed, and the one test to run next. Use when performance differs and you need to know why. |
+
+### Research a niche or a creator
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `discover_social_posts` | 2 | Recent posts for a niche across seven networks, with inline thumbnails and `limit`/`offset` pagination. Use to find posts to look at. |
+| `get_user_posts` | 2 | One creator's recent posts with stats. Use to scan an account. |
+| `search_creators` | 2 | Creators by niche or keyword. Use when you know the niche but not the names. |
+| `get_similar_creators` | 2 | Lookalikes for a creator that already works. |
+| `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
+| `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
+| `find_hook_pattern` | 2 | A creator's repeatable formula from their captions, as fill-in-the-blank templates. Much cheaper than the full profile teardown because it never watches the videos. |
+| `niche_report` | 3 | What is working in a niche right now: dominant formats, hook patterns, what over- and underperforms, the gaps nobody is filling. Use when deciding what to make. |
+| `analyze_creator_profile` | 15 (first use free) | Full teardown — fetches recent posts, watches up to three, then synthesises niche, themes, hook styles, strengths, audience and collaboration fit. |
+
+### Make something
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `write_hooks` | 2 | Alternative opening lines, grounded in a real post's transcript or in a bare topic. Each comes with the mechanism it uses and who it stops. |
+| `score_draft` | 2 | Reviews **your** draft before you film it: hook, clarity and payoff scores, concrete fixes, a rewritten hook. The only tool that runs before the content exists. |
+| `repurpose_post` | 2 | One post rewritten for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
+| `create_variants` | 3 | Turns a post that worked into variants you could film next: hook, the angle that changes, ordered shot beats and a CTA. |
+
+### Account
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `check_orchyn_credits` | free | Balance, billing URL, and which AI tools still have their free first use. |
+| `buy_orchyn_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
+| `orchyn_login` | free | Re-link the account when a call fails with an authentication error. |
+
+### How billing works
+
+- New accounts get **20 free credits**.
+- The **AI analysis tools** (`analyze_post`, `understand_social_post`,
+  `analyze_creator_profile`, `analyze_comments`, `compare_posts`, and the
+  text-only tools) are **free the first time you use each one**. Data tools bill
+  from the first call.
+- A call that fails is **refunded automatically**, and a call interrupted
+  mid-flight is billed **once at most** — retries are idempotent.
+- Platform admins bypass credit debiting entirely.
+- `check_orchyn_credits` lists which free first uses you still have.
 
 ## Interactive cards in Claude / ChatGPT chat
 
@@ -281,12 +331,11 @@ and text** posts.
 - **`Not authenticated with orchyn` / 401**: run `npx @orchyn/mcp login` or set
   `ORCHYN_ACCESS_TOKEN`.
 - **402 paywall / `insufficient MCP credits`**: your orchyn account is out of
-  credits for this tool. Every tool has **one free first use per user**; after
-  that each call costs: `get_social_media` 1, `discover_social_posts` /
-  `get_user_posts` / `get_post_comments` / `search_creators` /
-  `get_similar_creators` / `discover_sounds` 2 each, `understand_social_post` 10,
-  `analyze_creator_profile` 15, `analyze_post` first-call free* (see Tools). Top up
-  via `buy_orchyn_credits`, `check_orchyn_credits`, or the orchyn dashboard at
+  credits. Prices are listed per tool in [Tools](#tools) — 1 credit for a post
+  lookup or transcript, 2-3 for discovery and the text-only AI tools, 6-15 for
+  the ones that watch the video. The **AI tools** are free the first time you
+  use each; data tools bill from the first call. Top up via
+  `buy_orchyn_credits`, `check_orchyn_credits`, or the orchyn dashboard at
   `https://orchyn.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   orchyn server. Run `npx @orchyn/mcp login` again to re-authenticate.

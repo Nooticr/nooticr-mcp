@@ -31,6 +31,14 @@ const SERVER_PRICING: Record<string, number> = {
   analyze_post: 6,
   understand_social_post: 6,
   analyze_creator_profile: 15,
+  analyze_post_fast: 2,
+  write_hooks: 2,
+  score_draft: 2,
+  repurpose_post: 2,
+  find_hook_pattern: 2,
+  create_variants: 3,
+  niche_report: 3,
+  compare_posts: 8,
 };
 
 /** Tools the server grants one free use of (AI_MCP_TOOLS). */
@@ -41,9 +49,10 @@ describe("landing page", () => {
 
   it("lists every billable tool at the price the server actually charges", () => {
     for (const [tool, cost] of Object.entries(SERVER_PRICING)) {
-      expect(html, `${tool} missing from the page`).toContain(tool);
+      const heading = `>${tool}</h3>`;
+      expect(html, `${tool} missing from the page`).toContain(heading);
       // The tool name and its badge sit together in one card.
-      const card = html.slice(html.indexOf(tool));
+      const card = html.slice(html.indexOf(heading));
       const badge = card.slice(0, 320).match(/(\d+) cr</);
       expect(badge, `no credit badge near ${tool}`).toBeTruthy();
       expect(Number(badge![1]), `${tool} is advertised at the wrong price`).toBe(cost);
@@ -52,12 +61,16 @@ describe("landing page", () => {
 
   it("advertises a free first use for exactly the tools that get one", () => {
     for (const tool of FREE_FIRST_USE) {
-      const card = html.slice(html.indexOf(tool), html.indexOf(tool) + 420);
-      expect(card, `${tool} should be marked free-first-use`).toContain("First use free");
+      const at = html.indexOf(`>${tool}</h3>`);
+      expect(at, `${tool} missing`).toBeGreaterThan(-1);
+      expect(
+        html.slice(at, at + 460),
+        `${tool} should be marked free-first-use`
+      ).toContain("First use free");
     }
     // A paid-only tool must not claim a free use.
-    const paid = html.slice(html.indexOf("get_social_media"), html.indexOf("get_social_media") + 300);
-    expect(paid).not.toContain("First use free");
+    const at = html.indexOf(">get_social_media</h3>");
+    expect(html.slice(at, at + 320)).not.toContain("First use free");
   });
 
   it("names every platform the server supports", () => {
@@ -154,5 +167,230 @@ describe("dashboard", () => {
   it("escapes a hostile display name", () => {
     const html = dashboardPage(URL, { displayName: '<img src=x onerror=alert(1)>' }, usage, "t");
     expect(html).not.toContain("<img src=x onerror");
+  });
+});
+
+/**
+ * The UI template is embedded twice: in a Rust raw string (where backslash
+ * escapes stay literal) and in a TS template literal (where they are
+ * resolved). Anything that relies on an escape therefore means one of the two
+ * builds gets different source — and the TS one has silently shipped a
+ * SyntaxError more than once this way.
+ */
+describe("UI template dual-host safety", () => {
+  it("contains no backslash escapes that the two hosts would read differently", async () => {
+    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    // The TS build is the resolved one; compare against what Rust ships by
+    // scanning the source literal for escapes inside the template body.
+    // NB: `URL` is shadowed by a const at the top of this file, so resolve
+    // the path with node:path rather than the WHATWG URL constructor.
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const raw = readFileSync(join(here, "..", "src", "shared", "ui-template.ts"), "utf8");
+    const start = raw.indexOf("export const ORCHYN_UI_TEMPLATE = `") + "export const ORCHYN_UI_TEMPLATE = `".length;
+    const body = raw.slice(start, raw.indexOf("`;", start));
+
+    // `\uXXXX`, `\n`, `\"` and friends all diverge. A literal `\\` is fine
+    // (both hosts keep it) and regex classes like `[\\s]` are written escaped
+    // on purpose, so only flag single-backslash sequences.
+    const offenders = [...body.matchAll(/(^|[^\\])\\(["'nrtu])/g)].map((m) => {
+      const at = m.index ?? 0;
+      return body.slice(Math.max(0, at - 40), at + 40).replace(/\n/g, "\\n");
+    });
+    expect(
+      offenders,
+      `escape sequences here resolve in the TS build but not the Rust one:\n${offenders.join("\n---\n")}`
+    ).toEqual([]);
+
+    // And the resolved template must still be parseable.
+    const script = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*)<\/script>/)?.[1] ?? "";
+    expect(() => new Function(script)).not.toThrow();
+  });
+});
+
+/**
+ * Tool surface parity.
+ *
+ * The tool list exists three times — the Rust MCP crate, the orchyn server,
+ * and this TS package (which is what the Cloudflare worker and the npm CLI
+ * actually serve). They are maintained by hand, and they have silently
+ * diverged: four tools shipped in Rust reached no claude.ai user because the
+ * TS list never learned about them. Pin the surface so that is loud.
+ */
+describe("tool surface", () => {
+  const EXPECTED = [
+    "get_social_media",
+    "get_post_transcript",
+    "discover_social_posts",
+    "get_user_posts",
+    "get_post_comments",
+    "analyze_comments",
+    "search_creators",
+    "get_similar_creators",
+    "discover_sounds",
+    "discover_hashtags",
+    "analyze_post",
+    "understand_social_post",
+    "analyze_creator_profile",
+    "compare_posts",
+    "analyze_post_fast",
+    "write_hooks",
+    "create_variants",
+    "score_draft",
+    "repurpose_post",
+    "niche_report",
+    "find_hook_pattern",
+    "check_orchyn_credits",
+    "buy_orchyn_credits",
+    "orchyn_login",
+  ];
+
+  it("declares exactly the tools we intend to ship", async () => {
+    const { TOOL_DEFS } = await import("../src/shared/tools-def.js").catch(async () => {
+      // The module may export under a different name; fall back to scanning.
+      return { TOOL_DEFS: null } as never;
+    });
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const defs = readFileSync(join(here, "..", "src", "shared", "tools-def.ts"), "utf8");
+    const names = [...defs.matchAll(/name:\s*"([a-z_]+)"/g)].map((m) => m[1]);
+    expect(new Set(names)).toEqual(new Set(EXPECTED));
+    expect(names.length, "duplicate tool names").toBe(new Set(names).size);
+    void TOOL_DEFS;
+  });
+
+  it("registers a handler for every declared tool", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const impl = readFileSync(join(here, "..", "src", "shared", "tools.ts"), "utf8");
+    const registered = new Set(
+      [...impl.matchAll(/server\.registerTool\(\s*"([a-z_]+)"/g)].map((m) => m[1])
+    );
+    const missing = EXPECTED.filter((n) => !registered.has(n));
+    expect(missing, `declared but never registered: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("prices every billable tool in its description", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const defs = readFileSync(join(here, "..", "src", "shared", "tools-def.ts"), "utf8");
+    const free = ["check_orchyn_credits", "buy_orchyn_credits", "orchyn_login"];
+    for (const name of EXPECTED) {
+      if (free.includes(name)) continue;
+      const block = defs.slice(defs.indexOf(`name: "${name}"`));
+      const desc = block.slice(0, block.indexOf("inputSchema"));
+      expect(
+        /credit/i.test(desc),
+        `${name} does not tell the agent what it costs`
+      ).toBe(true);
+    }
+  });
+});
+
+/**
+ * README parity.
+ *
+ * The README is where people decide whether to install this and what it will
+ * cost them. It had drifted badly — twelve undocumented tools, a tool listed
+ * at 10 credits that charges 6, and a "every tool's first use is free" promise
+ * the billing code stopped honouring. Those are worse than gaps, so pin them.
+ */
+describe("README", () => {
+  async function readme() {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    return readFileSync(join(here, "..", "README.md"), "utf8");
+  }
+
+  it("documents every tool the server registers", async () => {
+    const doc = await readme();
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const impl = readFileSync(join(here, "..", "src", "shared", "tools.ts"), "utf8");
+    const shipped = [...impl.matchAll(/registerTool\(\s*\n\s*"([a-z_]+)"/g)].map((m) => m[1]);
+    const documented = new Set([...doc.matchAll(/\| `([a-z_]+)`/g)].map((m) => m[1]));
+    const missing = shipped.filter((t) => !documented.has(t));
+    expect(missing, `undocumented tools: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("quotes the prices the server actually charges", async () => {
+    const doc = await readme();
+    // Row form: | `tool` | N (…) | …
+    for (const [tool, cost] of Object.entries(SERVER_PRICING)) {
+      const row = doc.match(new RegExp("\\| `" + tool + "` \\| (\\d+)"));
+      expect(row, `${tool} has no priced row in the README`).toBeTruthy();
+      expect(Number(row![1]), `README misprices ${tool}`).toBe(cost);
+    }
+  });
+
+  it("does not promise a free first use for every tool", async () => {
+    const doc = await readme();
+    // Only AI_MCP_TOOLS get one; data tools bill from the first call.
+    expect(doc).not.toMatch(/every tool.{0,30}first use is free/i);
+    expect(doc).not.toMatch(/Every tool has \*\*one free first use/i);
+    expect(doc).toMatch(/AI (analysis )?tools?\b[\s\S]{0,120}free the first time/i);
+  });
+});
+
+/**
+ * Credit-pack pricing parity.
+ *
+ * The pack prices are quoted in four places (landing page, dashboard, the
+ * MCP checkout card, the README) and the credit amounts are granted by the
+ * server. A mismatch here means a customer is charged one thing and told
+ * another, so pin the set.
+ */
+describe("credit packs", () => {
+  const PACKS = [
+    { id: "starter", price: "$15", credits: 600 },
+    { id: "pro", price: "$40", credits: 2000 },
+    { id: "scale", price: "$85", credits: 5000 },
+  ];
+
+  it("the dashboard offers exactly the packs we sell", async () => {
+    const html = dashboardPage(
+      URL,
+      { email: "a@b.co" },
+      {
+        balance: 0, totalCalls: 0, creditsSpent: 0, freeToolsRemaining: [],
+        byTool: [], recent: [], pricing: [],
+      },
+      "tok"
+    );
+    for (const p of PACKS) {
+      expect(html, `${p.id} price missing`).toContain(p.price);
+      expect(html, `${p.id} credit count missing`).toContain(p.credits.toLocaleString("en-US"));
+      expect(html, `${p.id} buy button missing`).toContain(`data-buy="${p.id}"`);
+    }
+    // The old entry price must not survive anywhere.
+    expect(html).not.toContain("$12.50");
+  });
+
+  it("the landing page quotes the same prices", async () => {
+    const html = landingPage(URL, API);
+    for (const p of PACKS) expect(html, `${p.id} missing from pricing`).toContain(p.price);
+    expect(html).not.toContain("$12.50");
+    expect(html).toContain("600 credits");
+  });
+
+  it("the README quotes the same entry price", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const doc = readFileSync(join(here, "..", "README.md"), "utf8");
+    expect(doc).not.toContain("$12.50");
   });
 });

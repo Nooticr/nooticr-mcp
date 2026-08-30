@@ -125,7 +125,7 @@ export interface DashboardUser {
 }
 
 const PACKS = [
-  { id: "starter", name: "Starter", credits: 500, price: "$12.50", per: "$0.025 / credit" },
+  { id: "starter", name: "Starter", credits: 600, price: "$15", per: "$0.025 / credit" },
   { id: "pro", name: "Pro", credits: 2000, price: "$40", per: "$0.020 / credit" },
   { id: "scale", name: "Scale", credits: 5000, price: "$85", per: "$0.017 / credit" },
 ];
