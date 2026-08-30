@@ -83,3 +83,23 @@ describe("arguments digest", () => {
       argumentsDigest({ ...base, url: "https://tiktok.com/@u/video/2" }));
   });
 });
+
+/**
+ * Browser clients (claude.ai adding a custom connector) could not complete the
+ * handshake: the worker set access-control-allow-origin but never
+ * access-control-expose-headers, so page scripts could not read the response
+ * headers the protocol depends on. allow-headers does not cover this — that
+ * governs what the browser may send, not what it may read back.
+ */
+describe("CORS exposure for browser MCP clients", () => {
+  it("exposes the headers the protocol depends on", async () => {
+    const { MCP_EXPOSED_HEADERS } = await import("../cloudflare/src/index.js");
+    const exposed = MCP_EXPOSED_HEADERS.split(",").map((h) => h.trim().toLowerCase());
+    // Streamable HTTP carries the session here; without it there is no session.
+    expect(exposed).toContain("mcp-session-id");
+    // The 401 points at the authorisation server through this one; without it
+    // the client cannot discover where to log in.
+    expect(exposed).toContain("www-authenticate");
+    expect(exposed).toContain("mcp-protocol-version");
+  });
+});

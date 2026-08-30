@@ -585,6 +585,18 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
 
 // --- MCP routing ------------------------------------------------------------
 
+/**
+ * Response headers a browser-based MCP client must be allowed to read.
+ *
+ * A cross-origin response hides every header from page scripts unless it is
+ * named here; `access-control-allow-headers` does not cover it, since that
+ * governs what the browser may *send*. Two of these are load-bearing:
+ * Streamable HTTP carries the session in `mcp-session-id`, and the 401 points
+ * at the authorisation server through `www-authenticate`. With both invisible
+ * a browser client can neither hold a session nor discover where to log in.
+ */
+export const MCP_EXPOSED_HEADERS = "mcp-session-id, mcp-protocol-version, www-authenticate";
+
 async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
   // Handle CORS preflight for ChatGPT's sandboxed iframe
   if (request.method === "OPTIONS") {
@@ -594,6 +606,7 @@ async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
         "access-control-allow-headers": "content-type, authorization, mcp-session-id, mcp-protocol-version, mcp-method",
+        "access-control-expose-headers": MCP_EXPOSED_HEADERS,
         "access-control-max-age": "86400",
       },
     });
@@ -608,6 +621,14 @@ async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
     // Add CORS headers to all MCP responses for ChatGPT's sandbox
     const headers = new Headers(response.headers);
     headers.set("access-control-allow-origin", "*");
+    // A cross-origin response hides every header from page scripts unless it
+    // is named here, and allow-headers does not cover it - that governs what
+    // the browser may send, not what it may read back. Two of ours are
+    // load-bearing: Streamable HTTP carries the session in mcp-session-id, and
+    // the 401 points at the auth server through www-authenticate. With both
+    // invisible, a browser-based client can neither hold a session nor
+    // discover where to log in, which is what stopped connectors being added.
+    headers.set("access-control-expose-headers", MCP_EXPOSED_HEADERS);
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
