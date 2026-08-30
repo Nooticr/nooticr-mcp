@@ -11,6 +11,8 @@ import { describe, it, expect } from "vitest";
 import { landingPage } from "../cloudflare/src/site/landing.js";
 import { termsPage, privacyPage, LEGAL_EFFECTIVE } from "../cloudflare/src/site/legal.js";
 import { dashboardPage, dashboardSignedOut } from "../cloudflare/src/site/dashboard.js";
+import { TOOLS } from "../cloudflare/src/site/catalogue.js";
+import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
 
 const URL = "https://mcp.orchyn.com";
@@ -452,5 +454,95 @@ describe("plugin manifest", () => {
       expect(d).toMatch(/transcript/i);
       expect(d).toMatch(/hook|variant|draft/i);
     }
+  });
+});
+
+/**
+ * Documentation page.
+ *
+ * IT administrators read this when deciding whether to approve the server,
+ * so the claims in it are load-bearing. Pin the ones that would be damaging
+ * to get wrong: what it cannot do, where data goes, and what a call costs.
+ */
+describe("documentation", () => {
+  const html = documentationPage(URL, API);
+
+  it("documents every tool at the price the server charges", () => {
+    for (const [tool, cost] of Object.entries(SERVER_PRICING)) {
+      expect(html, `${tool} missing`).toContain(`<code>${tool}</code>`);
+      const at = html.indexOf(`<code>${tool}</code>`);
+      expect(
+        html.slice(at, at + 220),
+        `${tool} documented at the wrong price`
+      ).toContain(`${cost} cr`);
+    }
+    for (const free of ["check_orchyn_credits", "buy_orchyn_credits", "orchyn_login"]) {
+      expect(html).toContain(`<code>${free}</code>`);
+    }
+  });
+
+  it("states plainly what the server cannot do", () => {
+    // The questions an admin actually asks, and the answers we must not soften.
+    expect(html).toMatch(/cannot|never/i);
+    expect(html).toContain("Connect to any social account");
+    expect(html).toMatch(/Post, comment, like, follow or message/);
+    expect(html).toMatch(/private messages/i);
+    expect(html).toMatch(/readOnlyHint/);
+  });
+
+  it("discloses retention and subprocessors", () => {
+    expect(html).toContain("Cloudflare");
+    expect(html).toContain("Stripe");
+    expect(html).toMatch(/not sold/i);
+    expect(html).toMatch(/not used to train/i);
+    // The load-bearing negative: retrieved content is not stored.
+    expect(html).toMatch(/Content of retrieved posts/);
+  });
+
+  it("explains access and revocation", () => {
+    expect(html).toContain("social:read");
+    expect(html).toContain("credits:spend");
+    expect(html).toMatch(/PKCE/);
+    expect(html).toMatch(/To revoke/);
+  });
+
+  it("links the legal documents and support", () => {
+    expect(html).toContain('href="/terms"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain("support@orchyn.com");
+  });
+
+  it("quotes the current pack prices", () => {
+    expect(html).toContain("$15");
+    expect(html).not.toContain("$12.50");
+  });
+
+  it("escapes interpolated values", () => {
+    const evil = documentationPage('https://x"><script>alert(1)</script>', API);
+    expect(evil).not.toContain("<script>alert(1)</script>");
+  });
+});
+
+// The public docs once claimed 5 tools were free on first use when the server
+// treated 12 that way — understating our own free tier, and wrong in the
+// direction that makes a reviewer's evaluation run out of credits early.
+// This is the server's list, transcribed from AI_MCP_TOOLS in mcp_tools.rs.
+describe("free first use", () => {
+  const SERVER_AI_TOOLS = [
+    "analyze_post", "understand_social_post", "analyze_creator_profile",
+    "analyze_comments", "compare_posts", "analyze_post_fast", "write_hooks",
+    "create_variants", "score_draft", "repurpose_post", "niche_report",
+    "find_hook_pattern",
+  ].sort();
+
+  it("marks exactly the tools the server bills as AI", () => {
+    const marked = TOOLS.filter((t) => t.freeFirstUse).map((t) => t.name).sort();
+    expect(marked).toEqual(SERVER_AI_TOOLS);
+  });
+
+  it("keeps a full review pass inside the 20-credit welcome grant", () => {
+    const payable = TOOLS.filter((t) => !t.freeFirstUse)
+      .reduce((sum, t) => sum + t.cost, 0);
+    expect(payable).toBeLessThanOrEqual(20);
   });
 });

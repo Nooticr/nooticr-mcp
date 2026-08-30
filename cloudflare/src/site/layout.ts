@@ -201,6 +201,7 @@ function header(publicUrl: string, bare?: boolean): string {
       `<a href="/#platforms">Platforms</a>` +
       `<a href="/#pricing">Pricing</a>` +
       `<a href="/#install">Install</a>` +
+      `<a href="/documentation">Docs</a>` +
       `</nav>`;
   return (
     `<header><div class="wrap">` +
@@ -220,7 +221,7 @@ function footer(publicUrl: string): string {
     `<div><a class="logo" href="/" style="margin-bottom:12px">${logoMark(24)}<span>Orchyn</span><small>MCP</small></a>` +
     `<p class="muted" style="margin:0;max-width:22rem;font-size:13.5px">${esc(BRAND.tagline)}. An MCP server that lets AI assistants read and analyse public social posts.</p></div>` +
     `<div><h4>Product</h4><a href="/#tools">Tools</a><a href="/#pricing">Pricing</a><a href="/dashboard">Dashboard</a><a href="/health">Status</a></div>` +
-    `<div><h4>Developers</h4><a href="/#install">Install</a><a href="https://www.npmjs.com/package/@orchyn/mcp" rel="noopener">npm package</a><a href="https://github.com/orchynX/mcp" rel="noopener">GitHub</a><a href="/.well-known/oauth-authorization-server">OAuth metadata</a></div>` +
+    `<div><h4>Developers</h4><a href="/documentation">Documentation</a><a href="/#install">Install</a><a href="https://www.npmjs.com/package/@orchyn/mcp" rel="noopener">npm package</a><a href="https://github.com/orchynX/mcp" rel="noopener">GitHub</a><a href="/.well-known/oauth-authorization-server">OAuth metadata</a></div>` +
     `<div><h4>Legal</h4><a href="/terms">Terms of Use</a><a href="/privacy">Privacy Policy</a><a href="mailto:${esc(BRAND.supportEmail)}">Contact</a></div>` +
     `</div><div class="legal-bar"><span>© ${year} ${esc(BRAND.company)}. All rights reserved.</span>` +
     `<span class="faint">${esc(publicUrl.replace(/^https?:\/\//, ""))}</span></div></div></footer>`

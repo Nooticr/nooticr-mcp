@@ -9,6 +9,7 @@
  */
 import { page, esc, logoMark } from "./layout.js";
 import { PLATFORMS, CLIENTS, platformIcon } from "./platforms.js";
+import { TOOLS } from "./catalogue.js";
 
 const CSS = `
 .hero{padding:78px 0 22px;text-align:center;position:relative}
@@ -122,38 +123,6 @@ document.querySelectorAll('[data-copy]').forEach(function(b){
 });
 `;
 
-interface ToolDoc {
-  name: string;
-  cost: number;
-  free?: boolean;
-  desc: string;
-}
-
-/** Mirrors the server's real cost table — see mcp_tool_cost in orchyn-server. */
-const TOOLS: ToolDoc[] = [
-  { name: "get_social_media", cost: 1, desc: "Fetch one post by URL: media, caption, author, engagement counts." },
-  { name: "discover_social_posts", cost: 2, desc: "Search a niche across every supported network and page through results." },
-  { name: "get_user_posts", cost: 2, desc: "A creator's recent posts, with stats, for pattern spotting." },
-  { name: "get_post_comments", cost: 2, desc: "Top comments on a post — audience language, objections, requests." },
-  { name: "search_creators", cost: 2, desc: "Find creators by keyword, with follower and engagement data." },
-  { name: "get_similar_creators", cost: 2, desc: "Lookalikes for a creator you already know." },
-  { name: "discover_sounds", cost: 2, desc: "Trending audio with playable previews and usage counts." },
-  { name: "discover_hashtags", cost: 2, desc: "Trending hashtags with volumes and whether each is rising or cooling." },
-  { name: "get_post_transcript", cost: 1, desc: "The words actually spoken in a post, read from its caption track." },
-  { name: "analyze_post_fast", cost: 2, desc: "The same read, from the transcript instead of the video. A third of the price." },
-  { name: "write_hooks", cost: 2, desc: "Ten alternative opening lines, grounded in a post or a topic." },
-  { name: "score_draft", cost: 2, desc: "Review your own draft before you film it — scores, fixes, a tighter rewrite." },
-  { name: "repurpose_post", cost: 2, desc: "One post into an X thread, LinkedIn post, carousel and YouTube metadata." },
-  { name: "find_hook_pattern", cost: 2, desc: "A creator's repeatable formula, as templates you can reuse." },
-  { name: "create_variants", cost: 3, desc: "Turn a post that worked into variants you could film next." },
-  { name: "niche_report", cost: 3, desc: "What is working in a niche now: formats, hooks, gaps, what to make." },
-  { name: "analyze_post", cost: 6, free: true, desc: "AI read of one post: hook, why it travels, format, variations to try." },
-  { name: "analyze_comments", cost: 6, free: true, desc: "What the audience is saying: themes, questions, objections, requests." },
-  { name: "compare_posts", cost: 8, free: true, desc: "Why one post beat another, and the one test to run next." },
-  { name: "understand_social_post", cost: 6, free: true, desc: "Multimodal pass over the actual video or images — not just the caption." },
-  { name: "analyze_creator_profile", cost: 15, free: true, desc: "Whole-profile teardown: cadence, formats, what consistently works." },
-];
-
 export function landingPage(publicUrl: string, orchynBase: string): string {
   const cloud = PLATFORMS.map(
     (p) =>
@@ -161,13 +130,15 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
       `<b>${esc(p.name)}</b><span>${esc(p.supports)}</span></div>`
   ).join("");
 
-  const tools = TOOLS.map(
-    (t) =>
-      `<div class="tool"><div class="tool-top"><h3>${esc(t.name)}</h3>` +
-      `<span class="cost">${t.cost} cr</span></div><p>${esc(t.desc)}</p>` +
-      (t.free ? `<span class="free-badge">First use free</span>` : "") +
-      `</div>`
-  ).join("");
+  const tools = TOOLS.filter((t) => t.cost > 0)
+    .sort((a, b) => a.cost - b.cost)
+    .map(
+      (t) =>
+        `<div class="tool"><div class="tool-top"><h3>${esc(t.name)}</h3>` +
+        `<span class="cost">${t.cost} cr</span></div><p>${esc(t.desc)}</p>` +
+        (t.freeFirstUse ? `<span class="free-badge">First use free</span>` : "") +
+        `</div>`
+    ).join("");
 
   const clients = CLIENTS.map(
     (c) => `<div class="client"><b>${esc(c.name)}</b><span>${esc(c.note)}</span></div>`

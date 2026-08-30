@@ -11,6 +11,7 @@
 
 import { landingPage as sitelanding } from "./site/landing.js";
 import { termsPage, privacyPage } from "./site/legal.js";
+import { documentationPage } from "./site/documentation.js";
 import { dashboardPage, dashboardSignedOut } from "./site/dashboard.js";
 import { OrchynClient } from "../../src/shared/orchyn.js";
 import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
@@ -73,6 +74,12 @@ export default {
     if (path === "/api/checkout" && method === "POST") {
       return handleCheckout(request, env);
     }
+    if (path === "/documentation" && method === "GET") {
+      return htmlResponse(200, documentationPage(env.PUBLIC_URL, env.ORCHYN_BASE_URL), CACHEABLE);
+    }
+    if (path === "/docs" && method === "GET") {
+      return new Response(null, { status: 301, headers: { location: "/documentation" } });
+    }
     if (path === "/terms" && method === "GET") {
       return htmlResponse(200, termsPage(env.PUBLIC_URL, env.ORCHYN_BASE_URL), CACHEABLE);
     }
@@ -86,7 +93,7 @@ export default {
       );
     }
     if (path === "/sitemap.xml" && method === "GET") {
-      const pages = ["/", "/terms", "/privacy"];
+      const pages = ["/", "/documentation", "/terms", "/privacy"];
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?>` +
           `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
