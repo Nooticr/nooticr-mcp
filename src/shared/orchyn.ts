@@ -198,7 +198,11 @@ export class OrchynClient {
     }
     const json = (body ?? {}) as Record<string, unknown>;
     const errorMessage =
-      typeof json.error === "string" ? json.error : `orchyn API error (${res.status})`;
+      typeof json.error === "string"
+        ? json.error
+        : // Name the endpoint: a bare status code says nothing about which
+          // call failed, and these surface to the user as tool errors.
+          `orchyn API error (${res.status}) from ${path}`;
 
     if (res.status >= 200 && res.status < 300) {
       return body as T;

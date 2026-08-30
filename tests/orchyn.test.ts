@@ -119,9 +119,11 @@ describe("OrchynClient", () => {
     );
     const client = new OrchynClient(BASE, noToken);
 
+    // The message names the endpoint: these surface to the user as tool
+    // errors, and a bare status code says nothing about which call failed.
     await expect(client.startVideoAnalysis("https://youtu.be/x")).rejects.toMatchObject({
       status: 502,
-      message: "orchyn API error (502)",
+      message: "orchyn API error (502) from /mcp/analyze-post",
     });
   });
 

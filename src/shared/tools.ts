@@ -20,8 +20,6 @@ export const MCP_SERVER_VERSION = "1.23.2";
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
 /** MIME type for MCP Apps HTML resources */
 const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
-/** Default UI resource URI (only used when a tool has no explicit view). */
-const UI_RESOURCE_URI = "ui://orchyn/view";
 
 /**
  * Distinct UI resource URI per tool/view. Claude/ChatGPT create one app
@@ -437,7 +435,6 @@ export function createMcpServer(
     const proxied = proxyUrls(rest) as Record<string, unknown>;
     // Build HTML card for interactive UI
     const post = (rest.post ?? {}) as Record<string, unknown>;
-    const analysis = (rest.analysis ?? {}) as Record<string, unknown>;
     const thumbnailUrl = typeof post.thumbnailUrl === "string" ? proxyImageUrl(post.thumbnailUrl) : "";
     const platform = String(post.platform ?? rest.platform ?? "");
     const creatorHandle = String(post.creatorHandle ?? "");
