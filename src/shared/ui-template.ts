@@ -1091,6 +1091,24 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     el.setAttribute("src",alt);
   },true);
 
+  // A <video> poster cannot report failure: there is no error event for it, so
+  // a dead cover leaves a black stage and nothing notices. TikTok cover
+  // signatures expire in hours, so this is the ordinary case, not the edge -
+  // measured on a two-hour-old payload whose cover already answered 403 while
+  // its video still played. Probing the URL with an Image gives us the error
+  // event the video will not, and the resolver hands back a fresh cover.
+  function healPosters(root){
+    var vids=(root||document).querySelectorAll("video[data-poster-fallback]");
+    for(var i=0;i<vids.length;i++)(function(v){
+      var poster=v.getAttribute("poster")||"",alt=v.getAttribute("data-poster-fallback")||"";
+      v.removeAttribute("data-poster-fallback");
+      if(!poster||!alt||poster===alt)return;
+      var probe=new Image();
+      probe.onerror=function(){v.setAttribute("poster",alt);};
+      probe.src=poster;
+    })(vids[i]);
+  }
+
   // ─── Player registry ───
   // Exclusivity cannot ride on the audio elements alone: a silent slideshow
   // owns no <audio>, so it would happily keep advancing underneath a video
@@ -1377,6 +1395,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     resetAudio();
     setStageMax();
     initMediaPlayers(document);
+    healPosters(document);
     initSoundPlayers(document);
   }
 
@@ -1540,7 +1559,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       // because there it costs a range request.
       var pre=video.indexOf("/media/resolve")>=0?"none":"metadata";
       stage='<video src="'+esc(video)+'" preload="'+pre+'" playsinline'
-        +(thumb?' poster="'+esc(thumb)+'"':"")+"></video>";
+        +(thumb?' poster="'+esc(thumb)+'"':"")
+        +(thumbFallback?' data-poster-fallback="'+esc(thumbFallback)+'"':"")+"></video>";
     }else{
       // A failed slide had nowhere to go. The thumbnail carries a fallback and
       // self-heals through the resolver; slides carried none, so one dead

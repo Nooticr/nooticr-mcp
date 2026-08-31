@@ -199,6 +199,29 @@ test("picks up a window.openai injected after load", async ({ page }) => {
     .toBe(1);
 });
 
+// A <video> poster cannot report failure — there is no error event for it — so
+// a dead cover left a black stage that nothing could notice or retry. TikTok
+// cover signatures expire in hours, so this is the ordinary case: measured on a
+// two-hour-old payload whose cover answered 403 while its video still played.
+test("a dead video poster is swapped for the resolver's", async ({ page }) => {
+  const fresh = "https://api.orchyn.com/media/resolve?url=post&kind=thumbnail&sig=s";
+  await page.route("**/dead-cover.jpg", (r) => r.abort());
+  await page.route("**/media/resolve**", (r) =>
+    r.fulfill({ status: 200, contentType: "image/gif",
+      body: Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64") }));
+  await page.route("**/a.mp4", () => { /* hangs, so nothing else disturbs the poster */ });
+  await renderTemplate(page, { posts: [{
+    platform: "tiktok", contentType: "video", duration: 11, views: 4,
+    creatorHandle: "u", externalUrl: "https://www.tiktok.com/@u/video/1",
+    videoUrl: "https://cdn.example/a.mp4",
+    thumbnailUrl: "https://cdn.example/dead-cover.jpg",
+    thumbnailFallbackUrl: fresh,
+  }] });
+  await expect
+    .poll(async () => page.locator("video").first().getAttribute("poster"), { timeout: 6000 })
+    .toBe(fresh);
+});
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });

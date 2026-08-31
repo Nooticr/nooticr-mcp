@@ -169,6 +169,64 @@ jobs:
           print(f"OK: {len(rows)} tools, {len(res)} resources, both host contracts intact")
           CHECK
 
+      # Per-host verdicts from a third-party host catalog, which is the one
+      # thing the official inspector does not give: it validates the MCP Apps
+      # contract, this one knows what each host does with it. --offline uses the
+      # bundled catalog so the result does not move with someone else's release.
+      #
+      # Gate on "blocked". "degraded" is expected and not ours to fix: seven
+      # hosts (Claude Code, Cline, Goose, n8n, Notion, Perplexity, AgentCore)
+      # render no widgets at all and fall back to the text result, which is the
+      # progressive enhancement the spec asks for.
+      #
+      # `mcpjam apps conformance` is deliberately not run here. It scores 73/100
+      # against us, and both failures are it objecting that our .html resources
+      # are text/html+skybridge rather than the MCP Apps mime — which is the
+      # entire reason those resources exist. Gating on a checker that measures
+      # only one of the two contracts we serve would mean dropping ChatGPT.
+      - name: Host compatibility (MCPJam)
+        run: |
+          set -euo pipefail
+          npx -y @mcpjam/cli@5 compat --offline --format json \
+            --transport stdio --command node --args dist/index.js > compat.json
+          python3 - <<'CHECK'
+          import json, sys
+          d = json.load(open("compat.json"))
+          summary = d.get("summary", {})
+          hosts = d.get("hosts", [])
+          blocked = [h for h in hosts if h.get("verdict") == "blocked"]
+          for h in hosts:
+              print(f"  {h.get('hostLabel'):16} {h.get('verdict')}")
+          fail = []
+          if blocked:
+              fail.append("blocked on " + ", ".join(h.get("hostLabel", "?") for h in blocked))
+
+          # Blocked alone is far too weak a gate. Stripping ui/resourceUri from
+          # every tool blocks nothing — it just quietly drops the working hosts
+          # from nine to four, because a host with no view to render simply
+          # falls back to text and calls that "degraded". So name the two hosts
+          # this product ships for, and hold a floor under the rest.
+          verdicts = {h.get("hostId"): h.get("verdict") for h in hosts}
+          for host_id, label in (("claude", "Claude"), ("chatgpt", "ChatGPT")):
+              if verdicts.get(host_id) != "works":
+                  fail.append(f"{label} is {verdicts.get(host_id)!r}, want 'works'")
+
+          works = summary.get("works", 0)
+          if works < 9:
+              fail.append(f"only {works} hosts working, expected at least 9")
+
+          widgets = (d.get("widgets") or {}).get("total", 0)
+          if widgets < 20:
+              fail.append(f"only {widgets} interactive views advertised")
+
+          if fail:
+              print("::error title=Host compatibility::" + "; ".join(fail))
+              for f in fail:
+                  print(f"  - {f}")
+              sys.exit(1)
+          print(f"OK: {widgets} views, {works} hosts working, Claude and ChatGPT both working")
+          CHECK
+
       # Catches a broken wrangler config or a missing binding before anything
       # has been published.
       - name: Worker build (dry run)
