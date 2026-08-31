@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.4";
+export const MCP_SERVER_VERSION = "1.26.5";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -528,12 +528,6 @@ export function createMcpServer(
         },
        },
       },
-      // `contents` is an array, so one read can answer two hosts. Claude's
-      // entry stays first because Claude is what asks for this URI; a ChatGPT
-      // connector that cached this URI before the .html twin existed scans for
-      // its own mime and finds it here instead of loading a template with no
-      // bridge attached.
-      appsSdkContents(uri, domains, PLATFORM_LINK_DOMAINS),
      ],
     };
    }
@@ -595,23 +589,7 @@ export function createMcpServer(
    async () => {
     const domain = await computeAppDomain();
     return {
-     contents: [
-      appsSdkContents(legacyUri, domains, PLATFORM_LINK_DOMAINS),
-      // Second, for any host that scans the array for the MCP Apps mime
-      // rather than taking the first entry.
-      {
-       uri: legacyUri,
-       mimeType: RESOURCE_MIME_TYPE,
-       text: ORCHYN_UI_TEMPLATE,
-       _meta: {
-        ui: {
-         ...(domain ? { domain } : {}),
-         csp: { resourceDomains: domains },
-         prefersBorder: false,
-        },
-       },
-      },
-     ],
+     contents: [appsSdkContents(legacyUri, domains, PLATFORM_LINK_DOMAINS)],
     };
    }
   );

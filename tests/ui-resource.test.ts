@@ -49,8 +49,11 @@ describe("MCP Apps resource metadata", () => {
       mimeType?: string;
       _meta?: { ui?: { domain?: string; prefersBorder?: boolean; csp?: { resourceDomains?: string[] } } };
     }>;
-    // Claude reads the first entry; a second entry carrying another host's
-    // mime is additive and must not change what Claude is served.
+    // Exactly one. Claude rejects anything else outright — "Unsupported UI
+    // resource content length: 2" — so this is a hard constraint of the host,
+    // not a stylistic preference. A second entry for another host is not
+    // additive; it breaks the view. Serve each host its own URI instead.
+    expect(contents).toHaveLength(1);
     expect(contents[0].mimeType).toBe("text/html;profile=mcp-app");
     const ui = contents[0]._meta?.ui;
     expect(ui?.domain).toBe(EXPECTED_DOMAIN);
@@ -296,29 +299,31 @@ describe("legacy ui://orchyn/view pointer", () => {
   // reads as a broken server with a clean console. Only a stale ChatGPT
   // connector asks for this URI (Claude re-reads ui/resourceUri every call and
   // always uses the per-tool one), so skybridge has to lead.
-  it("leads with the skybridge mime, since only ChatGPT asks for it", async () => {
+  // Only ChatGPT ever asks for this URI: Claude re-reads ui/resourceUri from
+  // tools/list every call and so always uses the per-tool one. A host given the
+  // wrong mime does not error, it just never attaches its bridge — so this has
+  // to be skybridge. One entry, because Claude rejects more than one anywhere.
+  it("serves the skybridge mime, since only ChatGPT asks for it", async () => {
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
     const res = await client.readResource({ uri: "ui://orchyn/view" });
-    const first = res.contents[0] as Record<string, unknown>;
-    expect(first.mimeType).toBe("text/html+skybridge");
-    expect(String(first.text)).toContain("<!DOCTYPE html>");
-    expect((first._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeTruthy();
-    // And still answers a host that scans for the MCP Apps mime.
-    const mimes = res.contents.map((c) => (c as Record<string, unknown>).mimeType);
-    expect(mimes).toContain("text/html;profile=mcp-app");
+    expect(res.contents).toHaveLength(1);
+    const only = res.contents[0] as Record<string, unknown>;
+    expect(only.mimeType).toBe("text/html+skybridge");
+    expect(String(only.text)).toContain("<!DOCTYPE html>");
+    expect((only._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeTruthy();
   });
 
-  // A ChatGPT connector cached between per-tool URIs and the .html twin asks
-  // for the per-tool URI. Claude takes contents[0] there, so its entry leads,
-  // but the skybridge one must still be present.
-  it("answers both hosts on a per-tool URI too", async () => {
+  // The constraint that broke Claude, asserted for every view rather than one:
+  // a read must return exactly one content entry.
+  it("returns exactly one content entry for every registered view", async () => {
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
-    const res = await client.readResource({ uri: RESOURCE_URI });
-    const mimes = res.contents.map((c) => (c as Record<string, unknown>).mimeType);
-    expect(mimes[0]).toBe("text/html;profile=mcp-app");
-    expect(mimes).toContain("text/html+skybridge");
+    const { resources } = await client.listResources();
+    for (const r of resources) {
+      const res = await client.readResource({ uri: r.uri });
+      expect(res.contents, `${r.uri} returned ${res.contents.length} entries`).toHaveLength(1);
+    }
   });
 
   it("is listed, since ChatGPT resolves the pointer against the listing", async () => {
