@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.2";
+export const MCP_SERVER_VERSION = "1.26.3";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -209,13 +209,21 @@ async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolConte
  const structured = proxy.structured as Record<string, unknown> | undefined;
  // Proxy thumbnail URLs in structured content for ChatGPT iframe
  const proxied = structured ? proxyUrls(structured) as Record<string, unknown> : {};
- const textJson = JSON.stringify(proxied ?? {}, null, 2);
+ // `_htmlCards` is the rendered card HTML, and the text block already carries
+ // it as htmlPrefix below. Leaving it in the structured payload sent the same
+ // HTML a second time to the model and a third time into the widget: measured
+ // at 40% of every payload, up to 65KB of a 160KB result, for a field neither
+ // template reads (zero references in either embedded copy - views render from
+ // `posts`). Dropped from both the JSON the model sees and the structured
+ // content the widget receives; the prefix keeps the one copy that is used.
+ const { _htmlCards: _renderedSeparately, ...forHosts } = proxied;
+ const textJson = JSON.stringify(forHosts, null, 2);
  // Replace image URLs in HTML with proxied versions
  const proxiedHtml = htmlPrefix ? proxyImageUrlsInHtml(htmlPrefix) : "";
  const text = proxiedHtml ? `${proxiedHtml}\n\n${textJson}` : textJson;
  return {
   content: [{ type: "text", text }],
-  structuredContent: proxied ?? {},
+  structuredContent: forHosts,
  };
 }
 

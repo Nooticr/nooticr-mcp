@@ -363,3 +363,42 @@ describe("media CSP covers every platform we serve", () => {
     expect(uncovered).toEqual([]);
   });
 });
+
+// `_htmlCards` is the rendered card HTML. The text block already carries it as
+// a prefix, so leaving it in the structured payload sent the same HTML twice to
+// the model and a third time into the widget — measured at 40% of every
+// payload, up to 65KB of a 160KB result — for a field neither template reads.
+describe("structured content is not padded with rendered HTML", () => {
+  const CARDS = "<div>".repeat(4000);
+  const payload = {
+    platform: "tiktok",
+    posts: [{ id: "1", title: "t", externalUrl: "https://www.tiktok.com/@u/video/1" }],
+    _htmlCards: CARDS,
+  };
+
+  async function callWith(structured: Record<string, unknown>) {
+    const client = new Client({ name: "test", version: "1" });
+    const server = createMcpServer(async () => ({
+      callTool: async () => ({
+        contentBlocks: [{ type: "text", text: `${CARDS}\n\n${JSON.stringify(structured)}` }],
+        structured,
+      }),
+    }) as never);
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    return client.callTool({ name: "discover_social_posts", arguments: { niche: "x" } });
+  }
+
+  it("drops _htmlCards from what the widget and model receive", async () => {
+    const res = await callWith(payload) as {
+      structuredContent: Record<string, unknown>;
+      content: { type: string; text: string }[];
+    };
+    expect(res.structuredContent._htmlCards).toBeUndefined();
+    // Still carries the data a view actually renders from.
+    expect(res.structuredContent.posts).toBeTruthy();
+    // The JSON appended after the HTML prefix must not repeat the HTML.
+    const json = res.content[0].text.slice(res.content[0].text.indexOf("\n\n{"));
+    expect(json).not.toContain("_htmlCards");
+  });
+});
