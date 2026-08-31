@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.3";
+export const MCP_SERVER_VERSION = "1.26.4";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -43,6 +43,30 @@ const APPS_SDK_MIME_TYPE = "text/html+skybridge";
 function uiResource(tool: string): string {
  const slug = tool.replace(/[^a-z0-9_]/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
  return `ui://orchyn/${slug || "view"}`;
+}
+
+/**
+ * The skybridge half of a resource read.
+ *
+ * A host that gets the wrong mime does not error — it renders the HTML and
+ * never attaches its bridge, so the view sits on its idle placeholder with no
+ * window.openai and no postMessage. That is indistinguishable from a broken
+ * server unless you know to look for it.
+ */
+function appsSdkContents(uri: string, media: string[], links: string[]) {
+ return {
+  uri,
+  mimeType: APPS_SDK_MIME_TYPE,
+  text: ORCHYN_UI_TEMPLATE,
+  _meta: {
+   "openai/widgetPrefersBorder": false,
+   "openai/widgetCSP": {
+    connect_domains: media,
+    resource_domains: media,
+    redirect_domains: links,
+   },
+  },
+ };
 }
 
 /** The same view, at the URI ChatGPT is told to fetch. */
@@ -504,6 +528,12 @@ export function createMcpServer(
         },
        },
       },
+      // `contents` is an array, so one read can answer two hosts. Claude's
+      // entry stays first because Claude is what asks for this URI; a ChatGPT
+      // connector that cached this URI before the .html twin existed scans for
+      // its own mime and finds it here instead of loading a template with no
+      // bridge attached.
+      appsSdkContents(uri, domains, PLATFORM_LINK_DOMAINS),
      ],
     };
    }
@@ -549,39 +579,37 @@ export function createMcpServer(
  //
  // Re-adding the connector is the real fix; this makes the stale pointer
  // resolve so nobody has to know that.
- for (const [legacyUri, mime] of [
-  ["ui://orchyn/view", RESOURCE_MIME_TYPE],
-  ["ui://orchyn/view.html", APPS_SDK_MIME_TYPE],
- ] as const) {
+ // Resolving the pointer was not enough. A host handed the wrong mime does not
+ // error: it renders the HTML and never attaches its bridge, so the view sits
+ // on its idle placeholder with no window.openai and no postMessage — which is
+ // exactly "Results will appear here" with a clean console. This URI was
+ // registered on Claude's mime, and Claude is the one host that never asks for
+ // it: it re-reads ui/resourceUri from tools/list every call and so always uses
+ // the per-tool URI. Only a stale ChatGPT connector arrives here, so the
+ // skybridge entry leads.
+ for (const legacyUri of ["ui://orchyn/view", "ui://orchyn/view.html"] as const) {
   server.registerResource(
    legacyUri.endsWith(".html") ? "Orchyn View (legacy, Apps SDK)" : "Orchyn View (legacy)",
    legacyUri,
-   { mimeType: mime },
+   { mimeType: APPS_SDK_MIME_TYPE },
    async () => {
     const domain = await computeAppDomain();
     return {
      contents: [
+      appsSdkContents(legacyUri, domains, PLATFORM_LINK_DOMAINS),
+      // Second, for any host that scans the array for the MCP Apps mime
+      // rather than taking the first entry.
       {
        uri: legacyUri,
-       mimeType: mime,
+       mimeType: RESOURCE_MIME_TYPE,
        text: ORCHYN_UI_TEMPLATE,
-       _meta:
-        mime === APPS_SDK_MIME_TYPE
-         ? {
-            "openai/widgetPrefersBorder": false,
-            "openai/widgetCSP": {
-             connect_domains: domains,
-             resource_domains: domains,
-             redirect_domains: PLATFORM_LINK_DOMAINS,
-            },
-           }
-         : {
-            ui: {
-             ...(domain ? { domain } : {}),
-             csp: { resourceDomains: domains },
-             prefersBorder: false,
-            },
-           },
+       _meta: {
+        ui: {
+         ...(domain ? { domain } : {}),
+         csp: { resourceDomains: domains },
+         prefersBorder: false,
+        },
+       },
       },
      ],
     };

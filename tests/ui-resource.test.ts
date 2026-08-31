@@ -49,7 +49,9 @@ describe("MCP Apps resource metadata", () => {
       mimeType?: string;
       _meta?: { ui?: { domain?: string; prefersBorder?: boolean; csp?: { resourceDomains?: string[] } } };
     }>;
-    expect(contents).toHaveLength(1);
+    // Claude reads the first entry; a second entry carrying another host's
+    // mime is additive and must not change what Claude is served.
+    expect(contents[0].mimeType).toBe("text/html;profile=mcp-app");
     const ui = contents[0]._meta?.ui;
     expect(ui?.domain).toBe(EXPECTED_DOMAIN);
     expect(ui?.prefersBorder).toBe(false);
@@ -288,13 +290,35 @@ describe("Apps SDK (ChatGPT) support", () => {
 // answered 404 and the app showed "Failed to fetch template". Claude re-reads
 // ui/resourceUri from tools/list every time, which is why it never noticed.
 describe("legacy ui://orchyn/view pointer", () => {
-  it("still resolves, so a stale connector does not 404", async () => {
+  // Resolving the pointer was not enough. A host handed the wrong mime does not
+  // error — it renders the HTML and never attaches its bridge, so the view sits
+  // on its idle placeholder with no window.openai and no postMessage, which
+  // reads as a broken server with a clean console. Only a stale ChatGPT
+  // connector asks for this URI (Claude re-reads ui/resourceUri every call and
+  // always uses the per-tool one), so skybridge has to lead.
+  it("leads with the skybridge mime, since only ChatGPT asks for it", async () => {
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
     const res = await client.readResource({ uri: "ui://orchyn/view" });
-    const c = res.contents[0] as Record<string, unknown>;
-    expect(c.mimeType).toBe("text/html;profile=mcp-app");
-    expect(String(c.text)).toContain("<!DOCTYPE html>");
+    const first = res.contents[0] as Record<string, unknown>;
+    expect(first.mimeType).toBe("text/html+skybridge");
+    expect(String(first.text)).toContain("<!DOCTYPE html>");
+    expect((first._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeTruthy();
+    // And still answers a host that scans for the MCP Apps mime.
+    const mimes = res.contents.map((c) => (c as Record<string, unknown>).mimeType);
+    expect(mimes).toContain("text/html;profile=mcp-app");
+  });
+
+  // A ChatGPT connector cached between per-tool URIs and the .html twin asks
+  // for the per-tool URI. Claude takes contents[0] there, so its entry leads,
+  // but the skybridge one must still be present.
+  it("answers both hosts on a per-tool URI too", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: RESOURCE_URI });
+    const mimes = res.contents.map((c) => (c as Record<string, unknown>).mimeType);
+    expect(mimes[0]).toBe("text/html;profile=mcp-app");
+    expect(mimes).toContain("text/html+skybridge");
   });
 
   it("is listed, since ChatGPT resolves the pointer against the listing", async () => {
