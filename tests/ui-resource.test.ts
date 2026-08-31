@@ -226,3 +226,58 @@ describe("host bridge methods", () => {
     expect(ORCHYN_UI_TEMPLATE).not.toContain("ui/tool-call");
   });
 });
+
+// ChatGPT would not render any of this: its Apps SDK finds the template only
+// through _meta["openai/outputTemplate"], and expects text/html+skybridge on
+// the resource. With neither, it reports "Failed to fetch template". The two
+// hosts get two resources over the same HTML so that supporting one cannot
+// change what the other is served.
+describe("Apps SDK (ChatGPT) support", () => {
+  it("gives every UI tool an outputTemplate as well as a Claude resourceUri", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const { tools } = await client.listTools();
+    const withUi = tools.filter((t) => (t._meta as Record<string, unknown>)?.["ui/resourceUri"]);
+    expect(withUi.length).toBeGreaterThan(15);
+    for (const t of withUi) {
+      const meta = t._meta as Record<string, unknown>;
+      expect(meta["openai/outputTemplate"], `${t.name} has no outputTemplate`).toBeTruthy();
+      // It must point at the skybridge twin, never at Claude's resource.
+      expect(String(meta["openai/outputTemplate"]))
+        .toBe(`${String(meta["ui/resourceUri"])}.html`);
+    }
+  });
+
+  it("serves the ChatGPT twin as text/html+skybridge with a CSP", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: `${RESOURCE_URI}.html` });
+    const c = res.contents[0] as Record<string, unknown>;
+    expect(c.mimeType).toBe("text/html+skybridge");
+    expect(String(c.text)).toContain("<!DOCTYPE html>");
+    const meta = c._meta as Record<string, Record<string, string[]>>;
+    // Without the CSP the widget loads and then paints nothing.
+    expect(meta["openai/widgetCSP"].resource_domains.join(" ")).toContain("tiktokcdn");
+    expect(meta["openai/widgetCSP"].redirect_domains.join(" ")).toContain("tiktok.com");
+  });
+
+  // The whole point of two resources: Claude's is untouched.
+  it("leaves Claude's resource on its own mime and metadata", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: RESOURCE_URI });
+    const c = res.contents[0] as Record<string, unknown>;
+    expect(c.mimeType).toBe("text/html;profile=mcp-app");
+    expect((c._meta as Record<string, unknown>).ui).toBeTruthy();
+    expect((c._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeUndefined();
+  });
+
+  it("lists both resources for each view", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const { resources } = await client.listResources();
+    const uris = resources.map((r) => r.uri);
+    expect(uris).toContain(RESOURCE_URI);
+    expect(uris).toContain(`${RESOURCE_URI}.html`);
+  });
+});

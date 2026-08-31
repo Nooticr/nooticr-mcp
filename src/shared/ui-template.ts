@@ -608,6 +608,37 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   }
 
   var toolResultReceived=false;
+
+  // ChatGPT hands the result over as a global rather than a message. Its docs
+  // call the postMessage bridge above the portable path and this the
+  // compatibility alias, but a host that only sets the global would leave the
+  // view sitting on its placeholder forever - so read it too. Claude never
+  // defines window.openai, so nothing here runs there.
+  function readHostGlobals(){
+    var api=window.openai;
+    if(!api)return;
+    var out=api.toolOutput;
+    if(out){
+      toolResultReceived=true;
+      // The bridge passes {structuredContent}; the alias passes the structured
+      // content itself. Accept either rather than guessing.
+      render(out.structuredContent?out:{structuredContent:out});
+      setTimeout(reportSize,50);
+    }else if(api.toolInput&&!toolResultReceived){
+      renderLoading(currentTool,api.toolInput);
+    }
+  }
+  window.addEventListener("openai:set_globals",function(ev){
+    var g=ev&&ev.detail?ev.detail.globals:null;
+    if(g){
+      window.openai=window.openai||{};
+      if(g.toolOutput!==undefined)window.openai.toolOutput=g.toolOutput;
+      if(g.toolInput!==undefined)window.openai.toolInput=g.toolInput;
+    }
+    readHostGlobals();
+  },{passive:true});
+  readHostGlobals();
+
   window.addEventListener("message",function(ev){
     var d=ev.data;if(!d||typeof d!=="object")return;
     if(d.id&&pending.has(d.id)){

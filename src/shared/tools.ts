@@ -14,12 +14,25 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.25.1";
+export const MCP_SERVER_VERSION = "1.26.0";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
 /** MIME type for MCP Apps HTML resources */
 const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
+
+/**
+ * ChatGPT will not render the resource above. Its Apps SDK looks for
+ * `_meta["openai/outputTemplate"]` to find the template and expects
+ * `text/html+skybridge` on it, so the profile mime Claude wants reads as
+ * "Failed to fetch template" there.
+ *
+ * The two hosts therefore get two resources over the same HTML, at different
+ * URIs, rather than one resource with a negotiated mime — which is what the
+ * MCP-UI guidance for dual support recommends, and which means nothing about
+ * Claude's path changes.
+ */
+const APPS_SDK_MIME_TYPE = "text/html+skybridge";
 
 /**
  * Distinct UI resource URI per tool/view. Claude/ChatGPT create one app
@@ -30,6 +43,11 @@ const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
 function uiResource(tool: string): string {
  const slug = tool.replace(/[^a-z0-9_]/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
  return `ui://orchyn/${slug || "view"}`;
+}
+
+/** The same view, at the URI ChatGPT is told to fetch. */
+function appsSdkResource(tool: string): string {
+ return `${uiResource(tool)}.html`;
 }
 
 /**
@@ -389,6 +407,21 @@ export function createMcpServer(
   return `Orchyn ${readable || "View"}`;
  }
 
+ // Where the card's outbound "View on <platform>" links go. ChatGPT blocks a
+ // redirect to anything not listed; Claude opens links through the host, so it
+ // needs no equivalent.
+ const PLATFORM_LINK_DOMAINS = [
+  "https://www.tiktok.com",
+  "https://www.instagram.com",
+  "https://www.youtube.com",
+  "https://www.douyin.com",
+  "https://www.xiaohongshu.com",
+  "https://x.com",
+  "https://twitter.com",
+  "https://www.bilibili.com",
+  "https://www.linkedin.com",
+ ];
+
  // Build CSP resourceDomains from env so proxied thumbnails work
  const domains = [
   "https://*.tiktokcdn.com",
@@ -432,6 +465,36 @@ export function createMcpServer(
     };
    }
   );
+
+  // The ChatGPT twin: the same HTML at the URI its Apps SDK is told to fetch,
+  // with the mime that SDK accepts and its own CSP shape. Registered alongside
+  // the resource above rather than replacing it, so no Claude host ever sees a
+  // mime or metadata block it did not ask for.
+  const appsUri = appsSdkResource(tool);
+  server.registerResource(
+   resourceName(tool) + " (Apps SDK)",
+   appsUri,
+   { mimeType: APPS_SDK_MIME_TYPE },
+   async () => ({
+    contents: [
+     {
+      uri: appsUri,
+      mimeType: APPS_SDK_MIME_TYPE,
+      text: ORCHYN_UI_TEMPLATE,
+      _meta: {
+       "openai/widgetPrefersBorder": false,
+       // Thumbnails and video come from our own origin and the platform CDNs.
+       // Without these the widget loads and then paints nothing at all.
+       "openai/widgetCSP": {
+        connect_domains: domains,
+        resource_domains: domains,
+        redirect_domains: PLATFORM_LINK_DOMAINS,
+       },
+      },
+     },
+    ],
+   })
+  );
  }
 
  server.registerTool(
@@ -443,7 +506,13 @@ export function createMcpServer(
     "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
     "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished. AI analysis — 1 free use, then 6 credits per use." +
     "Use when the visuals are the point; for script, hook and structure alone, analyze_post_fast costs a third as much.",
-   _meta: { ui: { resourceUri: uiResource("analyze_post") }, "ui/resourceUri": uiResource("analyze_post") },
+   _meta: {
+    ui: { resourceUri: uiResource("analyze_post") },
+    "ui/resourceUri": uiResource("analyze_post"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("analyze_post"),
+   },
    inputSchema: z
     .object({
      url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
@@ -506,7 +575,13 @@ export function createMcpServer(
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
     "Returns an inline thumbnail image. Consumes 1 orchyn credit (20 free credits included for new users)." +
     "Use when you need the post's facts and media and nothing more; if you want it interpreted, use analyze_post_fast instead.",
-   _meta: { ui: { resourceUri: uiResource("get_social_media") }, "ui/resourceUri": uiResource("get_social_media") },
+   _meta: {
+    ui: { resourceUri: uiResource("get_social_media") },
+    "ui/resourceUri": uiResource("get_social_media"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("get_social_media"),
+   },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -533,7 +608,13 @@ export function createMcpServer(
     'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. ' +
     "Use to find individual posts to look at; use niche_report when you want the pattern across " +
     "them rather than the posts themselves. Consumes 2 orchyn credits (20 free credits included for new users).",
-   _meta: { ui: { resourceUri: uiResource("discover_social_posts") }, "ui/resourceUri": uiResource("discover_social_posts") },
+   _meta: {
+    ui: { resourceUri: uiResource("discover_social_posts") },
+    "ui/resourceUri": uiResource("discover_social_posts"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("discover_social_posts"),
+   },
    inputSchema: z
     .object({
      niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
@@ -569,7 +650,13 @@ export function createMcpServer(
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use to scan one creator's output; use find_hook_pattern when you want their formula extracted rather than the raw list.",
-   _meta: { ui: { resourceUri: uiResource("get_user_posts") }, "ui/resourceUri": uiResource("get_user_posts") },
+   _meta: {
+    ui: { resourceUri: uiResource("get_user_posts") },
+    "ui/resourceUri": uiResource("get_user_posts"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("get_user_posts"),
+   },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
@@ -603,7 +690,13 @@ export function createMcpServer(
     "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
     "engagement patterns, audience insights, variation ideas, collaboration fit. AI analysis \u2014 1 free use, then 15 credits per use." +
     "Use for a full teardown when the visuals matter; find_hook_pattern gives you their formula from captions for a fraction of the price.",
-   _meta: { ui: { resourceUri: uiResource("analyze_creator_profile") }, "ui/resourceUri": uiResource("analyze_creator_profile") },
+   _meta: {
+    ui: { resourceUri: uiResource("analyze_creator_profile") },
+    "ui/resourceUri": uiResource("analyze_creator_profile"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("analyze_creator_profile"),
+   },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
@@ -637,7 +730,13 @@ export function createMcpServer(
     "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
     "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use when you want to read what people actually wrote; use analyze_comments when you want it synthesised into what to do next.",
-   _meta: { ui: { resourceUri: uiResource("get_post_comments") }, "ui/resourceUri": uiResource("get_post_comments") },
+   _meta: {
+    ui: { resourceUri: uiResource("get_post_comments") },
+    "ui/resourceUri": uiResource("get_post_comments"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("get_post_comments"),
+   },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/Douyin/X/Bilibili/LinkedIn)."),
@@ -666,7 +765,13 @@ export function createMcpServer(
     "Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, " +
     "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use when you know the niche but not the names; use get_similar_creators when you already have one creator that works.",
-   _meta: { ui: { resourceUri: uiResource("search_creators") }, "ui/resourceUri": uiResource("search_creators") },
+   _meta: {
+    ui: { resourceUri: uiResource("search_creators") },
+    "ui/resourceUri": uiResource("search_creators"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("search_creators"),
+   },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
@@ -701,7 +806,13 @@ export function createMcpServer(
     "Find lookalike creators for a given handle — TikTok similar-user recommendations or Instagram " +
     "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use when one creator already fits and you want more of the same.",
-   _meta: { ui: { resourceUri: uiResource("get_similar_creators") }, "ui/resourceUri": uiResource("get_similar_creators") },
+   _meta: {
+    ui: { resourceUri: uiResource("get_similar_creators") },
+    "ui/resourceUri": uiResource("get_similar_creators"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("get_similar_creators"),
+   },
    inputSchema: z
     .object({
      username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."),
@@ -730,7 +841,13 @@ export function createMcpServer(
     "Discover trending sounds/music for a keyword on TikTok or Instagram — the sound is a huge ranking " +
     "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use when picking audio for a post, or to spot a sound before it peaks.",
-   _meta: { ui: { resourceUri: uiResource("discover_sounds") }, "ui/resourceUri": uiResource("discover_sounds") },
+   _meta: {
+    ui: { resourceUri: uiResource("discover_sounds") },
+    "ui/resourceUri": uiResource("discover_sounds"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("discover_sounds"),
+   },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
@@ -762,7 +879,13 @@ export function createMcpServer(
     "verbatim rather than an interpretation. Returns plain text with a word count, or " +
     "available:false with a reason when the post has no captions. Consumes 1 orchyn credit." +
     "Use before any analysis when the exact wording matters.",
-   _meta: { ui: { resourceUri: uiResource("get_post_transcript") }, "ui/resourceUri": uiResource("get_post_transcript") },
+   _meta: {
+    ui: { resourceUri: uiResource("get_post_transcript") },
+    "ui/resourceUri": uiResource("get_post_transcript"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("get_post_transcript"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -791,7 +914,13 @@ export function createMcpServer(
     "language they use, and follow-up video ideas grounded in it. Use when the goal is 'what " +
     "should I make next' rather than 'what did people write'. Consumes 6 orchyn credits." +
     "Use when the goal is what to make next rather than what people wrote.",
-   _meta: { ui: { resourceUri: uiResource("analyze_comments") }, "ui/resourceUri": uiResource("analyze_comments") },
+   _meta: {
+    ui: { resourceUri: uiResource("analyze_comments") },
+    "ui/resourceUri": uiResource("analyze_comments"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("analyze_comments"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -820,7 +949,13 @@ export function createMcpServer(
     "one concrete next experiment. Use for 'why did this one work and that one not'. " +
     "Consumes 8 orchyn credits." +
     "Use when two posts differ in performance and you need to know why.",
-   _meta: { ui: { resourceUri: uiResource("compare_posts") }, "ui/resourceUri": uiResource("compare_posts") },
+   _meta: {
+    ui: { resourceUri: uiResource("compare_posts") },
+    "ui/resourceUri": uiResource("compare_posts"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("compare_posts"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
@@ -845,7 +980,13 @@ export function createMcpServer(
     "and whether each is rising, cooling or steady. Filter by country and time window. Use to find " +
     "what to tag, or to spot a wave early. Consumes 2 orchyn credits." +
     "Use to find what to tag, or to spot a wave early.",
-   _meta: { ui: { resourceUri: uiResource("discover_hashtags") }, "ui/resourceUri": uiResource("discover_hashtags") },
+   _meta: {
+    ui: { resourceUri: uiResource("discover_hashtags") },
+    "ui/resourceUri": uiResource("discover_hashtags"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("discover_hashtags"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -875,7 +1016,13 @@ export function createMcpServer(
     "instead of its video frames — a third of the price. Weaker on visual style, just as strong " +
     "on hook, script structure, CTA and audience. Consumes 2 orchyn credits." +
     "Use this by default; reach for analyze_post when the visuals are the point.",
-   _meta: { ui: { resourceUri: uiResource("analyze_post_fast") }, "ui/resourceUri": uiResource("analyze_post_fast") },
+   _meta: {
+    ui: { resourceUri: uiResource("analyze_post_fast") },
+    "ui/resourceUri": uiResource("analyze_post_fast"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("analyze_post_fast"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -902,7 +1049,13 @@ export function createMcpServer(
     "on an existing post (it reads the real transcript), or a topic to start from nothing. " +
     "Consumes 2 orchyn credits." +
     "Use when you know the subject and need openings to choose between.",
-   _meta: { ui: { resourceUri: uiResource("write_hooks") }, "ui/resourceUri": uiResource("write_hooks") },
+   _meta: {
+    ui: { resourceUri: uiResource("write_hooks") },
+    "ui/resourceUri": uiResource("write_hooks"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("write_hooks"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -932,7 +1085,13 @@ export function createMcpServer(
     "execution. Each variant has a hook, the angle that changes, ordered shot beats and a CTA. " +
     "Consumes 3 orchyn credits." +
     "Use after analysing a post to move from why it worked to what to make.",
-   _meta: { ui: { resourceUri: uiResource("create_variants") }, "ui/resourceUri": uiResource("create_variants") },
+   _meta: {
+    ui: { resourceUri: uiResource("create_variants") },
+    "ui/resourceUri": uiResource("create_variants"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("create_variants"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -960,7 +1119,13 @@ export function createMcpServer(
     "Review your own draft BEFORE you film or post it: hook strength, clarity and payoff scores, " +
     "concrete fixes, a rewritten hook and a tightened draft. Consumes 2 orchyn credits." +
     "Use before filming, while changing it is still cheap.",
-   _meta: { ui: { resourceUri: uiResource("score_draft") }, "ui/resourceUri": uiResource("score_draft") },
+   _meta: {
+    ui: { resourceUri: uiResource("score_draft") },
+    "ui/resourceUri": uiResource("score_draft"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("score_draft"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -987,7 +1152,13 @@ export function createMcpServer(
     "Rewrite one post for other surfaces — X thread, LinkedIn post, carousel slides, YouTube " +
     "title/description, newsletter. Consumes 2 orchyn credits." +
     "Use when a post already worked and you want it on other surfaces.",
-   _meta: { ui: { resourceUri: uiResource("repurpose_post") }, "ui/resourceUri": uiResource("repurpose_post") },
+   _meta: {
+    ui: { resourceUri: uiResource("repurpose_post") },
+    "ui/resourceUri": uiResource("repurpose_post"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("repurpose_post"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -1014,7 +1185,13 @@ export function createMcpServer(
     "What is working in a niche right now: dominant formats, hook patterns, what over- and " +
     "underperforms, gaps nobody is filling, and what to make next. Consumes 3 orchyn credits." +
     "Use when entering a niche or deciding what to make next, rather than judging one post.",
-   _meta: { ui: { resourceUri: uiResource("niche_report") }, "ui/resourceUri": uiResource("niche_report") },
+   _meta: {
+    ui: { resourceUri: uiResource("niche_report") },
+    "ui/resourceUri": uiResource("niche_report"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("niche_report"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -1042,7 +1219,13 @@ export function createMcpServer(
     "Extract a creator's repeatable formula from their captions and performance, with " +
     "fill-in-the-blank templates another creator could adapt. Consumes 2 orchyn credits." +
     "Use to reverse-engineer a creator you want to learn from.",
-   _meta: { ui: { resourceUri: uiResource("find_hook_pattern") }, "ui/resourceUri": uiResource("find_hook_pattern") },
+   _meta: {
+    ui: { resourceUri: uiResource("find_hook_pattern") },
+    "ui/resourceUri": uiResource("find_hook_pattern"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("find_hook_pattern"),
+   },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
@@ -1069,7 +1252,13 @@ export function createMcpServer(
    description:
     "Check your orchyn credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools." +
     "Use before a run of paid calls to confirm the balance covers it.",
-   _meta: { ui: { resourceUri: uiResource("check_orchyn_credits") }, "ui/resourceUri": uiResource("check_orchyn_credits") },
+   _meta: {
+    ui: { resourceUri: uiResource("check_orchyn_credits") },
+    "ui/resourceUri": uiResource("check_orchyn_credits"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("check_orchyn_credits"),
+   },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -1089,7 +1278,13 @@ export function createMcpServer(
    description:
     "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call." +
     "Use when the balance is short and the user has agreed to top up.",
-   _meta: { ui: { resourceUri: uiResource("buy_orchyn_credits") }, "ui/resourceUri": uiResource("buy_orchyn_credits") },
+   _meta: {
+    ui: { resourceUri: uiResource("buy_orchyn_credits") },
+    "ui/resourceUri": uiResource("buy_orchyn_credits"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("buy_orchyn_credits"),
+   },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -1136,7 +1331,13 @@ export function createMcpServer(
     "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
     "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. AI analysis \u2014 1 free use, then 6 credits per use." +
     "Use when you need a factual description of what physically happens on screen; analyze_post is the better default for strategy.",
-   _meta: { ui: { resourceUri: uiResource("understand_social_post") }, "ui/resourceUri": uiResource("understand_social_post") },
+   _meta: {
+    ui: { resourceUri: uiResource("understand_social_post") },
+    "ui/resourceUri": uiResource("understand_social_post"),
+    // ChatGPT reads only this one, and reads it to find the
+    // text/html+skybridge twin rather than the Claude resource.
+    "openai/outputTemplate": appsSdkResource("understand_social_post"),
+   },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),
