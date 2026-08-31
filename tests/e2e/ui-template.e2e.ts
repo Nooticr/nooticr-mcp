@@ -174,6 +174,31 @@ test("a repeated set_globals does not re-render the view", async ({ page }) => {
   expect(await page.evaluate(() => document.querySelectorAll(".mp video").length)).toBe(1);
 });
 
+// ChatGPT injects window.openai asynchronously. A single read at parse time
+// finds nothing and never looks again, so the view sat on its placeholder while
+// the host held the result the whole time — which is the "Results will appear
+// here" report. OpenAI's own guidance is to wait for the global and retry.
+test("picks up a window.openai injected after load", async ({ page }) => {
+  await page.route("**/media/**", () => { /* deliberately hangs */ });
+  await page.setContent(ORCHYN_UI_TEMPLATE);
+  // Nothing yet: the host has not injected anything.
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => document.querySelectorAll(".mp").length)).toBe(0);
+
+  // The host arrives late, and never dispatches set_globals.
+  await page.evaluate((d) => {
+    (window as unknown as Record<string, unknown>).openai = { toolOutput: d };
+  }, { posts: [{
+    platform: "tiktok", contentType: "video", duration: 9, views: 3,
+    creatorHandle: "u", externalUrl: "https://www.tiktok.com/@u/video/1",
+    videoUrl: "https://cdn.example/a.mp4",
+  }] });
+
+  await expect
+    .poll(async () => page.evaluate(() => document.querySelectorAll(".mp").length), { timeout: 6000 })
+    .toBe(1);
+});
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });

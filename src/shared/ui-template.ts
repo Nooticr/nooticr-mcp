@@ -640,6 +640,23 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       renderLoading(currentTool,api.toolInput);
     }
   }
+  // window.openai is injected asynchronously — OpenAI's own guidance is to
+  // "wait for window.openai to be available and retry once or twice if data
+  // arrives late". A single read at parse time therefore finds nothing and
+  // never looks again, which is a view sitting on its placeholder while the
+  // host has held the result the whole time.
+  //
+  // So poll briefly, stop the moment anything lands, and give up rather than
+  // spin. Claude never defines the global and delivers over postMessage
+  // instead, so it stops at the first result and costs a few no-op ticks.
+  var hostPolls=0;
+  function pollHostGlobals(){
+    readHostGlobals();
+    if(lastOutRef||toolResultReceived||hostPolls>=40)return;
+    hostPolls++;
+    setTimeout(pollHostGlobals,250);
+  }
+
   window.addEventListener("openai:set_globals",function(ev){
     var g=ev&&ev.detail?ev.detail.globals:null;
     if(g){
@@ -649,7 +666,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     }
     readHostGlobals();
   },{passive:true});
-  readHostGlobals();
+  pollHostGlobals();
 
   window.addEventListener("message",function(ev){
     var d=ev.data;if(!d||typeof d!=="object")return;
