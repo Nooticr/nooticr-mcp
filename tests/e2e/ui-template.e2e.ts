@@ -80,6 +80,33 @@ for (const height of [300, 480, 760]) {
   });
 }
 
+// The card's width used to be derived from --stage-max, which was derived
+// from the height the host had given the frame. That height is a placeholder
+// the host sets while waiting for us to report ours, and it differs every time
+// a virtualising host unmounts a card on scroll and mounts it again -- so the
+// same card settled at 492x277, 706x397 or 738x415 depending on nothing but
+// the placeholder. Size must be a function of the content and the width.
+for (const [label, fmt] of [["landscape", "Long-form"], ["portrait", "Short-form"]] as const) {
+  test(`${label} stage size ignores the height the host starts with`, async ({ page }) => {
+    await page.route("**/media/resolve**", () => { /* deliberately hangs */ });
+    const seen = new Set<string>();
+    for (const start of [300, 480, 700]) {
+      await page.setViewportSize({ width: 760, height: start });
+      await renderTemplate(page, { posts: [{
+        platform: "youtube", contentType: "video", detectedFormat: fmt,
+        duration: fmt === "Long-form" ? 1424 : 42, views: 9,
+        externalUrl: "https://www.youtube.com/watch?v=abcdefghijk",
+        videoFallbackUrl: "https://api.orchyn.com/media/resolve?url=x&kind=video&sig=s",
+      }] });
+      seen.add(await page.locator(".mp-stage").first().evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return `${Math.round(r.width)}x${Math.round(r.height)}`;
+      }));
+    }
+    expect(seen.size, `sizes seen: ${[...seen].join(", ")}`).toBe(1);
+  });
+}
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });

@@ -1315,68 +1315,55 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   function initPlayers(){
     resetPlayers();
     resetAudio();
-    fitViewport();
+    setStageMax();
     initMediaPlayers(document);
     initSoundPlayers(document);
-    refitToContent();
   }
 
-  // ─── Viewport fit ───
-  // The stage must never need scrolling to be seen whole, and never grow
-  // wider than the frame. We cap its height to what the host actually gives
-  // us (visualViewport tracks the on-screen keyboard, so the media reclaims
-  // the space the moment the keyboard is dismissed) and let the aspect ratio
-  // derive the width from there. Only ever clamps downward from HARD_MAX, so
-  // the height we report back to the host can't feed itself.
-  var HARD_MAX=560,RESERVE=96,NARROW=520;
-  function availableHeight(){
-    var vv=window.visualViewport;
-    return (vv&&vv.height)||window.innerHeight||HARD_MAX;
-  }
+  // ─── Stage size ───
+  // Ceiling on the stage height, so a portrait post cannot run the card off
+  // the screen. It is the only thing capping the stage now.
+  var HARD_MAX=560;
   function availableWidth(){
     var vv=window.visualViewport;
     return (vv&&vv.width)||document.documentElement.clientWidth||window.innerWidth||0;
   }
-  // The card takes its width from the stage height via the aspect ratio, so a
-  // short frame collapsed a portrait card to about 112px on a phone while its
-  // 38px controls stayed put - the media ended up narrower than its own
-  // buttons. On a narrow frame the width is the binding constraint, so floor
-  // the stage at whatever keeps the media full-width and let the host scroll.
-  function stageFloor(){
+  // The stage takes its size from the width of the frame and the aspect ratio
+  // of the post. It must not take it from the frame's *height*.
+  //
+  // That height is provisional: the host sets a placeholder, waits for us to
+  // report how tall we are, then resizes. Deriving our width from it (the CSS
+  // takes .mp width from --stage-max via the ratio) made the card a function
+  // of that placeholder. Measured with the same card and the same content,
+  // varying only the height the host started with:
+  //
+  //     starts 300px -> 492x277      starts 560px -> 738x415
+  //     starts 420px -> 706x397      starts 700px -> 738x415
+  //
+  // Deterministic, but the placeholder differs every time a virtualising host
+  // unmounts a card on scroll and mounts it again - which is the "videos get
+  // resized randomly when I scroll or they reload" report.
+  //
+  // So the cap is now fixed. Width comes from the frame, height follows from
+  // the ratio, the cap only stops a portrait post running away, and we report
+  // the height that produces. The host accommodates us rather than the other
+  // way round, which is the only direction that terminates.
+  function setStageMax(){
+    document.documentElement.style.setProperty("--stage-max",HARD_MAX+"px");
+  }
+  // A width change is a real layout change and worth re-reporting; a height
+  // change is the host answering us, and must not feed back.
+  var lastWidth=availableWidth();
+  function onViewportChange(){
     var w=availableWidth();
-    if(!w||w>=NARROW)return 200;
-    return Math.min(HARD_MAX,Math.round(Math.max(0,w-20)*16/9));
+    if(w===lastWidth)return;
+    lastWidth=w;
+    reportSize();
   }
-  function setStageMax(px){
-    document.documentElement.style.setProperty(
-      "--stage-max",Math.max(stageFloor(),Math.min(HARD_MAX,px))+"px");
-  }
-  function fitViewport(){
-    // First pass, before the view exists: reserve a conservative slice for
-    // the card footer and body padding.
-    setStageMax(availableHeight()-RESERVE);
-  }
-  // Second pass, once the view is laid out: measure what the chrome around
-  // the stage actually costs instead of guessing, so the player lands exactly
-  // inside the viewport with no scrollbar. Runs once per render — it reads a
-  // measurement and writes a cap, so it settles rather than looping.
-  function refitToContent(){
-    var stage=document.querySelector(".mp-stage");
-    if(!stage)return;
-    var stageH=stage.getBoundingClientRect().height;
-    if(!stageH)return;
-    var bodyH=document.body.scrollHeight||0;
-    // Only shrink the player to fit when the player is what the view is for.
-    // On a mostly-text view (an analysis) the surrounding copy is far taller
-    // than any viewport, and fitting to it collapsed the media to its floor.
-    if(bodyH>stageH*1.8)return;
-    setStageMax(availableHeight()-Math.max(0,bodyH-stageH));
-  }
-  // The on-screen keyboard shrinks visualViewport; dismissing it gives the
-  // height straight back, so the media returns to full size on its own.
-  function onViewportChange(){fitViewport();refitToContent();reportSize();}
   if(window.visualViewport)window.visualViewport.addEventListener("resize",onViewportChange);
-  window.addEventListener("orientationchange",function(){setTimeout(onViewportChange,120);});
+  window.addEventListener("orientationchange",function(){setTimeout(function(){
+    lastWidth=availableWidth();reportSize();
+  },120);});
 
   function fmtNum(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);}
   function pColor(p){return{tiktok:"#000",douyin:"#000",instagram:"#E4405F",youtube:"#FF0000",xiaohongshu:"#FF2442",x:"#000",twitter:"#1DA1F2",bilibili:"#00A1D6",linkedin:"#0A66C2"}[p]||"#6B7280";}
