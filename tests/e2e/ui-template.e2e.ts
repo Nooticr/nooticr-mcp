@@ -130,6 +130,50 @@ test("a dead slide falls back instead of going black", async ({ page }) => {
     .toBe(true);
 });
 
+// ChatGPT dispatches openai:set_globals for theme, display mode and height
+// changes as well as for results. Rendering on every one rebuilt every <video>
+// and <audio> in the view, which is the flashing users saw -- and Chrome logged
+// 982 "too many WebMediaPlayers already in existence" interventions as the
+// discarded players piled up.
+test("a repeated set_globals does not re-render the view", async ({ page }) => {
+  await page.route("**/media/**", () => { /* deliberately hangs */ });
+  await page.setContent(ORCHYN_UI_TEMPLATE);
+  const payload = { posts: [{
+    platform: "tiktok", contentType: "video", duration: 12, views: 5,
+    creatorHandle: "u", externalUrl: "https://www.tiktok.com/@u/video/1",
+    videoUrl: "https://cdn.example/a.mp4", musicUrl: "https://cdn.example/a.mp3",
+  }] };
+  await page.evaluate((d) => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__made = 0;
+    new MutationObserver((recs) => {
+      for (const r of recs)
+        for (const n of Array.from(r.addedNodes)) {
+          const el = n as HTMLElement;
+          if (!el.querySelectorAll) continue;
+          const n2 = (el.tagName === "VIDEO" ? 1 : 0) + el.querySelectorAll("video").length;
+          (w.__made as number) && 0;
+          w.__made = (w.__made as number) + n2;
+        }
+    }).observe(document.body, { childList: true, subtree: true });
+    w.openai = { toolOutput: d };
+    // Same object every time, as a host reusing its globals does.
+    for (let i = 0; i < 12; i++) {
+      window.dispatchEvent(new CustomEvent("openai:set_globals", {
+        detail: { globals: { theme: i % 2 ? "dark" : "light", toolOutput: d } },
+      }));
+    }
+  }, payload);
+  await page.waitForTimeout(600);
+  // Counting the elements left behind proves nothing: each render replaces the
+  // DOM, so one video survives either way. What matters is how many were
+  // *created* — every discarded one is a WebMediaPlayer Chrome had to hold.
+  const created = await page.evaluate(() => (window as unknown as { __made: number }).__made);
+  expect(created, "media elements created across 12 set_globals events").toBe(1);
+  // And it did render once, rather than being skipped entirely.
+  expect(await page.evaluate(() => document.querySelectorAll(".mp video").length)).toBe(1);
+});
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });

@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.1";
+export const MCP_SERVER_VERSION = "1.26.2";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -422,12 +422,47 @@ export function createMcpServer(
   "https://www.linkedin.com",
  ];
 
- // Build CSP resourceDomains from env so proxied thumbnails work
+ // Every CDN family a card can load media from. The card prefers the raw
+ // platform URL over the proxied one, so these are load-bearing: a host that
+ // enforces this list blocks anything missing, and ChatGPT logged exactly that
+ // ("Loading media from <URL> violates ... media-src").
+ //
+ // Two were wrong rather than merely absent. `*.tiktokcdn.com` does not match
+ // p16-common-sign.tiktokcdn-us.com — a different registrable domain — and
+ // Instagram serves from fbcdn.net as well as cdninstagram.com. Both appear in
+ // live payloads. Claude reads this same list, so the gap was never
+ // ChatGPT-only.
+ //
+ // Kept in step with `referer_for_host` on the server, which is the other
+ // place that has to know every CDN family we fetch from.
  const domains = [
+  // TikTok
   "https://*.tiktokcdn.com",
+  "https://*.tiktokcdn-us.com",
+  "https://*.tiktokv.com",
+  "https://*.tiktok.com",
+  "https://*.byteimg.com",
+  "https://*.ibyteimg.com",
+  // Instagram
   "https://*.cdninstagram.com",
+  "https://*.fbcdn.net",
+  // YouTube
   "https://*.ytimg.com",
   "https://*.googlevideo.com",
+  // Xiaohongshu
+  "https://*.xhscdn.com",
+  // Douyin
+  "https://*.douyinpic.com",
+  "https://*.douyinvod.com",
+  "https://*.douyinstatic.com",
+  // Bilibili — hdslb serves images, bilivideo the streams, and some of those
+  // fan out over Akamai.
+  "https://*.hdslb.com",
+  "https://*.bilivideo.com",
+  "https://*.akamaized.net",
+  // X / Twitter
+  "https://*.twimg.com",
+  // LinkedIn
   "https://*.licdn.com",
   "https://*.linkedin.com",
  ];

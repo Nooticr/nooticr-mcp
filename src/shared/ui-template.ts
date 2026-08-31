@@ -614,17 +614,29 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   // compatibility alias, but a host that only sets the global would leave the
   // view sitting on its placeholder forever - so read it too. Claude never
   // defines window.openai, so nothing here runs there.
+  var lastOutRef=null,lastOutSig="";
   function readHostGlobals(){
     var api=window.openai;
     if(!api)return;
     var out=api.toolOutput;
     if(out){
+      // set_globals fires for theme, display mode and height changes as well
+      // as for results. Rendering on every one of them rebuilt every <video>
+      // and <audio> in the view each time, which is the flashing - and Chrome
+      // logged 982 "too many WebMediaPlayers already in existence"
+      // interventions as the discarded players piled up. Only a genuinely new
+      // result is worth a render.
+      if(out===lastOutRef)return;
+      var sig="";
+      try{sig=JSON.stringify(out);}catch(e){sig="";}
+      if(sig&&sig===lastOutSig){lastOutRef=out;return;}
+      lastOutRef=out;lastOutSig=sig;
       toolResultReceived=true;
       // The bridge passes {structuredContent}; the alias passes the structured
       // content itself. Accept either rather than guessing.
       render(out.structuredContent?out:{structuredContent:out});
       setTimeout(reportSize,50);
-    }else if(api.toolInput&&!toolResultReceived){
+    }else if(api.toolInput&&!toolResultReceived&&!lastOutRef){
       renderLoading(currentTool,api.toolInput);
     }
   }

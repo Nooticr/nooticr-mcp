@@ -314,3 +314,52 @@ describe("legacy ui://orchyn/view pointer", () => {
     expect((c._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeTruthy();
   });
 });
+
+// The card prefers the raw platform URL over the proxied one, so this list is
+// load-bearing: a host that enforces it blocks anything missing, and ChatGPT
+// logged exactly that ("Loading media from <URL> violates ... media-src").
+// Two entries were wrong rather than absent — *.tiktokcdn.com does not match
+// tiktokcdn-us.com, and Instagram also serves from fbcdn.net. Claude reads the
+// same list, so the gap was never ChatGPT-only.
+describe("media CSP covers every platform we serve", () => {
+  const MUST_COVER = [
+    "p16-common-sign.tiktokcdn-us.com",   // TikTok photo mode
+    "v16-webapp-prime.us.tiktok.com",     // TikTok video
+    "instagram.frix7-1.fna.fbcdn.net",    // Instagram
+    "scontent-lhr.cdninstagram.com",
+    "rr3---sn-uqx2-2p0z.googlevideo.com", // YouTube stream
+    "i.ytimg.com",
+    "sns-video-v28.xhscdn.com",           // Xiaohongshu
+    "v3-web.douyinvod.com",               // Douyin
+    "i1.hdslb.com",                       // Bilibili image
+    "upos-sz-mirrorcosov.bilivideo.com",  // Bilibili stream
+    "upos-hz-mirrorakam.akamaized.net",   // Bilibili via Akamai
+  ];
+
+  const matches = (host: string, pattern: string) => {
+    const p = pattern.replace(/^https:\/\//, "");
+    return p.startsWith("*.")
+      ? host === p.slice(2) || host.endsWith(`.${p.slice(2)}`)
+      : host === p;
+  };
+
+  it("lists a pattern for every host a card can load media from", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: RESOURCE_URI });
+    const meta = res.contents[0]._meta as { ui: { csp: { resourceDomains: string[] } } };
+    const patterns = meta.ui.csp.resourceDomains;
+    const uncovered = MUST_COVER.filter((h) => !patterns.some((p) => matches(h, p)));
+    expect(uncovered, `not covered by ${patterns.length} patterns`).toEqual([]);
+  });
+
+  it("gives ChatGPT the same coverage", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: `${RESOURCE_URI}.html` });
+    const meta = res.contents[0]._meta as Record<string, { resource_domains: string[] }>;
+    const patterns = meta["openai/widgetCSP"].resource_domains;
+    const uncovered = MUST_COVER.filter((h) => !patterns.some((p) => matches(h, p)));
+    expect(uncovered).toEqual([]);
+  });
+});
