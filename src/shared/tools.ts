@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.7";
+export const MCP_SERVER_VERSION = "1.26.8";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -46,6 +46,18 @@ function uiResource(tool: string): string {
 }
 
 /**
+ * The view HTML with its tool name substituted in.
+ *
+ * A host serves this from its own URL, so on ChatGPT there is no ui:// path
+ * for the view to read its own identity out of — which is why it fell back to
+ * "Interactive View" and a generic placeholder while Claude, whose URL carries
+ * the URI, named the tool. The server is the one party that always knows.
+ */
+function templateFor(tool: string): string {
+ return ORCHYN_UI_TEMPLATE.replace("__ORCHYN_TOOL__", tool);
+}
+
+/**
  * The skybridge half of a resource read.
  *
  * A host that gets the wrong mime does not error — it renders the HTML and
@@ -53,11 +65,11 @@ function uiResource(tool: string): string {
  * window.openai and no postMessage. That is indistinguishable from a broken
  * server unless you know to look for it.
  */
-function appsSdkContents(uri: string, media: string[], links: string[]) {
+function appsSdkContents(uri: string, media: string[], links: string[], tool = "") {
  return {
   uri,
   mimeType: APPS_SDK_MIME_TYPE,
-  text: ORCHYN_UI_TEMPLATE,
+  text: templateFor(tool),
   _meta: {
    "openai/widgetPrefersBorder": false,
    "openai/widgetCSP": {
@@ -517,7 +529,7 @@ export function createMcpServer(
       {
        uri,
        mimeType: RESOURCE_MIME_TYPE,
-       text: ORCHYN_UI_TEMPLATE,
+       text: templateFor(tool),
        _meta: {
         ui: {
          ...(domain ? { domain } : {}),
@@ -547,7 +559,7 @@ export function createMcpServer(
      {
       uri: appsUri,
       mimeType: APPS_SDK_MIME_TYPE,
-      text: ORCHYN_UI_TEMPLATE,
+      text: templateFor(tool),
       _meta: {
        "openai/widgetPrefersBorder": false,
        // Thumbnails and video come from our own origin and the platform CDNs.

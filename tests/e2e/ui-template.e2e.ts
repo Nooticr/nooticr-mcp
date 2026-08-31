@@ -222,6 +222,30 @@ test("a dead video poster is swapped for the resolver's", async ({ page }) => {
     .toBe(fresh);
 });
 
+// Reported from MCPJam's multi-host view: Claude and Cursor shimmered while
+// ChatGPT showed "Results will appear here as soon as a tool returns" for the
+// whole call. A ChatGPT-shaped host mounts the view as part of a tool call, so
+// window.openai existing with no output yet *is* the loading state — requiring
+// toolInput first meant a host that sets it late, or never, kept the idle
+// placeholder up throughout.
+test("a chatgpt-shaped host with no output yet shows loading, not idle", async ({ page }) => {
+  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.waitForTimeout(200);
+  // Idle before any host appears, which is correct.
+  expect(await page.evaluate(() => /Results will appear here/.test(document.body.innerText))).toBe(true);
+
+  // The host mounts: present, but with neither toolInput nor toolOutput.
+  await page.evaluate(() => { (window as unknown as Record<string, unknown>).openai = {}; });
+  await expect
+    .poll(async () => page.evaluate(() => ({
+      idle: /Results will appear here/.test(document.body.innerText),
+      shimmer: document.querySelectorAll("[class*=sk-]").length,
+    })), { timeout: 5000 })
+    .toEqual({ idle: false, shimmer: expect.any(Number) });
+  expect(await page.evaluate(() => document.querySelectorAll("[class*=sk-]").length))
+    .toBeGreaterThan(0);
+});
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });

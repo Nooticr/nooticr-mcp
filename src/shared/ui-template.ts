@@ -569,12 +569,22 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     setTimeout(reportSize,50);
   }
 
+  // The host serves this HTML from its own URL, so on ChatGPT there is no
+  // ui:// path to read a tool name out of - which is why its view said
+  // "Interactive View" and the generic placeholder while Claude, whose URL
+  // does carry it, named the tool. The server knows which view it is serving,
+  // so it substitutes it here.
+  var BAKED_TOOL="__ORCHYN_TOOL__";
+  function bakedTool(){
+    return BAKED_TOOL.indexOf("ORCHYN_TOOL")>=0?"":BAKED_TOOL;
+  }
+
   function renderIdle(){
     // Extract tool name from URI path segment (e.g. /ui://orchyn/analyze_post → analyze_post)
     // or from ?tool= param if the host passes it.
-    var tool="";
+    var tool=bakedTool();
     var params=new URLSearchParams(window.location.search);
-    tool=params.get("tool")||"";
+    if(!tool)tool=params.get("tool")||"";
     if(!tool){
       var path=window.location.pathname;
       var idx=path.indexOf("ui://orchyn/");
@@ -636,8 +646,15 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       // content itself. Accept either rather than guessing.
       render(out.structuredContent?out:{structuredContent:out});
       setTimeout(reportSize,50);
-    }else if(api.toolInput&&!toolResultReceived&&!lastOutRef){
-      renderLoading(currentTool,api.toolInput);
+    }else if(!toolResultReceived&&!lastOutRef){
+      // A ChatGPT-shaped host mounts this view as part of a tool call, so
+      // "window.openai exists and has no output yet" *is* the loading state.
+      // Requiring toolInput first meant the host that sets it late - or never
+      // - kept the idle placeholder up for the whole call, which is the
+      // "Results will appear here" that showed while Claude and Cursor
+      // shimmered correctly. The give-up path below restores the placeholder
+      // if nothing ever arrives.
+      renderLoading(currentTool||bakedTool(),api.toolInput||{});
     }
   }
   // window.openai is injected asynchronously — OpenAI's own guidance is to
@@ -652,7 +669,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   var hostPolls=0;
   function pollHostGlobals(){
     readHostGlobals();
-    if(lastOutRef||toolResultReceived||hostPolls>=40)return;
+    if(lastOutRef||toolResultReceived)return;
+    if(hostPolls>=40){
+      // Nothing ever came. A view left shimmering forever is worse than one
+      // that says plainly it is waiting, so put the placeholder back.
+      if(window.openai)renderIdle();
+      return;
+    }
     hostPolls++;
     setTimeout(pollHostGlobals,250);
   }
