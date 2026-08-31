@@ -1482,9 +1482,17 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       stage='<video src="'+esc(video)+'" preload="'+pre+'" playsinline'
         +(thumb?' poster="'+esc(thumb)+'"':"")+"></video>";
     }else{
+      // A failed slide had nowhere to go. The thumbnail carries a fallback and
+      // self-heals through the resolver; slides carried none, so one dead
+      // image left a black stage with the music still listed underneath and no
+      // way back - permanently, since nothing retries. The post cover is not
+      // the right slide, but it is the right shape and it heals the same way,
+      // which beats a black card.
+      var slideFb=p.thumbnailFallbackUrl||p.thumbnailProxyUrl||p.thumbnailUrl||"";
       for(var i=0;i<images.length;i++)
         stage+='<img class="mp-slide'+(i===0?" active":"")+'" src="'+esc(images[i])
-          +'" alt="slide '+(i+1)+'" loading="'+(i===0?"eager":"lazy")+'"/>';
+          +'" alt="slide '+(i+1)+'" loading="'+(i===0?"eager":"lazy")+'"'
+          +(slideFb&&slideFb!==images[i]?' data-fallback="'+esc(slideFb)+'"':"")+"/>";
     }
 
     // Overlay: brand badge, slide counter, engagement rail, caption block.

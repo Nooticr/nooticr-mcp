@@ -107,6 +107,29 @@ for (const [label, fmt] of [["landscape", "Long-form"], ["portrait", "Short-form
   });
 }
 
+// A slide whose image dies used to leave a black stage with the music still
+// listed underneath, permanently -- the thumbnail had a fallback and self-healed
+// through the resolver, slides had none and nothing retried.
+test("a dead slide falls back instead of going black", async ({ page }) => {
+  const cover = "https://api.orchyn.com/media/resolve?url=post&kind=thumbnail&sig=s";
+  await page.route("**/slide-*.jpg", (r) => r.abort());
+  await page.route("**/media/resolve**", (r) =>
+    r.fulfill({ status: 200, contentType: "image/gif",
+      // 1x1 transparent gif
+      body: Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64") }));
+  await renderTemplate(page, { posts: [{
+    platform: "tiktok", contentType: "slideshow", slideCount: 3,
+    creatorHandle: "u", externalUrl: "https://www.tiktok.com/@u/photo/1",
+    thumbnailFallbackUrl: cover,
+    mediaItems: [1, 2, 3].map((i) => ({ kind: "image", proxy_url: `https://cdn.example/slide-${i}.jpg` })),
+  }] });
+  await page.waitForTimeout(900);
+  const healed = await page.evaluate(() =>
+    [...document.querySelectorAll(".mp-slide")].map((s) => (s as HTMLImageElement).getAttribute("src")));
+  expect(healed.every((s) => s === "https://api.orchyn.com/media/resolve?url=post&kind=thumbnail&sig=s"))
+    .toBe(true);
+});
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });
