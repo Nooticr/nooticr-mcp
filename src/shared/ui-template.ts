@@ -728,7 +728,16 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     return {
       kind:"video",
       el:v,
-      duration:function(){return isFinite(v.duration)?v.duration:0;},
+      // Until metadata loads the element reports NaN for its duration. With
+      // preload="none" that is the whole time before the first press, and a
+      // scrubber reading 0:00 of 0:00 looks like a card that has failed
+      // rather than one waiting. The listing already told us how long the
+      // post is, so fall back to that.
+      duration:function(){
+        if(isFinite(v.duration)&&v.duration>0)return v.duration;
+        var d=Number(box.getAttribute("data-mp-dur"))||0;
+        return d>0?d:0;
+      },
       time:function(){return v.currentTime||0;},
       paused:function(){return v.paused;},
       play:function(){var r=v.play();if(r&&r.catch)r.catch(function(){});},
@@ -1058,7 +1067,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       for(var i=0;i<entries.length;i++){
         var e=entries[i],rec=e.target.__mpRec;
         if(!rec)continue;
-        if(e.intersectionRatio>=0.6){rec.wasVisible=true;continue;}
+        if(e.intersectionRatio>=0.6){rec.wasVisible=true;warmMedia(e.target);continue;}
         // Only a card that was genuinely on screen and has scrolled away
         // stops. Without the transition check, a smooth-scroll that is still
         // settling reads as "off screen" and kills playback the instant the
@@ -1079,6 +1088,28 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     if(document.hidden)stopAllPlayers();
   });
   window.addEventListener("pagehide",stopAllPlayers);
+
+  // Resolver-backed video costs eight to twenty-five seconds before a URL
+  // comes back. That is the provider's own latency, measured across repeated
+  // calls for the same video, and they do not cache it - so nothing we do on
+  // our side makes the *first* one quick. Left until the play button is
+  // pressed, all of it is spent staring at a spinner, which is what "loads
+  // indefinitely" was.
+  //
+  // A card that is genuinely on screen therefore warms itself, once. Metadata
+  // only - a small range request, not the video - and it primes the resolve
+  // cache so the press that follows is instant. Cards nobody scrolls to cost
+  // nothing, which is the whole reason preload is "none" to begin with.
+  function warmMedia(box){
+    if(box.__mpWarm)return;
+    var v=box.querySelector("video");
+    if(!v)return;
+    var src=v.getAttribute("src")||"";
+    if(src.indexOf("/media/resolve")<0||v.preload!=="none")return;
+    box.__mpWarm=true;
+    v.preload="metadata";
+    try{v.load();}catch(e){}
+  }
 
   function initMediaPlayer(box){
     if(box.__mpInit)return;
@@ -1498,6 +1529,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     var label=(p.creatorHandle?"@"+p.creatorHandle+" — ":"")+(isSlideshow?"slideshow":"video");
     lastPlayerAr=ar;
     return '<div class="mp '+ar+'" id="'+id+'" data-mp="'+(isSlideshow?"slides":"video")+'"'
+      +(Number(p.duration)>0?' data-mp-dur="'+Math.floor(Number(p.duration))+'"':"")
       +(lastVideoFallback?' data-mp-fallback="'+esc(lastVideoFallback)+'"':"")
       +(isSlideshow?' data-slides="'+images.length+'"':"")
       +' tabindex="0" role="group" aria-label="'+esc(label)+'">'

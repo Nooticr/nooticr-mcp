@@ -413,16 +413,43 @@ test.describe("media source", () => {
     expect(initial.fallback).toBe("https://api.orchyn.com/media/proxy?url=enc");
   });
 
-  // A /media/resolve link makes the server download the whole video with
-  // yt-dlp before it answers. Preloading metadata for every card on screen
-  // therefore starts a full download per card, unprompted -- which is what
-  // got us rate limited by Bilibili on an eight-result page.
-  test("does not preload a resolver-backed video", async ({ page }) => {
+  // A /media/resolve link is expensive on the server side: a provider call
+  // that takes eight to twenty-five seconds, or a full yt-dlp download.
+  // Preloading every card on a page of eight therefore pays that eight times
+  // over for cards nobody looks at -- which is what got us rate limited by
+  // Bilibili. Only a card actually on screen may warm itself, and only once.
+  test("only the card on screen warms a resolver-backed video", async ({ page }) => {
     await page.route("**/media/resolve**", () => { /* deliberately hangs */ });
-    await render(page, { ...BASE, platform: "bilibili", duration: 269,
+    await page.setViewportSize({ width: 390, height: 700 });
+    const posts = Array.from({ length: 8 }, (_, i) => ({
+      ...BASE, platform: "bilibili", duration: 269, id: `p${i}`,
+      externalUrl: `https://www.bilibili.com/video/BV${i}`,
+      videoFallbackUrl: `https://api.orchyn.com/media/resolve?url=enc${i}&kind=video&sig=s`,
+    }));
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate((d) => window.postMessage(
+      { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"), { posts });
+    await page.waitForTimeout(800);
+
+    const preloads = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("video")).map((v) => v.preload));
+    // Whatever the layout does with the rest, the ones out of sight must not
+    // have started anything.
+    expect(preloads.length).toBeGreaterThan(1);
+    expect(preloads[preloads.length - 1]).toBe("none");
+    expect(preloads.filter((p) => p === "metadata").length).toBeLessThan(preloads.length);
+  });
+
+  // With preload="none" the browser knows nothing about the video until the
+  // first press, so the scrubber read "0:00 / 0:00" and the card looked like
+  // it had failed before anyone touched it. The listing already carries the
+  // duration.
+  test("shows the real duration before anything has loaded", async ({ page }) => {
+    await page.route("**/media/resolve**", () => { /* deliberately hangs */ });
+    await render(page, { ...BASE, platform: "youtube", duration: 1424,
       videoFallbackUrl: "https://api.orchyn.com/media/resolve?url=enc&kind=video&sig=s" });
-    expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("preload")))
-      .toBe("none");
+    const shown = await page.locator(".mp-dur").first().textContent();
+    expect(shown).toBe("23:44");
   });
 
   test("still preloads a direct cdn video", async ({ page }) => {
