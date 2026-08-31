@@ -154,6 +154,19 @@ jobs:
         with:
           node-version: 22
 
+      # Both installs, and the root one is not optional. The Worker bundles
+      # ../src/shared/*, and esbuild resolves a bare import by walking up from
+      # the file that wrote it — so `@modelcontextprotocol/sdk` and `zod` are
+      # looked for in <root>/node_modules, never in cloudflare/node_modules,
+      # which is a sibling of src/ rather than an ancestor. Declaring them in
+      # cloudflare/package.json is not enough on its own.
+      #
+      # The verify job happens to install both, which is why its
+      # `wrangler deploy --dry-run` passed while this job failed on the same
+      # commit.
+      - name: Install (root)
+        run: npm ci --no-audit --no-fund
+
       - name: Install (worker)
         working-directory: cloudflare
         run: npm ci --no-audit --no-fund
