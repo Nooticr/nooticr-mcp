@@ -14,7 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.0";
+export const MCP_SERVER_VERSION = "1.26.1";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -494,6 +494,55 @@ export function createMcpServer(
      },
     ],
    })
+  );
+ }
+
+ // Legacy alias. Before per-tool URIs (0159155) every view lived at
+ // ui://orchyn/view, and ChatGPT caches a connector's template pointer at the
+ // time the connector is created and never refreshes it — so a connector made
+ // before that change still asks for ui://orchyn/view and gets a 404 from its
+ // own widget backend ("Failed to fetch template"). Claude re-reads
+ // ui/resourceUri from tools/list each time, which is why only ChatGPT saw it.
+ //
+ // Re-adding the connector is the real fix; this makes the stale pointer
+ // resolve so nobody has to know that.
+ for (const [legacyUri, mime] of [
+  ["ui://orchyn/view", RESOURCE_MIME_TYPE],
+  ["ui://orchyn/view.html", APPS_SDK_MIME_TYPE],
+ ] as const) {
+  server.registerResource(
+   legacyUri.endsWith(".html") ? "Orchyn View (legacy, Apps SDK)" : "Orchyn View (legacy)",
+   legacyUri,
+   { mimeType: mime },
+   async () => {
+    const domain = await computeAppDomain();
+    return {
+     contents: [
+      {
+       uri: legacyUri,
+       mimeType: mime,
+       text: ORCHYN_UI_TEMPLATE,
+       _meta:
+        mime === APPS_SDK_MIME_TYPE
+         ? {
+            "openai/widgetPrefersBorder": false,
+            "openai/widgetCSP": {
+             connect_domains: domains,
+             resource_domains: domains,
+             redirect_domains: PLATFORM_LINK_DOMAINS,
+            },
+           }
+         : {
+            ui: {
+             ...(domain ? { domain } : {}),
+             csp: { resourceDomains: domains },
+             prefersBorder: false,
+            },
+           },
+      },
+     ],
+    };
+   }
   );
  }
 

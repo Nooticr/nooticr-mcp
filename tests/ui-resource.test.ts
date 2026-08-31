@@ -281,3 +281,36 @@ describe("Apps SDK (ChatGPT) support", () => {
     expect(uris).toContain(`${RESOURCE_URI}.html`);
   });
 });
+
+// A ChatGPT connector caches its template pointer when it is created and never
+// refreshes it. Connectors made before per-tool URIs (0159155) still ask for
+// ui://orchyn/view, which stopped existing — so ChatGPT's widget backend
+// answered 404 and the app showed "Failed to fetch template". Claude re-reads
+// ui/resourceUri from tools/list every time, which is why it never noticed.
+describe("legacy ui://orchyn/view pointer", () => {
+  it("still resolves, so a stale connector does not 404", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: "ui://orchyn/view" });
+    const c = res.contents[0] as Record<string, unknown>;
+    expect(c.mimeType).toBe("text/html;profile=mcp-app");
+    expect(String(c.text)).toContain("<!DOCTYPE html>");
+  });
+
+  it("is listed, since ChatGPT resolves the pointer against the listing", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const uris = (await client.listResources()).resources.map((r) => r.uri);
+    expect(uris).toContain("ui://orchyn/view");
+    expect(uris).toContain("ui://orchyn/view.html");
+  });
+
+  it("serves the skybridge variant of the legacy pointer too", async () => {
+    const client = new Client({ name: "test", version: "1" });
+    await connect(client);
+    const res = await client.readResource({ uri: "ui://orchyn/view.html" });
+    const c = res.contents[0] as Record<string, unknown>;
+    expect(c.mimeType).toBe("text/html+skybridge");
+    expect((c._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeTruthy();
+  });
+});
