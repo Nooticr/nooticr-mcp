@@ -434,16 +434,24 @@ const ANALYSIS = {
   },
 };
 
-test("the analysis player uses the proxied media, not the signed CDN url", async ({ page }) => {
+// The player starts on the platform URL by design and keeps the proxy as its
+// one retry, so what this asserts is the *outcome* once the signed CDN link
+// refuses the frame. It used to leave that link unrouted and read the src at a
+// fixed 500ms, which made it a race against DNS: it passed on CI, where the
+// failure lands fast enough for the retry to have fired, and failed locally,
+// where it does not. Fail the link deliberately and wait for the swap.
+test("the analysis player falls back to the proxy when the signed CDN url dies", async ({ page }) => {
+  await page.route("**/expiring/video.mp4", (r) => r.abort());
   await page.setContent(ORCHYN_UI_TEMPLATE);
   await page.evaluate(
     (d) => window.postMessage(
       { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
     ANALYSIS,
   );
-  await page.waitForTimeout(500);
-  const src = await page.locator("video").first().getAttribute("src");
-  expect(src).toBe(ANALYSIS.post.videoProxyUrl);
+  // The initial choice is the platform URL — one less hop that can fail.
+  await expect
+    .poll(async () => page.locator("video").first().getAttribute("src"), { timeout: 6000 })
+    .toBe(ANALYSIS.post.videoProxyUrl);
 });
 
 test("analysis actions are offered once each and call their tool", async ({ page }) => {
@@ -511,6 +519,173 @@ test("external links ask the host to open them", async ({ page }) => {
   const open = sent.find((m) => m.method === "ui/open-link");
   expect(open, `expected ui/open-link, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
   expect(open!.params).toEqual({ url: POSTS[0].externalUrl });
+});
+
+// Reported from ChatGPT: pressing Compare inside the view said "Copy failed"
+// and nothing ran. ChatGPT's Apps SDK does not answer the MCP Apps postMessage
+// bridge — a widget there invokes a tool with window.openai.callTool and opens
+// a link with window.openai.openExternal. The view only ever posted tools/call
+// and ui/open-link, so every button posted into the void, waited out its
+// 1500ms timeout and fell through to the clipboard, which a sandboxed widget
+// iframe has no permission to write either. Hence the message, and hence
+// nothing happening.
+test.describe("chatgpt host actions", () => {
+  // The Apps SDK surface, plus a clipboard that rejects the way a sandboxed
+  // widget iframe's does — so a regression lands on "Copy failed", not on a
+  // silent pass because the fallback happened to work.
+  const asChatGpt = async (page: Page, payload: unknown) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate((d) => {
+      const w = window as unknown as Record<string, unknown>;
+      w.__sent = [];
+      const orig = window.parent.postMessage.bind(window.parent);
+      window.parent.postMessage = (m: unknown, o: string) => {
+        (w.__sent as unknown[]).push(JSON.parse(JSON.stringify(m)));
+        return orig(m as never, o as never);
+      };
+      w.__called = [];
+      w.__opened = [];
+      if (!navigator.clipboard)
+        Object.defineProperty(navigator, "clipboard", { value: {}, configurable: true });
+      navigator.clipboard.writeText = () =>
+        Promise.reject(new DOMException("Write permission denied.", "NotAllowedError"));
+      w.openai = {
+        toolOutput: d,
+        callTool: async (name: string, args: unknown) => {
+          (w.__called as unknown[]).push({ name, args });
+          return { content: [] };
+        },
+        openExternal: (o: { href: string }) => { (w.__opened as unknown[]).push(o.href); },
+      };
+      window.dispatchEvent(new CustomEvent("openai:set_globals",
+        { detail: { globals: { toolOutput: d } } }));
+    }, payload);
+    await page.waitForTimeout(600);
+  };
+
+  const readSpies = (page: Page) => page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>;
+    return {
+      called: w.__called as { name: string; args: unknown }[],
+      opened: w.__opened as string[],
+      bridge: (w.__sent as { method: string }[]).map((m) => m.method).filter(Boolean),
+    };
+  });
+
+  test("Compare runs the tool instead of failing to copy", async ({ page }) => {
+    await asChatGpt(page, { posts: POSTS });
+    await page.locator(".mp-pick").nth(0).click();
+    await page.locator(".mp-pick").nth(1).click();
+    await expect(page.locator("#pickgo")).toBeEnabled();
+    await page.locator("#pickgo").click();
+    await page.waitForTimeout(400);
+
+    const { called, bridge } = await readSpies(page);
+    expect(called).toEqual([{
+      name: "compare_posts",
+      args: { urls: [POSTS[0].externalUrl, POSTS[1].externalUrl] },
+    }]);
+    // The dead bridge must not be used when the host offers its own API.
+    expect(bridge).not.toContain("tools/call");
+    await expect(page.locator("#pickgo")).not.toHaveText(/failed/i);
+  });
+
+  test("every analysis action button reaches the tool", async ({ page }) => {
+    await asChatGpt(page, ANALYSIS);
+    const tools = await page.evaluate(
+      () => [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai")));
+    expect(tools).toEqual(["create_variants", "write_hooks", "repurpose_post", "analyze_comments"]);
+
+    for (const tool of tools) {
+      await page.locator(`.ai-btn[data-ai="${tool}"]`).click();
+      await page.waitForTimeout(200);
+      await expect(page.locator(`.ai-btn[data-ai="${tool}"]`)).not.toContainText(/failed|Try in chat/i);
+      await page.waitForTimeout(1700);   // let the label restore before the next
+    }
+    const { called, bridge } = await readSpies(page);
+    expect(called.map((c) => c.name)).toEqual(tools);
+    expect(called.every((c) => JSON.stringify(c.args) === JSON.stringify({ url: ANALYSIS.post.externalUrl }))).toBe(true);
+    expect(bridge).not.toContain("tools/call");
+  });
+
+  test("a link leaves through openExternal", async ({ page }) => {
+    await asChatGpt(page, { posts: POSTS });
+    await page.locator(".mp-open").first().click();
+    await page.waitForTimeout(300);
+    const { opened, bridge } = await readSpies(page);
+    expect(opened).toEqual([POSTS[0].externalUrl]);
+    expect(bridge).not.toContain("ui/open-link");
+  });
+});
+
+// The bug as reported, and it was on Claude: pressing Compare said "Copy
+// failed" while the host was running the tool perfectly well. The fallback
+// fired at 1500ms — but a tool call is not a UI event. Measured against the
+// live server, discover_social_posts takes 10.3s and compare_posts 10.4s, so
+// the deadline expired seven times over on the ordinary path, every time. The
+// user was told the call had failed, the clipboard fallback then failed too
+// (a sandboxed widget iframe has no clipboard-write grant), and the real
+// result — when it arrived — was dropped on the floor.
+test("a slow tool call is not reported as a failure", async ({ page }) => {
+  const RESULT = {
+    country: "US", days: 7,
+    hashtags: [{ hashtag: "compared", posts: 1, views: 2, trend: "rising", url: "https://x.com" }],
+  };
+  // The view has to sit in a frame whose parent is the host. At top level
+  // window.parent is the view itself, so the tools/call it posts arrives back
+  // at its own listener and resolves the very request it just made — which
+  // makes any timing assertion here vacuous.
+  await page.setContent(
+    `<!doctype html><body style="margin:0"><iframe id="w" style="width:420px;height:900px;border:0"></iframe></body>`);
+  await page.evaluate(({ tpl, result }) => {
+    const f = document.getElementById("w") as HTMLIFrameElement;
+    window.addEventListener("message", (ev) => {
+      const d = ev.data as { id?: number; method?: string };
+      if (!d || d.id == null || !d.method) return;
+      const isCall = d.method === "tools/call";
+      // Handshake at once, tool four seconds later: well past the old 1500ms
+      // deadline, well inside what a real call takes.
+      setTimeout(() => f.contentWindow?.postMessage(
+        { jsonrpc: "2.0", id: d.id, result: isCall ? { structuredContent: result } : {} }, "*"),
+        isCall ? 4000 : 0);
+    });
+    f.srcdoc = tpl;
+  }, { tpl: ORCHYN_UI_TEMPLATE, result: RESULT });
+  await page.waitForTimeout(400);
+
+  const inner = page.frames().find((f) => f !== page.mainFrame())!;
+  await inner.evaluate(() => {
+    // A sandboxed widget iframe carries no clipboard-write grant, so the
+    // fallback this used to take cannot succeed either.
+    if (!navigator.clipboard)
+      Object.defineProperty(navigator, "clipboard", { value: {}, configurable: true });
+    navigator.clipboard.writeText = () =>
+      Promise.reject(new DOMException("Write permission denied.", "NotAllowedError"));
+  });
+  await inner.evaluate((d) => window.postMessage(
+    { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"), { posts: POSTS });
+  await page.waitForTimeout(700);
+
+  const frame = page.frameLocator("#w");
+  await frame.locator(".mp-pick").nth(0).click();
+  await frame.locator(".mp-pick").nth(1).click();
+  await expect(frame.locator("#pickgo")).toBeEnabled();
+  await frame.locator("#pickgo").click();
+
+  // Watch the whole flight rather than sampling the end: the old build showed
+  // the failure at 1.5s and had restored the idle label by ~3.3s, so a single
+  // late assertion would call this fixed while it was broken.
+  for (let i = 0; i < 16; i++) {
+    await page.waitForTimeout(250);
+    const shown = await inner.evaluate(() => document.getElementById("app")?.innerText || "");
+    expect(shown, `a failure was reported ${i * 250}ms into a call the host was still running`)
+      .not.toMatch(/Copy failed|Try in chat/i);
+  }
+
+  // And the response is not merely awaited, it is rendered.
+  await expect.poll(async () =>
+    inner.evaluate(() => document.getElementById("app")?.textContent || ""), { timeout: 8000 })
+    .toContain("compared");
 });
 
 test("the open button sits in the overlay, not in a footer row", async ({ page }) => {
