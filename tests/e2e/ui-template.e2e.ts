@@ -1081,3 +1081,302 @@ test.describe("slideshow detection", () => {
     expect(m.mode).toBe("slides");
   });
 });
+
+/**
+ * Brand monitoring.
+ *
+ * The screen this replaced put every comment at the same weight: a complaint
+ * under a 25K-upvote thread read exactly like one under a post nobody saw,
+ * there was no way to narrow a nine-platform sweep, and comments could only be
+ * picked one at a time. What is asserted here is the triage the redesign is
+ * for — the comment leads, the post carries its reach, the counts filter, and
+ * a selection reaches the host as ids the tool itself issued.
+ */
+test.describe("brand monitoring", () => {
+  const thread = (
+    platform: string,
+    title: string,
+    reach: Record<string, number>,
+    mentions: Array<Record<string, unknown>>,
+    aboutTerm = false,
+  ) => ({
+    post: {
+      platform, title, externalUrl: `https://${platform}.example/p/${title.length}`, ...reach,
+    },
+    postIsAboutTerm: aboutTerm,
+    mentionCount: mentions.length,
+    mentions,
+  });
+
+  const MENTIONS = {
+    term: "nike",
+    since: "2026-01-01",
+    searched: ["reddit", "youtube", "tiktok"],
+    totalMentions: 4,
+    totalThreads: 3,
+    byPlatform: { reddit: 3, tiktok: 1, youtube: 0 },
+    hasMore: true,
+    nextOffset: 3,
+    unavailable: [{ platform: "weibo", reason: "provider returned 400" }],
+    threads: [
+      thread("reddit", "Down 75%, insiders are buying", { likes: 25000, comments: 1900 }, [
+        { id: "reddit:a:0", text: "nike keeps missing, and nike knows it", username: "one",
+          likes: 17, postedAt: "2026-08-11T00:00:00Z", hits: 2 },
+        { id: "reddit:a:1", text: "asics will never catch up to nike", username: "two",
+          likes: 2, postedAt: "2026-08-19T00:00:00Z", hits: 1 },
+      ]),
+      thread("reddit", "Blown away", { likes: 530, comments: 186 }, [
+        { id: "reddit:b:0", text: "Nike will keep coming up with materials", username: "three",
+          likes: 5, postedAt: "2026-08-28T00:00:00Z", hits: 1 },
+      ]),
+      thread("tiktok", "haul", { views: 1200000, likes: 40 }, [
+        { id: "tiktok:c:0", text: "wearing nike today", username: "four",
+          likes: 0, postedAt: "2026-02-02T00:00:00Z", hits: 1 },
+      ]),
+    ],
+  };
+
+  const text = (page: Page, sel: string) => page.locator(sel).allInnerTexts();
+
+  test("the comment leads, and its attribution sits under it", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    // Reading order inside a row, which is the whole point of the layout: the
+    // words being scanned come first, the author second.
+    const order = await page.locator(".mention-body").first()
+      .evaluate((el) => [...el.children].map((c) => c.className));
+    expect(order).toEqual(["mention-text", "mention-meta"]);
+    // And the comment sits above the fold of its own row.
+    const [comment, meta] = await page.locator(".mention").first().evaluate((el) => [
+      el.querySelector(".mention-text")!.getBoundingClientRect().top,
+      el.querySelector(".mention-meta")!.getBoundingClientRect().top,
+    ]);
+    expect(comment).toBeLessThan(meta);
+  });
+
+  test("shows how far the post carrying a comment actually reached", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    // Without this, a comment under a 25K thread and one under a dead post are
+    // indistinguishable, which is the judgement the screen exists to support.
+    expect(await text(page, ".mgroup-reach")).toEqual([
+      "25.0K likes · 1.9K comments",
+      "530 likes · 186 comments",
+      "1.2M views · 40 likes",
+    ]);
+  });
+
+  test("marks every occurrence of the term, not just the first", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    // The first comment names it twice; a single-match highlight would hide
+    // the repetition the hit badge is claiming.
+    const first = page.locator(".mention").first();
+    await expect(first.locator("mark")).toHaveCount(2);
+    await expect(first.locator(".mention-hits")).toHaveText("×2");
+    // Nothing is claimed for a comment that names it once.
+    await expect(page.locator(".mention").nth(1).locator(".mention-hits")).toHaveCount(0);
+  });
+
+  test("counts narrow the list without another paid call", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    await expect(page.locator(".mgroup")).toHaveCount(3);
+    await page.locator('.mchip[data-filter="tiktok"]').click();
+    await expect(page.locator(".mgroup")).toHaveCount(1);
+    await expect(page.locator(".mgroup-plat")).toHaveText(/TikTok/);
+    // A sandboxed view cannot re-query, so narrowing must be local.
+    await page.locator('.mchip[data-filter=""]').click();
+    await expect(page.locator(".mgroup")).toHaveCount(3);
+  });
+
+  test("a platform that returned nothing is shown but is not a dead end", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    // "we looked at YouTube and it was quiet" is an answer worth keeping; a
+    // filter to it is an empty screen, so the chip does not offer one.
+    const quiet = page.locator('.mchip[data-filter="youtube"]');
+    await expect(quiet).toHaveText(/YouTube\s*0/);
+    await expect(quiet).toBeDisabled();
+    // And a platform that could not answer at all is named, not silently missing.
+    await expect(page.locator(".mention-down")).toContainText("Weibo");
+  });
+
+  test("sorting by recency reorders without losing anything", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    const titles = () => text(page, ".mgroup-title");
+    expect(await titles()).toEqual(["Down 75%, insiders are buying", "Blown away", "haul"]);
+    await page.locator('.msort-btn[data-sort="new"]').click();
+    // Newest comment in each group: 2026-08-28, 2026-08-19, 2026-02-02.
+    expect(await titles()).toEqual(["Blown away", "Down 75%, insiders are buying", "haul"]);
+    await expect(page.locator(".mention")).toHaveCount(4);
+  });
+
+  test("a group can be selected in one go, and the selection survives a filter", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    await page.locator("[data-group-all]").first().click();
+    await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
+    await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    // Narrowing the view is not unpicking: reddit still holds both.
+    await page.locator('.mchip[data-filter="reddit"]').click();
+    await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
+    await page.locator('.mchip[data-filter="tiktok"]').click();
+    await expect(page.locator(".mention-pick:checked")).toHaveCount(0);
+    await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    await page.locator('.mchip[data-filter=""]').click();
+    await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
+  });
+
+  test("hands the host the ids the tool issued, not the text it rendered", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate((d) => {
+      const w = window as unknown as Record<string, unknown>;
+      w.__called = [];
+      w.openai = {
+        toolOutput: d,
+        callTool: async (name: string, args: unknown) => {
+          (w.__called as unknown[]).push({ name, args });
+          return { content: [] };
+        },
+      };
+      window.dispatchEvent(new CustomEvent("openai:set_globals",
+        { detail: { globals: { toolOutput: d } } }));
+    }, MENTIONS);
+    await page.waitForTimeout(600);
+    await page.locator('.mention[data-mention-id="reddit:a:0"] .mention-pick').click();
+    await page.locator('.mention[data-mention-id="tiktok:c:0"] .mention-pick').click();
+    await page.locator("#pickgo").click();
+    await page.waitForTimeout(400);
+    const called = await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
+    // Addressable is the point: another tool has to be able to act on exactly
+    // these comments, which only the tool's own ids allow.
+    expect(called).toHaveLength(1);
+    expect(called[0].name).toBe("analyze_comments");
+    expect(called[0].args.ids).toEqual(["reddit:a:0", "tiktok:c:0"]);
+    expect(called[0].args.comments).toEqual([
+      "nike keeps missing, and nike knows it", "wearing nike today",
+    ]);
+    await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
+  });
+
+  test("pages from the offset the tool handed back, and only unfiltered", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate((d) => {
+      const w = window as unknown as Record<string, unknown>;
+      w.__called = [];
+      w.openai = {
+        toolOutput: d,
+        callTool: async (name: string, args: unknown) => {
+          (w.__called as unknown[]).push({ name, args });
+          return { content: [] };
+        },
+      };
+      window.dispatchEvent(new CustomEvent("openai:set_globals",
+        { detail: { globals: { toolOutput: d } } }));
+    }, MENTIONS);
+    await page.waitForTimeout(600);
+    // A filtered page is a page of something else, so it is not offered.
+    await page.locator('.mchip[data-filter="reddit"]').click();
+    await expect(page.locator(".mention-more")).toHaveCount(0);
+    await page.locator('.mchip[data-filter=""]').click();
+    await page.locator(".mention-more").click();
+    await page.waitForTimeout(400);
+    const called = await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__called as { name: string; args: unknown }[]);
+    expect(called).toEqual([{ name: "search_mentions", args: { term: "nike", offset: 3 } }]);
+  });
+
+  /**
+   * A coordinated burst is a real shape in this data: one Weibo thread in a
+   * live sweep carried seven near-identical fan posts, which pushed three
+   * other platforms off the first screen. Collapsing is not hiding — the count
+   * is on the button, and opening it costs nothing.
+   */
+  const BURST = {
+    term: "nike",
+    totalMentions: 7,
+    byPlatform: { weibo: 7 },
+    threads: [{
+      post: { platform: "weibo", title: "campaign", externalUrl: "https://weibo.example/p/1", likes: 40000 },
+      postIsAboutTerm: true,
+      mentionCount: 7,
+      mentions: [0, 1, 2, 3, 4, 5, 6].map((i) => ({
+        id: `weibo:x:${i}`, text: `support nike ${i}`, username: `fan${i}`,
+        likes: i, postedAt: `2026-0${i + 1}-01T00:00:00Z`, hits: 1,
+      })),
+    }],
+  };
+
+  test("a burst under one post does not take the whole screen", async ({ page }) => {
+    await renderTemplate(page, BURST);
+    await expect(page.locator(".mention")).toHaveCount(4);
+    await expect(page.locator(".mgroup-rest")).toHaveText("Show 3 more from this post");
+    await page.locator(".mgroup-rest").click();
+    await expect(page.locator(".mention")).toHaveCount(7);
+    await expect(page.locator(".mgroup-rest")).toHaveText("Show fewer");
+    // Opening a group is a decision; a sort must not quietly undo it.
+    await page.locator('.msort-btn[data-sort="new"]').click();
+    await expect(page.locator(".mention")).toHaveCount(7);
+    await page.locator(".mgroup-rest").click();
+    await expect(page.locator(".mention")).toHaveCount(4);
+  });
+
+  test("select all reaches the comments no row is showing", async ({ page }) => {
+    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.evaluate((d) => {
+      const w = window as unknown as Record<string, unknown>;
+      w.__called = [];
+      w.openai = {
+        toolOutput: d,
+        callTool: async (name: string, args: unknown) => {
+          (w.__called as unknown[]).push({ name, args });
+          return { content: [] };
+        },
+      };
+      window.dispatchEvent(new CustomEvent("openai:set_globals",
+        { detail: { globals: { toolOutput: d } } }));
+    }, BURST);
+    await page.waitForTimeout(600);
+    await expect(page.locator(".mention")).toHaveCount(4);
+    // "All" means all seven, not the four that happen to be rendered — the
+    // whole point of collapsing is that it changes the view, not the data.
+    await page.locator("[data-group-all]").click();
+    await expect(page.locator("#pickhint")).toHaveText("7 comments selected");
+    await expect(page.locator("[data-group-all]")).toHaveText("Clear these");
+    await page.locator("#pickgo").click();
+    await page.waitForTimeout(400);
+    const called = await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__called as { args: Record<string, unknown> }[]);
+    expect(called[0].args.ids).toHaveLength(7);
+    // And the text of a collapsed comment comes from the result, not the DOM.
+    expect(called[0].args.comments).toHaveLength(7);
+    expect((called[0].args.comments as string[])[6]).toBe("support nike 6");
+    // Clicking again clears all seven.
+    await page.locator("[data-group-all]").click();
+    await expect(page.locator("#pickbar")).toBeHidden();
+  });
+
+  test("says nothing was found rather than showing an empty frame", async ({ page }) => {
+    await renderTemplate(page, {
+      term: "nike", threads: [], totalMentions: 0, byPlatform: { reddit: 0 }, searched: ["reddit"],
+    });
+    await expect(page.locator(".empty-state")).toContainText("Nobody has mentioned that yet");
+  });
+
+  test("drops a post that neither it nor its comments name the term", async ({ page }) => {
+    await renderTemplate(page, {
+      term: "nike",
+      totalMentions: 1,
+      byPlatform: { reddit: 1 },
+      threads: [
+        thread("reddit", "names it in the title", { likes: 10 }, [], true),
+        // Nothing to say: no matching comment, and the post is not about it.
+        thread("reddit", "unrelated", { likes: 10 }, [], false),
+        thread("reddit", "has one", { likes: 10 }, [
+          { id: "reddit:d:0", text: "nike", username: "x", likes: 0, hits: 1 },
+        ]),
+      ],
+    });
+    expect(await text(page, ".mgroup-title")).toEqual(["names it in the title", "has one"]);
+    // The kept one explains why it is there instead of showing an empty list.
+    await expect(page.locator(".mgroup-none")).toHaveText(
+      "The post names nike, but none of its comments do.");
+    await expect(page.locator(".mgroup").first().locator("[data-group-all]")).toHaveCount(0);
+  });
+});

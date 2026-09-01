@@ -150,7 +150,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<div class="wrap"><section class="hero">` +
     `<span class="eyebrow">${logoMark(13)} Model Context Protocol server</span>` +
     `<h1>Give your AI <span class="hl">eyes on social</span></h1>` +
-    `<p class="lede">Orchyn MCP lets Claude, ChatGPT and Cursor pull real posts from eight networks — video, slideshows, comments, creators and sounds — and reason over what they actually contain.</p>` +
+    `<p class="lede">Orchyn MCP lets Claude, ChatGPT and Cursor pull real posts from ten networks — video, slideshows, comments, creators and sounds — and reason over what they actually contain.</p>` +
     `<div class="hero-cta">` +
     `<a class="btn btn-primary" href="#install">Connect your assistant</a>` +
     `<a class="btn btn-ghost" href="#pricing">See pricing</a></div>` +
@@ -162,7 +162,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     // ── platforms ──
     `<div class="wrap"><section id="platforms">` +
     `<div class="sec-head"><span class="eyebrow">Coverage</span>` +
-    `<h2>Eight networks, one interface</h2>` +
+    `<h2>Ten networks, one interface</h2>` +
     `<p>Ask in plain language. Orchyn resolves the URL, fetches the media and hands your assistant structured data it can reason about.</p></div>` +
     `<div class="cloud">${cloud}</div></section></div>` +
 
