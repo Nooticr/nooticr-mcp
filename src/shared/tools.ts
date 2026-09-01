@@ -14,6 +14,7 @@ import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.j
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { createTaskStore, registerSlowTool } from "./tasks.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.11";
@@ -402,6 +403,8 @@ export function createMcpServer(
  const server = new McpServer(
   { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
   {
+   // Per-server, so per session on both transports. See tasks.ts.
+   taskStore: createTaskStore(),
    capabilities: {
     resources: {},
     // The workflows, named — see prompts.ts. Without this a host shows the
@@ -612,7 +615,8 @@ export function createMcpServer(
   );
  }
 
- server.registerTool(
+ registerSlowTool(
+  server,
   "analyze_post",
   {
    title: "Analyze Post",
@@ -804,7 +808,8 @@ export function createMcpServer(
   }
  );
 
- server.registerTool(
+ registerSlowTool(
+  server,
   "analyze_creator_profile",
   {
    title: "Analyze Creator Profile",
@@ -1472,7 +1477,8 @@ export function createMcpServer(
   }
  );
 
- server.registerTool(
+ registerSlowTool(
+  server,
   "understand_social_post",
   {
    title: "Understand Social Post",

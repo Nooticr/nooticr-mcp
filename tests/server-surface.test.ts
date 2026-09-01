@@ -169,3 +169,42 @@ describe("output schemas", () => {
     expect(JSON.stringify(byName.compare_posts.outputSchema)).toContain("winner");
   });
 });
+
+// Every tool declared taskSupport "forbidden" — the SDK default, never chosen —
+// including analyze_post, which polls a video job for up to POLL_TIMEOUT_MS
+// (five minutes). A host had no way to put that in the background.
+describe("long-running tools", () => {
+  const SLOW = ["analyze_post", "analyze_creator_profile", "understand_social_post"];
+
+  it("accepts a task on the tools that watch a video", async () => {
+    const { tools } = await (await connect()).listTools();
+    const support = Object.fromEntries(
+      tools.map((t) => [t.name, (t as { execution?: { taskSupport?: string } }).execution?.taskSupport]),
+    );
+    for (const name of SLOW) expect(support[name], name).toBe("optional");
+  });
+
+  it("leaves the quick tools alone", async () => {
+    const { tools } = await (await connect()).listTools();
+    // taskSupport is a floor on how fast a call can return, since the SDK
+    // auto-polls at that interval. A tool that answers in a second should not
+    // start waiting for one.
+    const quick = tools.filter((t) => !SLOW.includes(t.name));
+    for (const t of quick) {
+      const support = (t as { execution?: { taskSupport?: string } }).execution?.taskSupport;
+      expect(support, `${t.name} should not have been made a task tool`).not.toBe("optional");
+    }
+  });
+
+  // "optional" rather than "required" is the whole compatibility story: a
+  // client that knows nothing about tasks must see exactly what it saw before.
+  it("still answers a client that asks for no task", async () => {
+    const client = await connect({ post: { externalUrl: "https://x/1" }, analysis: { summary: "s" } });
+    const res = await client.callTool({
+      name: "understand_social_post",
+      arguments: { url: "https://www.tiktok.com/@a/video/1" },
+    });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect((res.structuredContent as { analysis?: { summary?: string } })?.analysis?.summary).toBe("s");
+  }, 30_000);
+});

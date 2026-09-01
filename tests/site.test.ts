@@ -266,16 +266,26 @@ describe("tool surface", () => {
   });
 
   it("registers a handler for every declared tool", async () => {
-    const { readFileSync } = await import("node:fs");
-    const { fileURLToPath } = await import("node:url");
-    const { dirname, join } = await import("node:path");
-    const here = dirname(fileURLToPath(import.meta.url));
-    const impl = readFileSync(join(here, "..", "src", "shared", "tools.ts"), "utf8");
-    const registered = new Set(
-      [...impl.matchAll(/server\.registerTool\(\s*"([a-z_]+)"/g)].map((m) => m[1])
+    // Asks the built server rather than grepping its source. The grep was a
+    // proxy for this and stopped tracking it the moment three tools moved to
+    // registerToolTask to accept a background task: they were registered and
+    // working, and the pattern no longer matched, so the test failed for a
+    // change it was never meant to police.
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
     );
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
+    const registered = new Set((await client.listTools()).tools.map((t) => t.name));
     const missing = EXPECTED.filter((n) => !registered.has(n));
     expect(missing, `declared but never registered: ${missing.join(", ")}`).toEqual([]);
+    // And nothing registered that was never declared.
+    const undeclared = [...registered].filter((n) => !EXPECTED.includes(n));
+    expect(undeclared, `registered but never declared: ${undeclared.join(", ")}`).toEqual([]);
   });
 
   it("prices every billable tool in its description", async () => {
