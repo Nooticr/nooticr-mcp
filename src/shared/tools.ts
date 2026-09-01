@@ -12,6 +12,7 @@ import { z } from "zod";
 import { OrchynClient, OrchynError, type McpProxyResult } from "./orchyn.js";
 import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
+import { registerPrompts } from "./prompts.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.11";
@@ -402,6 +403,9 @@ export function createMcpServer(
   {
    capabilities: {
     resources: {},
+    // The workflows, named — see prompts.ts. Without this a host shows the
+    // user 24 tools and no way in.
+    prompts: {},
     extensions: {
      [UI_EXTENSION]: { mimeTypes: [RESOURCE_MIME_TYPE] },
     },
@@ -623,6 +627,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("analyze_post"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
@@ -692,6 +697,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("get_social_media"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -725,6 +731,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("discover_social_posts"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
@@ -767,6 +774,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("get_user_posts"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
@@ -807,6 +815,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("analyze_creator_profile"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
@@ -847,6 +856,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("get_post_comments"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/Douyin/X/Bilibili/LinkedIn)."),
@@ -882,6 +892,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("search_creators"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
@@ -923,6 +934,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("get_similar_creators"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."),
@@ -958,6 +970,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("discover_sounds"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
@@ -1369,6 +1382,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("check_orchyn_credits"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -1395,6 +1409,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("buy_orchyn_credits"),
    },
+   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -1414,6 +1429,7 @@ export function createMcpServer(
    description:
     "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. No cost to call." +
     "Use when a call fails with an authentication error, to re-link the account.",
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, _extra) => {
@@ -1448,6 +1464,7 @@ export function createMcpServer(
     // text/html+skybridge twin rather than the Claude resource.
     "openai/outputTemplate": appsSdkResource("understand_social_post"),
    },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),
@@ -1467,6 +1484,8 @@ export function createMcpServer(
    }
   }
  );
+
+ registerPrompts(server);
 
  return server;
 }
