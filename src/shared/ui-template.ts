@@ -545,10 +545,25 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     setTimeout(reportSize,50);
   }
 
+  // A ChatGPT-shaped host sends no tool-input notification, so the poll below
+  // is what drives the skeleton there - which means this runs over and over
+  // within one call: every 250ms while polling, plus once per set_globals,
+  // and that fires for theme, display mode and height changes as well as for
+  // results. Rewriting innerHTML on each of them restarted .fade-in (opacity
+  // 0, shifted 8px down), the load-bar sweep and every skeleton shine four
+  // times a second, and posted a size-changed at the same rate for the host
+  // to re-lay-out on. That is the blinking. The skeleton is a pure function
+  // of its shape, so paint it once and let the CSS animations run: repaint
+  // only when the shape changes, or when it is no longer on screen because a
+  // result replaced it - which is the second call in a reused view.
+  var loadingSig=null;
   function renderLoading(tool,args){
     var app=document.getElementById("app");
     if(!app||toolResultReceived)return;
     var shape=LOADING_SHAPE[tool]||shapeFromArgs(args)||{kind:"text",n:1,label:"Working"};
+    var sig=shape.kind+"|"+shape.n+"|"+shape.label;
+    if(sig===loadingSig&&app.querySelector(".load-bar"))return;
+    loadingSig=sig;
     var inner="";
     if(shape.kind==="post"){
       inner='<div style="display:flex;justify-content:center">'+skPostCard()+"</div>";
@@ -663,21 +678,29 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   // never looks again, which is a view sitting on its placeholder while the
   // host has held the result the whole time.
   //
-  // So poll briefly, stop the moment anything lands, and give up rather than
-  // spin. Claude never defines the global and delivers over postMessage
+  // So poll, stop the moment anything lands, and give up rather than spin
+  // forever. Claude never defines the global and delivers over postMessage
   // instead, so it stops at the first result and costs a few no-op ticks.
-  var hostPolls=0;
+  var pollStart=Date.now();
   function pollHostGlobals(){
     readHostGlobals();
     if(lastOutRef||toolResultReceived)return;
-    if(hostPolls>=40){
+    var waited=Date.now()-pollStart;
+    // The budget was 40 ticks - ten seconds - and every tool here that fetches
+    // a feed or watches a video runs longer than that. So the shimmer was
+    // taken down mid-call and replaced by "Results will appear here", and
+    // because this poll is the only way a host that merely sets the global is
+    // ever read, the result that landed afterwards was never picked up at all.
+    // Wait as long as the server itself waits on a job (POLL_TIMEOUT_MS).
+    if(waited>=300000){
       // Nothing ever came. A view left shimmering forever is worse than one
       // that says plainly it is waiting, so put the placeholder back.
       if(window.openai)renderIdle();
       return;
     }
-    hostPolls++;
-    setTimeout(pollHostGlobals,250);
+    // Quick while the global is still expected to land, slower once we are
+    // plainly just waiting on the tool.
+    setTimeout(pollHostGlobals,waited<3000?250:1000);
   }
 
   window.addEventListener("openai:set_globals",function(ev){

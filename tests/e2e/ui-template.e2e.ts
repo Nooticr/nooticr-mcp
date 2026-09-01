@@ -246,6 +246,71 @@ test("a chatgpt-shaped host with no output yet shows loading, not idle", async (
     .toBeGreaterThan(0);
 });
 
+// On ChatGPT the skeleton is driven by the poll rather than by a tool-input
+// notification, so renderLoading ran every 250ms for the whole call — and once
+// more per set_globals, which fires for theme, display mode and height changes
+// too. Each run replaced #app, restarting .fade-in (opacity 0, shifted 8px
+// down), the load-bar sweep and every skeleton shine four times a second: the
+// blinking that was reported. Counting the rebuilds is the assertion; counting
+// what is left on screen would pass either way.
+test("the chatgpt skeleton is painted once, not on every tick", async ({ page }) => {
+  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__paints = 0;
+    new MutationObserver((recs) => {
+      for (const r of recs)
+        for (const n of Array.from(r.addedNodes)) {
+          const el = n as HTMLElement;
+          if (el.querySelector && el.querySelector(".load-bar")) w.__paints = (w.__paints as number) + 1;
+        }
+    }).observe(document.getElementById("app") as Node, { childList: true, subtree: true });
+    // The host mounts the view as part of a call: present, no output yet.
+    w.openai = { toolInput: { username: "iruy" } };
+  });
+  await page.waitForTimeout(1400);           // ~5 poll ticks at 250ms
+  await page.evaluate(() => {
+    for (let i = 0; i < 8; i++)
+      window.dispatchEvent(new CustomEvent("openai:set_globals", {
+        detail: { globals: { theme: i % 2 ? "dark" : "light" } },
+      }));
+  });
+  await page.waitForTimeout(300);
+  await expect(page.locator(".load-bar")).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __paints: number }).__paints),
+    "skeleton rebuilds across ~5 poll ticks and 8 set_globals events").toBe(1);
+});
+
+// The poll gave up after 40 ticks — ten seconds — and put the idle placeholder
+// back. Every tool here that fetches a feed or watches a video runs longer than
+// that, so the shimmer was taken down in the middle of a call that was still
+// running; and since the poll is the only way a host that merely sets the
+// global is ever read, the result that followed was never picked up either.
+test("the chatgpt shimmer outlives a call longer than ten seconds", async ({ page }) => {
+  await page.clock.install();
+  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.evaluate(() => {
+    (window as unknown as Record<string, unknown>).openai = { toolInput: { username: "iruy" } };
+  });
+  await page.clock.runFor(1000);
+  await expect(page.locator(".load-bar")).toBeVisible();
+
+  // Well past the old budget, and past a slow tool call too.
+  await page.clock.runFor(60_000);
+  await expect(page.locator(".load-bar")).toBeVisible();
+  expect(await page.evaluate(() => /Results will appear here/.test(document.body.innerText)))
+    .toBe(false);
+
+  // Still watching: a host that only sets the global is still read.
+  await page.evaluate(() => {
+    (window as unknown as { openai: Record<string, unknown> }).openai.toolOutput =
+      { balance: 42, tier: "pro" };
+  });
+  await page.clock.runFor(3000);
+  await expect(page.locator(".load-bar")).toHaveCount(0);
+  expect(await page.evaluate(() => document.body.innerText)).toContain("42");
+});
+
 test("no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await renderTemplate(page, { posts: POSTS });
