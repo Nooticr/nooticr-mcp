@@ -18,7 +18,7 @@ import { createTaskStore, registerSlowTool } from "./tasks.js";
 import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.13";
+export const MCP_SERVER_VERSION = "1.26.14";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
