@@ -54,6 +54,28 @@ jobs:
         working-directory: cloudflare
         run: npm ci --no-audit --no-fund
 
+      # Four files carry the version and the Worker reports the one in src/,
+      # so a hand bump that misses it ships a server that misreports itself.
+      - name: The version is the same in every file that carries it
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const pkg = require("./package.json").version;
+            const plugin = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8")).version;
+            const m = fs.readFileSync("src/shared/tools.ts", "utf8")
+              .match(/export const MCP_SERVER_VERSION = "([^"]+)";/);
+            const tools = m && m[1];
+            const bad = [["`.claude-plugin/plugin.json`", plugin], ["`src/shared/tools.ts`", tools]]
+              .filter(([, v]) => v !== pkg);
+            if (bad.length) {
+              console.error(`::error title=Version drift::package.json is ${pkg}; ` +
+                bad.map(([f, v]) => `${f} is ${v}`).join("; "));
+              process.exit(1);
+            }
+            console.log(`version ${pkg} agrees across package.json, plugin.json and tools.ts`);
+          '
+
       - name: Typecheck
         run: |
           npx tsc --noEmit
@@ -291,10 +313,21 @@ jobs:
           npm version patch --no-git-tag-version >/dev/null
           NEXT="$(node -p "require('./package.json').version")"
           node -e '
-            const fs = require("fs"), p = ".claude-plugin/plugin.json";
+            const fs = require("fs");
+            const v = require("./package.json").version;
+            const p = ".claude-plugin/plugin.json";
             const j = JSON.parse(fs.readFileSync(p, "utf8"));
-            j.version = require("./package.json").version;
+            j.version = v;
             fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+            // The Worker reports this one, not package.json: it is bundled, so
+            // it cannot read the manifest at runtime. Leaving it behind is how
+            // /health served 1.26.8 while npm served 1.26.9.
+            const t = "src/shared/tools.ts";
+            const src = fs.readFileSync(t, "utf8");
+            const next = src.replace(/export const MCP_SERVER_VERSION = "[^"]+";/,
+              `export const MCP_SERVER_VERSION = \"${v}\";`);
+            if (next === src) throw new Error("MCP_SERVER_VERSION not found in " + t);
+            fs.writeFileSync(t, next);
           '
           echo "src changed under a version already on npm — bumped $VERSION -> $NEXT."
 
