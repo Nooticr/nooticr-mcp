@@ -881,6 +881,16 @@ test.describe("media source", () => {
   });
 
   test("thumbnail, music and sound covers use the platform url", async ({ page }) => {
+    // healPosters probes the poster and swaps to the proxy when the probe
+    // *errors*, so an unrouted thumbnail made this a race against DNS: green
+    // locally, red on CI, and a red CI skips the deploy and the publish for a
+    // reason that is not real. Answer the probe instead of holding it open —
+    // holding leaves the request pending, and the setContent below then waits
+    // on a load event that never comes.
+    await page.route("**/t.jpg", (r) => r.fulfill({
+      status: 200, contentType: "image/gif",
+      body: Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64"),
+    }));
     await render(page, { ...BASE, videoUrl: "https://cdn.example/v.mp4",
       thumbnailUrl: "https://cdn.example/t.jpg",
       thumbnailProxyUrl: "https://api.orchyn.com/media/proxy?url=t",
