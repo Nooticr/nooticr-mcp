@@ -399,11 +399,42 @@ function buildAnalysisHtmlCard(
 }
 
 export function createMcpServer(
- makeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient,
+ rawMakeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient,
  // Where the watchlist is kept. Defaults to memory, which is right for a test
  // and wrong for a session — each transport passes the store that outlives it.
  opts?: { watchStore?: WatchStore }
 ): McpServer {
+ /**
+  * What the user was in the middle of when their session expired.
+  *
+  * Signing in used to end with a link and nothing else: the call that provoked
+  * it was gone, and the user had to ask for the same thing a second time.
+  * Recorded here so orchyn_login can finish the job instead.
+  */
+ let pendingAfterLogin: { name: string; args: Record<string, unknown> } | null = null;
+
+ const isAuthFailure = (err: unknown): boolean =>
+  err instanceof OrchynError && (err.status === 401 || /access token/i.test(err.message));
+
+ /**
+  * Every proxied tool reaches the backend through callTool, so wrapping it
+  * once records the interrupted call for all of them without touching
+  * twenty-four handlers. A fresh client is built per request on both
+  * transports, so this never leaks between calls.
+  */
+ const makeClient = async (ctx: MakeClientContext): Promise<OrchynClient> => {
+  const client = await rawMakeClient(ctx);
+  const call = client.callTool.bind(client);
+  client.callTool = async (name: string, args: Record<string, unknown>) => {
+   try {
+    return await call(name, args);
+   } catch (err) {
+    if (isAuthFailure(err)) pendingAfterLogin = { name, args };
+    throw err;
+   }
+  };
+  return client;
+ };
  const server = new McpServer(
   { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
   {
@@ -1468,18 +1499,62 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.orchyn_login,
    inputSchema: z.object({}).strict(),
   },
-  async (_args: Record<string, never>, _extra) => {
-   const base = process.env.ORCHYN_BASE_URL || "https://api.orchyn.com";
-   const mcpUrl = process.env.MCP_SERVER_URL || "https://mcp.orchyn.com";
-   const redirect = `${mcpUrl}/auth/callback?state=new`;
-   const loginUrl = `${base}/auth/mcp-login?redirect=${encodeURIComponent(redirect)}`;
-   return {
-     content: [{ type: "text" as const, text: JSON.stringify({
-       loginUrl,
-       message: "Open this URL in your browser to sign in. After authentication, your MCP session will be refreshed automatically."
-     }) }],
-     structuredContent: { loginUrl, message: "Open this URL in your browser to sign in." },
+  async (_args: Record<string, never>, extra) => {
+   const client = await makeClient({ ...extra, arguments: {} });
+   // Ask before offering. Handing a sign-in link to someone who is already
+   // signed in is the whole of the reported bug: the link outlives the reason
+   // for it, and reads as though the login never took.
+   let signedIn = false;
+   try {
+    await client.me();
+    signedIn = true;
+   } catch {
+    signedIn = false;
+   }
+
+   if (!signedIn) {
+    const base = process.env.ORCHYN_BASE_URL || "https://api.orchyn.com";
+    const mcpUrl = process.env.MCP_SERVER_URL || "https://mcp.orchyn.com";
+    const redirect = `${mcpUrl}/auth/callback?state=new`;
+    const loginUrl = `${base}/auth/mcp-login?redirect=${encodeURIComponent(redirect)}`;
+    const waiting = pendingAfterLogin?.name ?? null;
+    const message = waiting
+     ? `Open this URL in your browser to sign in. ${waiting} will be run again as soon as you are back — you do not need to ask twice.`
+     : "Open this URL in your browser to sign in.";
+    const payload = { loginUrl, signedIn: false, pendingAction: waiting, message };
+    return {
+     content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+     structuredContent: payload,
      isError: false,
+    };
+   }
+
+   // Signed in. Finish what the expiry interrupted rather than reporting
+   // success and leaving the user to repeat themselves.
+   const resume = pendingAfterLogin;
+   pendingAfterLogin = null;
+   if (resume) {
+    try {
+     const done = await toToolResult(await client.callTool(resume.name, resume.args));
+     return {
+      ...done,
+      structuredContent: { ...(done.structuredContent ?? {}), signedIn: true, resumed: resume.name },
+     };
+    } catch (err) {
+     // Being signed in is still news worth reporting, even if the retry failed.
+     return toolError(`Signed in, but ${resume.name} still failed`, err);
+    }
+   }
+
+   const payload = {
+    signedIn: true,
+    pendingAction: null,
+    message: "Already signed in — no need to log in again.",
+   };
+   return {
+    content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+    structuredContent: payload,
+    isError: false,
    };
   }
  );

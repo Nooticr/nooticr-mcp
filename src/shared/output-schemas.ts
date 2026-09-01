@@ -280,7 +280,10 @@ export const OUTPUT_SCHEMAS = {
     packs: listOf(open({})),
   }),
   orchyn_login: open({
-    loginUrl: scalar(),
+    signedIn: scalar().describe("true when the session is already good and no link is needed."),
+    loginUrl: scalar().describe("Only present when a sign-in is actually required."),
+    pendingAction: scalar().describe("The call that expiry interrupted; it is re-run on the way back."),
+    resumed: scalar().describe("The tool that was re-run after signing in — its result is this payload."),
     message: scalar(),
   }),
 } as const;
