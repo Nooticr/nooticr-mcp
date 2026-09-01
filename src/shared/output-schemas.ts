@@ -39,6 +39,18 @@ const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough(
 const scalar = () => z.union([z.string(), z.number(), z.boolean()]).nullish();
 /** Same reasoning for lists: a null list, and a null element, must both pass. */
 const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.null()])).nullish();
+/**
+ * A list whose elements are not one shape — themes, fixes, failures.
+ *
+ * Not `anyList()`. Zod is only half of this: the server validates
+ * with Zod, but the client validates against the JSON Schema generated from
+ * it, and `z.unknown()` inside a union serialises to an empty schema that the
+ * converter drops — leaving `anyOf: [{ type: "null" }]`, an items rule that
+ * accepts null and nothing else. Every call carrying a real theme then failed
+ * on the client while passing every server-side test. `z.any()` renders as an
+ * empty schema in item position, which accepts anything, which is the point.
+ */
+const anyList = () => z.array(z.any()).nullish();
 
 /** Every paid tool reports what it charged. */
 const mcpCredits = open({
@@ -141,7 +153,7 @@ export const OUTPUT_SCHEMAS = {
 
   get_post_comments: open({
     comments: listOf(open({ text: scalar(), author: scalar(), likes: scalar() })).optional(),
-    themes: listOf(z.unknown()),
+    themes: anyList(),
     summary: scalar(),
     url: scalar(),
     platform: scalar(),
@@ -149,7 +161,7 @@ export const OUTPUT_SCHEMAS = {
   }),
   analyze_comments: open({
     summary: scalar(),
-    themes: listOf(z.unknown()),
+    themes: anyList(),
     commentsAnalyzed: scalar(),
     report: open({}).nullish(),
     mcpCredits,
@@ -167,7 +179,7 @@ export const OUTPUT_SCHEMAS = {
 
   compare_posts: open({
     posts: listOf(post),
-    failed: listOf(z.unknown()),
+    failed: anyList(),
     analyzed: scalar(),
     comparison: open({
       winner: scalar(),
@@ -237,7 +249,7 @@ export const OUTPUT_SCHEMAS = {
       payoff: scalar(),
       strengths: listOf(z.string()),
       weaknesses: listOf(z.string()),
-      fixes: listOf(z.unknown()),
+      fixes: anyList(),
       rewrittenHook: scalar(),
       rewrittenDraft: scalar(),
       predictedComment: scalar(),
