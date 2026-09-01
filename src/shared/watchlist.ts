@@ -231,9 +231,9 @@ export function registerWatchlist(
         .strict(),
       outputSchema: z
         .object({
-          watching: z.number().optional(),
-          added: z.string().optional(),
-          entries: z.array(z.object({}).passthrough()).optional(),
+          watching: z.number().nullish(),
+          added: z.string().nullish(),
+          entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
         })
         .passthrough(),
     },
@@ -273,9 +273,9 @@ export function registerWatchlist(
         .strict(),
       outputSchema: z
         .object({
-          removed: z.boolean().optional(),
-          watching: z.number().optional(),
-          entries: z.array(z.object({}).passthrough()).optional(),
+          removed: z.boolean().nullish(),
+          watching: z.number().nullish(),
+          entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
         })
         .passthrough(),
     },
@@ -313,10 +313,10 @@ export function registerWatchlist(
         .strict(),
       outputSchema: z
         .object({
-          checked: z.number().optional(),
-          creators: z.array(z.object({}).passthrough()).optional(),
-          posts: z.array(z.object({}).passthrough()).optional().describe("Everything new, flattened, for the card view."),
-          mcpCredits: z.object({}).passthrough().optional(),
+          checked: z.number().nullish(),
+          creators: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
+          posts: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish().describe("Everything new, flattened, for the card view."),
+          mcpCredits: z.object({}).passthrough().nullish(),
         })
         .passthrough(),
     },
