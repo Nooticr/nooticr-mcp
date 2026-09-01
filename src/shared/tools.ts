@@ -13,6 +13,7 @@ import { OrchynClient, OrchynError, type McpProxyResult } from "./orchyn.js";
 import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
 import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
+import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.11";
@@ -628,6 +629,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("analyze_post"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.analyze_post,
    inputSchema: z
     .object({
      url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
@@ -698,6 +700,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("get_social_media"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.get_social_media,
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -732,6 +735,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("discover_social_posts"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.discover_social_posts,
    inputSchema: z
     .object({
      niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
@@ -775,6 +779,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("get_user_posts"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.get_user_posts,
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
@@ -816,6 +821,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("analyze_creator_profile"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.analyze_creator_profile,
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
@@ -857,6 +863,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("get_post_comments"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.get_post_comments,
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/Douyin/X/Bilibili/LinkedIn)."),
@@ -893,6 +900,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("search_creators"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.search_creators,
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."),
@@ -935,6 +943,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("get_similar_creators"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.get_similar_creators,
    inputSchema: z
     .object({
      username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."),
@@ -971,6 +980,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("discover_sounds"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.discover_sounds,
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
@@ -1010,6 +1020,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("get_post_transcript"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.get_post_transcript,
    inputSchema: z
     .object({
      url: z.string().describe("Post URL (TikTok or YouTube)."),
@@ -1045,6 +1056,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("analyze_comments"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.analyze_comments,
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -1080,6 +1092,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("compare_posts"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.compare_posts,
    inputSchema: z
     .object({ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
     .strict(),
@@ -1111,6 +1124,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("discover_hashtags"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.discover_hashtags,
    inputSchema: z
     .object({
      country: z.string().optional().describe("2-letter country code (default US)."),
@@ -1147,6 +1161,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("analyze_post_fast"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.analyze_post_fast,
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL."),
@@ -1180,6 +1195,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("write_hooks"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.write_hooks,
    inputSchema: z
     .object({
      url: z.string().optional().describe("Post to riff on (optional if topic given)."),
@@ -1216,6 +1232,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("create_variants"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.create_variants,
    inputSchema: z
     .object({
      url: z.string().describe("The post to make variants of."),
@@ -1250,6 +1267,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("score_draft"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.score_draft,
    inputSchema: z
     .object({
      draft: z.string().describe("Your script, caption or hook."),
@@ -1283,6 +1301,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("repurpose_post"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.repurpose_post,
    inputSchema: z
     .object({
      url: z.string().describe("The post to repurpose."),
@@ -1316,6 +1335,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("niche_report"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.niche_report,
    inputSchema: z
     .object({
      niche: z.string().describe("Niche or topic, e.g. 'home fitness'."),
@@ -1350,6 +1370,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("find_hook_pattern"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.find_hook_pattern,
    inputSchema: z
     .object({
      username: z.string().describe("Creator handle, with or without @."),
@@ -1383,6 +1404,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("check_orchyn_credits"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.check_orchyn_credits,
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -1410,6 +1432,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("buy_orchyn_credits"),
    },
    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.buy_orchyn_credits,
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -1430,6 +1453,7 @@ export function createMcpServer(
     "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. No cost to call." +
     "Use when a call fails with an authentication error, to re-link the account.",
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.orchyn_login,
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, _extra) => {
@@ -1465,6 +1489,7 @@ export function createMcpServer(
     "openai/outputTemplate": appsSdkResource("understand_social_post"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.understand_social_post,
    inputSchema: z
     .object({
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),

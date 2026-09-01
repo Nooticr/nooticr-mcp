@@ -14,13 +14,13 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import type { OrchynClient } from "../src/shared/orchyn.js";
 
-function dummyClient(): OrchynClient {
-  return { callTool: async () => ({ contentBlocks: [], structured: {} }) } as unknown as OrchynClient;
+function dummyClient(structured: unknown = {}): OrchynClient {
+  return { callTool: async () => ({ contentBlocks: [], structured }) } as unknown as OrchynClient;
 }
 
-async function connect() {
+async function connect(structured: unknown = {}) {
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => dummyClient());
+  const server = createMcpServer(async () => dummyClient(structured));
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
   return client;
@@ -122,5 +122,50 @@ describe("prompts", () => {
       r.messages.map((m) => (m.content as { text: string }).text).join("\n");
     expect(textOf(cheap)).toContain("Skip analyze_post");
     expect(textOf(rich)).not.toContain("Skip analyze_post");
+  });
+});
+
+describe("output schemas", () => {
+  it("every tool says what it returns", async () => {
+    const { tools } = await (await connect()).listTools();
+    const undeclared = tools.filter((t) => !t.outputSchema).map((t) => t.name);
+    expect(undeclared, "tools an agent has to call before it can plan").toEqual([]);
+  });
+
+  // The shape belongs to the orchyn backend, not to this repo. The SDK throws
+  // on structuredContent that fails its schema, so a schema that constrained
+  // would turn a field added upstream into a tool that stopped working for
+  // everyone — a self-inflicted outage on someone else's deploy schedule.
+  it("survives a field the backend adds tomorrow", async () => {
+    const client = await connect({
+      platform: "tiktok",
+      posts: [{ externalUrl: "https://www.tiktok.com/@a/video/1", views: 5, somethingNew: true }],
+      mcpCredits: { cost: 2 },
+      aFieldInventedNextQuarter: { nested: [1, 2, 3] },
+    });
+    const res = await client.callTool({
+      name: "discover_social_posts",
+      arguments: { niche: "fitness" },
+    });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect((res.structuredContent as { platform?: string })?.platform).toBe("tiktok");
+  });
+
+  it("accepts an empty result rather than failing the call", async () => {
+    // A niche with no posts is an answer, not an error.
+    const client = await connect({});
+    const res = await client.callTool({ name: "discover_social_posts", arguments: { niche: "zzz" } });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+  });
+
+  it("describes the fields callers actually chain on", async () => {
+    const { tools } = await (await connect()).listTools();
+    const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
+    // externalUrl is the join key: it is what you feed from a feed tool into
+    // an analysis one, so it has to be in the declared shape.
+    const feed = JSON.stringify(byName.discover_social_posts.outputSchema);
+    expect(feed).toContain("externalUrl");
+    expect(JSON.stringify(byName.get_post_transcript.outputSchema)).toContain("transcript");
+    expect(JSON.stringify(byName.compare_posts.outputSchema)).toContain("winner");
   });
 });
