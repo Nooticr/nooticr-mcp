@@ -333,10 +333,19 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json .claude-plugin/plugin.json
+          git add package.json package-lock.json .claude-plugin/plugin.json src/shared/tools.ts
           # [skip ci]: this push would otherwise start a run that cancels this
           # one mid-publish — the concurrency group cancels in progress.
           git commit -m "release: $NEXT [skip ci]"
+          # A file the sync rewrote but the add missed is invisible otherwise:
+          # it stays in the runner, the release commit ships without it, and the
+          # version it carries is wrong everywhere that file is read. That is
+          # exactly how 1.26.10 reached npm with the Worker still saying 1.26.9.
+          if ! git diff --quiet; then
+            echo "::error title=Release commit is incomplete::the bump changed files it did not stage"
+            git --no-pager diff --name-only
+            exit 1
+          fi
           git push origin "HEAD:${{ github.ref_name }}"
           emit "$NEXT" false
 
