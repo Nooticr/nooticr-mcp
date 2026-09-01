@@ -26,6 +26,16 @@ import { AuthManager, OrchynAuthError, createHttpTokenProvider, createStdioToken
 import { OrchynClient, OrchynError } from "./orchyn.js";
 import {OAuthManager, type McpSession, SCOPES} from "./oauth.js";
 import { createMcpServer } from "./shared/tools.js";
+import { FileWatchStore } from "./shared/watchlist.js";
+import path from "node:path";
+
+/**
+ * The watchlist lives beside the credentials: one machine, one signed-in user,
+ * and it has to outlive the process or "since I last looked" means nothing.
+ */
+function watchStoreForStdio(): FileWatchStore {
+  return new FileWatchStore(path.join(path.dirname(getCredentialsFile()), "watchlist.json"));
+}
 
 // ---------------------------------------------------------------------------
 // stdio mode
@@ -33,8 +43,9 @@ import { createMcpServer } from "./shared/tools.js";
 
 export async function runStdio(): Promise<void> {
   const auth = new AuthManager(getBaseUrl(), getCredentialsFile());
-  const server = createMcpServer(() =>
-    new OrchynClient(getBaseUrl(), createStdioTokenProvider(auth))
+  const server = createMcpServer(
+    () => new OrchynClient(getBaseUrl(), createStdioTokenProvider(auth)),
+    { watchStore: watchStoreForStdio() }
   );
   const transport = new StdioServerTransport();
   await server.connect(transport);

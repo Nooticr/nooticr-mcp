@@ -135,7 +135,10 @@ jobs:
           fail = []
           # Tools that legitimately have no view. Anything else losing its app
           # is a regression, not a choice.
-          NO_APP = {"orchyn_login"}
+          # Tools with nothing to draw. watch_creator and unwatch_creator change
+          # stored state and return a list; the catch-up that reads that state
+          # does have a view, because it returns posts.
+          NO_APP = {"orchyn_login", "watch_creator", "unwatch_creator"}
           MCP_APPS_MIME = "text/html;profile=mcp-app"
           APPS_SDK_MIME = "text/html+skybridge"
 

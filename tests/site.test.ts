@@ -41,6 +41,8 @@ const SERVER_PRICING: Record<string, number> = {
   create_variants: 3,
   niche_report: 3,
   compare_posts: 8,
+  // Per creator checked, not per call — the unit price is what the pages show.
+  catch_up_watchlist: 2,
 };
 
 /** Tools the server grants one free use of (AI_MCP_TOOLS). */
@@ -223,6 +225,9 @@ describe("UI template dual-host safety", () => {
  */
 describe("tool surface", () => {
   const EXPECTED = [
+    "watch_creator",
+    "unwatch_creator",
+    "catch_up_watchlist",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -294,7 +299,16 @@ describe("tool surface", () => {
     const { dirname, join } = await import("node:path");
     const here = dirname(fileURLToPath(import.meta.url));
     const defs = readFileSync(join(here, "..", "src", "shared", "tools-def.ts"), "utf8");
-    const free = ["check_orchyn_credits", "buy_orchyn_credits", "orchyn_login"];
+    // Free because they fetch nothing: two account tools, a login, and the two
+    // watchlist tools that only write stored state. catch_up_watchlist is not
+    // here — it fetches per creator, and says so.
+    const free = [
+      "check_orchyn_credits",
+      "buy_orchyn_credits",
+      "orchyn_login",
+      "watch_creator",
+      "unwatch_creator",
+    ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;
       const block = defs.slice(defs.indexOf(`name: "${name}"`));
@@ -330,8 +344,20 @@ describe("README", () => {
     const { fileURLToPath } = await import("node:url");
     const { dirname, join } = await import("node:path");
     const here = dirname(fileURLToPath(import.meta.url));
-    const impl = readFileSync(join(here, "..", "src", "shared", "tools.ts"), "utf8");
-    const shipped = [...impl.matchAll(/registerTool\(\s*\n\s*"([a-z_]+)"/g)].map((m) => m[1]);
+    // Asks the built server. Grepping tools.ts for registerTool was a proxy
+    // for "what ships", and it silently stopped being one when the watchlist
+    // tools were added in their own module: three undocumented tools, and a
+    // green test.
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
+    const shipped = (await client.listTools()).tools.map((t) => t.name);
     const documented = new Set([...doc.matchAll(/\| `([a-z_]+)`/g)].map((m) => m[1]));
     const missing = shipped.filter((t) => !documented.has(t));
     expect(missing, `undocumented tools: ${missing.join(", ")}`).toEqual([]);
@@ -486,7 +512,13 @@ describe("documentation", () => {
         `${tool} documented at the wrong price`
       ).toContain(`${cost} cr`);
     }
-    for (const free of ["check_orchyn_credits", "buy_orchyn_credits", "orchyn_login"]) {
+    for (const free of [
+      "check_orchyn_credits",
+      "buy_orchyn_credits",
+      "orchyn_login",
+      "watch_creator",
+      "unwatch_creator",
+    ]) {
       expect(html).toContain(`<code>${free}</code>`);
     }
   });

@@ -187,6 +187,28 @@ export const TOOLS: Tool[] = [
     when: "Moving from why it worked to what to make.",
   },
 
+  // ── watchlist ──
+  // The only tools that remember anything between calls: everything else here
+  // answers "what is true now", and these answer "what changed since I asked".
+  {
+    name: "watch_creator", cost: 0, group: "research",
+    args: "username, platform?, note?",
+    desc: "Add a creator to your watchlist. Stores the handle only \u2014 nothing is fetched.",
+    when: "You want to follow someone over time rather than look once.",
+  },
+  {
+    name: "unwatch_creator", cost: 0, group: "research",
+    args: "username, platform?",
+    desc: "Drop a creator from the watchlist.",
+    when: "They should no longer appear in the catch-up.",
+  },
+  {
+    name: "catch_up_watchlist", cost: 2, group: "research",
+    args: "limit?, platform?",
+    desc: "What everyone you watch has posted since your last catch-up \u2014 2 credits per creator checked, not per call.",
+    when: "Following a set of creators over time instead of re-reading each one.",
+  },
+
   // ── account ──
   {
     name: "check_orchyn_credits", cost: 0, group: "account",

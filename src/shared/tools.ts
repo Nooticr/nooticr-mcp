@@ -15,6 +15,7 @@ import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { createTaskStore, registerSlowTool } from "./tasks.js";
+import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.11";
@@ -398,7 +399,10 @@ function buildAnalysisHtmlCard(
 }
 
 export function createMcpServer(
- makeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient
+ makeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient,
+ // Where the watchlist is kept. Defaults to memory, which is right for a test
+ // and wrong for a session — each transport passes the store that outlives it.
+ opts?: { watchStore?: WatchStore }
 ): McpServer {
  const server = new McpServer(
   { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
@@ -448,6 +452,9 @@ export function createMcpServer(
   "check_orchyn_credits",
   "buy_orchyn_credits",
   "understand_social_post",
+  // The catch-up draws its new posts through the same gallery view; the two
+  // state tools have nothing to show and stay view-less, like orchyn_login.
+  "catch_up_watchlist",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -1517,6 +1524,7 @@ export function createMcpServer(
  );
 
  registerPrompts(server);
+ registerWatchlist(server, makeClient, opts?.watchStore ?? new MemoryWatchStore());
 
  return server;
 }

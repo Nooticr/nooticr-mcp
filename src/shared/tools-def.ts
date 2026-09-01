@@ -145,6 +145,24 @@ export const TOOL_DEFINITIONS = [
  description: "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. Use when a call fails with an authentication error, to re-link the account. Free to call. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
+ {
+ name: "watch_creator",
+ title: "Watch Creator",
+ description: "Add a creator to your watchlist so you can ask later what they have posted since. Stores the handle only \u2014 nothing is fetched here. Use catch_up_watchlist to see what changed. Use when you want to follow someone over time rather than look at them once. No cost to call.",
+ inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), note: z.string().optional().describe("Why you are watching them \u2014 shown back to you later.") }).strict(),
+ },
+ {
+ name: "unwatch_creator",
+ title: "Unwatch Creator",
+ description: "Remove a creator from your watchlist. Nothing is fetched. Use when you no longer want them in the catch-up. No cost to call.",
+ inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok).") }).strict(),
+ },
+ {
+ name: "catch_up_watchlist",
+ title: "Catch Up On Watchlist",
+ description: "What the creators you watch have posted since you last checked. Fetches each one's recent posts and compares them against the snapshot taken at your last catch-up, then moves the snapshot forward \u2014 so it answers 'what is new' rather than 'what exists'. The first run for a creator records the baseline and has nothing to compare against. Use to follow a set of creators over time instead of re-reading each one. Consumes 2 orchyn credits per creator checked.",
+ inputSchema: z.object({ limit: z.number().int().optional().describe("Posts to check per creator (default 6)."), platform: z.string().optional().describe("Only check creators on this platform.") }).strict(),
+ },
 ] as const;
 
 export type ToolName = typeof TOOL_DEFINITIONS[number]["name"];

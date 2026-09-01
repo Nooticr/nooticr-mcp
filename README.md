@@ -76,6 +76,9 @@ match what the server actually charges.
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
 | `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
 | `find_hook_pattern` | 2 | A creator's repeatable formula from their captions, as fill-in-the-blank templates. Much cheaper than the full profile teardown because it never watches the videos. |
+| `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
+| `unwatch_creator` | free | Drop a creator from the watchlist. |
+| `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
 | `niche_report` | 3 | What is working in a niche right now: dominant formats, hook patterns, what over- and underperforms, the gaps nobody is filling. Use when deciding what to make. |
 | `analyze_creator_profile` | 15 (first use free) | Full teardown — fetches recent posts, watches up to three, then synthesises niche, themes, hook styles, strengths, audience and collaboration fit. |
 

@@ -11,6 +11,7 @@ type McpRequest = Parameters<
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { OrchynClient, jwtExpiry, type TokenProvider } from "../../src/shared/orchyn.js";
 import { argumentsDigest, createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
+import { KvWatchStore } from "../../src/shared/watchlist.js";
 import {
   verifyToken,
   validMcpToken,
@@ -162,7 +163,10 @@ export class McpEndpoint {
               ctx.requestId
             )}:${argumentsDigest(ctx.arguments)}`;
       return makeClientForSession(this.env, t, s, key);
-    });
+    },
+    // KV rather than this Durable Object's SQLite: the watchlist belongs to
+    // the account and has to outlive any one session, and a DO is per-session.
+    { watchStore: new KvWatchStore(this.env.STORE) });
     await this.server.connect(this.transport);
   }
 
