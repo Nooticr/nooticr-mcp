@@ -3,7 +3,7 @@
   "name": "com.orchyn/mcp",
   "title": "Orchyn",
   "description": "Social intelligence for 8 networks: read posts, creators and trends, then create from them.",
-  "version": "1.26.15",
+  "version": "1.26.17",
   "websiteUrl": "https://mcp.orchyn.com",
   "repository": {
     "url": "https://github.com/orchynX/mcp",
@@ -19,7 +19,7 @@
     {
       "registryType": "npm",
       "identifier": "@orchyn/mcp",
-      "version": "1.26.15",
+      "version": "1.26.17",
       "transport": {
         "type": "stdio"
       }
