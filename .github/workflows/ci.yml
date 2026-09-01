@@ -38,7 +38,10 @@ jobs:
       published: ${{ steps.pkg.outputs.published }}
       can_deploy: ${{ steps.cf.outputs.can_deploy }}
     steps:
+      # Full history: the version step below asks what this push changed.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -234,20 +237,65 @@ jobs:
         run: npx wrangler deploy --dry-run
 
       # Publishing the same version twice is a hard error, so decide here
-      # whether this commit actually moved it.
-      - name: Is this version already on npm?
+      # whether this commit actually moved it — and move it here when the
+      # commit changed what npm ships but left the version alone.
+      #
+      # That case is not hypothetical. 1.26.8 shipped the ChatGPT view twice,
+      # once blinking and once fixed: the fix reached the Worker, which deploys
+      # on every green push, and never reached npm, which publishes only when
+      # the version moves. Anyone on `npx @orchyn/mcp` kept the broken view
+      # while production had the fix, and the repo and npm quietly diverged.
+      #
+      # The bump is earned by a change under src/, not by the version merely
+      # being on npm already — which is also what stops the release commit this
+      # step pushes from bumping again on its own push, and releasing forever.
+      - name: Decide the version to publish
         id: pkg
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          set -euo pipefail
           NAME="$(node -p "require('./package.json').name")"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "$NAME@$VERSION is already on npm — publish will be skipped."
-          else
-            echo "published=false" >> "$GITHUB_OUTPUT"
+          VERSION="$(node -p "require('./package.json').version")"
+          emit() {
+            echo "version=$1" >> "$GITHUB_OUTPUT"
+            echo "published=$2" >> "$GITHUB_OUTPUT"
+          }
+
+          if ! npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
             echo "$NAME@$VERSION is new — it will be published."
+            emit "$VERSION" false
+            exit 0
           fi
+
+          BEFORE="${{ github.event.before }}"
+          case "$BEFORE" in
+            ""|0000000000000000000000000000000000000000) BEFORE="HEAD~1" ;;
+          esac
+          if [ "${{ github.event_name }}" != "push" ] \
+             || [ "${{ github.ref }}" != "refs/heads/main" ] \
+             || git diff --quiet "$BEFORE" HEAD -- src 2>/dev/null; then
+            echo "$NAME@$VERSION is already on npm and src is unchanged — publish will be skipped."
+            emit "$VERSION" true
+            exit 0
+          fi
+
+          npm version patch --no-git-tag-version >/dev/null
+          NEXT="$(node -p "require('./package.json').version")"
+          node -e '
+            const fs = require("fs"), p = ".claude-plugin/plugin.json";
+            const j = JSON.parse(fs.readFileSync(p, "utf8"));
+            j.version = require("./package.json").version;
+            fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+          '
+          echo "src changed under a version already on npm — bumped $VERSION -> $NEXT."
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json .claude-plugin/plugin.json
+          # [skip ci]: this push would otherwise start a run that cancels this
+          # one mid-publish — the concurrency group cancels in progress.
+          git commit -m "release: $NEXT [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}"
+          emit "$NEXT" false
 
       # The secrets context cannot be read from a job-level `if`, so the
       # decision is made here and passed down as an output.
@@ -281,7 +329,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.verify.outputs.published == 'false'
     runs-on: ubuntu-latest
     steps:
+      # main, not the pushed SHA: verify may have committed the version bump
+      # on top of it, and that is the tree npm must receive.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -308,7 +360,12 @@ jobs:
       && needs.verify.outputs.can_deploy == 'true'
     runs-on: ubuntu-latest
     steps:
+      # main, so /health reports the version npm just received rather than the
+      # one it replaced — production drifting from the package is the whole
+      # reason this job stopped being a manual step.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
