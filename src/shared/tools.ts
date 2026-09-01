@@ -274,11 +274,38 @@ function proxyImageUrlsInHtml(html: string): string {
  });
 }
 
+/**
+ * An expired session, however the API happens to phrase it.
+ *
+ * It arrives two ways: a 401 from the API, and "No orchyn access token
+ * available." raised locally when there is nothing left to send. Both mean the
+ * same thing to the person reading it.
+ */
+export function isAuthFailure(err: unknown): boolean {
+ return err instanceof OrchynError && (err.status === 401 || /access token/i.test(err.message));
+}
+
 function toolError(prefix: string, err: unknown): {
  content: Array<{ type: "text"; text: string }>;
  isError: true;
 } {
  const msg = err instanceof Error ? err.message : String(err);
+ // "orchyn API error (401) from /mcp" tells the reader nothing they can act
+ // on, and neither does "No orchyn access token available." Say what happened
+ // and what fixes it — including that they will not have to ask twice, which
+ // is only true now that orchyn_login resumes the interrupted call.
+ if (isAuthFailure(err)) {
+  return {
+   content: [{
+    type: "text",
+    text:
+     `${prefix}: your orchyn session has expired — you need to sign in again. ` +
+     `Call orchyn_login to get a sign-in link. This call will be re-run for you ` +
+     `as soon as you are back, so there is no need to ask twice. (${msg})`,
+   }],
+   isError: true,
+  };
+ }
  return { content: [{ type: "text", text: `${prefix}: ${msg}` }], isError: true };
 }
 
@@ -412,9 +439,6 @@ export function createMcpServer(
   * Recorded here so orchyn_login can finish the job instead.
   */
  let pendingAfterLogin: { name: string; args: Record<string, unknown> } | null = null;
-
- const isAuthFailure = (err: unknown): boolean =>
-  err instanceof OrchynError && (err.status === 401 || /access token/i.test(err.message));
 
  /**
   * Every proxied tool reaches the backend through callTool, so wrapping it
@@ -719,8 +743,7 @@ export function createMcpServer(
       isError: true,
      };
     }
-    const msg = err instanceof Error ? err.message : String(err);
-    return { content: [{ type: "text", text: `Analysis failed: ${msg}` }], isError: true };
+    return toolError("Analysis failed", err);
    }
   }
  );

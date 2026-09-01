@@ -141,3 +141,62 @@ describe("orchyn_login", () => {
     expect(String((res.content as Array<{ text: string }>)[0].text)).toContain("Signed in, but");
   });
 });
+
+// "orchyn API error (401) from /mcp" and "No orchyn access token available."
+// both describe the machine's problem, not the reader's. Neither says what to
+// do about it, and both are what a user saw when their session lapsed.
+describe("an expired session explains itself", () => {
+  // analyze_post goes through startVideoAnalysis rather than callTool, which
+  // is exactly why it had its own error message to begin with.
+  const expired = (message: string, status: number) =>
+    ({
+      me: async () => { throw new OrchynError(status, message); },
+      callTool: async () => { throw new OrchynError(status, message); },
+      startVideoAnalysis: async () => { throw new OrchynError(status, message); },
+    }) as unknown as OrchynClient;
+
+  it.each([
+    ["a 401 from the API", "orchyn API error (401) from /mcp", 401],
+    ["nothing left to send", "No orchyn access token available.", 400],
+  ])("%s tells the user to sign in", async (_label, message, status) => {
+    const client = await connect(expired(message, status));
+    const res = await client.callTool({
+      name: "discover_social_posts",
+      arguments: { niche: "fitness" },
+    });
+    const text = String((res.content as Array<{ text: string }>)[0].text);
+    expect(res.isError).toBe(true);
+    expect(text).toMatch(/session has expired/i);
+    // Name the way out, not just the problem.
+    expect(text).toContain("orchyn_login");
+    // And that the work is not lost, which is only true now that it resumes.
+    expect(text).toMatch(/no need to ask twice/i);
+    // The underlying text stays, for whoever has to debug it.
+    expect(text).toContain(message);
+  });
+
+  it("says it for the analysis tools too, which built their own message", async () => {
+    const client = await connect(expired("orchyn API error (401) from /mcp", 401));
+    const res = await client.callTool({
+      name: "analyze_post",
+      arguments: { url: "https://www.tiktok.com/@a/video/1" },
+    }, undefined, { timeout: 30_000 });
+    const text = String((res.content as Array<{ text: string }>)[0].text);
+    expect(text).toMatch(/session has expired/i);
+    expect(text).toContain("orchyn_login");
+  });
+
+  it("leaves an unrelated failure alone", async () => {
+    const broken = {
+      me: async () => ({ id: "u1" }),
+      callTool: async () => { throw new OrchynError(500, "upstream is down"); },
+    } as unknown as OrchynClient;
+    const client = await connect(broken);
+    const res = await client.callTool({ name: "discover_social_posts", arguments: { niche: "x" } });
+    const text = String((res.content as Array<{ text: string }>)[0].text);
+    expect(text).toContain("upstream is down");
+    // A 500 is not a login problem, and saying so would send the user off to
+    // re-authenticate for nothing.
+    expect(text).not.toMatch(/session has expired/i);
+  });
+});
