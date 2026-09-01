@@ -770,7 +770,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     appCapabilities:{availableDisplayModes:["inline"]},
     capabilities:{},
     clientInfo:{name:"orchyn-view",version:"2.0.0"}
-  }).then(sendInitialized).catch(sendInitialized);
+  }).then(function(){ bridgeAlive=true; sendInitialized(); }).catch(sendInitialized);
   // Unconditional fallback: never wait on a reply shape we don't recognize.
   setTimeout(sendInitialized, 500);
 
@@ -937,6 +937,67 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     repurpose_post:2,niche_report:3,find_hook_pattern:2,analyze_post:6,
     analyze_comments:6,compare_posts:8,understand_social_post:6,analyze_creator_profile:15};
 
+  // ChatGPT's Apps SDK does not answer the MCP Apps postMessage bridge. A
+  // widget there reaches its server through window.openai.callTool, and opens
+  // a link through window.openai.openExternal. This view only ever posted
+  // tools/call and ui/open-link, so on ChatGPT every in-view button posted
+  // into the void, waited out the 1500ms timeout and fell through to the
+  // clipboard - and a sandboxed widget iframe carries no clipboard-write
+  // grant either, so writeText rejected and the user was told "Copy failed"
+  // while nothing had happened. Prefer the host's own API where it exists and
+  // keep the bridge for the MCP Apps hosts that do answer it.
+  // A tool call is not a UI event. Fetching a feed or watching a video takes
+  // ten seconds and more - the discover call this view is built around
+  // measures 10.3s - so the 1500ms this used to wait declared a host that was
+  // running the tool correctly a failure, and showed "Copy failed" over a call
+  // that then succeeded. Wait as long as the result poll does, and keep the
+  // short deadline only for a host that answered neither the handshake nor
+  // offers an API of its own, which is the one case where nothing is coming.
+  var TOOL_CALL_BUDGET_MS=300000;
+  var bridgeAlive=false;
+
+  /** Ask the host to run a tool: onDone(result) when it does, onFail() only
+   *  when the host cannot run it at all. */
+  function invokeTool(tool,args,onDone,onFail){
+    var settled=false;
+    var fail=function(){ if(settled)return; settled=true; onFail(); };
+    var api=window.openai;
+    var native=!!(api&&typeof api.callTool==="function");
+    var p=null;
+    if(native){
+      try{ p=api.callTool(tool,args||{}); if(p&&!p.then)p=Promise.resolve(p); }catch(e){ p=null; }
+    }
+    if(!p){ try{ p=send("tools/call",{name:tool,arguments:args||{}}); }catch(e2){ p=null; } }
+    if(!p||!p.then){ fail(); return; }
+    p.then(function(r){ if(settled)return; settled=true; onDone(r); },fail);
+    setTimeout(fail,(native||bridgeAlive)?TOOL_CALL_BUDGET_MS:1500);
+  }
+
+  /** Show what the call came back with. A host that answers in-band hands the
+   *  result straight to us; one that also pushes a tool-result notification
+   *  would render the same payload again, so keep the globals bookkeeping in
+   *  step and let that second pass be skipped. */
+  function renderToolResult(r){
+    if(!r||typeof r!=="object")return false;
+    var sc=r.structuredContent;
+    if(!sc||typeof sc!=="object")return false;
+    lastOutRef=sc;
+    try{ lastOutSig=JSON.stringify(sc); }catch(e){ lastOutSig=""; }
+    toolResultReceived=true;
+    render({structuredContent:sc});
+    setTimeout(reportSize,50);
+    return true;
+  }
+
+  /** True once the host has been asked to open the link. */
+  function openHostLink(href){
+    var api=window.openai;
+    if(api&&typeof api.openExternal==="function"){
+      try{ api.openExternal({href:href}); return true; }catch(e){}
+    }
+    return false;
+  }
+
   function aiBtn(tool,label,argsJson){
     var cost=AI_PRICE[tool]||0;
     return '<button class="ai-btn" type="button" data-ai="'+esc(tool)+'" data-args="'+esc(argsJson)+'">'
@@ -979,12 +1040,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
           .catch(function(){restore("Try in chat");});
       }else restore("Try in chat");
     };
-    var pr=null;
-    try{pr=send("tools/call",{name:tool,arguments:args});}catch(e){}
-    if(pr&&pr.then){
-      pr.then(function(){settled=true;restore("Sent ✓");}).catch(fallback);
-      setTimeout(fallback,1500);
-    }else fallback();
+    invokeTool(tool,args,function(r){
+      settled=true;
+      restore("Sent ✓");
+      renderToolResult(r);
+    },fallback);
   }
 
   document.addEventListener("click",function(e){
@@ -1003,6 +1063,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     if(href.indexOf("http")!==0)return;
     e.preventDefault();
     var popOut=function(){try{window.open(href,"_blank","noopener");}catch(err){}};
+    if(openHostLink(href))return;
     var pr=null;
     try{pr=send("ui/open-link",{url:href});}catch(err2){}
     if(pr&&pr.then)pr.catch(popOut); else popOut();
@@ -1099,8 +1160,6 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       setTimeout(function(){ go.textContent="Compare"; syncPickBar(); },1800);
     };
     // Preferred path: the host runs the tool for us.
-    var p=null;
-    try{ p=send("tools/call",{name:"compare_posts",arguments:{urls:urls}}); }catch(e){}
     var settled=false;
     var fallback=function(){
       if(settled)return; settled=true;
@@ -1118,10 +1177,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
           .catch(function(){done("Copy failed");});
       } else done("Copy failed");
     };
-    if(p&&p.then){
-      p.then(function(){ settled=true; done("Sent ✓"); }).catch(fallback);
-      setTimeout(fallback,1500);
-    } else fallback();
+    invokeTool("compare_posts",{urls:urls},function(r){
+      settled=true;
+      done("Sent ✓");
+      renderToolResult(r);
+    },fallback);
   }
 
   // Images cannot bubble an error, so this listens in the capture phase: any
