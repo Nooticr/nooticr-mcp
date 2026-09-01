@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.orchyn/mcp",
+  "title": "Orchyn",
+  "description": "Social intelligence for 8 networks: read posts, creators and trends, then create from them.",
+  "version": "1.26.15",
+  "websiteUrl": "https://mcp.orchyn.com",
+  "repository": {
+    "url": "https://github.com/orchynX/mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.orchyn.com/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@orchyn/mcp",
+      "version": "1.26.15",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
