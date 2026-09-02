@@ -1867,7 +1867,10 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       +'<div class="mhead-top">'
       +'<div><div class="mention-term">'+(st.byCategory?"Comment review — ":"Mentions of ")
       +"<b>"+esc(st.term)+"</b> "
-      +(st.since?'<span class="mention-window">since '+esc(st.since)+"</span>":"")+"</div>"
+      +(st.since?'<span class="mention-window">since '+esc(st.since)
+        +(st.sinceApplied?"":" · not applied")
+        +(st.undatedMentions>0?" · "+esc(String(st.undatedMentions))+" undated":"")
+        +"</span>":"")+"</div>"
       +'<div class="mention-total">'+esc(String(st.total))+" comment"+(st.total===1?"":"s")
       +(st.byCategory
         ?(st.summary?"":"")
@@ -2749,6 +2752,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
         threads:d.threads,
         counts:(d.byPlatform&&typeof d.byPlatform==="object")?d.byPlatform:{},
         since:d.since?String(d.since):"",
+        // The badge used to print "since <date>" whenever a window was asked
+        // for, which asserted a filter had happened. Most networks do not date
+        // their comments, so it often had not. These two carry the truth.
+        sinceApplied:!!d.sinceApplied,
+        undatedMentions:Number(d.undatedMentions||0),
         total:Number(d.totalMentions||0),
         unavailable:Array.isArray(d.unavailable)?d.unavailable:[],
         hasMore:!!d.hasMore,
