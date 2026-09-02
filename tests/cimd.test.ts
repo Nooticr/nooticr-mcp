@@ -194,14 +194,30 @@ describe("server-side request forgery", () => {
 
   it("does not follow a redirect out of the fenced set", async () => {
     // Following one would land wherever the host check already refused to go.
+    // "manual", not "error": the Workers runtime only implements "follow" and
+    // "manual" — "error" throws on every request there, redirect or not, which
+    // is exactly the bug this test used to hide (Node's fetch, unlike Workers',
+    // does implement "error", so this suite stayed green in CI while every
+    // real CIMD verification failed in production).
     const seen: RequestInit[] = [];
     const impl = (async (_u: string, init: RequestInit) => {
       seen.push(init);
       return new Response(JSON.stringify(GOOD_DOC), { status: 200 });
     }) as unknown as typeof fetch;
     await fetchClientMetadata(CLIENT_ID, impl);
-    expect(seen[0].redirect).toBe("error");
+    expect(seen[0].redirect).toBe("manual");
     expect(seen[0].signal, "a hung host must not hold the authorize path open").toBeTruthy();
+  });
+
+  it("refuses a document host that redirects instead of answering", async () => {
+    // With redirect: "manual" the runtime hands back the 3xx (or, in a real
+    // browser/Workers fetch, an opaque redirect response) instead of
+    // following it — either way this must be treated as a refusal, not
+    // parsed as if it were the document.
+    const impl = (async () => new Response(null, { status: 302 })) as unknown as typeof fetch;
+    const res = await fetchClientMetadata(CLIENT_ID, impl);
+    expect(res.ok).toBe(false);
+    expect(res.ok === false && res.error).toBe("invalid_client");
   });
 
   it("refuses an oversized document", async () => {
