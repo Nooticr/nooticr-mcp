@@ -181,6 +181,42 @@ export const TOOL_DEFINITIONS = [
  description: "What the creators you watch have posted since you last checked. Fetches each one's recent posts and compares them against the snapshot taken at your last catch-up, then moves the snapshot forward \u2014 so it answers 'what is new' rather than 'what exists'. The first run for a creator records the baseline and has nothing to compare against. Use to follow a set of creators over time instead of re-reading each one. Consumes 2 orchyn credits per creator checked.",
  inputSchema: z.object({ limit: z.number().int().optional().describe("Posts to check per creator (default 6)."), platform: z.string().optional().describe("Only check creators on this platform.") }).strict(),
  },
+ {
+ name: "answer_my_audience",
+ title: "Answer My Audience",
+ description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because no orchyn connection carries comment-write permission \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 orchyn credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
+ inputSchema: z.object({ username: z.string().describe("Your handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts to open (default 6, max 12). Each one is a comment fetch, so this is the price."), commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 20, max 50)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD. Windows the posts, not the comments.") }).strict(),
+ },
+ {
+ name: "show_audience_replies",
+ title: "Show Audience Replies",
+ description: "Lay out the replies you drafted from answer_my_audience so a person can read them, grouped under the post each comment was left on, with what you decided to do about each one. Sends nothing and fetches nothing \u2014 it only draws what you pass it. Use after drafting, not instead of drafting. No cost to call.",
+ inputSchema: z.object({ username: z.string().describe("Whose audience this is, with or without @."), summary: z.string().optional(), replies: z.array(z.object({ id: z.string(), comment: z.string(), author: z.string().optional(), likes: z.number().optional(), postUrl: z.string().optional(), postTitle: z.string().optional(), postedAt: z.string().optional(), draft: z.string().optional(), kind: z.string().optional(), why: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
+ },
+ {
+ name: "track_competitor",
+ title: "Track Competitor",
+ description: "What a creator shipped recently, and which of it beat their own baseline. Scores every post in the window against the median of that same window, because a raw view count mostly measures follower count \u2014 outperformance against themselves is the signal worth reporting. If they are on your watchlist it also marks which posts are new since your last track_competitor call and moves that marker forward. Use for a rival you follow over time. Consumes 2 orchyn credits, whatever the window size.",
+ inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts in the window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to rank on (default views)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD.") }).strict(),
+ },
+ {
+ name: "who_should_i_work_with",
+ title: "Who Should I Work With",
+ description: "A collaboration shortlist for a niche. Searches creators by keyword and, when you name a creator who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist instead of faking it. Use to build a list to vet. Consumes 2 orchyn credits, or 4 with a seed creator.",
+ inputSchema: z.object({ niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."), platform: z.enum(["tiktok", "instagram", "xiaohongshu", "youtube", "douyin"]).optional().describe("Which platform (default tiktok)."), seed: z.string().optional().describe("A creator who already fits \u2014 their lookalikes are added. Costs 2 more credits."), count: z.number().int().optional().describe("Candidates from the keyword search (default 8, max 20).") }).strict(),
+ },
+ {
+ name: "why_did_this_underperform",
+ title: "Why Did This Underperform",
+ description: "One post measured against the creator's own recent median rather than against another post. Fetches the post and that creator's recent window, takes the post back out of its own baseline, and returns where it actually sits in the distribution \u2014 median, quartiles, ratio and percentile \u2014 so the answer can be 'this is an ordinary result, not a failure'. Use when you have one post and nothing to compare it with; compare_posts is for two URLs you already picked. Consumes 3 orchyn credits.",
+ inputSchema: z.object({ url: z.string().describe("The post to explain."), username: z.string().optional().describe("Whose baseline to use, when the post does not name its creator."), platform: z.string().optional().describe("Platform of the creator's feed."), window: z.number().int().optional().describe("Posts in the comparison window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to compare (default views).") }).strict(),
+ },
+ {
+ name: "what_should_i_make_next",
+ title: "What Should I Make Next",
+ description: "Demand and supply in one result. Reads the comments on a creator's own recent posts for what their audience explicitly asks for, sweeps the niche for what is already being made, and returns both with ids so an idea can be traced back to the comment that asked for it \u2014 a gap nobody asked for is noise, a request nobody serves is the opportunity. Names the niche from the creator's most-used hashtag when you do not give one. Use to decide what to film; niche_report covers the supply half alone. Consumes 2 orchyn credits for the post list, 2 per post read, and 2 for the sweep \u2014 12 at the default of 4 posts.",
+ inputSchema: z.object({ username: z.string().describe("Your handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), niche: z.string().optional().describe("Niche for the supply sweep. Defaults to your most frequent hashtag."), limit: z.number().int().optional().describe("Your posts to read comments on (default 4, max 8). This is the price."), commentsPerPost: z.number().int().optional().describe("Comments per post (default 25, max 50)."), supplyLimit: z.number().int().optional().describe("Posts in the niche sweep (default 12, max 30).") }).strict(),
+ },
 ] as const;
 
 export type ToolName = typeof TOOL_DEFINITIONS[number]["name"];

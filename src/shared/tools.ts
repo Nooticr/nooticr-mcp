@@ -31,6 +31,7 @@ import {
 } from "./spend.js";
 import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/interfaces.js";
 import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
+import { registerJobTools } from "./jobs.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.18";
@@ -601,6 +602,15 @@ export function createMcpServer(
   "search_mentions",
   "show_comment_review",
   "get_post_frames",
+  // The job tools (jobs.ts). Each draws through the same generic template:
+  // the three that return posts render as a gallery, and the two shaped like
+  // a search_mentions result render in the monitoring view.
+  "answer_my_audience",
+  "show_audience_replies",
+  "track_competitor",
+  "who_should_i_work_with",
+  "why_did_this_underperform",
+  "what_should_i_make_next",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -2232,7 +2242,12 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
  );
 
  registerPrompts(server);
- registerWatchlist(server, makeClient, opts?.watchStore ?? new MemoryWatchStore());
+ // One store for both. track_competitor keeps its "since I last looked" marker
+ // on the same watchlist entries, in its own field — two stores would mean a
+ // creator you watch and a creator you track were different people.
+ const watchStore = opts?.watchStore ?? new MemoryWatchStore();
+ registerWatchlist(server, makeClient, watchStore);
+ registerJobTools(server, makeClient, watchStore);
 
  return server;
 }

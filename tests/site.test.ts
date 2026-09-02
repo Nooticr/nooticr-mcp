@@ -255,6 +255,14 @@ describe("tool surface", () => {
     "orchyn_login",
     "show_comment_review",
     "get_post_frames",
+    // The job tools (jobs.ts): compositions of the calls above, named after
+    // the question rather than the endpoint.
+    "answer_my_audience",
+    "show_audience_replies",
+    "track_competitor",
+    "who_should_i_work_with",
+    "why_did_this_underperform",
+    "what_should_i_make_next",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -313,6 +321,8 @@ describe("tool surface", () => {
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
       "show_comment_review",
+      // The same, for the replies a model drafted from answer_my_audience.
+      "show_audience_replies",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

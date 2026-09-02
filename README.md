@@ -47,8 +47,15 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-30 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+36 tools, grouped by what you are trying to do. Prices are in orchyn credits and
 match what the server actually charges.
+
+Six of them — the ones under **Answer a question you actually have** — are not
+endpoint wrappers. Each names a job, fans out over the calls that job needs,
+groups the evidence by whatever you are deciding about, gives every item an id
+a follow-up tool can act on, and hands the reading to your model rather than to
+ours. They fan out, so they cost the sum of what they fetched and every one of
+them caps that fan-out with an argument.
 
 ### Read a post
 
@@ -87,6 +94,17 @@ match what the server actually charges.
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
 | `niche_report` | 3 | What is working in a niche right now: dominant formats, hook patterns, what over- and underperforms, the gaps nobody is filling. Use when deciding what to make. |
 | `analyze_creator_profile` | 15 (first use free) | Full teardown — fetches recent posts, watches up to three, then synthesises niche, themes, hook styles, strengths, audience and collaboration fit. |
+
+### Answer a question you actually have
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply, because no orchyn connection carries comment-write permission on any network. `limit` caps how many posts are opened, which is the price. |
+| `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
+| `track_competitor` | 2 | What a creator shipped, and which of it beat **their own** median rather than a raw view count that mostly measures follower count. One post list, whatever the window. If they are on your watchlist it also marks what is new since your last check and moves that marker forward — its own marker, not the one `catch_up_watchlist` keeps. |
+| `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
+| `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
+| `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
 
 ### Make something
 
