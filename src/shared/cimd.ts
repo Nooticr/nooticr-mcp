@@ -166,16 +166,15 @@ export async function fetchClientMetadata(
   const timer = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS);
   try {
     res = await fetchImpl(clientId, {
-      // A redirect could land somewhere the host check already rejected, so it
-      // is refused rather than followed.
-      redirect: "error",
+      // The Workers runtime only implements "follow" and "manual" — "error"
+      // throws synchronously on every call, redirect or not, which is why
+      // every CIMD verification here was failing unconditionally. "manual"
+      // gets the same refusal (a redirect could land somewhere the host check
+      // already rejected) via the opaqueredirect check below, without relying
+      // on a mode this runtime never implemented.
+      redirect: "manual",
       headers: {
         accept: "application/json",
-        // A Workers subrequest with no UA reads as non-browser traffic to the
-        // destination zone's own edge (bot management, WAF); claude.ai's CIMD
-        // fetch was observed failing outright with no HTTP response at all
-        // from inside the Workers runtime while identical requests succeeded
-        // from anywhere else. A normal UA string is the cheap fix.
         "user-agent": "orchyn-mcp/1.0 (+https://mcp.orchyn.com)",
       },
       signal: abort.signal,
@@ -189,6 +188,13 @@ export async function fetchClientMetadata(
     };
   } finally {
     clearTimeout(timer);
+  }
+  if (res.type === "opaqueredirect" || (res.status >= 300 && res.status < 400)) {
+    return {
+      ok: false,
+      error: "invalid_client",
+      description: "Client metadata document must not redirect.",
+    };
   }
   if (!res.ok) {
     return {
