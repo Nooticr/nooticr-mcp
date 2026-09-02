@@ -225,6 +225,7 @@ describe("UI template dual-host safety", () => {
  */
 describe("tool surface", () => {
   const EXPECTED = [
+    "search_mentions",
     "watch_creator",
     "unwatch_creator",
     "catch_up_watchlist",
@@ -586,5 +587,84 @@ describe("free first use", () => {
     const payable = TOOLS.filter((t) => !t.freeFirstUse)
       .reduce((sum, t) => sum + t.cost, 0);
     expect(payable).toBeLessThanOrEqual(20);
+  });
+});
+
+/**
+ * `tools-def.ts` declares what we intend to ship; `tools.ts` is what a client
+ * is actually handed. They drifted: `search_mentions` shipped reading comment
+ * text — the whole point of it — while the declaration still told the model
+ * "matches captions and titles, not comment text", and five platform lists
+ * named eight networks after two more had been added. A description is the
+ * only thing a model has to decide whether a tool can answer, so a stale one
+ * is not a documentation bug; it makes a working tool unreachable.
+ */
+describe("the declared tools and the shipped tools agree", () => {
+  const shipped = async () => {
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    return (await client.listTools()).tools;
+  };
+
+  const declared = async () => {
+    const { TOOL_DEFINITIONS } = await import("../src/shared/tools-def.js");
+    return TOOL_DEFINITIONS as Array<{ name: string; description: string }>;
+  };
+
+  // The two are worded independently on purpose, so this pins the facts they
+  // must not disagree on rather than the prose. The platform list is the one
+  // that drifted, and it is the one a model reads to decide whether a URL is
+  // even worth passing.
+  const NETWORKS = [
+    "tiktok", "instagram", "youtube", "reddit", "weibo",
+    "douyin", "xiaohongshu", "bilibili", "linkedin",
+  ];
+  const networksIn = (text: string) => {
+    const said = text.toLowerCase();
+    return NETWORKS.filter((n) => said.includes(n)).sort();
+  };
+
+  it("claims the same networks in both", async () => {
+    const live = Object.fromEntries((await shipped()).map((t) => [t.name, t.description ?? ""]));
+    const drifted: string[] = [];
+    for (const def of await declared()) {
+      const l = live[def.name];
+      if (l === undefined) continue; // covered by the declared/registered test
+      const a = networksIn(l).join(","), b = networksIn(def.description).join(",");
+      if (a !== b) drifted.push(`${def.name}: shipped [${a}] vs declared [${b}]`);
+    }
+    expect(drifted, "one file was updated and the other was not").toEqual([]);
+  });
+
+  /**
+   * Every network the tool will actually search has to appear in the sentence
+   * the model reads, or it will never think to ask for it.
+   */
+  it("names every network search_mentions can search", async () => {
+    const tool = (await shipped()).find((t) => t.name === "search_mentions")!;
+    const schema = JSON.stringify(tool.inputSchema);
+    const platforms = [...schema.matchAll(/"(youtube|tiktok|instagram|douyin|xiaohongshu|twitter|bilibili|reddit|weibo)"/g)]
+      .map((m) => m[1]);
+    expect(new Set(platforms).size, "the enum should list nine networks").toBe(9);
+    const said = (tool.description ?? "").toLowerCase();
+    const unnamed = [...new Set(platforms)].filter((p) => {
+      const alias = { twitter: "x/twitter", xiaohongshu: "xiaohongshu" }[p] ?? p;
+      return !said.includes(alias);
+    });
+    expect(unnamed, "networks the tool searches but never mentions").toEqual([]);
+  });
+
+  /** The one it got wrong: it reads comments, and used to deny it. */
+  it("does not deny reading comments", async () => {
+    const tool = (await shipped()).find((t) => t.name === "search_mentions")!;
+    expect(tool.description ?? "").not.toMatch(/not comment text/i);
+    expect(tool.description ?? "").toMatch(/comments/i);
   });
 });

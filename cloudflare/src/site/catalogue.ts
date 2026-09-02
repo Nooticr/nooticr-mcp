@@ -187,6 +187,14 @@ export const TOOLS: Tool[] = [
     when: "Moving from why it worked to what to make.",
   },
 
+  // ── brand monitoring ──
+  {
+    name: "search_mentions", cost: 2, group: "research",
+    args: "term, platforms?, since?, limit?, offset?",
+    desc: "Brand monitoring: every comment that names a term, across nine networks at once, grouped under the post it was left on and filtered to a date window you choose \u2014 2 credits per network searched (5 for Xiaohongshu), not per call.",
+    when: "Watching what is said about a brand, product or person; discover_social_posts is for one platform.",
+  },
+
   // ── watchlist ──
   // The only tools that remember anything between calls: everything else here
   // answers "what is true now", and these answer "what changed since I asked".

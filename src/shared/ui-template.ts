@@ -214,6 +214,63 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 .meter-track{height:5px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:6px}
 .meter-track>i{display:block;height:100%;border-radius:999px}
 .chiprow{display:flex;flex-wrap:wrap;gap:5px}
+/* Brand monitoring: a triage surface. The header stays put while the list
+   scrolls, because the counts are what you narrow by. */
+.mhead{position:sticky;top:0;z-index:3;background:var(--bg);padding:2px 0 10px;border-bottom:1px solid var(--border)}
+.mhead-top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mention-term{font-size:13px;color:var(--muted);margin-bottom:2px}
+.mention-term b{color:var(--fg)}
+.mention-total{font-size:20px;font-weight:650;color:var(--fg);letter-spacing:-0.01em}
+.mention-down{margin-top:8px;font-size:12px;color:var(--muted)}
+.mention-window{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:1px 8px}
+.msort{display:inline-flex;flex:none;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.msort-btn{font-size:11.5px;font-weight:600;color:var(--muted);background:transparent;border:0;padding:5px 11px;cursor:pointer;transition:var(--transition)}
+.msort-btn+.msort-btn{border-left:1px solid var(--border)}
+.msort-btn:hover{color:var(--fg)}
+.msort-btn.on{color:var(--fg);background:var(--tag)}
+/* The counts are the filter — a nine-platform sweep is unreadable as one list. */
+.mchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--border);border-left:3px solid var(--brand,var(--border));padding:4px 10px;border-radius:6px;cursor:pointer;transition:var(--transition)}
+.mchip:hover{color:var(--fg);border-color:var(--muted)}
+.mchip b{color:var(--fg);font-weight:650}
+.mchip.on{color:var(--fg);background:var(--tag);border-color:var(--muted);border-left-color:var(--brand,var(--muted))}
+.mchip.quiet{opacity:.5;cursor:default}
+.mchip.quiet:hover{color:var(--muted);border-color:var(--border)}
+.mchip-mark{display:inline-flex;color:var(--brand)}
+.mchip-mark svg{width:13px;height:13px;fill:currentColor}
+.mgroups{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.mgroup{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--card)}
+.mgroup-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.mgroup-plat{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--brand)}
+.mgroup-plat svg{width:12px;height:12px;fill:currentColor}
+.mgroup-about{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:1px 7px}
+.mgroup-reach{margin-left:auto;font-size:11px;color:var(--muted)}
+.mgroup-title{font-size:13px;font-weight:600;color:var(--fg);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mgroup-rest{align-self:flex-start;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--muted);background:transparent;border:0;padding:2px 0;cursor:pointer;transition:var(--transition)}
+.mgroup-rest:hover{color:var(--fg)}
+.mgroup-actions{display:flex;align-items:center;gap:12px;margin-top:5px}
+.mgroup-link{font-size:11.5px;color:var(--muted);text-decoration:none}
+.mgroup-link:hover{color:var(--fg);text-decoration:underline}
+.mgroup-all{font-size:11.5px;font-weight:600;color:var(--muted);background:transparent;border:0;padding:0;cursor:pointer;transition:var(--transition)}
+.mgroup-all:hover{color:var(--fg)}
+.mgroup-none{margin-top:8px;font-size:12px;color:var(--muted)}
+.mgroup-media{margin-top:10px}
+/* The comment leads; who said it and when sit underneath. */
+.mentions{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.mention{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:var(--transition)}
+.mention:hover{border-color:var(--muted)}
+.mention.picked{border-color:var(--accent);background:var(--tag)}
+.mention-pick{margin-top:3px;flex:none;width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+.mention-body{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.mention-text{font-size:13.5px;line-height:1.45;color:var(--fg);word-break:break-word}
+.mention-text mark{background:rgba(250,204,21,.38);color:inherit;border-radius:3px;padding:0 2px}
+.mention-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mention-who{font-size:11.5px;font-weight:600;color:var(--muted)}
+.mention-hits{font-size:10.5px;font-weight:700;color:var(--fg);background:var(--tag);border:1px solid var(--border);border-radius:999px;padding:0 6px}
+.mention-likes,.mention-when{font-size:10.5px;color:var(--muted)}
+.mention-more{display:block;width:100%;margin-top:12px;padding:10px;font-size:13px;font-weight:600;color:var(--fg);background:var(--tag);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:var(--transition)}
+.mention-more:hover:not(:disabled){border-color:var(--muted)}
+.mention-more:disabled{opacity:.6;cursor:default}
 .tag.copyable{cursor:pointer;border:1px solid var(--border);font:inherit;font-size:12px;
   display:inline-flex;align-items:center;gap:5px}
 .tag.copyable:hover{border-color:var(--accent)}
@@ -1551,7 +1608,14 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   },120);});
 
   function fmtNum(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);}
-  function pColor(p){return{tiktok:"#000",douyin:"#000",instagram:"#E4405F",youtube:"#FF0000",xiaohongshu:"#FF2442",x:"#000",twitter:"#1DA1F2",bilibili:"#00A1D6",linkedin:"#0A66C2"}[p]||"#6B7280";}
+  function pColor(p){return{tiktok:"#000",douyin:"#000",instagram:"#E4405F",youtube:"#FF0000",xiaohongshu:"#FF2442",x:"#000",twitter:"#1DA1F2",bilibili:"#00A1D6",linkedin:"#0A66C2",reddit:"#FF4500",weibo:"#E6162D"}[p]||"#6B7280";}
+  /** Display name for a platform key — "xiaohongshu" is not a label. */
+  function pTitle(p){
+    var m={tiktok:"TikTok",douyin:"Douyin",instagram:"Instagram",youtube:"YouTube",
+      xiaohongshu:"Xiaohongshu",twitter:"X",x:"X",bilibili:"Bilibili",
+      linkedin:"LinkedIn",reddit:"Reddit",weibo:"Weibo"};
+    return m[p]||(p?String(p).charAt(0).toUpperCase()+String(p).slice(1):"");
+  }
   // Brand colours are chosen against a white page. TikTok, Douyin and X are
   // pure black, so used as label text on the dark card they were invisible.
   // Keep the brand colour for fills, but lift a too-dark one toward the card
@@ -1597,8 +1661,365 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="currentColor" style="display:block;flex-shrink:0" aria-hidden="true" focusable="false"><path d="'+d+'"/></svg>';
   }
 
+  /**
+   * The monitoring screen, kept in a variable so filtering and sorting redraw
+   * without another paid call. A sandboxed view cannot re-query; anything the
+   * user narrows has to be narrowed from what is already here.
+   */
+  var monitorState=null;
+  var monitorTerm="";
+
+  /** Identifies a group across a redraw. The permalink is the stable part. */
+  function groupKey(t){
+    var post=t.post||{};
+    return String(post.externalUrl||(post.platform||"")+":"+(post.title||""));
+  }
+  /** The group a key names, or null if the page has moved on. */
+  function groupByKey(k){
+    var found=null;
+    (monitorState?monitorState.threads:[]).forEach(function(t){
+      if(!found&&groupKey(t)===k)found=t;
+    });
+    return found;
+  }
+
+  /** How many comments a group shows before it asks. */
+  var GROUP_PEEK=4;
+  /** Groups the reader has opened, by post URL, kept across a filter or sort. */
+  var expandedGroups={};
+
+  /** Reach of the post a comment sits under — how many people saw it. */
+  function postReach(post){
+    var bits=[];
+    if(post.views)bits.push(fmtNum(post.views)+" views");
+    if(post.likes)bits.push(fmtNum(post.likes)+" likes");
+    if(post.comments)bits.push(fmtNum(post.comments)+" comments");
+    return bits.slice(0,2).join(" · ");
+  }
+
+  /** Newest comment in a group, for the "recent first" ordering. */
+  function groupNewest(t){
+    var best=0;
+    (t.mentions||[]).forEach(function(m){
+      var d=new Date(String(m.postedAt||""));
+      if(!isNaN(d.getTime())&&d.getTime()>best)best=d.getTime();
+    });
+    return best;
+  }
+
+  function renderMonitor(){
+    var app=document.getElementById("app");
+    if(!app||!monitorState)return;
+    var st=monitorState;
+
+    var keep=st.threads.filter(function(t){
+      // A post with no matching comment earns its space only when the post
+      // itself names the term; otherwise it is a card that says nothing.
+      return Number(t.mentionCount||0)>0||!!t.postIsAboutTerm;
+    });
+    // Which platforms have something on screen — not the same as which have a
+    // comment. A post that names the term with no matching replies still shows.
+    var onScreen={};
+    keep.forEach(function(t){onScreen[String((t.post||{}).platform||"")]=true;});
+    var shown=st.filter?keep.filter(function(t){
+      return String((t.post||{}).platform||"")===st.filter;
+    }):keep;
+    if(st.sort==="new"){
+      shown=shown.slice().sort(function(a,b){return groupNewest(b)-groupNewest(a);});
+    }
+
+    var order=Object.keys(st.counts).sort(function(a,b){return (st.counts[b]||0)-(st.counts[a]||0);});
+    var live=order.filter(function(k){return Number(st.counts[k]||0)>0;});
+    // A platform that returned nothing still gets a chip — "we looked there and
+    // it was quiet" is an answer — but it is not a filter, because filtering to
+    // it is a dead end.
+    var chips=['<button type="button" class="mchip'+(st.filter?"":" on")
+      +'" data-filter="">All <b>'+esc(String(st.total))+"</b></button>"]
+      .concat(order.map(function(k){
+        var n=Number(st.counts[k]||0),has=!!onScreen[k];
+        return '<button type="button" class="mchip'+(st.filter===k?" on":"")+(has?"":" quiet")
+          +'" data-filter="'+esc(k)+'"'+(has?"":" disabled")+' style="--brand:'+pColor(k)+'">'
+          +'<span class="mchip-mark">'+pSvg(k,13)+"</span>"
+          +esc(pTitle(k))+" <b>"+esc(String(n))+"</b></button>";
+      })).join("");
+
+    var down=st.unavailable.length
+      ? '<div class="mention-down">Could not reach '
+        +st.unavailable.map(function(u){return esc(pTitle(u&&u.platform||"?"));}).join(", ")
+        +" — those networks may have more.</div>"
+      : "";
+
+    var head='<div class="mhead">'
+      +'<div class="mhead-top">'
+      +'<div><div class="mention-term">Mentions of <b>'+esc(st.term)+"</b> "
+      +(st.since?'<span class="mention-window">since '+esc(st.since)+"</span>":"")+"</div>"
+      +'<div class="mention-total">'+esc(String(st.total))+" comment"+(st.total===1?"":"s")
+      +(live.length?" across "+esc(String(live.length))+" network"+(live.length===1?"":"s"):"")
+      +"</div></div>"
+      +'<div class="msort"><button type="button" class="msort-btn'+(st.sort==="loud"?" on":"")
+      +'" data-sort="loud">Loudest</button>'
+      +'<button type="button" class="msort-btn'+(st.sort==="new"?" on":"")
+      +'" data-sort="new">Newest</button></div>'
+      +"</div>"
+      +'<div class="mchips">'+chips+"</div>"+down+"</div>";
+
+    if(!shown.length){
+      app.innerHTML=head+'<div class="empty-state fade-in"><div class="icon">🔍</div>'
+        +'<div class="text">'+(st.filter?"Nothing from "+esc(pTitle(st.filter)):"Nobody has mentioned that yet")
+        +"</div></div>";
+      setTimeout(reportSize,50);
+      return;
+    }
+
+    var groups=shown.map(function(t){
+      var post=t.post||{},plat=String(post.platform||""),about=!!t.postIsAboutTerm;
+      var reach=postReach(post),link=String(post.externalUrl||"");
+      var n=Number(t.mentionCount||0);
+      var all=t.mentions||[];
+      // A coordinated burst — seven near-identical fan posts under one Weibo
+      // thread is a real shape in this data — should read as one loud thing,
+      // not push everything else off the screen. Nothing is dropped: the rest
+      // are one click away, and the click costs nothing.
+      var key=groupKey(t);
+      var open=expandedGroups[key],cut=open?all.length:Math.min(all.length,GROUP_PEEK);
+      var mentions=all.slice(0,cut).map(function(m){
+        var hits=Number(m.hits||1),id=String(m.id||"");
+        // The comment first, then who and when: the words are what is being
+        // scanned, and the attribution only matters once they land.
+        return '<label class="mention" data-mention-id="'+esc(id)+'">'
+          +'<input type="checkbox" class="mention-pick" data-mid="'+esc(id)+'"/>'
+          +'<span class="mention-body">'
+          +'<span class="mention-text">'+highlightTerm(String(m.text||""),st.term)+"</span>"
+          +'<span class="mention-meta">'
+          +'<span class="mention-who">@'+esc(String(m.username||"someone"))+"</span>"
+          +(m.likes?'<span class="mention-likes">'+esc(fmtNum(m.likes))+" ♥</span>":"")
+          +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
+          +(m.postedAt?'<span class="mention-when">'+esc(shortDate(m.postedAt))+"</span>":"")
+          +"</span></span></label>";
+      }).join("");
+      return '<div class="mgroup" data-platform="'+esc(plat)+'">'
+        +'<div class="mgroup-head">'
+        +'<span class="mgroup-plat" style="--brand:'+pColor(plat)+'">'+pSvg(plat,12)+" "+esc(pTitle(plat))+"</span>"
+        +(about?'<span class="mgroup-about">about '+esc(st.term)+"</span>":"")
+        +(reach?'<span class="mgroup-reach">'+esc(reach)+"</span>":"")
+        +"</div>"
+        +'<div class="mgroup-title">'+esc(String(post.title||post.caption||"").slice(0,140))+"</div>"
+        +'<div class="mgroup-actions">'
+        +(link?'<a class="mgroup-link" href="'+esc(link)+'" target="_blank" rel="noopener">Open ↗</a>':"")
+        // A post can name the term while none of its comments do; there is
+        // nothing to select there, so do not offer to select it.
+        +(n?'<button type="button" class="mgroup-all" data-group-all="'+esc(key)+'">Select all '+esc(String(n))+"</button>":"")
+        +"</div>"
+        +(n?'<div class="mentions">'+mentions
+             +(all.length>cut||open&&all.length>GROUP_PEEK
+               ?'<button type="button" class="mgroup-rest" data-expand="'+esc(key)+'">'
+                 +(open?"Show fewer":"Show "+(all.length-cut)+" more from this post")+"</button>"
+               :"")
+             +"</div>"
+           :'<div class="mgroup-none">The post names '+esc(st.term)+", but none of its comments do.</div>")
+        +"</div>";
+    }).join("");
+
+    var more=st.hasMore&&!st.filter
+      ? '<button class="mention-more" type="button" data-next-offset="'+esc(String(st.nextOffset))
+        +'" data-term="'+esc(st.term)+'">Load more mentions</button>'
+      : "";
+    app.innerHTML=head+'<div class="mgroups fade-in">'+groups+"</div>"+more+pickBarHtml();
+    initMentionPicks();
+    // Selections survive a filter or sort: narrowing the view is not unpicking.
+    applyMentionPicks();
+    setTimeout(reportSize,60);
+  }
+
+  // Filter and sort redraw from memory rather than re-querying — the view has
+  // no way to call the tool again for free, and the user did not ask to spend.
+  document.addEventListener("click",function(e){
+    var chip=e.target.closest&&e.target.closest(".mchip");
+    if(chip&&monitorState){
+      monitorState.filter=chip.getAttribute("data-filter")||"";
+      renderMonitor();
+      return;
+    }
+    var sort=e.target.closest&&e.target.closest(".msort-btn");
+    if(sort&&monitorState){
+      monitorState.sort=sort.getAttribute("data-sort")||"loud";
+      renderMonitor();
+      return;
+    }
+    var rest=e.target.closest&&e.target.closest("[data-expand]");
+    if(rest&&monitorState){
+      var k=rest.getAttribute("data-expand")||"";
+      expandedGroups[k]=!expandedGroups[k];
+      renderMonitor();
+      return;
+    }
+    var all=e.target.closest&&e.target.closest("[data-group-all]");
+    if(all&&monitorState){
+      // Over the group's comments, not its rendered rows: a collapsed comment
+      // is still one the reader asked for when they said "all".
+      var t=groupByKey(all.getAttribute("data-group-all")||"");
+      if(!t)return;
+      var ids=(t.mentions||[]).map(function(m){return String(m.id||"");}).filter(Boolean);
+      var turnOn=ids.some(function(id){return pickedMentions.indexOf(id)<0;});
+      ids.forEach(function(id){
+        var i=pickedMentions.indexOf(id);
+        if(turnOn&&i<0)pickedMentions.push(id);
+        if(!turnOn&&i>=0)pickedMentions.splice(i,1);
+      });
+      applyMentionPicks();
+    }
+  });
+
+  /**
+   * Make what is on screen agree with the selection — after a redraw, and
+   * after a select-all that reached comments no row is showing.
+   */
+  function applyMentionPicks(){
+    document.querySelectorAll(".mention-pick").forEach(function(b){
+      var on=pickedMentions.indexOf(b.getAttribute("data-mid")||"")>=0;
+      b.checked=on;
+      var row=b.closest(".mention");
+      if(row)row.classList.toggle("picked",on);
+    });
+    document.querySelectorAll("[data-group-all]").forEach(function(b){
+      var t=groupByKey(b.getAttribute("data-group-all")||"");
+      if(!t)return;
+      var ids=(t.mentions||[]).map(function(m){return String(m.id||"");}).filter(Boolean);
+      var allOn=ids.length&&ids.every(function(id){return pickedMentions.indexOf(id)>=0;});
+      b.textContent=allOn?"Clear these":"Select all "+ids.length;
+    });
+    syncMentionBar();
+  }
+
+  /**
+   * Show where the term actually appears in a comment.
+   *
+   * Walked by index rather than matched by regex: this template is embedded in
+   * a Rust raw string as well as a TS literal, and a backslash means different
+   * things in the two — so the file carries none at all. Escaping each slice
+   * separately also means the mark cannot be injected by the comment text,
+   * every word of which came from a stranger.
+   */
+  function highlightTerm(text,term){
+    var src=String(text||""),t=String(term||"").trim();
+    if(!t)return esc(src);
+    var low=src.toLowerCase(),needle=t.toLowerCase(),out="",i=0;
+    for(;;){
+      var at=low.indexOf(needle,i);
+      if(at<0){out+=esc(src.slice(i));break;}
+      out+=esc(src.slice(i,at))+"<mark>"+esc(src.slice(at,at+needle.length))+"</mark>";
+      i=at+needle.length;
+    }
+    return out;
+  }
+
+  /** "2026-08-18" rather than a full timestamp: the day is the useful part. */
+  function shortDate(v){
+    var s=String(v||"");
+    if(!s)return "";
+    var d=new Date(s);
+    if(!isNaN(d.getTime()))return d.toISOString().slice(0,10);
+    return s.slice(0,10);
+  }
+
+  /**
+   * Selected comments, so an agent can be handed exactly the ones a person
+   * picked — reply to these, escalate those. The ids come straight from the
+   * tool result, so what the host receives addresses the same comments.
+   */
+  var pickedMentions=[];
+  var mentionPicksWired=false;
+  // Idempotent: the monitoring screen redraws on every filter and sort, and a
+  // listener added per redraw would fire a selection several times over.
+  function initMentionPicks(){
+    if(!mentionPicksWired){
+      mentionPicksWired=true;
+      document.addEventListener("change",onMentionPick);
+      document.addEventListener("click",function(e){
+        var c=e.target.closest&&e.target.closest("#pickclear");
+        if(!c||!pickedMentions.length)return;
+        pickedMentions=[];
+        applyMentionPicks();
+      },true);
+    }
+    syncMentionBar();
+  }
+  function onMentionPick(e){
+    var box=e.target;
+    if(!box||!box.classList||!box.classList.contains("mention-pick"))return;
+    var id=box.getAttribute("data-mid")||"";
+    var i=pickedMentions.indexOf(id);
+    if(box.checked&&i<0)pickedMentions.push(id);
+    if(!box.checked&&i>=0)pickedMentions.splice(i,1);
+    var row=box.closest(".mention");
+    if(row)row.classList.toggle("picked",box.checked);
+    syncMentionBar();
+  }
+  function syncMentionBar(){
+    var bar=document.getElementById("pickbar");
+    if(!bar)return;
+    var n=document.getElementById("pickn");
+    if(pickedMentions.length){
+      bar.hidden=false;
+      if(n)n.textContent=pickedMentions.length;
+      var hint=document.getElementById("pickhint");
+      if(hint)hint.textContent=pickedMentions.length===1?"1 comment selected":pickedMentions.length+" comments selected";
+      var go=document.getElementById("pickgo");
+      if(go){go.disabled=false;go.textContent="Analyse these";}
+    }else{
+      bar.hidden=true;
+    }
+    setTimeout(reportSize,60);
+  }
+
+  // Selected comments go to the host as a tool call, so whatever the user
+  // picked is what the model receives — the ids are the tool's own.
+  document.addEventListener("click",function(e){
+    var go=e.target.closest&&e.target.closest("#pickgo");
+    if(!go||!pickedMentions.length)return;
+    if(!document.querySelector(".mention-pick"))return; // the compare bar owns it
+    e.stopPropagation();
+    go.disabled=true;go.textContent="Sending…";
+    // From the result, not the rendered rows: a selected comment inside a
+    // collapsed group has no row to read the text off.
+    var byId={};
+    (monitorState?monitorState.threads:[]).forEach(function(t){
+      (t.mentions||[]).forEach(function(m){byId[String(m.id||"")]=String(m.text||"");});
+    });
+    var texts=pickedMentions.map(function(id){
+      if(byId[id]!==undefined)return byId[id];
+      var el=document.querySelector('.mention[data-mention-id="'+id+'"] .mention-text');
+      return el?el.textContent:"";
+    }).filter(Boolean);
+    invokeTool("analyze_comments",{comments:texts,ids:pickedMentions},function(){
+      go.textContent="Sent ✓";
+      setTimeout(function(){go.disabled=false;go.textContent="Analyse these";},1800);
+    },function(){
+      go.textContent="Try in chat";
+      setTimeout(function(){go.disabled=false;go.textContent="Analyse these";},1800);
+    });
+  },true);
+
+  // Load more asks the host to re-run the tool with the next offset, which is
+  // the only way a sandboxed view can page: it has no data of its own.
+  document.addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest(".mention-more");
+    if(!b||b.disabled)return;
+    b.disabled=true;
+    var was=b.textContent;
+    b.textContent="Loading…";
+    invokeTool("search_mentions",{
+      term:b.getAttribute("data-term")||"",
+      offset:Number(b.getAttribute("data-next-offset")||0),
+    },function(){ b.textContent="Loaded ✓"; },function(){
+      b.disabled=false;b.textContent=was;
+    });
+  });
+
   function pSvg(p,size){
     var s=size||14,paths={
+      reddit:"M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286A.72.72 0 001.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0zm4.388 3.199a1.999 1.999 0 11-1.947 2.46v.002a2.37 2.37 0 00-2.032 2.341v.007c1.334.065 2.559.371 3.591.923a1.998 1.998 0 112.086 3.372c.005.061.007.121.007.183 0 2.891-3.611 5.235-8.067 5.235-4.455 0-8.066-2.344-8.066-5.235 0-.062.002-.122.007-.183a1.998 1.998 0 112.086-3.372c1.032-.552 2.257-.858 3.591-.923v-.007a3.77 3.77 0 013.412-3.751 1.999 1.999 0 011.332-1.052zM9.25 12a1.25 1.25 0 100 2.5 1.25 1.25 0 000-2.5zm5.5 0a1.25 1.25 0 100 2.5 1.25 1.25 0 000-2.5zm-5.466 3.99a.327.327 0 00-.231.094.33.33 0 000 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 00.029-.463.33.33 0 00-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 00-.232-.095z",
+      weibo:"M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.027-1.32c-.141.237-.449.353-.689.253-.236-.09-.312-.359-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.4-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.815-1.336-1.335-4.891.045-7.94 3.089C1.009 11.104 0 13.499 0 15.564c0 3.951 5.067 6.36 10.028 6.36 6.504 0 10.834-3.782 10.834-6.78 0-1.809-1.529-2.835-2.897-3.264l-.149-.03v.106zm2.482-6.135c-1.502-1.666-3.716-2.305-5.767-1.869a.914.914 0 00-.705 1.086.916.916 0 001.086.705c1.454-.309 3.03.15 4.096 1.327 1.061 1.18 1.363 2.79.9 4.2a.918.918 0 00.585 1.155.913.913 0 001.155-.585c.66-1.984.238-4.25-1.259-5.909l-.091-.11zm-2.204 1.995c-.732-.81-1.812-1.125-2.81-.915a.789.789 0 10.33 1.545c.489-.105 1.02.045 1.38.45.359.401.464.945.315 1.425a.795.795 0 00.51.996.79.79 0 00.996-.51c.301-.976.09-2.086-.646-2.895l-.075-.096z",
       tiktok:"M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z",
       instagram:"M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077",
       youtube:"M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
@@ -2136,6 +2557,44 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
         +(c.nextTest?'<div style="margin-top:14px;padding:10px 12px;background:var(--tag);border-radius:10px;font-size:13px"><b>Next test:</b> '+esc(c.nextTest)+"</div>":"")
         +"</div></div>";
       return;}
+
+    // Brand monitoring.
+    //
+    // This screen is a triage surface, not a feed. The job is to see what needs
+    // answering, how loud it is, and where — so three things drive the layout.
+    //
+    // The comment leads and its metadata sits under it, because the comment is
+    // what you are reading; who said it matters only once the words have caught
+    // your eye. The post carries its reach, because the same sentence under a
+    // 25K-upvote thread and under one nobody saw are not the same problem, and
+    // nothing else on screen tells you which you are looking at. And the counts
+    // are filters rather than decoration: a nine-platform sweep is unreadable
+    // as one list, and the chips were already the obvious place to narrow it.
+    //
+    // Deliberately not here: a sentiment badge. Nothing in this payload says
+    // whether a comment is angry, and colouring it green or red from a keyword
+    // guess would be confidently wrong about the one thing you are scanning
+    // for. The signals shown are the ones that are real — reach, repetition,
+    // recency, likes — and the reading is left to the model.
+    if(d.term!==undefined&&Array.isArray(d.threads)){
+      monitorState={
+        term:String(d.term||""),
+        threads:d.threads,
+        counts:(d.byPlatform&&typeof d.byPlatform==="object")?d.byPlatform:{},
+        since:d.since?String(d.since):"",
+        total:Number(d.totalMentions||0),
+        unavailable:Array.isArray(d.unavailable)?d.unavailable:[],
+        hasMore:!!d.hasMore,
+        nextOffset:d.nextOffset,
+        filter:"",
+        sort:"loud",
+      };
+      // A new term addresses different comments, so a selection made against
+      // the old one is stale rather than carried over.
+      if(monitorTerm!==monitorState.term){monitorTerm=monitorState.term;pickedMentions=[];}
+      renderMonitor();
+      return;
+    }
 
     // Posts gallery
     if(d.posts&&Array.isArray(d.posts)){

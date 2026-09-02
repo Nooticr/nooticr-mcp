@@ -42,7 +42,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(27);
+    expect(tools).toHaveLength(28);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -220,4 +220,42 @@ describe("long-running tools", () => {
     expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
     expect((res.structuredContent as { analysis?: { summary?: string } })?.analysis?.summary).toBe("s");
   }, 30_000);
+});
+
+// The view is sandboxed: a host enforcing the CSP blocks any media host not on
+// this list, and ChatGPT logged exactly that ("violates ... media-src"). Adding
+// a platform without adding its CDNs ships cards whose media silently fails.
+describe("media CSP allowlist", () => {
+  const cdnDomains = async () => {
+    const client = await connect();
+    const res = await client.readResource({ uri: "ui://orchyn/discover_social_posts" });
+    const meta = res.contents[0]._meta as { ui?: { csp?: { resourceDomains?: string[] } } };
+    return meta?.ui?.csp?.resourceDomains ?? [];
+  };
+
+  it.each([
+    ["reddit", ["redd.it", "redditstatic.com"]],
+    ["weibo", ["sinaimg.cn", "weibocdn.com"]],
+    ["tiktok", ["tiktokcdn.com", "tiktokcdn-us.com"]],
+    ["instagram", ["cdninstagram.com", "fbcdn.net"]],
+  ])("%s media hosts are allowed", async (_platform, hosts) => {
+    const domains = (await cdnDomains()).join(" ");
+    for (const h of hosts) {
+      expect(domains, `${h} is not in the CSP allowlist, so its media is blocked`).toContain(h);
+    }
+  });
+
+  it("covers every platform the tools advertise", async () => {
+    const domains = (await cdnDomains()).join(" ");
+    // One representative CDN per platform we let a caller pick.
+    const perPlatform: Record<string, string> = {
+      tiktok: "tiktokcdn", instagram: "cdninstagram", youtube: "ytimg",
+      douyin: "douyinpic", xiaohongshu: "xhscdn", bilibili: "hdslb",
+      reddit: "redd.it", weibo: "sinaimg",
+    };
+    const missing = Object.entries(perPlatform)
+      .filter(([, cdn]) => !domains.includes(cdn))
+      .map(([p]) => p);
+    expect(missing, "platforms whose media the view cannot load").toEqual([]);
+  });
 });

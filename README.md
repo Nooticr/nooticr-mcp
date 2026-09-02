@@ -3,11 +3,14 @@
 MCP (Model Context Protocol) server for [orchyn](https://orchyn.com).
 
 Gives an AI assistant three things: it can **read** real social posts across
-eight networks (TikTok, Instagram, YouTube, X/Twitter, LinkedIn, Douyin,
-Xiaohongshu, Bilibili), **understand** them — transcript, hook, script
+ten networks (TikTok, Instagram, YouTube, X/Twitter, Reddit, LinkedIn, Douyin,
+Xiaohongshu, Weibo, Bilibili), **understand** them — transcript, hook, script
 structure, comment themes, why one post beat another — and **make** something
 from what it learned: hooks, variants to film, a scored draft, a repurposed
 thread.
+
+It also **monitors a name**: `search_mentions` sweeps nine of those networks for
+every comment that says your brand, inside a date window you choose.
 
 Runs over stdio locally or as a hosted connector at `https://mcp.orchyn.com/mcp`.
 Billed against your orchyn credits; new accounts get 20 free.
@@ -44,7 +47,7 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-24 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+28 tools, grouped by what you are trying to do. Prices are in orchyn credits and
 match what the server actually charges.
 
 ### Read a post
@@ -69,13 +72,14 @@ match what the server actually charges.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `discover_social_posts` | 2 | Recent posts for a niche across seven networks, with inline thumbnails and `limit`/`offset` pagination. Use to find posts to look at. |
+| `discover_social_posts` | 2 | Recent posts for a niche across nine networks, with inline thumbnails and `limit`/`offset` pagination. Use to find posts to look at. |
 | `get_user_posts` | 2 | One creator's recent posts with stats. Use to scan an account. |
 | `search_creators` | 2 | Creators by niche or keyword. Use when you know the niche but not the names. |
 | `get_similar_creators` | 2 | Lookalikes for a creator that already works. |
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
 | `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
 | `find_hook_pattern` | 2 | A creator's repeatable formula from their captions, as fill-in-the-blank templates. Much cheaper than the full profile teardown because it never watches the videos. |
+| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
@@ -126,6 +130,28 @@ iframe):
 - **Text-only posts** (LinkedIn / X) — a styled quote block of the post text.
 - **Official brand marks** — each card shows the platform's real logo
   (simple-icons) in its brand color instead of an emoji.
+
+`search_mentions` renders a different view, because monitoring is triage rather
+than browsing:
+
+- **The comment leads.** Its text is the first thing in the row, with the term
+  highlighted everywhere it appears and a `×N` badge when one comment names the
+  brand more than once. Who wrote it and when sits underneath.
+- **Each post carries its reach.** The same sentence under a 25K-upvote thread
+  and under a post nobody saw are not the same problem, and nothing else on
+  screen tells you which one you are reading.
+- **The per-network counts are filters.** Click one to narrow to it; a network
+  that answered with nothing is shown but is not clickable, because filtering to
+  it is a dead end. Filtering and sorting redraw from what you already paid for
+  — the view never re-queries.
+- **A burst collapses.** One post with a run of near-identical replies (a
+  coordinated fan campaign, say) shows the first few and offers the rest, so it
+  cannot push four other networks off the screen.
+- **Comments are selectable, and the selection is agentic.** Tick any comments,
+  or select a whole thread at once, and send them — the view hands the host the
+  comment **ids the tool issued**, so the model can reply to, escalate or
+  analyse exactly those. Selections survive filtering and sorting.
+- **Load more** pages from the `nextOffset` the tool returned.
 
 Also **inline thumbnails** render for the model / plain-text clients:
 
@@ -321,6 +347,8 @@ per the MCP 2025-03-26 spec):
 - Instagram: `instagram.com/*` (reels, posts, carousels), `instagr.am/*`
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
 - X/Twitter: `x.com/*`, `twitter.com/*`
+- Reddit: `reddit.com/*`, `redd.it/*`
+- Weibo: `weibo.com/*`, `weibo.cn/*`
 - Douyin: `douyin.com/*`
 - Xiaohongshu: `xiaohongshu.com/*`, `xhslink.com/*`
 - Bilibili: `bilibili.com/*`, `b23.tv/*`

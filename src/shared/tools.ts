@@ -186,7 +186,17 @@ const RAW_URL_KEYS = new Set([
  * silently misses that and double-wraps.
  */
 function isOwnMediaUrl(url: string): boolean {
- return url.includes("/media/proxy") || url.includes("/media/resolve");
+ // `/media/files` is orchyn's own re-hosted media — Weibo video arrives that
+ // way. It was missing here, so whether it got wrapped a second time depended
+ // on the host string matching ORCHYN_BASE_URL exactly: "localhost:8080" and
+ // "127.0.0.1:8080" are the same server and different strings, and the proxy
+ // then refused its own URL as an SSRF attempt. Recognising the path shape is
+ // sturdier than trusting two spellings of a host to agree.
+ return (
+  url.includes("/media/proxy") ||
+  url.includes("/media/resolve") ||
+  url.includes("/media/files")
+ );
 }
 
 /**
@@ -510,6 +520,7 @@ export function createMcpServer(
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like orchyn_login.
   "catch_up_watchlist",
+  "search_mentions",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -569,6 +580,14 @@ export function createMcpServer(
   "https://*.douyinpic.com",
   "https://*.douyinvod.com",
   "https://*.douyinstatic.com",
+  // Reddit — previews and thumbnails come off redd.it subdomains
+  // (external-preview, preview, i, v), and redditstatic serves default avatars.
+  "https://*.redd.it",
+  "https://*.redditstatic.com",
+  "https://*.redditmedia.com",
+  // Weibo — sinaimg carries the images, weibocdn the video streams.
+  "https://*.sinaimg.cn",
+  "https://*.weibocdn.com",
   // Bilibili — hdslb serves images, bilivideo the streams, and some of those
   // fan out over Akamai.
   "https://*.hdslb.com",
@@ -685,7 +704,7 @@ export function createMcpServer(
    description:
     "Analyze a social post (video, image, carousel/slideshow) from its link — " +
     "imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). " +
-    "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. Returns the full analysis once finished. AI analysis — 1 free use, then 6 credits per use." +
+    "Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Returns the full analysis once finished. AI analysis — 1 free use, then 6 credits per use." +
     "Use when the visuals are the point; for script, hook and structure alone, analyze_post_fast costs a third as much.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_post") },
@@ -698,7 +717,7 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.analyze_post,
    inputSchema: z
     .object({
-     url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Douyin, Xiaohongshu or Bilibili)."),
+     url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili)."),
     })
     .strict(),
   },
@@ -753,7 +772,7 @@ export function createMcpServer(
   {
    title: "Get Social Media",
    description:
-    "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu or Bilibili URL: " +
+    "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili URL: " +
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
     "Returns an inline thumbnail image. Consumes 1 orchyn credit (20 free credits included for new users)." +
     "Use when you need the post's facts and media and nothing more; if you want it interpreted, use analyze_post_fast instead.",
@@ -787,7 +806,7 @@ export function createMcpServer(
   {
    title: "Discover Social Posts",
    description:
-    "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Douyin, Xiaohongshu, X/Twitter or Bilibili. " +
+    "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo or Bilibili. Reddit and Weibo are mostly text rather than video, so a post from either may have no videoUrl and no duration. " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. ' +
     "Use to find individual posts to look at; use niche_report when you want the pattern across " +
@@ -808,7 +827,7 @@ export function createMcpServer(
      limit: z.number().int().optional().describe("Max results (default 6)."),
      offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."),
      platform: z
-      .enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "any"])
+      .enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo", "any"])
       .optional()
       .describe("Platform to search (default youtube)."),
     })
@@ -832,7 +851,7 @@ export function createMcpServer(
   {
    title: "Get User Posts",
    description:
-    "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn (LinkedIn uses the profile public_id from the URL, e.g. 'williamhgates'). " +
+    "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn (LinkedIn uses the profile public_id from the URL, e.g. 'williamhgates'). " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use to scan one creator's output; use find_hook_pattern when you want their formula extracted rather than the raw list.",
@@ -849,7 +868,7 @@ export function createMcpServer(
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp' or '@zoundsapp'."),
      platform: z
-      .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin"])
+      .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin", "reddit", "weibo"])
       .optional()
       .describe("Which platform (default tiktok)."),
      limit: z.number().int().optional().describe("Max posts (default 6)."),
@@ -875,7 +894,7 @@ export function createMcpServer(
   {
    title: "Analyze Creator Profile",
    description:
-    "Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Douyin, Xiaohongshu, X/Twitter, Bilibili or LinkedIn: fetch recent posts, run multimodal AI on up to 3, " +
+    "Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn: fetch recent posts, run multimodal AI on up to 3, " +
     "then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, " +
     "engagement patterns, audience insights, variation ideas, collaboration fit. AI analysis \u2014 1 free use, then 15 credits per use." +
     "Use for a full teardown when the visuals matter; find_hook_pattern gives you their formula from captions for a fraction of the price.",
@@ -892,7 +911,7 @@ export function createMcpServer(
     .object({
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
      platform: z
-      .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin"])
+      .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin", "reddit", "weibo"])
       .optional()
       .describe("Which platform (default tiktok)."),
      limit: z.number().int().optional().describe("Posts to fetch (default 6; first 3 analyzed)."),
@@ -918,7 +937,7 @@ export function createMcpServer(
   {
    title: "Get Post Comments",
    description:
-    "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Douyin, X/Twitter, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
+    "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X/Twitter, Weibo, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
     "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use when you want to read what people actually wrote; use analyze_comments when you want it synthesised into what to do next.",
    _meta: {
@@ -1456,6 +1475,82 @@ export function createMcpServer(
  );
 
  server.registerTool(
+  "search_mentions",
+  {
+   title: "Search Mentions",
+   description:
+    "Brand monitoring: what people are actually saying about a term across every network at once. " +
+    "Searches TikTok, Instagram, YouTube, X/Twitter, Reddit, Weibo, Douyin, Xiaohongshu and " +
+    "Bilibili in parallel, opens the posts it finds and reads their COMMENTS for the term — the " +
+    "mention is usually in the replies, not the caption. Returns the comments grouped under the " +
+    "post they were left on, each with an id you can pass to another tool, how many times it " +
+    "names the term, and whether the post itself is about the brand or merely where the audience " +
+    "raised it. Use `since` to monitor a past window and `offset` to page through. " +
+    "Costs 2 orchyn credits per platform searched, except Xiaohongshu at 5. " +
+    "Use to see what is said about a brand; discover_social_posts is for one platform's posts.",
+   _meta: {
+    ui: { resourceUri: uiResource("search_mentions") },
+    "ui/resourceUri": uiResource("search_mentions"),
+    "openai/outputTemplate": appsSdkResource("search_mentions"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.search_mentions,
+   inputSchema: z
+    .object({
+     term: z.string().describe("Brand, product or person to look for, e.g. 'orchyn'."),
+     platforms: z
+      .array(z.enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo"]))
+      .optional()
+      .describe("Which networks to search (default: all). Fewer platforms costs less."),
+     since: z
+      .string()
+      .optional()
+      .describe("Only comments posted on or after this date, as YYYY-MM-DD. Omit for no window."),
+     limit: z
+      .number()
+      .int()
+      .optional()
+      .describe("Posts to open per platform (default 5, max 20). Each one is a comment fetch."),
+     commentsPerPost: z
+      .number()
+      .int()
+      .optional()
+      .describe("Comments to read per post (default 30, max 100)."),
+     offset: z
+      .number()
+      .int()
+      .optional()
+      .describe("Skip this many groups — pass nextOffset from the previous call to load more."),
+     pageSize: z
+      .number()
+      .int()
+      .optional()
+      .describe("Groups returned per call (default 6, max 30)."),
+    })
+    .strict(),
+  },
+  async (
+   args: {
+    term: string;
+    platforms?: string[];
+    since?: string;
+    limit?: number;
+    commentsPerPost?: number;
+    offset?: number;
+    pageSize?: number;
+   },
+   extra,
+  ) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("search_mentions", { ...args }));
+   } catch (err) {
+    return toolError("search_mentions failed", err);
+   }
+  }
+ );
+
+ server.registerTool(
   "check_orchyn_credits",
   {
    title: "Check Orchyn Credits",
@@ -1590,7 +1685,7 @@ export function createMcpServer(
    description:
     "Import a social post URL AND understand it with multimodal AI over the actual video/images: " +
     "summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. " +
-    "Supports TikTok, Instagram, YouTube, X/Twitter, Douyin, Xiaohongshu and Bilibili. AI analysis \u2014 1 free use, then 6 credits per use." +
+    "Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. AI analysis \u2014 1 free use, then 6 credits per use." +
     "Use when you need a factual description of what physically happens on screen; analyze_post is the better default for strategy.",
    _meta: {
     ui: { resourceUri: uiResource("understand_social_post") },

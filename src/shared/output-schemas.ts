@@ -129,9 +129,49 @@ export const OUTPUT_SCHEMAS = {
   analyze_post: open(analyzed),
   analyze_post_fast: open({ ...analyzed, mode: scalar() }),
   understand_social_post: open(analyzed),
-  get_social_media: open({ ...singlePost, provider: scalar(), fetchedAt: scalar() }),
+  // No `provider`: the field named the upstream supplier and is no longer
+  // returned. Documenting a field that does not exist is worse than omitting it.
+  get_social_media: open({ ...singlePost, fetchedAt: scalar() }),
 
   discover_social_posts: open(feed),
+  /**
+   * Brand monitoring. The unit is a *comment* that names the term, grouped
+   * under the post it was left on — a brand is mentioned far more often in the
+   * replies than in a caption, and the same post can carry several mentions.
+   */
+  search_mentions: open({
+    term: scalar(),
+    searched: listOf(z.string()).describe("Platforms actually queried."),
+    since: scalar().describe("The date window applied, if any."),
+    totalMentions: scalar().describe("Comments naming the term, across every group."),
+    totalThreads: scalar().describe("Posts carrying at least one mention."),
+    byPlatform: open({}).nullish().describe("Mentions per platform."),
+    threads: listOf(
+      open({
+        post: post.nullish(),
+        postIsAboutTerm: scalar().describe("True when the post itself names the term, not just its comments."),
+        postHits: scalar(),
+        mentionCount: scalar(),
+        mentions: listOf(
+          open({
+            id: scalar().describe("Addressable — pass it to another tool to reply or escalate."),
+            text: scalar(),
+            username: scalar(),
+            likes: scalar(),
+            postedAt: scalar(),
+            hits: scalar().describe("How many times this comment names the term."),
+          }),
+        ),
+      }),
+    ).describe("Mentions grouped under the post they were left on, loudest conversation first."),
+    posts: listOf(post).describe("The posts of this page, flattened for the card view."),
+    offset: scalar(),
+    nextOffset: scalar().describe("Pass back as `offset` to load the next page; null when done."),
+    hasMore: scalar(),
+    creditsCharged: scalar(),
+    unavailable: anyList().describe("Platforms that could not answer, with the reason."),
+    mcpCredits,
+  }),
   get_user_posts: open({ ...feed, username: scalar() }),
 
   analyze_creator_profile: open({
