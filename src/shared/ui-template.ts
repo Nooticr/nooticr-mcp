@@ -290,6 +290,15 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 /* Rose rather than yellow: the highlight marks the brand being tracked, and a
    highlighter yellow reads as "unread" instead of "this is the thing". */
 .mention-text mark{background:rgba(244,63,94,.15);color:inherit;border-radius:4px;padding:1px 3px;font-weight:600}
+/* What the model wrote about a row, rather than what the commenter did: a
+   drafted reply from show_audience_replies, or the note explaining a label on
+   a show_comment_review. It was already in both payloads and drawn by
+   neither, so a person reading the view could see the label and never the
+   reasoning behind it. Indented and quieter than the comment, because the
+   comment is the thing being read and this is the answer to it. */
+.mention-note{display:block;margin-top:6px;padding:6px 9px;border-left:2px solid var(--brand,#f43f5e);
+  background:var(--tag);border-radius:0 6px 6px 0;font-size:12.5px;line-height:1.5;
+  color:var(--fg);white-space:pre-wrap;word-break:break-word}
 .mention-meta{display:flex;align-items:center;gap:14px;margin-top:6px}
 .mention-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
 .mention-stat svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;
@@ -1915,6 +1924,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
           +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
           +"</span>"
           +'<span class="mention-text">'+highlightTerm(String(m.text||""),st.term)+"</span>"
+          +(m.note?'<span class="mention-note">'+esc(String(m.note))+"</span>":"")
           +'<span class="mention-meta">'
           +'<span class="mention-stat">'+heartIcon()+esc(fmtNum(m.likes||0))+"</span>"
           +'<span class="mention-stat">'+replyIcon()+esc(fmtNum(m.replies||0))+"</span>"

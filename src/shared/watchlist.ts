@@ -45,6 +45,19 @@ export interface WatchEntry {
     postIds: string[];
     topViews?: number;
   };
+  /**
+   * What track_competitor saw the last time it looked at this creator.
+   *
+   * Deliberately not the same field as `baseline`. Both tools answer "what has
+   * changed since I last looked" and both move a marker forward when they do,
+   * so sharing one marker would mean each tool silently consumed the other's
+   * answer: run a catch-up and the next track_competitor reports nothing new,
+   * which is wrong and looks like the creator stopped posting.
+   */
+  competitorBaseline?: {
+    capturedAt: string;
+    postIds: string[];
+  };
 }
 
 export interface WatchStore {
@@ -148,8 +161,32 @@ export class FileWatchStore implements WatchStore {
   }
 }
 
-const norm = (h: string) => h.trim().replace(/^@/, "").toLowerCase();
-const entryId = (platform: string, handle: string) => `${platform}:${norm(handle)}`;
+/** Handles differ only by case and a leading @; the store keys on this. */
+export const normaliseHandle = (h: string) => h.trim().replace(/^@/, "").toLowerCase();
+/** `platform:handle` — stable, what unwatch takes, and what a lookup needs. */
+export const watchEntryId = (platform: string, handle: string) =>
+  `${platform}:${normaliseHandle(handle)}`;
+
+const norm = normaliseHandle;
+const entryId = watchEntryId;
+
+/**
+ * The account a stored list belongs to.
+ *
+ * The watchlist belongs to the orchyn account, not to the connection: the same
+ * person on two hosts should see one list. me() is the only identity both
+ * transports already have. Exported because jobs.ts reads the same store to
+ * answer "what has this competitor shipped since I last checked", and two
+ * different owner keys over one store would be two different watchlists.
+ */
+export async function watchlistOwner(client: OrchynClient): Promise<string> {
+  try {
+    const me = await client.me();
+    return String(me?.id || me?.email || "anonymous");
+  } catch {
+    return "anonymous";
+  }
+}
 
 /** Posts as get_user_posts returns them, reduced to what a baseline needs. */
 function snapshot(posts: Array<Record<string, unknown>>) {
@@ -173,17 +210,7 @@ export function registerWatchlist(
   }) => Promise<OrchynClient> | OrchynClient,
   store: WatchStore,
 ): void {
-  // The watchlist belongs to the orchyn account, not to the connection: the
-  // same person on two hosts should see one list. me() is the only identity
-  // both transports already have.
-  const ownerOf = async (client: OrchynClient): Promise<string> => {
-    try {
-      const me = await client.me();
-      return String(me?.id || me?.email || "anonymous");
-    } catch {
-      return "anonymous";
-    }
-  };
+  const ownerOf = watchlistOwner;
 
   const text = (value: unknown) => ({
     content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],

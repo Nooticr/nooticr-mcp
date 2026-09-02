@@ -52,7 +52,7 @@ export interface EvidencePlan {
 const url = (a: Record<string, unknown>) => String(a.url ?? "");
 
 /** Closing line every guidance block shares. */
-const ownIt =
+export const ownIt =
   "Reason over this yourself rather than asking for an interpretation of it — " +
   "you can see everything the analysis would have been built from.";
 
