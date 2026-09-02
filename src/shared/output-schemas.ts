@@ -379,8 +379,17 @@ export const OUTPUT_SCHEMAS = {
     tier: scalar(),
     isAdmin: scalar(),
     bypassCredits: scalar(),
-    firstFreeTools: listOf(z.string()),
-    firstFreeRemaining: listOf(z.string()),
+    firstFreeTools: listOf(z.string())
+      .describe("Tools whose first use is still free. This is the one to read."),
+    // Two names, one list. The backend fills both from the same value and only
+    // firstFreeTools has ever been read — the credits card draws its "✨ free"
+    // pills from it, and nothing in either repo looks at firstFreeRemaining.
+    // It stays declared anyway: it was published in this schema, and a host
+    // that validates a response against the advertised output would see the
+    // removal as the contract breaking. A duplicate field costs less than that,
+    // so the description is what steers a reader off it.
+    firstFreeRemaining: listOf(z.string())
+      .describe("Superseded by firstFreeTools, which carries the same value. Kept for backward compatibility — read firstFreeTools."),
     billingUrl: scalar(),
     hint: scalar(),
   }),
