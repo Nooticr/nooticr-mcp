@@ -1,5 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { DurableObjectEventStore } from "./eventStore.js";
+import { DurableObjectTaskStore } from "./taskStore.js";
 
 // The SDK's WebStandard transport consumes the platform `fetch` Request type.
 // CF workers' `Request` is a generic instantiation of the same interface, but
@@ -164,9 +165,16 @@ export class McpEndpoint {
             )}:${argumentsDigest(ctx.arguments)}`;
       return makeClientForSession(this.env, t, s, key);
     },
-    // KV rather than this Durable Object's SQLite: the watchlist belongs to
-    // the account and has to outlive any one session, and a DO is per-session.
-    { watchStore: new KvWatchStore(this.env.STORE) });
+    {
+      // KV rather than this Durable Object's SQLite: the watchlist belongs to
+      // the account and has to outlive any one session, and a DO is per-session.
+      watchStore: new KvWatchStore(this.env.STORE),
+      // SQLite rather than KV: a task *is* per-session, and a poll must never
+      // read back a status older than the one just written. The default
+      // in-memory store was rebuilt on every DO restart, so a task created
+      // before a deploy came back "not found" to a client holding a valid id.
+      taskStore: new DurableObjectTaskStore(this.ctx.storage.sql),
+    });
     await this.server.connect(this.transport);
   }
 

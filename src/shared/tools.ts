@@ -15,6 +15,21 @@ import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { createTaskStore, registerSlowTool } from "./tasks.js";
+import {
+  COMMENT_CATEGORIES,
+  COMMENT_SENTIMENTS,
+  platformFromUrl,
+  reviewGuidance,
+  toEvidence,
+} from "./comment-review.js";
+import { EVIDENCE_PLANS, frameIndex, framesToBlocks } from "./evidence.js";
+import {
+  confirmSpend,
+  declinedResult,
+  searchMentionsCost,
+  SEARCH_PLATFORMS,
+} from "./spend.js";
+import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/interfaces.js";
 import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
@@ -435,11 +450,74 @@ function buildAnalysisHtmlCard(
  return html;
 }
 
+/**
+ * Run a tool in evidence mode: fetch the material its AI pass would have read,
+ * and hand it back with instructions instead of a conclusion.
+ *
+ * One implementation for every AI tool rather than ten bespoke ones — the
+ * shape is identical, only the cheap call and the guidance differ, and both
+ * live in EVIDENCE_PLANS.
+ */
+async function runEvidenceMode(
+ tool: string,
+ args: Record<string, unknown>,
+ client: OrchynClient,
+): Promise<{ content: ToolContent[]; structuredContent: Record<string, unknown> }> {
+ const plan = EVIDENCE_PLANS[tool];
+ if (!plan) throw new Error(`${tool} has no evidence mode`);
+
+ const primary = await client.callTool(plan.via, plan.args(args));
+ const structured = (primary.structured ?? {}) as Record<string, unknown>;
+
+ // A second fetch that improves the answer but must not fail the call: a post
+ // with no caption track still has frames worth looking at.
+ let extra: Record<string, unknown> = {};
+ if (plan.also) {
+  try {
+   const res = await client.callTool(plan.also.via, plan.also.args(args));
+   extra = (res.structured ?? {}) as Record<string, unknown>;
+  } catch {
+   extra = { unavailable: plan.also.via };
+  }
+ }
+
+ const content: ToolContent[] = [
+  { type: "text", text: plan.guidance(args) } as ToolContent,
+ ];
+ const out: Record<string, unknown> = {
+  mode: "evidence",
+  tool,
+  evidenceFrom: plan.also ? [plan.via, plan.also.via] : [plan.via],
+  ...structured,
+ };
+
+ if (plan.frames) {
+  // The frames become real image blocks. This is the whole point: the caller
+  // looks at the pixels rather than reading someone else's description.
+  const blocks = framesToBlocks(structured.frames);
+  content.push(...(blocks as unknown as ToolContent[]));
+  out.frameIndex = frameIndex(structured.frames);
+  // The base64 has been handed over as images; repeating it in the structured
+  // payload would double a large cost for nothing.
+  delete out.frames;
+ }
+ if (plan.also) out[plan.also.via] = extra;
+
+ return { content, structuredContent: out };
+}
+
 export function createMcpServer(
  rawMakeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient,
  // Where the watchlist is kept. Defaults to memory, which is right for a test
  // and wrong for a session — each transport passes the store that outlives it.
- opts?: { watchStore?: WatchStore }
+ opts?: {
+  watchStore?: WatchStore;
+  /**
+   * Where in-flight task handles live. Memory is right for stdio and wrong
+   * for a Durable Object that restarts on every deploy — see tasks.ts.
+   */
+  taskStore?: TaskStore;
+ }
 ): McpServer {
  /**
   * What the user was in the middle of when their session expired.
@@ -473,7 +551,7 @@ export function createMcpServer(
   { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
   {
    // Per-server, so per session on both transports. See tasks.ts.
-   taskStore: createTaskStore(),
+   taskStore: opts?.taskStore ?? createTaskStore(),
    capabilities: {
     resources: {},
     // The workflows, named — see prompts.ts. Without this a host shows the
@@ -521,6 +599,8 @@ export function createMcpServer(
   // state tools have nothing to show and stay view-less, like orchyn_login.
   "catch_up_watchlist",
   "search_mentions",
+  "show_comment_review",
+  "get_post_frames",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -573,6 +653,11 @@ export function createMcpServer(
   "https://*.fbcdn.net",
   // YouTube
   "https://*.ytimg.com",
+  // Avatars live on their own hosts, which are not the ones that serve media:
+  // a commenter's picture on YouTube comes from ggpht, not ytimg, and a blocked
+  // avatar is a hole in every row of the monitoring feed.
+  "https://*.ggpht.com",
+  "https://yt3.ggpht.com",
   "https://*.googlevideo.com",
   // Xiaohongshu
   "https://*.xhscdn.com",
@@ -604,6 +689,26 @@ export function createMcpServer(
   domains.push(apiUrl.trim().replace(/\/+$/, ""));
  }
 
+/**
+  * Cache hints for the view template.
+  *
+  * `resources/read` is one of the results the spec says a server MUST hint on,
+  * and this is the one worth hinting: the template is ~160KB of HTML and a host
+  * re-reads it every time it renders a widget. Without a TTL clients "SHOULD
+  * assume a default of 0" — immediately stale — so it is fetched again every
+  * single time.
+  *
+  * `public`, because it is the same bytes for every user: no account data, no
+  * token, nothing derived from the caller. That lets a shared gateway hold one
+  * copy for everyone, which is the whole point.
+  *
+  * An hour rather than a day, because the template is versioned with the server
+  * and a deploy should reach a widget the same afternoon. The fields ride along
+  * as extra keys — SDK 1.30 predates them, and clients that do not know them
+  * ignore them, which is the correct behaviour for a hint.
+  */
+ const VIEW_CACHE = { ttlMs: 3_600_000, cacheScope: "public" as const };
+ 
  for (const tool of TOOL_NAMES) {
   const uri = uiResource(tool);
   server.registerResource(
@@ -630,6 +735,7 @@ export function createMcpServer(
        },
       },
      ],
+     ...VIEW_CACHE,
     };
    }
   );
@@ -661,6 +767,7 @@ export function createMcpServer(
       },
      },
     ],
+    ...VIEW_CACHE,
    })
   );
  }
@@ -691,6 +798,7 @@ export function createMcpServer(
     const domain = await computeAppDomain();
     return {
      contents: [appsSdkContents(legacyUri, domains, PLATFORM_LINK_DOMAINS)],
+     ...VIEW_CACHE,
     };
    }
   );
@@ -717,11 +825,29 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.analyze_post,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili)."),
     })
     .strict(),
   },
   async (args: { url: string }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("analyze_post", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("analyze_post failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    const validation = validatePostUrl(args.url);
    if (!validation.ok) {
@@ -909,6 +1035,14 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.analyze_creator_profile,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      username: z.string().describe("Creator handle, e.g. 'zoundsapp'."),
      platform: z
       .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin", "reddit", "weibo"])
@@ -923,6 +1057,16 @@ export function createMcpServer(
    args: { username: string; platform?: string; limit?: number; focus?: string },
    extra
   ) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("analyze_creator_profile", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("analyze_creator_profile failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("analyze_creator_profile", { ...args }));
@@ -1130,8 +1274,11 @@ export function createMcpServer(
    description:
     "Read a post's comment section and return what the audience is actually saying: sentiment, " +
     "recurring themes, the questions they ask, objections raised, content they request, the " +
-    "language they use, and follow-up video ideas grounded in it. Use when the goal is 'what " +
-    "should I make next' rather than 'what did people write'. Consumes 6 orchyn credits." +
+    "language they use, and follow-up video ideas grounded in it. " +
+    "mode='ai' (default) has orchyn's model do the reading and costs 6 credits. " +
+    "mode='evidence' returns the comments unanalysed for 2 credits and asks YOU to classify " +
+    "them — cheaper, and you can steer it, sort it and follow up on any single comment. " +
+    "Prefer evidence when the conversation will continue; prefer ai for a one-shot answer. " +
     "Use when the goal is what to make next rather than what people wrote.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_comments") },
@@ -1146,16 +1293,231 @@ export function createMcpServer(
     .object({
      url: z.string().describe("Full public post URL."),
      limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."),
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis for 6 credits. " +
+        "'evidence' returns the raw comments for 2 credits and leaves the analysis to you.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; limit?: number }, extra) => {
+  async (args: { url: string; limit?: number; mode?: "ai" | "evidence" }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
+   const { mode, ...rest } = args;
+   if (mode === "evidence") {
+    try {
+     // The same upstream call get_post_comments makes, so it is billed as the
+     // data call it is rather than as an AI one. The reasoning is the part we
+     // are handing back, and the reasoning was never the expensive half.
+     const res = await client.callTool("get_post_comments", { ...rest });
+     const structured = (res.structured ?? {}) as Record<string, unknown>;
+     const comments = toEvidence(args.url, structured.comments);
+     return {
+      content: [{ type: "text" as const, text: reviewGuidance(args.url, comments.length) }],
+      structuredContent: {
+       mode: "evidence",
+       url: args.url,
+       platform: structured.platform ?? null,
+       commentCount: comments.length,
+       comments,
+       // Passed through rather than re-derived: the platform's own clustering
+       // is evidence too, and it is already paid for.
+       themes: structured.themes ?? [],
+       mcpCredits: structured.mcpCredits ?? null,
+      },
+     };
+    } catch (err) {
+     return toolError("analyze_comments failed", err);
+    }
+   }
    try {
-    return await toToolResult(await client.callTool("analyze_comments", { ...args }));
+    return await toToolResult(await client.callTool("analyze_comments", { ...rest }));
    } catch (err) {
     return toolError("analyze_comments failed", err);
    }
+  }
+ );
+
+ /**
+  * The other half of evidence mode: the model hands back what it concluded and
+  * this draws it.
+  *
+  * It makes no upstream call and costs nothing — everything it needs is
+  * already in the caller's context. The point is that a classification living
+  * only in chat prose cannot be sorted, filtered or acted on one row at a
+  * time; run through here it becomes the same view the brand monitor uses,
+  * with the model's own labels on each row.
+  *
+  * Shaped like a search_mentions payload on purpose, so the existing view
+  * renders it rather than needing a second one.
+  */
+ server.registerTool(
+  "get_post_frames",
+  {
+   title: "Get Post Frames",
+   description:
+    "Sample frames from a post's video and return them as images you can look at yourself, " +
+    "rather than an analysis of them. A carousel or slideshow returns its own images unchanged. " +
+    "Pair it with get_post_transcript to reconstruct both what happens on screen and what is " +
+    "said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. " +
+    "Consumes 2 orchyn credits. Use when you want to see the visuals; use analyze_post when you " +
+    "want orchyn's own opinion of them.",
+   _meta: {
+    ui: { resourceUri: uiResource("get_post_frames") },
+    "ui/resourceUri": uiResource("get_post_frames"),
+    "openai/outputTemplate": appsSdkResource("get_post_frames"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.get_post_frames,
+   inputSchema: z
+    .object({
+     url: z.string().describe("Public post URL."),
+     count: z
+      .number()
+      .int()
+      .optional()
+      .describe("Frames to sample, evenly spaced across the video (default 8, max 20)."),
+    })
+    .strict(),
+  },
+  async (args: { url: string; count?: number }, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    const res = await client.callTool("get_post_frames", { ...args });
+    const structured = (res.structured ?? {}) as Record<string, unknown>;
+    const blocks = framesToBlocks(structured.frames);
+    const n = blocks.length;
+    return {
+     content: [
+      {
+       type: "text" as const,
+       text:
+        `${n} frame${n === 1 ? "" : "s"} from ${args.url}, evenly spaced across it. ` +
+        "Look at them directly — they are images, not a description of images.",
+      },
+      ...(blocks as unknown as ToolContent[]),
+     ],
+     structuredContent: {
+      ...structured,
+      frameIndex: frameIndex(structured.frames),
+      // Already delivered as image blocks above; repeating the base64 here
+      // would double a large payload for nothing.
+      frames: undefined,
+     },
+    };
+   } catch (err) {
+    return toolError("get_post_frames failed", err);
+   }
+  }
+ );
+
+ server.registerTool(
+  "show_comment_review",
+  {
+   title: "Show Comment Review",
+   description:
+    "Display comment classifications you produced from analyze_comments(mode='evidence'). " +
+    "Free, and makes no requests — it only draws what you pass it. Renders each comment with " +
+    "its sentiment and category so a person can sort and act on them. " +
+    "Call this after you have classified the comments, not instead of classifying them.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_comment_review") },
+    "ui/resourceUri": uiResource("show_comment_review"),
+    "openai/outputTemplate": appsSdkResource("show_comment_review"),
+   },
+   annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    // Draws what it is given; reaches nothing.
+    openWorldHint: false,
+   },
+   outputSchema: OUTPUT_SCHEMAS.show_comment_review,
+   inputSchema: z
+    .object({
+     url: z.string().describe("The post the comments came from."),
+     summary: z.string().optional().describe("What the comment section says, in a sentence or two."),
+     title: z.string().optional().describe("The post's title, for the header."),
+     comments: z
+      .array(
+       z.object({
+        id: z.string().describe("The id from evidence mode, so the row addresses the same comment."),
+        text: z.string(),
+        author: z.string().optional(),
+        likes: z.number().optional(),
+        sentiment: z.enum(COMMENT_SENTIMENTS).optional(),
+        category: z.enum(COMMENT_CATEGORIES).optional(),
+        note: z.string().optional().describe("Why you labelled it that way, if it is not obvious."),
+       }),
+      )
+      .describe("One entry per comment you classified."),
+     themes: z.array(z.string()).optional().describe("Recurring themes across the section."),
+     nextSteps: z.array(z.string()).optional().describe("What to do about it."),
+    })
+    .strict(),
+  },
+  async (args: {
+   url: string;
+   summary?: string;
+   title?: string;
+   comments: Array<Record<string, unknown>>;
+   themes?: string[];
+   nextSteps?: string[];
+  }) => {
+   const counts: Record<string, number> = {};
+   for (const c of args.comments) {
+    const key = String(c.category ?? "other");
+    counts[key] = (counts[key] ?? 0) + 1;
+   }
+   const sentiment: Record<string, number> = {};
+   for (const c of args.comments) {
+    const key = String(c.sentiment ?? "neutral");
+    sentiment[key] = (sentiment[key] ?? 0) + 1;
+   }
+   return {
+    content: [
+     {
+      type: "text" as const,
+      text:
+       `Showing ${args.comments.length} classified comment` +
+       `${args.comments.length === 1 ? "" : "s"}.` +
+       (args.summary ? ` ${args.summary}` : ""),
+     },
+    ],
+    // The monitoring view keys off term + threads, so this renders there.
+    structuredContent: {
+     review: true,
+     term: args.title || args.url,
+     url: args.url,
+     summary: args.summary ?? null,
+     totalMentions: args.comments.length,
+     byCategory: counts,
+     bySentiment: sentiment,
+     themes: args.themes ?? [],
+     nextSteps: args.nextSteps ?? [],
+     threads: [
+      {
+       post: { platform: platformFromUrl(args.url), title: args.title ?? "", externalUrl: args.url },
+       postIsAboutTerm: false,
+       mentionCount: args.comments.length,
+       mentions: args.comments.map((c) => ({
+        id: c.id,
+        text: c.text,
+        username: c.author ?? "",
+        likes: c.likes ?? 0,
+        sentiment: c.sentiment ?? null,
+        category: c.category ?? null,
+        note: c.note ?? null,
+        hits: 1,
+       })),
+      },
+     ],
+     // Nothing was fetched, so nothing was charged.
+     mcpCredits: { cost: 0 },
+    },
+   };
   }
  );
 
@@ -1179,10 +1541,28 @@ export function createMcpServer(
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
    outputSchema: OUTPUT_SCHEMAS.compare_posts,
    inputSchema: z
-    .object({ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
+    .object({      mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
+urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
     .strict(),
   },
   async (args: { urls: string[] }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("compare_posts", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("compare_posts failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("compare_posts", { ...args }));
@@ -1249,11 +1629,29 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.analyze_post_fast,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      url: z.string().describe("Full public post URL."),
     })
     .strict(),
   },
   async (args: { url: string }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("analyze_post_fast", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("analyze_post_fast failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("analyze_post_fast", { ...args }));
@@ -1283,6 +1681,14 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.write_hooks,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      url: z.string().optional().describe("Post to riff on (optional if topic given)."),
      topic: z.string().optional().describe("Subject to write hooks about (optional if url given)."),
      count: z.number().int().optional().describe("How many hooks (default 10, max 20)."),
@@ -1291,6 +1697,16 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url?: string; topic?: string; count?: number; tone?: string }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("write_hooks", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("write_hooks failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("write_hooks", { ...args }));
@@ -1320,6 +1736,14 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.create_variants,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      url: z.string().describe("The post to make variants of."),
      count: z.number().int().optional().describe("How many variants (default 3, max 6)."),
      angle: z.string().optional().describe("Optional steer for the variants."),
@@ -1327,6 +1751,16 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; count?: number; angle?: string }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("create_variants", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("create_variants failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("create_variants", { ...args }));
@@ -1389,12 +1823,30 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.repurpose_post,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      url: z.string().describe("The post to repurpose."),
      targets: z.array(z.string()).optional().describe("Which formats to produce (default all)."),
     })
     .strict(),
   },
   async (args: { url: string; targets?: string[] }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("repurpose_post", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("repurpose_post failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("repurpose_post", { ...args }));
@@ -1423,6 +1875,13 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.niche_report,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — at the price of the fetch — and leaves the reasoning to you.",
+      ),
      niche: z.string().describe("Niche or topic, e.g. 'home fitness'."),
      platform: z.string().optional().describe("Platform to survey (default tiktok)."),
      count: z.number().int().optional().describe("Posts to survey (default 20, max 40)."),
@@ -1430,6 +1889,16 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { niche: string; platform?: string; count?: number }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("niche_report", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("niche_report failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("niche_report", { ...args }));
@@ -1458,6 +1927,14 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.find_hook_pattern,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      username: z.string().describe("Creator handle, with or without @."),
      platform: z.string().optional().describe("Platform (default tiktok)."),
      limit: z.number().int().optional().describe("Posts to read (default 20, max 40)."),
@@ -1465,6 +1942,16 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { username: string; platform?: string; limit?: number }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("find_hook_pattern", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("find_hook_pattern failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("find_hook_pattern", { ...args }));
@@ -1541,6 +2028,16 @@ export function createMcpServer(
    },
    extra,
   ) => {
+   // The one call whose price is set by an argument rather than printed in
+   // the description: no `platforms` means all nine networks, which is 21
+   // credits the caller never saw a number for.
+   const credits = searchMentionsCost(args.platforms);
+   const decision = await confirmSpend(server.server, {
+    credits,
+    summary: `Sweep ${args.platforms?.length ?? SEARCH_PLATFORMS.length} networks for comments naming "${args.term}".`,
+    cheaper: "Pass fewer platforms to spend less.",
+   });
+   if (!decision.proceed) return declinedResult(credits, "That sweep");
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("search_mentions", { ...args }));
@@ -1698,6 +2195,14 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.understand_social_post,
    inputSchema: z
     .object({
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+        "would have read — for the visual tools, actual frames you can look at — at the " +
+        "price of the fetch, and leaves the reasoning to you.",
+      ),
      url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."),
      focus: z
       .string()
@@ -1707,6 +2212,16 @@ export function createMcpServer(
     .strict(),
   },
   async (args: { url: string; focus?: string }, extra) => {
+   // Hand back the material instead of a conclusion. Billed as the fetch it
+   // is, and the reasoning is the caller's.
+   if ((args as { mode?: string }).mode === "evidence") {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+     return await runEvidenceMode("understand_social_post", args as Record<string, unknown>, client);
+    } catch (err) {
+     return toolError("understand_social_post failed", err);
+    }
+   }
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("understand_social_post", { ...args }));

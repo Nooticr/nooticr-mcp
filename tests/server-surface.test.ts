@@ -42,7 +42,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(28);
+    expect(tools).toHaveLength(30);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -68,6 +68,8 @@ describe("tool annotations", () => {
     expect(closed.sort()).toEqual([
       "check_orchyn_credits",
       "orchyn_login",
+      // Renders classifications the caller already made; fetches nothing.
+      "show_comment_review",
       "unwatch_creator",
       "watch_creator",
     ]);

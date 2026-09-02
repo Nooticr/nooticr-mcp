@@ -104,6 +104,11 @@ export function authorizationServerMetadata(
     issuer: publicUrl,
     authorization_endpoint: `${publicUrl}/authorize`,
     token_endpoint: `${publicUrl}/token`,
+    // Clients try CIMD before DCR when both are on offer, which is the point:
+    // Dynamic Client Registration is deprecated (MCP 2026-07-28), and without
+    // this flag every client fell through to it. The registration endpoint
+    // stays for clients that only know the old way.
+    client_id_metadata_document_supported: true,
     ...(opts.registration
       ? { registration_endpoint: `${publicUrl}/register` }
       : {}),

@@ -26,6 +26,7 @@ import {
   randomToken,
   verifyPkce,
 } from "./shared/oauth.js";
+import { isClientIdMetadataUrl, verifyClientIdMetadata } from "./shared/cimd.js";
 
 // Re-export the shared primitives so consumers and tests keep one import path.
 export {
@@ -182,6 +183,14 @@ export class OAuthManager {
     if (!redirectUri || !isAllowedRedirectUri(redirectUri)) {
       return this.sendAuthorizeError(res, params, "invalid_request",
         "redirect_uri must be a loopback http://localhost, http://127.0.0.1, http://[::1] URL or an https URL.");
+    }
+    // Same check the Worker makes: an https client_id is a metadata document,
+    // and the redirect has to be listed in it.
+    if (isClientIdMetadataUrl(clientId)) {
+      const cimd = await verifyClientIdMetadata(clientId, redirectUri);
+      if (!cimd.ok) {
+        return this.sendAuthorizeError(res, params, cimd.error, cimd.description);
+      }
     }
     const scope = params.get("scope") ?? SCOPE;
     const scopes = parseScopes(scope);

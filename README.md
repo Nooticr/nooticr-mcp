@@ -47,7 +47,7 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-28 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+30 tools, grouped by what you are trying to do. Prices are in orchyn credits and
 match what the server actually charges.
 
 ### Read a post
@@ -56,6 +56,7 @@ match what the server actually charges.
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
 | `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
+| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X/Twitter; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
 ### Understand a post
@@ -65,7 +66,8 @@ match what the server actually charges.
 | `analyze_post_fast` | 2 | The full analysis built from transcript, caption and stats instead of video frames — **a third the price**. Weaker on visual style, just as strong on hook, script, CTA and audience. The sensible default. |
 | `analyze_post` | 6 (first use free) | The same analysis with the video actually watched. Use when the visuals are the point — framing, editing, on-screen text. |
 | `understand_social_post` | 6 (first use free) | A factual description of what physically happens on screen. Use when you need the events, not the strategy. |
-| `analyze_comments` | 6 (first use free) | The comment section synthesised: sentiment, recurring themes, questions asked, objections raised, content requested, and follow-up ideas. Use when the goal is what to make next. |
+| `analyze_comments` | 6 (first use free), or **2 with `mode: "evidence"`** | The comment section synthesised: sentiment, recurring themes, questions asked, objections raised, content requested, and follow-up ideas. Use when the goal is what to make next. **`mode: "evidence"`** instead returns the comments unanalysed for the price of the fetch and asks *your* model to classify them — cheaper, steerable, and it can label each comment's sentiment and whether it is a bug report, question, request or complaint. |
+| `show_comment_review` | free | Draws the classifications your model produced from `mode: "evidence"` — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
 | `compare_posts` | 8 (first use free) | Two to five posts side by side: which won, what actually differed, and the one test to run next. Use when performance differs and you need to know why. |
 
 ### Research a niche or a creator
@@ -134,9 +136,11 @@ iframe):
 `search_mentions` renders a different view, because monitoring is triage rather
 than browsing:
 
-- **The comment leads.** Its text is the first thing in the row, with the term
-  highlighted everywhere it appears and a `×N` badge when one comment names the
-  brand more than once. Who wrote it and when sits underneath.
+- **Each row is a person saying something.** Their picture, with the network's
+  mark on it, then the handle and when they wrote it — "today at 7:25 PM", not
+  a timestamp — then the comment with the term highlighted everywhere it
+  appears, then what it earned in likes and replies. A `×N` badge marks a
+  comment that names the brand more than once.
 - **Each post carries its reach.** The same sentence under a 25K-upvote thread
   and under a post nobody saw are not the same problem, and nothing else on
   screen tells you which one you are reading.
@@ -160,6 +164,48 @@ Also **inline thumbnails** render for the model / plain-text clients:
 - **Batch analysis** — ask "analyze all 4" or "understand these 3 in batch" and Claude will call `analyze_post`/`understand_social_post` once per URL in parallel and summarize. For large batches, `discover_social_posts` + a follow-up `analyze_post` per URL is the recommended flow.
 
 > The backend's `analyze_post` now watches the **actual video/images** (direct MP4, YouTube `fileUri`, or 6 carousel frames via AI multimodal) — not just the caption. The analysis includes a `whatHappens` field describing exactly what is seen.
+
+## Let your own model do the thinking
+
+Every AI tool takes `mode: "evidence"`. Instead of returning orchyn's analysis,
+it returns **the material that analysis would have been built from**, at the
+price of the fetch, and asks your model to reason over it.
+
+For the visual tools that means **actual frames** — real image content blocks,
+not a description of them — paired with the transcript. Measured on Claude Code:
+~1,200 tokens per 1280×720 frame, eight frames read back correctly and in order.
+Twenty frames is about 2.4% of a million-token context.
+
+| | `mode: "ai"` (default) | `mode: "evidence"` |
+|---|---|---|
+| Who reasons | orchyn's model | **yours** |
+| `analyze_post` | 6 credits | **2** — frames + transcript + stats |
+| `analyze_comments` | 6 credits | **2** — the comments, with ids |
+| `analyze_creator_profile` | 15 credits | **2** — the posts and their numbers |
+| Steerable mid-conversation | no | **yes** |
+
+Nothing changes for callers who do not ask for it: `ai` remains the default
+everywhere. `score_draft` has no evidence mode — it reviews text you already
+have, so there is nothing to fetch.
+
+`show_comment_review` closes the loop: hand back your classifications and it
+draws them — every comment with its sentiment and category, filterable and
+selectable. Free, and it makes no requests.
+
+## Before an expensive call, it asks
+
+Most tools print their price in their own description, so a call costs what you
+already read. Two do not, because their price is set by an argument:
+
+- `search_mentions` bills **per network swept**, so a bare "monitor my brand"
+  sweeps all nine for 21 credits.
+- `catch_up_watchlist` bills **per creator**, so the price is the length of a
+  list the request never mentions.
+
+Above 6 credits those two ask first, over MCP `elicitation` — the client shows
+the number and you accept or decline. Declining spends nothing and is not an
+error. A client that does not support elicitation is not blocked; the call runs
+as it always did.
 
 ## Prerequisites
 

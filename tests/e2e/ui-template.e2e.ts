@@ -1121,9 +1121,12 @@ test.describe("brand monitoring", () => {
     threads: [
       thread("reddit", "Down 75%, insiders are buying", { likes: 25000, comments: 1900 }, [
         { id: "reddit:a:0", text: "nike keeps missing, and nike knows it", username: "one",
-          likes: 17, postedAt: "2026-08-11T00:00:00Z", hits: 2 },
+          likes: 17, replies: 4, postedAt: "2026-08-11T00:00:00Z", hits: 2,
+          avatarUrl: "https://cdn.example/a.jpg", avatarProxyUrl: "https://proxy.example/a.jpg" },
+        // No proxy and a dead URL: the row that has to degrade to an initial.
         { id: "reddit:a:1", text: "asics will never catch up to nike", username: "two",
-          likes: 2, postedAt: "2026-08-19T00:00:00Z", hits: 1 },
+          likes: 2, postedAt: "2026-08-19T00:00:00Z", hits: 1,
+          avatarUrl: "https://cdn.example/missing.jpg" },
       ]),
       thread("reddit", "Blown away", { likes: 530, comments: 186 }, [
         { id: "reddit:b:0", text: "Nike will keep coming up with materials", username: "three",
@@ -1138,19 +1141,86 @@ test.describe("brand monitoring", () => {
 
   const text = (page: Page, sel: string) => page.locator(sel).allInnerTexts();
 
-  test("the comment leads, and its attribution sits under it", async ({ page }) => {
+  test("a row reads as a person saying something", async ({ page }) => {
     await renderTemplate(page, MENTIONS);
-    // Reading order inside a row, which is the whole point of the layout: the
-    // words being scanned come first, the author second.
+    // Who, then what they said, then what it earned — the order a feed of
+    // strangers has to be read in.
     const order = await page.locator(".mention-body").first()
       .evaluate((el) => [...el.children].map((c) => c.className));
-    expect(order).toEqual(["mention-text", "mention-meta"]);
-    // And the comment sits above the fold of its own row.
-    const [comment, meta] = await page.locator(".mention").first().evaluate((el) => [
+    expect(order).toEqual(["mention-head", "mention-text", "mention-meta"]);
+    const [head, comment, meta] = await page.locator(".mention").first().evaluate((el) => [
+      el.querySelector(".mention-head")!.getBoundingClientRect().top,
       el.querySelector(".mention-text")!.getBoundingClientRect().top,
       el.querySelector(".mention-meta")!.getBoundingClientRect().top,
     ]);
+    expect(head).toBeLessThan(comment);
     expect(comment).toBeLessThan(meta);
+    // The handle appears once. It used to print on both lines, because these
+    // platforms hand back one identity string and the layout asked for two.
+    const row = await page.locator(".mention").first().innerText();
+    expect(row.split("@one").length - 1, "the handle is printed twice").toBe(1);
+  });
+
+  /**
+   * Avatars were in every upstream comment payload and every mapper dropped
+   * them, so a monitoring feed could only ever show initials. A face plus a
+   * platform mark is what makes a column of strangers scannable.
+   */
+  test("each comment carries a face and the network it came from", async ({ page }) => {
+    // Serve the proxy so the avatar loads. Without this the fake URL 404s and
+    // the fallback correctly swaps it — which is the *next* test's subject,
+    // and made this one a race between the assertion and the error event.
+    const PIXEL = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await page.route("https://proxy.example/**", (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: PIXEL }),
+    );
+    await renderTemplate(page, MENTIONS);
+    const rows = page.locator(".mention");
+    // One badge per row, whatever the picture does.
+    await expect(page.locator(".mention-av-badge svg")).toHaveCount(await rows.count());
+    // The proxy is preferred over the platform CDN — the view is sandboxed and
+    // these URLs are cross-origin and often signed — with the original as the
+    // one retry.
+    const first = page.locator(".mention-av-img").first();
+    await expect(first).toHaveAttribute("src", "https://proxy.example/a.jpg");
+    await expect(first).toHaveAttribute("data-fallback", "https://cdn.example/a.jpg");
+    // An initial is drawn underneath, so a picture that never loads degrades
+    // to a letter rather than a broken-image glyph.
+    await expect(page.locator(".mention-av-init").first()).toHaveText("O");
+  });
+
+  test("a picture that cannot load uncovers the initial", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    const img = page.locator('.mention[data-mention-id="reddit:a:1"] .mention-av-img');
+    // No fallback on this one, so its first failure is its last.
+    await expect(img).toHaveJSProperty("naturalWidth", 0);
+    await expect(img).toBeHidden();
+    await expect(page.locator('.mention[data-mention-id="reddit:a:1"] .mention-av-init'))
+      .toBeVisible();
+  });
+
+  test("says when a comment was written the way a person would", async ({ page }) => {
+    const now = new Date();
+    const at = (msAgo: number) => new Date(now.getTime() - msAgo).toISOString();
+    await renderTemplate(page, {
+      term: "nike",
+      totalMentions: 3,
+      byPlatform: { reddit: 3 },
+      threads: [thread("reddit", "t", { likes: 1 }, [
+        { id: "r:0", text: "nike", username: "a", likes: 0, postedAt: at(2 * 3600e3), hits: 1 },
+        { id: "r:1", text: "nike", username: "b", likes: 0, postedAt: at(26 * 3600e3), hits: 1 },
+        { id: "r:2", text: "nike", username: "c", likes: 0, postedAt: at(3 * 86400e3), hits: 1 },
+      ])],
+    });
+    const times = await text(page, ".mention-when");
+    // A monitoring feed is read for recency first; an ISO timestamp answers a
+    // question nobody asked.
+    expect(times[0]).toMatch(/^today at /);
+    expect(times[1]).toMatch(/^yesterday at /);
+    expect(times[2]).toBe("3 days ago");
   });
 
   test("shows how far the post carrying a comment actually reached", async ({ page }) => {
@@ -1378,5 +1448,102 @@ test.describe("brand monitoring", () => {
     await expect(page.locator(".mgroup-none")).toHaveText(
       "The post names nike, but none of its comments do.");
     await expect(page.locator(".mgroup").first().locator("[data-group-all]")).toHaveCount(0);
+  });
+
+
+  /**
+   * A comment review — the same view, drawn from labels a model produced rather
+   * than from a brand sweep.
+   *
+   * The sentiment and category chips are the thing that could not exist before.
+   * A sweep has no basis for them: nothing in that payload says whether a
+   * comment is angry, and colouring it from a keyword guess would be
+   * confidently wrong about the exact thing being scanned for. Once a model has
+   * read the words, the label is worth drawing.
+   */
+  test.describe("comment review", () => {
+    const REVIEW = {
+      review: true,
+      term: "Why did nike lose 200B in value?",
+      url: "https://www.youtube.com/watch?v=7wrjbQDxqkM",
+      summary: "Mostly negative, with one specific bug worth filing.",
+      totalMentions: 4,
+      byCategory: { bug_report: 2, praise: 1, question: 1 },
+      bySentiment: { negative: 2, positive: 1, neutral: 1 },
+      threads: [
+        {
+          post: { platform: "youtube", title: "Why did nike lose 200B in value?",
+                  externalUrl: "https://www.youtube.com/watch?v=7wrjbQDxqkM", views: 11300 },
+          postIsAboutTerm: false,
+          mentionCount: 4,
+          mentions: [
+            { id: "c:0", text: "checkout does nothing on iOS 18", username: "ana", likes: 12,
+              sentiment: "negative", category: "bug_report", hits: 1 },
+            { id: "c:1", text: "same here, cart empties itself", username: "bo", likes: 4,
+              sentiment: "negative", category: "bug_report", hits: 1 },
+            { id: "c:2", text: "best release yet honestly", username: "cy", likes: 40,
+              sentiment: "positive", category: "praise", hits: 1 },
+            { id: "c:3", text: "when does this ship in the EU?", username: "di", likes: 2,
+              sentiment: "neutral", category: "question", hits: 1 },
+          ],
+        },
+      ],
+    };
+
+    test("labels every comment with what the model decided", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      await expect(page.locator(".mention")).toHaveCount(4);
+      const chips = await page.locator(".mention").first().locator(".chip").allInnerTexts();
+      // CSS capitalises them, which is what a reader sees.
+      expect(chips).toEqual(["Negative", "Bug Report"]);
+      // Sentiment earns colour because a model read the words; category is a
+      // bucket, not a judgement, so it stays neutral.
+      await expect(page.locator(".chip-negative").first()).toBeVisible();
+      await expect(page.locator(".chip-positive")).toHaveCount(1);
+    });
+
+    test("a brand sweep carries no labels, because it has no basis for them", async ({ page }) => {
+      await renderTemplate(page, MENTIONS);
+      await expect(page.locator(".chip")).toHaveCount(0);
+    });
+
+    test("the counts become the filter, by category rather than by network", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      const chips = await text(page, ".mchip");
+      expect(chips.map((c) => c.replace(/\s+/g, " "))).toEqual([
+        "All 4", "bug report 2", "praise 1", "question 1",
+      ]);
+      // One post, so the network is a constant — the useful cut is the label.
+      await page.locator('.mchip[data-filter="bug_report"]').click();
+      await expect(page.locator(".mention")).toHaveCount(2);
+      await page.locator('.mchip[data-filter=""]').click();
+      await expect(page.locator(".mention")).toHaveCount(4);
+    });
+
+    test("filtering inside one post keeps the post, not just its comments", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      await page.locator('.mchip[data-filter="praise"]').click();
+      // The group survives with one row, rather than the whole card vanishing —
+      // the reader still needs to know which post they are looking at.
+      await expect(page.locator(".mgroup")).toHaveCount(1);
+      await expect(page.locator(".mention")).toHaveCount(1);
+      await expect(page.locator(".mgroup-title")).toContainText("nike lose 200B");
+    });
+
+    test("leads with what the model concluded", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      await expect(page.locator(".mention-term")).toContainText("Comment review");
+      await expect(page.locator(".mention-summary")).toHaveText(
+        "Mostly negative, with one specific bug worth filing.");
+    });
+
+    test("selection still works, so a labelled comment can be acted on", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      // The point of classifying is doing something about it: the bug reports
+      // have to be selectable as a set.
+      await page.locator('.mchip[data-filter="bug_report"]').click();
+      await page.locator("[data-group-all]").click();
+      await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    });
   });
 });

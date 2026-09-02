@@ -28,6 +28,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { OrchynClient } from "./orchyn.js";
+import { confirmSpend, declinedResult, CREDITS_PER_CREATOR } from "./spend.js";
 
 export const WATCHLIST_URI = "orchyn://watchlist";
 
@@ -209,6 +210,14 @@ export function registerWatchlist(
             text: JSON.stringify({ watching: entries.length, entries }, null, 2),
           },
         ],
+        // Private and short-lived, unlike the view template. This is one
+        // account's list, so a shared cache must never hand it to anyone else
+        // — that is exactly what `cacheScope` is for. And it changes from
+        // inside the same session (watch_creator, unwatch_creator), so the
+        // window has to be small enough that a user who just added someone
+        // does not look at a list without them.
+        ttlMs: 30_000,
+        cacheScope: "private" as const,
       };
     },
   );
@@ -332,6 +341,19 @@ export function registerWatchlist(
           creators: [],
           hint: "Nothing on the watchlist yet — add someone with watch_creator.",
         });
+      }
+
+      // The other call whose price is an argument the caller never sees: the
+      // watchlist length. Listing it is a free KV read, so nothing has been
+      // spent by the time we ask.
+      const credits = entries.length * CREDITS_PER_CREATOR;
+      const decision = await confirmSpend(server.server, {
+        credits,
+        summary: `Check ${entries.length} watched creator${entries.length === 1 ? "" : "s"} for new posts.`,
+        cheaper: 'Pass "platform" to check only one network.',
+      });
+      if (!decision.proceed) {
+        return declinedResult(credits, `Checking ${entries.length} creators`);
       }
 
       const creators: Array<Record<string, unknown>> = [];

@@ -71,7 +71,7 @@ export const TOOL_DEFINITIONS = [
  name: "analyze_comments",
  title: "Analyze Comments",
  description: "Read a post's comment section and return what the audience is actually saying: sentiment, recurring themes, the questions they ask, objections raised, content they request, the language they use, and follow-up video ideas grounded in it. Use when the goal is 'what should I make next' rather than 'what did people write'. AI analysis — 1 free use, then 6 credits per use.",
- inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100).") }).strict(),
+ inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."), mode: z.enum(["ai", "evidence"]).optional().describe("'ai' (default) returns orchyn's own analysis for 6 credits. 'evidence' returns the raw comments for 2 credits and leaves the analysis to you.") }).strict(),
  },
  {
  name: "compare_posts",
@@ -132,6 +132,18 @@ export const TOOL_DEFINITIONS = [
  title: "Search Mentions",
  description: "Brand monitoring: what people are actually saying about a term across every network at once. Searches TikTok, Instagram, YouTube, X/Twitter, Reddit, Weibo, Douyin, Xiaohongshu and Bilibili in parallel, opens the posts it finds and reads their COMMENTS for the term \u2014 the mention is usually in the replies, not the caption. Returns the comments grouped under the post they were left on, each with an id you can pass to another tool, how many times it names the term, and whether the post itself is about the brand or merely where the audience raised it. Use `since` to monitor a past window and `offset` to page through. Costs 2 orchyn credits per platform searched, except Xiaohongshu at 5. Use to see what is said about a brand; discover_social_posts is for one platform's posts.",
  inputSchema: z.object({ term: z.string().describe("Brand, product or person to look for, e.g. 'orchyn'."), platforms: z.array(z.enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo"])).optional().describe("Which networks to search (default: all). Fewer platforms costs less."), since: z.string().optional().describe("Only comments posted on or after this date, as YYYY-MM-DD. Omit for no window."), limit: z.number().int().optional().describe("Posts to open per platform (default 5, max 20). Each one is a comment fetch."), commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 30, max 100)."), offset: z.number().int().optional().describe("Skip this many groups — pass nextOffset from the previous call to load more."), pageSize: z.number().int().optional().describe("Groups returned per call (default 6, max 30).") }).strict(),
+ },
+ {
+ name: "get_post_frames",
+ title: "Get Post Frames",
+ description: "Sample frames from a post's video and return them as images you can look at yourself, rather than an analysis of them. A carousel or slideshow returns its own images unchanged. Pair it with get_post_transcript to reconstruct both what happens on screen and what is said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. Consumes 2 orchyn credits. Use when you want to see the visuals; use analyze_post when you want orchyn's own opinion of them.",
+ inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("Frames to sample, evenly spaced across the video (default 8, max 20).") }).strict(),
+ },
+ {
+ name: "show_comment_review",
+ title: "Show Comment Review",
+ description: "Display comment classifications you produced from analyze_comments(mode='evidence'). Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",
+ inputSchema: z.object({ url: z.string().describe("The post the comments came from."), summary: z.string().optional(), title: z.string().optional(), comments: z.array(z.object({ id: z.string(), text: z.string(), author: z.string().optional(), likes: z.number().optional(), sentiment: z.string().optional(), category: z.string().optional(), note: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
  },
  {
  name: "check_orchyn_credits",
