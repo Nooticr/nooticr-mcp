@@ -254,6 +254,7 @@ describe("tool surface", () => {
     "buy_orchyn_credits",
     "orchyn_login",
     "show_comment_review",
+    "get_post_frames",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {

@@ -47,7 +47,7 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-29 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+30 tools, grouped by what you are trying to do. Prices are in orchyn credits and
 match what the server actually charges.
 
 ### Read a post
@@ -56,6 +56,7 @@ match what the server actually charges.
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
 | `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
+| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. A carousel or slideshow returns its own images unchanged. Pair with `get_post_transcript` and judge the post yourself. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
 ### Understand a post
@@ -163,6 +164,33 @@ Also **inline thumbnails** render for the model / plain-text clients:
 - **Batch analysis** — ask "analyze all 4" or "understand these 3 in batch" and Claude will call `analyze_post`/`understand_social_post` once per URL in parallel and summarize. For large batches, `discover_social_posts` + a follow-up `analyze_post` per URL is the recommended flow.
 
 > The backend's `analyze_post` now watches the **actual video/images** (direct MP4, YouTube `fileUri`, or 6 carousel frames via AI multimodal) — not just the caption. The analysis includes a `whatHappens` field describing exactly what is seen.
+
+## Let your own model do the thinking
+
+Every AI tool takes `mode: "evidence"`. Instead of returning orchyn's analysis,
+it returns **the material that analysis would have been built from**, at the
+price of the fetch, and asks your model to reason over it.
+
+For the visual tools that means **actual frames** — real image content blocks,
+not a description of them — paired with the transcript. Measured on Claude Code:
+~1,200 tokens per 1280×720 frame, eight frames read back correctly and in order.
+Twenty frames is about 2.4% of a million-token context.
+
+| | `mode: "ai"` (default) | `mode: "evidence"` |
+|---|---|---|
+| Who reasons | orchyn's model | **yours** |
+| `analyze_post` | 6 credits | **2** — frames + transcript + stats |
+| `analyze_comments` | 6 credits | **2** — the comments, with ids |
+| `analyze_creator_profile` | 15 credits | **2** — the posts and their numbers |
+| Steerable mid-conversation | no | **yes** |
+
+Nothing changes for callers who do not ask for it: `ai` remains the default
+everywhere. `score_draft` has no evidence mode — it reviews text you already
+have, so there is nothing to fetch.
+
+`show_comment_review` closes the loop: hand back your classifications and it
+draws them — every comment with its sentiment and category, filterable and
+selectable. Free, and it makes no requests.
 
 ## Before an expensive call, it asks
 

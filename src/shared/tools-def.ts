@@ -134,6 +134,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ term: z.string().describe("Brand, product or person to look for, e.g. 'orchyn'."), platforms: z.array(z.enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo"])).optional().describe("Which networks to search (default: all). Fewer platforms costs less."), since: z.string().optional().describe("Only comments posted on or after this date, as YYYY-MM-DD. Omit for no window."), limit: z.number().int().optional().describe("Posts to open per platform (default 5, max 20). Each one is a comment fetch."), commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 30, max 100)."), offset: z.number().int().optional().describe("Skip this many groups — pass nextOffset from the previous call to load more."), pageSize: z.number().int().optional().describe("Groups returned per call (default 6, max 30).") }).strict(),
  },
  {
+ name: "get_post_frames",
+ title: "Get Post Frames",
+ description: "Sample frames from a post's video and return them as images you can look at yourself, rather than an analysis of them. A carousel or slideshow returns its own images unchanged. Pair it with get_post_transcript to reconstruct both what happens on screen and what is said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. Consumes 2 orchyn credits. Use when you want to see the visuals; use analyze_post when you want orchyn's own opinion of them.",
+ inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("Frames to sample, evenly spaced across the video (default 8, max 20).") }).strict(),
+ },
+ {
  name: "show_comment_review",
  title: "Show Comment Review",
  description: "Display comment classifications you produced from analyze_comments(mode='evidence'). Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",
