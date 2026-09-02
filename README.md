@@ -56,7 +56,7 @@ match what the server actually charges.
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
 | `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
-| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. A carousel or slideshow returns its own images unchanged. Pair with `get_post_transcript` and judge the post yourself. Each frame costs roughly 1,200 tokens of your context. |
+| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X/Twitter; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
 ### Understand a post
