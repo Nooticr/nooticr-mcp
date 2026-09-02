@@ -239,7 +239,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 .mchip-mark{display:inline-flex;color:var(--brand)}
 .mchip-mark svg{width:13px;height:13px;fill:currentColor}
 .mgroups{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.mgroup{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--card)}
+.mgroup{border:1px solid var(--border);border-radius:12px;padding:12px 14px 6px;background:var(--card)}
 .mgroup-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .mgroup-plat{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--brand)}
 .mgroup-plat svg{width:12px;height:12px;fill:currentColor}
@@ -255,19 +255,44 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 .mgroup-all:hover{color:var(--fg)}
 .mgroup-none{margin-top:8px;font-size:12px;color:var(--muted)}
 .mgroup-media{margin-top:10px}
-/* The comment leads; who said it and when sit underneath. */
-.mentions{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-.mention{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:var(--transition)}
-.mention:hover{border-color:var(--muted)}
-.mention.picked{border-color:var(--accent);background:var(--tag)}
-.mention-pick{margin-top:3px;flex:none;width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
-.mention-body{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
-.mention-text{font-size:13.5px;line-height:1.45;color:var(--fg);word-break:break-word}
-.mention-text mark{background:rgba(250,204,21,.38);color:inherit;border-radius:3px;padding:0 2px}
-.mention-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.mention-who{font-size:11.5px;font-weight:600;color:var(--muted)}
-.mention-hits{font-size:10.5px;font-weight:700;color:var(--fg);background:var(--tag);border:1px solid var(--border);border-radius:999px;padding:0 6px}
-.mention-likes,.mention-when{font-size:10.5px;color:var(--muted)}
+/* A feed of people, not a table of strings: a face and a platform mark lead
+   each row, then the words, then what the row earned. Rows are separated by a
+   hairline rather than boxed — a card inside a card reads as clutter at this
+   density, and the group already is the card. */
+.mentions{display:flex;flex-direction:column;margin-top:8px}
+.mention{display:flex;gap:11px;align-items:flex-start;padding:11px 2px;cursor:pointer;transition:var(--transition)}
+.mention+.mention{border-top:1px solid var(--border)}
+.mention:hover{background:var(--card-hover)}
+.mention.picked{background:var(--tag)}
+.mention-pick{margin-top:11px;flex:none;width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+.mention-av{position:relative;flex:none;width:36px;height:36px;border-radius:50%;
+  background:var(--tag);border:1px solid var(--border);overflow:visible}
+.mention-av-init{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:var(--muted);border-radius:50%}
+.mention-av-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+/* The mark identifies the network; it should not be the loudest thing in the
+   row. A filled brand-colour disc on every avatar turns a YouTube-heavy sweep
+   into a column of red dots, so the disc is the surface and the glyph carries
+   the colour. */
+.mention-av-badge{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;
+  background:var(--card);color:var(--brand);display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);box-shadow:0 0 0 1.5px var(--card)}
+.mention-av-badge svg{width:9.5px;height:9.5px;fill:currentColor}
+.mention-body{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.mention-head{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.mention-who{font-size:13px;font-weight:650;color:var(--fg)}
+.mention-when{font-size:11.5px;color:var(--muted)}
+.mention-when::before{content:"·";margin-right:7px;color:var(--border)}
+.mention-hits{margin-left:auto;font-size:10.5px;font-weight:700;color:var(--fg);
+  background:var(--tag);border:1px solid var(--border);border-radius:999px;padding:1px 7px}
+.mention-text{margin-top:4px;font-size:13.5px;line-height:1.5;color:var(--fg);word-break:break-word}
+/* Rose rather than yellow: the highlight marks the brand being tracked, and a
+   highlighter yellow reads as "unread" instead of "this is the thing". */
+.mention-text mark{background:rgba(244,63,94,.15);color:inherit;border-radius:4px;padding:1px 3px;font-weight:600}
+.mention-meta{display:flex;align-items:center;gap:14px;margin-top:6px}
+.mention-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.mention-stat svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
 .mention-more{display:block;width:100%;margin-top:12px;padding:10px;font-size:13px;font-weight:600;color:var(--fg);background:var(--tag);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:var(--transition)}
 .mention-more:hover:not(:disabled){border-color:var(--muted)}
 .mention-more:disabled{opacity:.6;cursor:default}
@@ -1254,6 +1279,16 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     el.setAttribute("src",alt);
   },true);
 
+  // An avatar with nothing left to try hides, uncovering the initial drawn
+  // underneath it. A broken-image glyph in a column of faces reads as a fault;
+  // an initial reads as a person whose picture did not load.
+  document.addEventListener("error",function(e){
+    var el=e.target;
+    if(!el||el.tagName!=="IMG"||!el.hasAttribute("data-avatar"))return;
+    if(el.getAttribute("data-fallback"))return;
+    el.style.display="none";
+  },true);
+
   // A <video> poster cannot report failure: there is no error event for it, so
   // a dead cover leaves a black stage and nothing notices. TikTok cover
   // signatures expire in hours, so this is the ordinary case, not the edge -
@@ -1783,18 +1818,31 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       var key=groupKey(t);
       var open=expandedGroups[key],cut=open?all.length:Math.min(all.length,GROUP_PEEK);
       var mentions=all.slice(0,cut).map(function(m){
-        var hits=Number(m.hits||1),id=String(m.id||"");
-        // The comment first, then who and when: the words are what is being
-        // scanned, and the attribution only matters once they land.
+        var hits=Number(m.hits||1),id=String(m.id||""),who=String(m.username||"someone");
+        var pic=String(m.avatarProxyUrl||m.avatarUrl||"");
+        var picAlt=String(m.avatarUrl||"");
+        // A face and a platform mark, then the words. Reading a feed of
+        // strangers is mostly working out who is talking; a column of handles
+        // makes you read every one of them to find out.
+        var avatar='<span class="mention-av" style="--brand:'+pColor(plat)+'">'
+          +'<span class="mention-av-init">'+esc(initialOf(who))+"</span>"
+          +(pic?'<img class="mention-av-img" data-avatar src="'+esc(pic)+'"'
+              +(picAlt&&picAlt!==pic?' data-fallback="'+esc(picAlt)+'"':"")
+              +' alt="" loading="lazy"/>':"")
+          +'<span class="mention-av-badge">'+pSvg(plat,9)+"</span></span>";
         return '<label class="mention" data-mention-id="'+esc(id)+'">'
           +'<input type="checkbox" class="mention-pick" data-mid="'+esc(id)+'"/>'
+          +avatar
           +'<span class="mention-body">'
+          +'<span class="mention-head">'
+          +'<span class="mention-who">@'+esc(who)+"</span>"
+          +(m.postedAt?'<span class="mention-when">'+esc(friendlyTime(m.postedAt))+"</span>":"")
+          +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
+          +"</span>"
           +'<span class="mention-text">'+highlightTerm(String(m.text||""),st.term)+"</span>"
           +'<span class="mention-meta">'
-          +'<span class="mention-who">@'+esc(String(m.username||"someone"))+"</span>"
-          +(m.likes?'<span class="mention-likes">'+esc(fmtNum(m.likes))+" ♥</span>":"")
-          +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
-          +(m.postedAt?'<span class="mention-when">'+esc(shortDate(m.postedAt))+"</span>":"")
+          +'<span class="mention-stat">'+heartIcon()+esc(fmtNum(m.likes||0))+"</span>"
+          +'<span class="mention-stat">'+replyIcon()+esc(fmtNum(m.replies||0))+"</span>"
           +"</span></span></label>";
       }).join("");
       return '<div class="mgroup" data-platform="'+esc(plat)+'">'
@@ -1911,6 +1959,39 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       i=at+needle.length;
     }
     return out;
+  }
+
+  /**
+   * The time the way someone would say it. A monitoring feed is read for
+   * recency above all — "today at 7:25 PM" answers the question the reader
+   * actually has, which "2026-09-01T19:25:04Z" does not.
+   */
+  function friendlyTime(v){
+    var s=String(v||"");
+    if(!s)return "";
+    var d=new Date(s);
+    if(isNaN(d.getTime()))return s.slice(0,10);
+    var now=new Date(),day=86400000;
+    var clock=d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+    if(d.toDateString()===now.toDateString())return "today at "+clock;
+    if(d.toDateString()===new Date(now.getTime()-day).toDateString())return "yesterday at "+clock;
+    var days=Math.floor((now.getTime()-d.getTime())/day);
+    if(days>0&&days<7)return days+" days ago";
+    var date=d.toLocaleDateString([],{month:"short",day:"numeric"});
+    return d.getFullYear()===now.getFullYear()?date:date+", "+d.getFullYear();
+  }
+
+  function heartIcon(){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.9-9.3-9A5.2 5.2 0 0 1 12 6.2 5.2 5.2 0 0 1 21.3 12c-1.8 4.1-9.3 9-9.3 9z"/></svg>';
+  }
+  function replyIcon(){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-4.2-.9L3 20.5l1.6-4.6A8.2 8.2 0 0 1 3.6 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8.4 8.4z"/></svg>';
+  }
+
+  /** First letter of a handle, for when the picture will not load. */
+  function initialOf(name){
+    var s=String(name||"").replace("@","").trim();
+    return s?s.charAt(0).toUpperCase():"?";
   }
 
   /** "2026-08-18" rather than a full timestamp: the day is the useful part. */

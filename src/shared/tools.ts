@@ -573,6 +573,11 @@ export function createMcpServer(
   "https://*.fbcdn.net",
   // YouTube
   "https://*.ytimg.com",
+  // Avatars live on their own hosts, which are not the ones that serve media:
+  // a commenter's picture on YouTube comes from ggpht, not ytimg, and a blocked
+  // avatar is a hole in every row of the monitoring feed.
+  "https://*.ggpht.com",
+  "https://yt3.ggpht.com",
   "https://*.googlevideo.com",
   // Xiaohongshu
   "https://*.xhscdn.com",

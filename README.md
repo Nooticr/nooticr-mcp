@@ -134,9 +134,11 @@ iframe):
 `search_mentions` renders a different view, because monitoring is triage rather
 than browsing:
 
-- **The comment leads.** Its text is the first thing in the row, with the term
-  highlighted everywhere it appears and a `×N` badge when one comment names the
-  brand more than once. Who wrote it and when sits underneath.
+- **Each row is a person saying something.** Their picture, with the network's
+  mark on it, then the handle and when they wrote it — "today at 7:25 PM", not
+  a timestamp — then the comment with the term highlighted everywhere it
+  appears, then what it earned in likes and replies. A `×N` badge marks a
+  comment that names the brand more than once.
 - **Each post carries its reach.** The same sentence under a 25K-upvote thread
   and under a post nobody saw are not the same problem, and nothing else on
   screen tells you which one you are reading.

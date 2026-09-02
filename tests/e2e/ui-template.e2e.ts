@@ -1121,9 +1121,12 @@ test.describe("brand monitoring", () => {
     threads: [
       thread("reddit", "Down 75%, insiders are buying", { likes: 25000, comments: 1900 }, [
         { id: "reddit:a:0", text: "nike keeps missing, and nike knows it", username: "one",
-          likes: 17, postedAt: "2026-08-11T00:00:00Z", hits: 2 },
+          likes: 17, replies: 4, postedAt: "2026-08-11T00:00:00Z", hits: 2,
+          avatarUrl: "https://cdn.example/a.jpg", avatarProxyUrl: "https://proxy.example/a.jpg" },
+        // No proxy and a dead URL: the row that has to degrade to an initial.
         { id: "reddit:a:1", text: "asics will never catch up to nike", username: "two",
-          likes: 2, postedAt: "2026-08-19T00:00:00Z", hits: 1 },
+          likes: 2, postedAt: "2026-08-19T00:00:00Z", hits: 1,
+          avatarUrl: "https://cdn.example/missing.jpg" },
       ]),
       thread("reddit", "Blown away", { likes: 530, comments: 186 }, [
         { id: "reddit:b:0", text: "Nike will keep coming up with materials", username: "three",
@@ -1138,19 +1141,76 @@ test.describe("brand monitoring", () => {
 
   const text = (page: Page, sel: string) => page.locator(sel).allInnerTexts();
 
-  test("the comment leads, and its attribution sits under it", async ({ page }) => {
+  test("a row reads as a person saying something", async ({ page }) => {
     await renderTemplate(page, MENTIONS);
-    // Reading order inside a row, which is the whole point of the layout: the
-    // words being scanned come first, the author second.
+    // Who, then what they said, then what it earned — the order a feed of
+    // strangers has to be read in.
     const order = await page.locator(".mention-body").first()
       .evaluate((el) => [...el.children].map((c) => c.className));
-    expect(order).toEqual(["mention-text", "mention-meta"]);
-    // And the comment sits above the fold of its own row.
-    const [comment, meta] = await page.locator(".mention").first().evaluate((el) => [
+    expect(order).toEqual(["mention-head", "mention-text", "mention-meta"]);
+    const [head, comment, meta] = await page.locator(".mention").first().evaluate((el) => [
+      el.querySelector(".mention-head")!.getBoundingClientRect().top,
       el.querySelector(".mention-text")!.getBoundingClientRect().top,
       el.querySelector(".mention-meta")!.getBoundingClientRect().top,
     ]);
+    expect(head).toBeLessThan(comment);
     expect(comment).toBeLessThan(meta);
+    // The handle appears once. It used to print on both lines, because these
+    // platforms hand back one identity string and the layout asked for two.
+    const row = await page.locator(".mention").first().innerText();
+    expect(row.split("@one").length - 1, "the handle is printed twice").toBe(1);
+  });
+
+  /**
+   * Avatars were in every upstream comment payload and every mapper dropped
+   * them, so a monitoring feed could only ever show initials. A face plus a
+   * platform mark is what makes a column of strangers scannable.
+   */
+  test("each comment carries a face and the network it came from", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    const rows = page.locator(".mention");
+    // One badge per row, whatever the picture does.
+    await expect(page.locator(".mention-av-badge svg")).toHaveCount(await rows.count());
+    // The proxy is preferred over the platform CDN — the view is sandboxed and
+    // these URLs are cross-origin and often signed — with the original as the
+    // one retry.
+    const first = page.locator(".mention-av-img").first();
+    await expect(first).toHaveAttribute("src", "https://proxy.example/a.jpg");
+    await expect(first).toHaveAttribute("data-fallback", "https://cdn.example/a.jpg");
+    // An initial is drawn underneath, so a picture that never loads degrades
+    // to a letter rather than a broken-image glyph.
+    await expect(page.locator(".mention-av-init").first()).toHaveText("O");
+  });
+
+  test("a picture that cannot load uncovers the initial", async ({ page }) => {
+    await renderTemplate(page, MENTIONS);
+    const img = page.locator('.mention[data-mention-id="reddit:a:1"] .mention-av-img');
+    // No fallback on this one, so its first failure is its last.
+    await expect(img).toHaveJSProperty("naturalWidth", 0);
+    await expect(img).toBeHidden();
+    await expect(page.locator('.mention[data-mention-id="reddit:a:1"] .mention-av-init'))
+      .toBeVisible();
+  });
+
+  test("says when a comment was written the way a person would", async ({ page }) => {
+    const now = new Date();
+    const at = (msAgo: number) => new Date(now.getTime() - msAgo).toISOString();
+    await renderTemplate(page, {
+      term: "nike",
+      totalMentions: 3,
+      byPlatform: { reddit: 3 },
+      threads: [thread("reddit", "t", { likes: 1 }, [
+        { id: "r:0", text: "nike", username: "a", likes: 0, postedAt: at(2 * 3600e3), hits: 1 },
+        { id: "r:1", text: "nike", username: "b", likes: 0, postedAt: at(26 * 3600e3), hits: 1 },
+        { id: "r:2", text: "nike", username: "c", likes: 0, postedAt: at(3 * 86400e3), hits: 1 },
+      ])],
+    });
+    const times = await text(page, ".mention-when");
+    // A monitoring feed is read for recency first; an ISO timestamp answers a
+    // question nobody asked.
+    expect(times[0]).toMatch(/^today at /);
+    expect(times[1]).toMatch(/^yesterday at /);
+    expect(times[2]).toBe("3 days ago");
   });
 
   test("shows how far the post carrying a comment actually reached", async ({ page }) => {
