@@ -33,10 +33,6 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.pkg.outputs.version }}
-      published: ${{ steps.pkg.outputs.published }}
-      can_deploy: ${{ steps.cf.outputs.can_deploy }}
     steps:
       # Full history: the version step below asks what this push changed.
       - uses: actions/checkout@v4
@@ -261,6 +257,24 @@ jobs:
         working-directory: cloudflare
         run: npx wrangler deploy --dry-run
 
+  version:
+    name: Version
+    needs: verify
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pkg.outputs.version }}
+      published: ${{ steps.pkg.outputs.published }}
+      can_deploy: ${{ steps.cf.outputs.can_deploy }}
+    steps:
+      # Full history: the version step below asks what this push changed.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       # Publishing the same version twice is a hard error, so decide here
       # whether this commit actually moved it — and move it here when the
       # commit changed what npm ships but left the version alone.
@@ -380,8 +394,8 @@ jobs:
 
   publish:
     name: Publish to npm
-    needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.verify.outputs.published == 'false'
+    needs: [verify, version]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.version.outputs.published == 'false'
     runs-on: ubuntu-latest
     steps:
       # main, not the pushed SHA: verify may have committed the version bump
@@ -406,7 +420,7 @@ jobs:
       - name: Tag the release
         run: |
           set -euo pipefail
-          V="v${{ needs.verify.outputs.version }}"
+          V="v${{ needs.version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git rev-parse -q --verify "refs/tags/$V" >/dev/null; then
@@ -418,13 +432,14 @@ jobs:
 
   deploy:
     name: Deploy Worker
-    needs: verify
+    needs: [verify, version]
     # Deploys every green push to main, whether or not the package version
     # moved — the Worker and the npm package version independently. Skipped
-    # (not failed) when no token is configured; verify warns in that case.
+    # (not failed) when no token is configured; the version job warns in that
+    # case.
     if: |
       github.event_name == 'push' && github.ref == 'refs/heads/main'
-      && needs.verify.outputs.can_deploy == 'true'
+      && needs.version.outputs.can_deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       # main, so /health reports the version npm just received rather than the
@@ -466,7 +481,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE=https://mcp.orchyn.com
-          WANT="${{ needs.verify.outputs.version }}"
+          WANT="${{ needs.version.outputs.version }}"
           echo "Waiting for $WANT to serve…"
           for _ in $(seq 1 30); do
             sleep 4
