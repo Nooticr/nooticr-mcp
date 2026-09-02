@@ -117,6 +117,19 @@ const analysis = open({
   niche: scalar(),
 }).nullish();
 
+/**
+ * Evidence mode adds keys to every AI tool: what it fetched, and where it came
+ * from. Optional throughout, because `mode: "ai"` returns none of them.
+ */
+const evidence = {
+  mode: scalar().describe('"evidence" when the material was returned unanalysed.'),
+  tool: scalar(),
+  evidenceFrom: listOf(z.string()).describe("The cheap calls this was assembled from."),
+  frameIndex: anyList().describe("Where each returned frame sits in the video."),
+  get_post_transcript: open({}).nullish(),
+  get_social_media: open({}).nullish(),
+};
+
 const feed = { platform: scalar(), posts: listOf(post), mcpCredits };
 const singlePost = { post: post.nullish(), platform: scalar(), url: scalar(), mcpCredits };
 const analyzed = { ...singlePost, analysis, analyzed: scalar() };
@@ -126,9 +139,10 @@ const analyzed = { ...singlePost, analysis, analyzed: scalar() };
  * honest option when the shape has not been checked against a real response.
  */
 export const OUTPUT_SCHEMAS = {
-  analyze_post: open(analyzed),
-  analyze_post_fast: open({ ...analyzed, mode: scalar() }),
-  understand_social_post: open(analyzed),
+  analyze_post: open({ ...analyzed, ...evidence }),
+  analyze_post_fast: open({
+    ...evidence, ...analyzed, mode: scalar() }),
+  understand_social_post: open({ ...analyzed, ...evidence }),
   // No `provider`: the field named the upstream supplier and is no longer
   // returned. Documenting a field that does not exist is worse than omitting it.
   get_social_media: open({ ...singlePost, fetchedAt: scalar() }),
@@ -157,7 +171,10 @@ export const OUTPUT_SCHEMAS = {
             id: scalar().describe("Addressable — pass it to another tool to reply or escalate."),
             text: scalar(),
             username: scalar(),
+            avatarUrl: scalar().describe("The commenter's picture, on the platform's own CDN."),
+            avatarProxyUrl: scalar().describe("The same picture through orchyn, for a sandboxed view."),
             likes: scalar(),
+            replies: scalar().describe("How many people replied to this comment."),
             postedAt: scalar(),
             hits: scalar().describe("How many times this comment names the term."),
           }),
@@ -174,7 +191,20 @@ export const OUTPUT_SCHEMAS = {
   }),
   get_user_posts: open({ ...feed, username: scalar() }),
 
+  /** Frames a caller looks at itself. The pixels ride in the content blocks. */
+  get_post_frames: open({
+    url: scalar(),
+    platform: scalar(),
+    contentType: scalar(),
+    durationSeconds: scalar(),
+    frameCount: scalar(),
+    frames: anyList().describe("Base64 frames; also delivered as image content blocks."),
+    post: post.nullish(),
+    mcpCredits,
+  }),
+
   analyze_creator_profile: open({
+    ...evidence,
     creator: creator.nullish(),
     posts: listOf(post),
     profile: open({}).nullish(),
@@ -184,6 +214,7 @@ export const OUTPUT_SCHEMAS = {
   search_creators: open({ creators: listOf(creator), platform: scalar(), mcpCredits }),
   get_similar_creators: open({ creators: listOf(creator), platform: scalar(), mcpCredits }),
   find_hook_pattern: open({
+    ...evidence,
     report: open({}).nullish(),
     username: scalar(),
     platform: scalar(),
@@ -199,11 +230,44 @@ export const OUTPUT_SCHEMAS = {
     platform: scalar(),
     mcpCredits,
   }),
+  /**
+   * Two shapes behind one tool. `mode: "ai"` returns orchyn's synthesis;
+   * `mode: "evidence"` returns the comments themselves and leaves the reading
+   * to the caller, so both sets of keys are optional here.
+   */
   analyze_comments: open({
     summary: scalar(),
     themes: anyList(),
     commentsAnalyzed: scalar(),
     report: open({}).nullish(),
+    // evidence mode
+    mode: scalar().describe('"evidence" when the comments were returned unanalysed.'),
+    url: scalar(),
+    platform: scalar(),
+    commentCount: scalar(),
+    comments: listOf(
+      open({
+        id: scalar().describe("Addressable — pass it back to show_comment_review."),
+        text: scalar(),
+        author: scalar(),
+        likes: scalar(),
+      }),
+    ).describe("The comments, unanalysed, when mode is evidence."),
+    mcpCredits,
+  }),
+
+  /** What the caller concluded, drawn. Nothing here was fetched. */
+  show_comment_review: open({
+    review: scalar(),
+    term: scalar(),
+    url: scalar(),
+    summary: scalar(),
+    totalMentions: scalar(),
+    byCategory: open({}).nullish().describe("How many comments fell into each category."),
+    bySentiment: open({}).nullish(),
+    themes: listOf(z.string()),
+    nextSteps: listOf(z.string()),
+    threads: anyList().describe("Shaped like search_mentions so one view renders both."),
     mcpCredits,
   }),
 
@@ -218,6 +282,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   compare_posts: open({
+    ...evidence,
     posts: listOf(post),
     failed: anyList(),
     analyzed: scalar(),
@@ -258,6 +323,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   write_hooks: open({
+    ...evidence,
     hooks: listOf(open({
       hook: scalar(),
       mechanism: scalar().describe("The device the hook uses."),
@@ -268,6 +334,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   create_variants: open({
+    ...evidence,
     variants: listOf(open({
       hook: scalar(),
       angle: scalar(),
@@ -298,12 +365,14 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   repurpose_post: open({
+    ...evidence,
     repurposed: open({}).nullish().describe("One entry per target surface."),
     post: post.nullish(),
     sourceUrl: scalar(),
     mcpCredits,
   }),
-  niche_report: open({ report: open({}).nullish(), summary: scalar(), niche: scalar(), mcpCredits }),
+  niche_report: open({
+    ...evidence, report: open({}).nullish(), summary: scalar(), niche: scalar(), mcpCredits }),
 
   check_orchyn_credits: open({
     balance: scalar(),

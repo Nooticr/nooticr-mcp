@@ -16,6 +16,10 @@ import { dashboardPage, dashboardSignedOut } from "./site/dashboard.js";
 import { OrchynClient } from "../../src/shared/orchyn.js";
 import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import {
+  isClientIdMetadataUrl,
+  verifyClientIdMetadata,
+} from "../../src/shared/cimd.js";
+import {
   authorizationServerMetadata,
   protectedResourceMetadata,
   isAllowedRedirectUri,
@@ -338,6 +342,22 @@ function authorizeError(url: URL, redirectUri: string, error: string, descriptio
   return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>${escapeHtml(description)}</p>`));
 }
 
+/**
+ * Returns an error to surface, or null when there is nothing to check.
+ *
+ * A client_id that is not an https URL with a path is an opaque DCR id, which
+ * this must leave alone — CIMD is additive, and turning it into a hard
+ * requirement would lock out every already-registered client.
+ */
+async function checkClientIdMetadata(
+  clientId: string,
+  redirectUri: string
+): Promise<{ error: string; description: string } | null> {
+  if (!isClientIdMetadataUrl(clientId)) return null;
+  const result = await verifyClientIdMetadata(clientId, redirectUri);
+  return result.ok ? null : { error: result.error, description: result.description };
+}
+
 async function handleAuthorizeGet(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const p = getAuthorizeParams(url);
@@ -353,6 +373,12 @@ async function handleAuthorizeGet(request: Request, env: Env): Promise<Response>
   if (!isAllowedRedirectUri(p.redirect_uri)) {
     return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be a loopback URL or an https URL.</p>`));
   }
+  // A client_id that is an https URL is a metadata document: fetch it and
+  // check the redirect belongs to the client claiming it. Under DCR alone any
+  // client_id could be paired with any https redirect, because nothing tied
+  // the two together.
+  const cimd = await checkClientIdMetadata(p.client_id, p.redirect_uri);
+  if (cimd) return authorizeError(url, p.redirect_uri, cimd.error, cimd.description);
   const unsupported = unsupportedScopes(p.scope);
   if (unsupported.length > 0) {
     return authorizeError(url, p.redirect_uri, "invalid_scope",
@@ -391,6 +417,11 @@ async function handleAuthorizePost(request: Request, env: Env): Promise<Response
   }
   if (!isAllowedRedirectUri(p.redirect_uri)) {
     return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be loopback or https.</p>`));
+  }
+  const cimdPost = await checkClientIdMetadata(p.client_id, p.redirect_uri);
+  if (cimdPost) {
+    const u = new URL(request.url);
+    return authorizeError(u, p.redirect_uri, cimdPost.error, cimdPost.description);
   }
 
   const ip = request.headers.get("cf-connecting-ip") ?? "unknown";

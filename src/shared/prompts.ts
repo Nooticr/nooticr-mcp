@@ -18,13 +18,72 @@
  * expensive multimodal pass only where it changes the answer.
  */
 import { z } from "zod";
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-/** MCP prompt arguments are strings on the wire, so every arg is a string. */
-const platformArg = z
-  .string()
-  .optional()
-  .describe("tiktok, instagram, youtube, douyin, xiaohongshu, twitter or bilibili. Defaults to tiktok.");
+/**
+ * The networks a prompt can be pointed at. Kept next to the completion so the
+ * list a user is offered and the list the tools accept cannot drift — the
+ * description here already had, still naming seven after Reddit and Weibo
+ * shipped.
+ */
+export const PROMPT_PLATFORMS = [
+  "tiktok",
+  "instagram",
+  "youtube",
+  "reddit",
+  "douyin",
+  "xiaohongshu",
+  "twitter",
+  "weibo",
+  "bilibili",
+] as const;
+
+/**
+ * Case-insensitive prefix match, and everything when nothing is typed yet.
+ *
+ * Both sides are lowered: the country codes are offered uppercase, so
+ * comparing a lowered query against them directly would return nothing for
+ * every keystroke.
+ */
+function startingWith(options: readonly string[], typed: string): string[] {
+  const q = String(typed ?? "").trim().toLowerCase();
+  return q ? options.filter((o) => o.toLowerCase().startsWith(q)) : [...options];
+}
+
+/**
+ * An optional prompt argument that offers completions.
+ *
+ * The SDK looks for the completable marker in two different places. Deciding
+ * whether to advertise the `completions` capability, it unwraps a ZodOptional
+ * and inspects the *inner* schema; serving `completion/complete`, it inspects
+ * the *outer* field and does not unwrap. Marking one satisfies exactly half of
+ * it: mark the inner and the capability is never advertised, so the method is
+ * not found; mark the outer and the capability is advertised but every
+ * completion comes back empty. Both were observed before this existed. So both
+ * are marked, and the duplication is the SDK's rather than ours.
+ */
+function completableOptional(
+  schema: z.ZodString,
+  complete: (value: string) => string[],
+) {
+  // The outer marker sits on a ZodOptional, so its completer is handed
+  // `string | undefined` — an argument the user has not started typing.
+  const optionalComplete = (value: string | undefined) => complete(value ?? "");
+  return completable(completable(schema, complete).optional(), optionalComplete);
+}
+
+/**
+ * MCP prompt arguments are strings on the wire, so every arg is a string.
+ *
+ * Completable because a wrong platform is not a typo here — it is a paid call
+ * that fetches nothing. The model currently guesses this value from the
+ * description, which is exactly the case `completion/complete` exists for.
+ */
+const platformArg = completableOptional(
+  z.string().describe(`One of: ${PROMPT_PLATFORMS.join(", ")}. Defaults to tiktok.`),
+  (value) => startingWith(PROMPT_PLATFORMS, value ?? ""),
+);
 
 function userMessage(text: string) {
   return { messages: [{ role: "user" as const, content: { type: "text" as const, text } }] };
@@ -47,10 +106,14 @@ export function registerPrompts(server: McpServer): void {
       argsSchema: {
         handle: z.string().describe("Creator handle, with or without @ — e.g. 'zoundsapp'."),
         platform: platformArg,
-        depth: z
-          .string()
-          .optional()
-          .describe("'fast' (captions only, cheap) or 'full' (also watches their videos). Default fast."),
+        depth: completableOptional(
+          z
+            .string()
+            .describe("'fast' (captions only, cheap) or 'full' (also watches their videos). Default fast."),
+          // A closed set where one value costs several times the other, so
+          // guessing it wrong is a billing surprise rather than a typo.
+          (value) => startingWith(["fast", "full"], value ?? ""),
+        ),
       },
     },
     ({ handle, platform, depth }) =>
@@ -82,7 +145,17 @@ export function registerPrompts(server: McpServer): void {
       argsSchema: {
         niche: z.string().describe("Niche or topic, e.g. 'home fitness'."),
         platform: platformArg,
-        country: z.string().optional().describe("2-letter country code for the trend board, e.g. 'US'."),
+        country: completableOptional(
+          z.string().describe("2-letter country code for the trend board, e.g. 'US'."),
+          // The markets the trend board actually carries, rather than all 249
+          // ISO codes — an offer of something that returns nothing is worse
+          // than no offer.
+          (value) =>
+            startingWith(
+              ["US", "GB", "CA", "AU", "DE", "FR", "ES", "IT", "BR", "MX", "JP", "KR", "IN", "ID"],
+              value ?? "",
+            ),
+        ),
       },
     },
     ({ niche, platform, country }) =>
@@ -135,10 +208,10 @@ export function registerPrompts(server: McpServer): void {
         "with it.",
       argsSchema: {
         url: z.string().describe("Full public post URL."),
-        visuals: z
-          .string()
-          .optional()
-          .describe("'yes' if the framing, editing and on-screen text matter. Default no."),
+        visuals: completableOptional(
+          z.string().describe("'yes' if the framing, editing and on-screen text matter. Default no."),
+          (value) => startingWith(["yes", "no"], value ?? ""),
+        ),
       },
     },
     ({ url, visuals }) =>
