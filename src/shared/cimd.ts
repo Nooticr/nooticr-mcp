@@ -42,7 +42,7 @@ export type CimdResult =
 
 /** Documents are small; anything larger is not one. */
 const MAX_DOC_BYTES = 64 * 1024;
-const FETCH_TIMEOUT_MS = 5_000;
+const FETCH_TIMEOUT_MS = 10_000;
 /** Floor and ceiling on how long a fetched document is reused. */
 const MIN_CACHE_MS = 60_000;
 const MAX_CACHE_MS = 24 * 60 * 60 * 1000;
@@ -169,10 +169,19 @@ export async function fetchClientMetadata(
       // A redirect could land somewhere the host check already rejected, so it
       // is refused rather than followed.
       redirect: "error",
-      headers: { accept: "application/json" },
+      headers: {
+        accept: "application/json",
+        // A Workers subrequest with no UA reads as non-browser traffic to the
+        // destination zone's own edge (bot management, WAF); claude.ai's CIMD
+        // fetch was observed failing outright with no HTTP response at all
+        // from inside the Workers runtime while identical requests succeeded
+        // from anywhere else. A normal UA string is the cheap fix.
+        "user-agent": "orchyn-mcp/1.0 (+https://mcp.orchyn.com)",
+      },
       signal: abort.signal,
     });
-  } catch {
+  } catch (err) {
+    console.error("CIMD fetch failed for", clientId, err instanceof Error ? err.message : err);
     return {
       ok: false,
       error: "invalid_client",
