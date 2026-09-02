@@ -15,6 +15,13 @@ import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { createTaskStore, registerSlowTool } from "./tasks.js";
+import {
+  confirmSpend,
+  declinedResult,
+  searchMentionsCost,
+  SEARCH_PLATFORMS,
+} from "./spend.js";
+import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/interfaces.js";
 import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
@@ -439,7 +446,14 @@ export function createMcpServer(
  rawMakeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient,
  // Where the watchlist is kept. Defaults to memory, which is right for a test
  // and wrong for a session — each transport passes the store that outlives it.
- opts?: { watchStore?: WatchStore }
+ opts?: {
+  watchStore?: WatchStore;
+  /**
+   * Where in-flight task handles live. Memory is right for stdio and wrong
+   * for a Durable Object that restarts on every deploy — see tasks.ts.
+   */
+  taskStore?: TaskStore;
+ }
 ): McpServer {
  /**
   * What the user was in the middle of when their session expired.
@@ -473,7 +487,7 @@ export function createMcpServer(
   { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
   {
    // Per-server, so per session on both transports. See tasks.ts.
-   taskStore: createTaskStore(),
+   taskStore: opts?.taskStore ?? createTaskStore(),
    capabilities: {
     resources: {},
     // The workflows, named — see prompts.ts. Without this a host shows the
@@ -609,6 +623,26 @@ export function createMcpServer(
   domains.push(apiUrl.trim().replace(/\/+$/, ""));
  }
 
+/**
+  * Cache hints for the view template.
+  *
+  * `resources/read` is one of the results the spec says a server MUST hint on,
+  * and this is the one worth hinting: the template is ~160KB of HTML and a host
+  * re-reads it every time it renders a widget. Without a TTL clients "SHOULD
+  * assume a default of 0" — immediately stale — so it is fetched again every
+  * single time.
+  *
+  * `public`, because it is the same bytes for every user: no account data, no
+  * token, nothing derived from the caller. That lets a shared gateway hold one
+  * copy for everyone, which is the whole point.
+  *
+  * An hour rather than a day, because the template is versioned with the server
+  * and a deploy should reach a widget the same afternoon. The fields ride along
+  * as extra keys — SDK 1.30 predates them, and clients that do not know them
+  * ignore them, which is the correct behaviour for a hint.
+  */
+ const VIEW_CACHE = { ttlMs: 3_600_000, cacheScope: "public" as const };
+ 
  for (const tool of TOOL_NAMES) {
   const uri = uiResource(tool);
   server.registerResource(
@@ -635,6 +669,7 @@ export function createMcpServer(
        },
       },
      ],
+     ...VIEW_CACHE,
     };
    }
   );
@@ -666,6 +701,7 @@ export function createMcpServer(
       },
      },
     ],
+    ...VIEW_CACHE,
    })
   );
  }
@@ -696,6 +732,7 @@ export function createMcpServer(
     const domain = await computeAppDomain();
     return {
      contents: [appsSdkContents(legacyUri, domains, PLATFORM_LINK_DOMAINS)],
+     ...VIEW_CACHE,
     };
    }
   );
@@ -1546,6 +1583,16 @@ export function createMcpServer(
    },
    extra,
   ) => {
+   // The one call whose price is set by an argument rather than printed in
+   // the description: no `platforms` means all nine networks, which is 21
+   // credits the caller never saw a number for.
+   const credits = searchMentionsCost(args.platforms);
+   const decision = await confirmSpend(server.server, {
+    credits,
+    summary: `Sweep ${args.platforms?.length ?? SEARCH_PLATFORMS.length} networks for comments naming "${args.term}".`,
+    cheaper: "Pass fewer platforms to spend less.",
+   });
+   if (!decision.proceed) return declinedResult(credits, "That sweep");
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("search_mentions", { ...args }));

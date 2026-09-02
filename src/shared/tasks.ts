@@ -42,7 +42,15 @@ export const TASK_TTL_MS = 900_000;
  */
 export const TASK_POLL_MS = 2_000;
 
-/** Fresh store per server, which is per session on both transports. */
+/**
+ * The default store: in memory, which is correct for stdio because the process
+ * *is* the session — when it exits there is nothing left to poll for.
+ *
+ * It is wrong for the Worker, where the Durable Object holding the server is
+ * restarted by eviction, hibernation and every deploy, taking every in-flight
+ * task with it. That transport passes its own durable store; see
+ * `cloudflare/src/taskStore.ts`.
+ */
 export function createTaskStore(): InMemoryTaskStore {
   return new InMemoryTaskStore();
 }

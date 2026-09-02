@@ -163,6 +163,21 @@ Also **inline thumbnails** render for the model / plain-text clients:
 
 > The backend's `analyze_post` now watches the **actual video/images** (direct MP4, YouTube `fileUri`, or 6 carousel frames via AI multimodal) — not just the caption. The analysis includes a `whatHappens` field describing exactly what is seen.
 
+## Before an expensive call, it asks
+
+Most tools print their price in their own description, so a call costs what you
+already read. Two do not, because their price is set by an argument:
+
+- `search_mentions` bills **per network swept**, so a bare "monitor my brand"
+  sweeps all nine for 21 credits.
+- `catch_up_watchlist` bills **per creator**, so the price is the length of a
+  list the request never mentions.
+
+Above 6 credits those two ask first, over MCP `elicitation` — the client shows
+the number and you accept or decline. Declining spends nothing and is not an
+error. A client that does not support elicitation is not blocked; the call runs
+as it always did.
+
 ## Prerequisites
 
 - Node.js >= 18 (tested on Node 22)
