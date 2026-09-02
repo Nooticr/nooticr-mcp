@@ -22,7 +22,16 @@ import {
   reviewGuidance,
   toEvidence,
 } from "./comment-review.js";
-import { EVIDENCE_PLANS, frameIndex, framesToBlocks } from "./evidence.js";
+import {
+ billingNote,
+ detectAiFailure,
+ EVIDENCE_PLANS,
+ fallbackNote,
+ fetchBillingNote,
+ frameIndex,
+ framesToBlocks,
+ type AiFailure,
+} from "./evidence.js";
 import {
   confirmSpend,
   declinedResult,
@@ -129,6 +138,12 @@ async function computeAppDomain(): Promise<string | undefined> {
 }
 
 type ToolContent = { type: "text"; text: string };
+/** What every tool body here returns — the evidence path included. */
+type EvidenceResult = {
+ content: ToolContent[];
+ structuredContent?: Record<string, unknown>;
+ isError?: boolean;
+};
 
 export interface MakeClientContext {
  authInfo?: AuthInfo;
@@ -463,6 +478,9 @@ async function runEvidenceMode(
  tool: string,
  args: Record<string, unknown>,
  client: OrchynClient,
+ // Set only when this run is a rescue: the AI path could not deliver, and the
+ // caller is owed both the material and an account of why it is what they got.
+ failure?: AiFailure,
 ): Promise<{ content: ToolContent[]; structuredContent: Record<string, unknown> }> {
  const plan = EVIDENCE_PLANS[tool];
  if (!plan) throw new Error(`${tool} has no evidence mode`);
@@ -482,8 +500,11 @@ async function runEvidenceMode(
   }
  }
 
+ // The note leads. A model reads the first text block in a result and this is
+ // the sentence that stops it announcing a failure the tool just recovered
+ // from — or telling the user to go and fetch the frames themselves.
  const content: ToolContent[] = [
-  { type: "text", text: plan.guidance(args) } as ToolContent,
+  { type: "text", text: failure ? `${fallbackNote(tool, failure)}${plan.guidance(args)}` : plan.guidance(args) } as ToolContent,
  ];
  const out: Record<string, unknown> = {
   mode: "evidence",
@@ -491,6 +512,18 @@ async function runEvidenceMode(
   evidenceFrom: plan.also ? [plan.via, plan.also.via] : [plan.via],
   ...structured,
  };
+ if (failure) {
+  out.aiFallback = {
+   tool,
+   reason: failure.kind === "error" ? "the AI call failed" : "the AI call returned no analysis",
+   detail: failure.detail,
+   note:
+    `orchyn's own analysis was unavailable for this ${tool} call, so this is the material it ` +
+    "would have read. Reason over it and answer; nobody needs to call another tool.",
+   aiCharge: failure.charge ?? null,
+   billing: `${billingNote(failure)} ${fetchBillingNote(plan)}`,
+  };
+ }
 
  if (plan.frames) {
   // The frames become real image blocks. This is the whole point: the caller
@@ -505,6 +538,65 @@ async function runEvidenceMode(
  if (plan.also) out[plan.also.via] = extra;
 
  return { content, structuredContent: out };
+}
+
+/**
+ * Run an AI tool, and hand back its evidence when the AI cannot deliver.
+ *
+ * The bug: a user asked for a post to be analyzed, the backend answered "AI
+ * service not configured or request failed", and the model passed that on with
+ * a suggestion that the user call `get_post_frames` so it could look at the
+ * images itself. It could have called that tool. Everything the request needed
+ * — the frames, the transcript — is what EVIDENCE_PLANS already fetches, so a
+ * failed AI pass is a reason to run the plan, not a reason to answer with an
+ * apology and an instruction.
+ *
+ * Two failures are rescued and two deliberately are not. An expired session
+ * keeps its own message, because orchyn_login re-runs the interrupted call and
+ * the fetch would fail identically anyway; a paywall keeps its own message,
+ * because "you are out of credits" is not an outage and spending what is left
+ * of a balance on a substitute nobody asked for is not a rescue. Both are
+ * rethrown for the caller to format as it always did.
+ */
+async function aiWithEvidenceFallback(
+ tool: string,
+ args: Record<string, unknown>,
+ client: OrchynClient,
+ runAi: () => Promise<{ payload: unknown; result: EvidenceResult }>,
+): Promise<EvidenceResult> {
+ let failure: AiFailure;
+ try {
+  const { payload, result } = await runAi();
+  const degraded = detectAiFailure(payload);
+  if (!degraded) return result;
+  const credits = (payload as Record<string, unknown>)?.mcpCredits;
+  failure = {
+   ...degraded,
+   charge: credits && typeof credits === "object" ? (credits as Record<string, unknown>) : null,
+  };
+ } catch (err) {
+  if (isAuthFailure(err)) throw err;
+  if (err instanceof OrchynError && (err.paywall || err.status === 402)) throw err;
+  failure = { kind: "error", detail: err instanceof Error ? err.message : String(err) };
+ }
+
+ // One rescue, never a loop: the plan makes data calls only, and a plan that
+ // fails is reported rather than retried.
+ try {
+  return await runEvidenceMode(tool, args, client, failure);
+ } catch (fallbackErr) {
+  const second = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+  return {
+   content: [{
+    type: "text",
+    text:
+     `${tool} failed twice. orchyn's analysis was unavailable (${failure.detail}), and the ` +
+     `fallback that fetches the material instead failed too (${second}). Nothing was returned ` +
+     "because nothing could be fetched — this is a real failure, not a degraded answer.",
+   }],
+   isError: true,
+  };
+ }
 }
 
 export function createMcpServer(
@@ -867,30 +959,38 @@ export function createMcpServer(
     };
    }
    try {
-    const result = (await runVideoAnalysis(client, validation.url) as unknown) as Record<string, unknown> & {
-     inlineImages?: Array<{ url?: string; data?: string; mimeType?: string }>;
-    };
-    // Remove internal field from the JSON shown to the model
-    const { inlineImages: _omit, ...rest } = result;
-    // Proxy thumbnail URLs in structured content for ChatGPT iframe
-    const proxied = proxyUrls(rest) as Record<string, unknown>;
-    // Build HTML card for interactive UI
-    const post = (rest.post ?? {}) as Record<string, unknown>;
-    const thumbnailUrl = typeof post.thumbnailUrl === "string" ? proxyImageUrl(post.thumbnailUrl) : "";
-    const platform = String(post.platform ?? rest.platform ?? "");
-    const creatorHandle = String(post.creatorHandle ?? "");
-    const title = String(post.title ?? post.caption ?? "");
-    const htmlCard = buildAnalysisHtmlCard(proxied, thumbnailUrl, platform, creatorHandle, title);
-    // The interactive HTML card above already embeds the thumbnail + full
-    // video, so no standalone base64 `image` blocks are emitted. Claude's Apps
-    // bridge rejects raw image blocks mixed with an app view ("could not be
-    // processed: Error processing image" + blank iframe), so we keep only the
-    // text block carrying the card + structured JSON.
-    const textJson = JSON.stringify(proxied, null, 2);
-    return {
-     content: [{ type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
-     structuredContent: proxied,
-    };
+    return await aiWithEvidenceFallback("analyze_post", args as Record<string, unknown>, client, async () => {
+     const result = (await runVideoAnalysis(client, validation.url) as unknown) as Record<string, unknown> & {
+      inlineImages?: Array<{ url?: string; data?: string; mimeType?: string }>;
+     };
+     // Remove internal field from the JSON shown to the model
+     const { inlineImages: _omit, ...rest } = result;
+     // Proxy thumbnail URLs in structured content for ChatGPT iframe
+     const proxied = proxyUrls(rest) as Record<string, unknown>;
+     // Build HTML card for interactive UI
+     const post = (rest.post ?? {}) as Record<string, unknown>;
+     const thumbnailUrl = typeof post.thumbnailUrl === "string" ? proxyImageUrl(post.thumbnailUrl) : "";
+     const platform = String(post.platform ?? rest.platform ?? "");
+     const creatorHandle = String(post.creatorHandle ?? "");
+     const title = String(post.title ?? post.caption ?? "");
+     const htmlCard = buildAnalysisHtmlCard(proxied, thumbnailUrl, platform, creatorHandle, title);
+     // The interactive HTML card above already embeds the thumbnail + full
+     // video, so no standalone base64 `image` blocks are emitted. Claude's Apps
+     // bridge rejects raw image blocks mixed with an app view ("could not be
+     // processed: Error processing image" + blank iframe), so we keep only the
+     // text block carrying the card + structured JSON.
+     const textJson = JSON.stringify(proxied, null, 2);
+     // `result`, not `proxied`: the degraded shapes live in the raw payload —
+     // `state: "error"`, a `provider` of "degraded" or "stub", and an
+     // `analysis.analyzed` of false — and the job returns them as a success.
+     return {
+      payload: result,
+      result: {
+       content: [{ type: "text" as const, text: `${htmlCard}\n\n${textJson}` }],
+       structuredContent: proxied,
+      },
+     };
+    });
    } catch (err) {
     if (err instanceof OrchynError && err.paywall) {
      return {
@@ -1079,7 +1179,13 @@ export function createMcpServer(
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("analyze_creator_profile", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("analyze_creator_profile", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("analyze_creator_profile", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("analyze_creator_profile failed", err);
    }
@@ -1343,7 +1449,45 @@ export function createMcpServer(
     }
    }
    try {
-    return await toToolResult(await client.callTool("analyze_comments", { ...rest }));
+    const proxy = await client.callTool("analyze_comments", { ...rest });
+    const structured = (proxy.structured ?? {}) as Record<string, unknown>;
+    const failure = detectAiFailure(structured);
+    if (!failure) return await toToolResult(proxy);
+    // No evidence plan for this one, and it needs none: the degraded payload
+    // stops before the classification, not before the fetch, so the comments
+    // are already in hand. Handing them over with the review guidance costs
+    // nothing extra — re-fetching them would charge for what we were sent.
+    const comments = toEvidence(args.url, structured.comments);
+    // "No comments to analyze on this post" is not an outage. There is
+    // nothing to hand over, so the answer the backend gave stands.
+    if (comments.length === 0) return await toToolResult(proxy);
+    return {
+     content: [{
+      type: "text" as const,
+      text: `${fallbackNote("analyze_comments", failure)}${reviewGuidance(args.url, comments.length)}`,
+     }],
+     structuredContent: {
+      mode: "evidence",
+      url: args.url,
+      platform: structured.platform ?? null,
+      commentCount: comments.length,
+      comments,
+      themes: structured.themes ?? [],
+      mcpCredits: structured.mcpCredits ?? null,
+      aiFallback: {
+       tool: "analyze_comments",
+       reason: failure.kind === "error" ? "the AI call failed" : "the AI call returned no analysis",
+       detail: failure.detail,
+       note:
+        "orchyn's own comment analysis was unavailable, so these are the comments it would " +
+        "have classified. Classify them yourself; nobody needs to call another tool.",
+       aiCharge: structured.mcpCredits ?? null,
+       billing:
+        `${billingNote(failure)} These comments came back inside that same payload, so the ` +
+        "fallback fetched nothing and added no charge of its own.",
+      },
+     },
+    };
    } catch (err) {
     return toolError("analyze_comments failed", err);
    }
@@ -1575,7 +1719,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("compare_posts", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("compare_posts", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("compare_posts", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("compare_posts failed", err);
    }
@@ -1664,7 +1814,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("analyze_post_fast", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("analyze_post_fast", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("analyze_post_fast", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("analyze_post_fast failed", err);
    }
@@ -1719,7 +1875,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("write_hooks", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("write_hooks", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("write_hooks", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("write_hooks failed", err);
    }
@@ -1773,7 +1935,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("create_variants", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("create_variants", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("create_variants", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("create_variants failed", err);
    }
@@ -1859,7 +2027,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("repurpose_post", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("repurpose_post", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("repurpose_post", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("repurpose_post failed", err);
    }
@@ -1911,7 +2085,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("niche_report", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("niche_report", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("niche_report", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("niche_report failed", err);
    }
@@ -1964,7 +2144,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("find_hook_pattern", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("find_hook_pattern", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("find_hook_pattern", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("find_hook_pattern failed", err);
    }
@@ -2234,7 +2420,13 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("understand_social_post", { ...args }));
+    // The AI pass, with the evidence plan behind it: when orchyn cannot
+    // analyse this, the caller still gets the material and reasons over it
+    // themselves rather than being told to fetch it.
+    return await aiWithEvidenceFallback("understand_social_post", args as Record<string, unknown>, client, async () => {
+     const proxy = await client.callTool("understand_social_post", { ...args });
+     return { payload: proxy.structured, result: await toToolResult(proxy) };
+    });
    } catch (err) {
     return toolError("understand_social_post failed", err);
    }

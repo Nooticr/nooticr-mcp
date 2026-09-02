@@ -104,8 +104,9 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "",
         "Work out the hook, the script structure, the call to action and the",
         "audience from the words and the numbers. Be explicit that you have not",
-        "seen the visuals; if a judgement needs them, say so and suggest",
-        "analyze_post with mode 'evidence' to get frames.",
+        "seen the visuals; if a judgement needs them, call analyze_post with",
+        "mode 'evidence' yourself and look at the frames — do not ask anyone",
+        "else to fetch them for you.",
         ownIt,
       ].join("\n"),
   },
@@ -272,4 +273,195 @@ export function frameIndex(frames: unknown): Array<Record<string, unknown>> {
       atFraction: frame.atFraction ?? null,
     };
   });
+}
+
+/**
+ * When the AI pass cannot deliver an analysis, and what to say about it.
+ *
+ * A user asked Claude to analyze a post, the tool came back with "AI service
+ * not configured or request failed", and the model relayed that to the user
+ * along with an instruction to call `get_post_frames` so it could look at the
+ * images itself. Every ingredient of the better answer was already here: the
+ * evidence plan above fetches exactly those frames and that transcript. The
+ * tool should have run it rather than handing the user homework.
+ *
+ * So the AI path is now watched for failure, and failure has two shapes.
+ */
+export interface AiFailure {
+  /** `error` when the call threw or the job errored; `degraded` when it returned without an analysis. */
+  kind: "error" | "degraded";
+  /** One line naming the signal, so the result can say what actually happened. */
+  detail: string;
+  /**
+   * The `mcpCredits` note the failed call carried, when it carried one. Only a
+   * degraded call has one: it completed, so the backend billed it.
+   */
+  charge?: Record<string, unknown> | null;
+}
+
+/**
+ * The backend's own words when it has no model to call.
+ *
+ * Only a last resort. Every degraded payload measured against the live server
+ * also carries a structural flag — `analyzed: false`, `degraded: true`, a
+ * `provider` of stub/mock/unavailable — and those are checked first, because a
+ * sentence is a thing someone rewrites without knowing it is load-bearing. The
+ * one shape with no flag at all is the mock video-analysis stub in
+ * `crates/server/src/ai/handlers.rs`, whose fields simply contain the words
+ * "stub data (AI service not configured)". Hence the defensive match.
+ */
+const STUB_MARKER =
+  /\bstub(?:bed)? data\b|\[stubbed\b|AI service not configured|AI service (?:is )?unavailable|analysis unavailable/i;
+
+/** Providers that mean "nobody actually read the post". */
+const NON_PROVIDERS = new Set(["stub", "mock", "unavailable", "degraded", "none"]);
+
+/** Keys whose contents are bytes or rendered HTML — never worth scanning. */
+const UNSCANNED = new Set(["data", "frames", "inlineImages", "_htmlCards", "_inlineImages", "thumbnailUrl"]);
+
+function nonEmptyString(v: unknown): v is string {
+  return typeof v === "string" && v.trim() !== "";
+}
+
+/** The structural signals, checked on one object. */
+function flaggedFailure(o: Record<string, unknown>, where: string): AiFailure | null {
+  const at = where ? `${where}.` : "";
+  if (o.analyzed === false) {
+    const why = nonEmptyString(o.warning) ? o.warning : nonEmptyString(o.error) ? o.error : nonEmptyString(o.reason) ? o.reason : "";
+    return { kind: "degraded", detail: `${at}analyzed is false${why ? ` — ${why}` : ""}` };
+  }
+  if (o.degraded === true) {
+    const why = nonEmptyString(o.degradedReason) ? o.degradedReason : nonEmptyString(o.error) ? o.error : "";
+    return { kind: "degraded", detail: `${at}degraded is true${why ? ` — ${why}` : ""}` };
+  }
+  if (nonEmptyString(o.provider) && NON_PROVIDERS.has(o.provider.toLowerCase())) {
+    return { kind: "degraded", detail: `${at}provider is "${o.provider}" — no model read this post` };
+  }
+  if (o.state === "error") {
+    return { kind: "error", detail: `the analysis job ended in state "error"${nonEmptyString(o.error) ? ` — ${o.error}` : ""}` };
+  }
+  if (o.ok === false) {
+    return { kind: "error", detail: `the analysis reported ok: false${nonEmptyString(o.error) ? ` — ${o.error}` : ""}` };
+  }
+  if (nonEmptyString(o.error)) {
+    return { kind: "degraded", detail: `${at}error — ${o.error}` };
+  }
+  if (nonEmptyString(o.warning) && STUB_MARKER.test(o.warning)) {
+    return { kind: "degraded", detail: `${at}warning — ${o.warning}` };
+  }
+  return null;
+}
+
+/** Bounded search for the stub's marker text, wherever the backend put it. */
+function carriesStubText(value: unknown, depth = 0, budget = { chars: 20_000, nodes: 500 }): boolean {
+  if (depth > 5 || budget.nodes-- <= 0 || budget.chars <= 0) return false;
+  if (typeof value === "string") {
+    budget.chars -= value.length;
+    return STUB_MARKER.test(value);
+  }
+  if (Array.isArray(value)) return value.some((v) => carriesStubText(v, depth + 1, budget));
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).some(
+      ([k, v]) => !UNSCANNED.has(k) && carriesStubText(v, depth + 1, budget),
+    );
+  }
+  return false;
+}
+
+/**
+ * Did this payload actually come back with an analysis in it?
+ *
+ * Called on what the AI path returned rather than on what it threw — a thrown
+ * error is unambiguous, while these payloads arrive as ordinary successes: the
+ * backend deliberately returns degraded metadata instead of erroring, so the
+ * tool used to hand a caller a stub and call it an answer.
+ */
+export function detectAiFailure(payload: unknown): AiFailure | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const top = payload as Record<string, unknown>;
+  const flagged = flaggedFailure(top, "");
+  if (flagged) return flagged;
+
+  // The video-analysis job nests the whole thing one level down, so the flags
+  // that matter sit inside `analysis` rather than beside it.
+  const analysis = top.analysis;
+  if (analysis && typeof analysis === "object" && !Array.isArray(analysis)) {
+    const nested = flaggedFailure(analysis as Record<string, unknown>, "analysis");
+    if (nested) return nested;
+  } else if (analysis === null && "analysis" in top) {
+    return { kind: "degraded", detail: "analysis is null — nothing was produced" };
+  }
+  // Same for the fields a report tool leaves empty when its model never ran.
+  for (const key of ["profileReport", "comparison"] as const) {
+    if (key in top && top[key] === null) {
+      return { kind: "degraded", detail: `${key} is null — nothing was produced` };
+    }
+  }
+
+  if (top.analyzed === true) return null;
+  if (carriesStubText(top)) {
+    return { kind: "degraded", detail: "the payload carries the backend's stub marker text" };
+  }
+  return null;
+}
+
+/**
+ * What the calling model is told when the rescue fires.
+ *
+ * It lands beside the guidance because that is the one channel to the model,
+ * and it is explicit about two things: that orchyn's own analysis is missing,
+ * and that nobody is to be asked to fetch anything. The bug this fixes was a
+ * model telling its user to call a tool the model itself could have called.
+ */
+export function fallbackNote(tool: string, failure: AiFailure): string {
+  return [
+    `orchyn's own analysis was unavailable for this ${tool} call (${failure.detail}).`,
+    "This is the material that analysis is built from, returned instead of an error.",
+    // The billing line is not decoration. A degraded call was charged before it
+    // turned out to be empty, and a model that says "this cost you the fetch
+    // only" would be telling the user something untrue about their money.
+    billingNote(failure),
+    "",
+    "Answer the question that was actually asked, from what is here. Say plainly that",
+    "orchyn's analysis was unavailable and that you read the material yourself — then",
+    "do exactly that. Do not ask anyone to call another tool: nothing is missing that",
+    "you cannot see below.",
+    "",
+  ].join("\n");
+}
+
+/**
+ * What the fallback did to the balance, stated rather than implied.
+ *
+ * The two failure shapes are not billed alike, and the difference is real
+ * money. `crates/server/src/mcp_tools.rs` debits before it calls the tool and
+ * refunds when that call returns an error — so a thrown failure costs the
+ * caller nothing and the fetch below is the only charge. A degraded payload is
+ * a *successful* call as far as that code is concerned: it was billed, the
+ * refund branch never runs, and nothing on this side can undo it. Saying so is
+ * the only honest option available from here.
+ */
+export function billingNote(failure: AiFailure): string {
+  if (failure.kind === "error") {
+    return (
+      "The AI call failed rather than returning, and the backend refunds an MCP tool call " +
+      "that errors, so it left no charge behind."
+    );
+  }
+  const cost = failure.charge && typeof failure.charge.cost === "number" ? failure.charge.cost : null;
+  return (
+    `The AI call completed and was billed${cost !== null ? ` (${cost} credit${cost === 1 ? "" : "s"})` : ""} ` +
+    "before it turned out to carry no analysis — the backend only refunds calls that error, and " +
+    "this server cannot refund one from here."
+  );
+}
+
+/** The other half: what the material handed back in its place cost. */
+export function fetchBillingNote(plan: EvidencePlan): string {
+  const via = plan.also ? `${plan.via} and ${plan.also.via}` : plan.via;
+  return (
+    `The material below is billed as the fetch that produced it (${via}), at the data price ` +
+    "rather than the analysis one. Retrying this exact call does not charge again: the " +
+    "idempotency key is namespaced per tool, so a retry replays the same debits."
+  );
 }

@@ -512,9 +512,10 @@ function underperformGuidance(a: {
   }
   lines.push(
     "",
-    "The stats here are reach, not quality. If a judgement needs the video itself, say which, and " +
-      "suggest analyze_post with mode 'evidence' for the frames or get_post_transcript for the " +
-      "exact words.",
+    "The stats here are reach, not quality. If a judgement needs the video itself, call " +
+      "analyze_post with mode 'evidence' for the frames, or get_post_transcript for the exact " +
+      "words, and look for yourself — the tools are yours to call, so nobody should be asked to " +
+      "relay one back to you.",
     ownIt,
   );
   return lines.join("\n");

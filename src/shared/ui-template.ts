@@ -1905,7 +1905,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       var key=groupKey(t);
       var open=expandedGroups[key],cut=open?all.length:Math.min(all.length,GROUP_PEEK);
       var mentions=all.slice(0,cut).map(function(m){
-        var hits=Number(m.hits||1),id=String(m.id||""),who=String(m.username||"someone");
+        // No invented handle. "@someone" reads as an account you could go and
+        // look at, and there is none — the platform withheld it, or the
+        // commenter is deleted. An empty handle renders as a stated absence
+        // below instead of a fabricated name. (No backticks in here: this
+        // whole view is one TypeScript template literal, and one would end it.)
+        var hits=Number(m.hits||1),id=String(m.id||"");
+        var who=m.username==null?"":String(m.username).trim();
         var pic=String(m.avatarProxyUrl||m.avatarUrl||"");
         var picAlt=String(m.avatarUrl||"");
         // A face and a platform mark, then the words. Reading a feed of
@@ -1922,7 +1928,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
           +avatar
           +'<span class="mention-body">'
           +'<span class="mention-head">'
-          +'<span class="mention-who">@'+esc(who)+"</span>"
+          +(who?'<span class="mention-who">@'+esc(who)+"</span>"
+                :'<span class="mention-who mention-who-unknown">no handle</span>')
           +(m.postedAt?'<span class="mention-when">'+esc(friendlyTime(m.postedAt))+"</span>":"")
           +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
           +"</span>"
