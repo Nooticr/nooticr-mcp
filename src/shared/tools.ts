@@ -34,7 +34,7 @@ import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlis
 import { registerJobTools } from "./jobs.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.18";
+export const MCP_SERVER_VERSION = "1.26.19";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
