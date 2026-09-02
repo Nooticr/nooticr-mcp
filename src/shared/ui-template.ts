@@ -223,6 +223,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 .mention-total{font-size:20px;font-weight:650;color:var(--fg);letter-spacing:-0.01em}
 .mention-down{margin-top:8px;font-size:12px;color:var(--muted)}
 .mention-window{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:1px 8px}
+.mention-summary{margin-top:6px;font-size:13px;line-height:1.45;color:var(--muted);max-width:60ch}
 .msort{display:inline-flex;flex:none;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .msort-btn{font-size:11.5px;font-weight:600;color:var(--muted);background:transparent;border:0;padding:5px 11px;cursor:pointer;transition:var(--transition)}
 .msort-btn+.msort-btn{border-left:1px solid var(--border)}
@@ -293,6 +294,15 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 .mention-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
 .mention-stat svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round}
+.chip{font-size:10px;font-weight:600;letter-spacing:.01em;border-radius:999px;padding:1px 7px;
+  border:1px solid var(--border);color:var(--muted);text-transform:capitalize}
+/* Sentiment earns colour because a model read the words. Category does not —
+   it is a bucket, not a judgement, and colouring eight of them is noise. */
+.chip-positive{color:#15803d;border-color:#15803d55;background:#15803d14}
+.chip-negative{color:#b91c1c;border-color:#b91c1c55;background:#b91c1c14}
+.chip-mixed{color:#a16207;border-color:#a1620755;background:#a1620714}
+.chip-neutral{color:var(--muted)}
+.chip-cat{background:var(--tag)}
 .mention-more{display:block;width:100%;margin-top:12px;padding:10px;font-size:13px;font-weight:600;color:var(--fg);background:var(--tag);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:var(--transition)}
 .mention-more:hover:not(:disabled){border-color:var(--muted)}
 .mention-more:disabled{opacity:.6;cursor:default}
@@ -1704,6 +1714,40 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
   var monitorState=null;
   var monitorTerm="";
 
+  /**
+   * Sentiment and category, when something has classified the comment.
+   *
+   * These are absent on a brand sweep and present on a show_comment_review,
+   * because the sweep has no basis for them — nothing in the payload says
+   * whether a comment is angry, and colouring it from a keyword guess would be
+   * confidently wrong about the exact thing being scanned for. When a model
+   * has actually read the words, the label is worth something, so it is drawn.
+   */
+  function labelChips(m){
+    var out="";
+    var s=String(m.sentiment||"");
+    if(s)out+='<span class="chip chip-'+esc(s)+'">'+esc(s)+"</span>";
+    var c=String(m.category||"");
+    if(c)out+='<span class="chip chip-cat">'+esc(c.split("_").join(" "))+"</span>";
+    return out;
+  }
+
+  /** The counts a review carries, as the same filter chips the sweep uses. */
+  function reviewChips(st){
+    var counts=st.byCategory||{};
+    var keys=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
+    if(!keys.length)return "";
+    return '<div class="mchips">'
+      +['<button type="button" class="mchip'+(st.filter?"":" on")+'" data-filter="">All <b>'
+        +esc(String(st.total))+"</b></button>"]
+        .concat(keys.map(function(k){
+          return '<button type="button" class="mchip'+(st.filter===k?" on":"")
+            +'" data-filter="'+esc(k)+'">'+esc(k.split("_").join(" "))
+            +" <b>"+esc(String(counts[k]))+"</b></button>";
+        })).join("")
+      +"</div>";
+  }
+
   /** Identifies a group across a redraw. The permalink is the stable part. */
   function groupKey(t){
     var post=t.post||{};
@@ -1716,6 +1760,21 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       if(!found&&groupKey(t)===k)found=t;
     });
     return found;
+  }
+
+  /**
+   * The comments "select all" means, for one group.
+   *
+   * Collapsing and filtering look alike — both leave rows off the screen — but
+   * they mean opposite things. A collapsed comment is hidden to save space and
+   * the reader still meant it; a filtered-out one they deliberately excluded.
+   * So this ignores the fold and honours the filter.
+   */
+  function selectableMentions(t){
+    var all=t.mentions||[];
+    if(!monitorState||!monitorState.filter||!monitorState.byCategory)return all;
+    var want=monitorState.filter;
+    return all.filter(function(m){return String(m.category||"")===want;});
   }
 
   /** How many comments a group shows before it asks. */
@@ -1756,9 +1815,20 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     // comment. A post that names the term with no matching replies still shows.
     var onScreen={};
     keep.forEach(function(t){onScreen[String((t.post||{}).platform||"")]=true;});
-    var shown=st.filter?keep.filter(function(t){
-      return String((t.post||{}).platform||"")===st.filter;
-    }):keep;
+    // A brand sweep filters by network, because it spans many. A review is one
+    // post, so the network is a constant and the useful cut is the label the
+    // model put on each comment — which means filtering inside a group rather
+    // than dropping whole ones.
+    var shown=!st.filter?keep
+      :st.byCategory
+        ?keep.map(function(t){
+          var kept=(t.mentions||[]).filter(function(m){return String(m.category||"")===st.filter;});
+          return kept.length?{post:t.post,postIsAboutTerm:t.postIsAboutTerm,
+            mentionCount:kept.length,mentions:kept}:null;
+        }).filter(Boolean)
+        :keep.filter(function(t){
+          return String((t.post||{}).platform||"")===st.filter;
+        });
     if(st.sort==="new"){
       shown=shown.slice().sort(function(a,b){return groupNewest(b)-groupNewest(a);});
     }
@@ -1786,17 +1856,22 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
 
     var head='<div class="mhead">'
       +'<div class="mhead-top">'
-      +'<div><div class="mention-term">Mentions of <b>'+esc(st.term)+"</b> "
+      +'<div><div class="mention-term">'+(st.byCategory?"Comment review — ":"Mentions of ")
+      +"<b>"+esc(st.term)+"</b> "
       +(st.since?'<span class="mention-window">since '+esc(st.since)+"</span>":"")+"</div>"
       +'<div class="mention-total">'+esc(String(st.total))+" comment"+(st.total===1?"":"s")
-      +(live.length?" across "+esc(String(live.length))+" network"+(live.length===1?"":"s"):"")
-      +"</div></div>"
+      +(st.byCategory
+        ?(st.summary?"":"")
+        :(live.length?" across "+esc(String(live.length))+" network"+(live.length===1?"":"s"):""))
+      +"</div>"
+      +(st.summary?'<div class="mention-summary">'+esc(st.summary)+"</div>":"")
+      +"</div>"
       +'<div class="msort"><button type="button" class="msort-btn'+(st.sort==="loud"?" on":"")
       +'" data-sort="loud">Loudest</button>'
       +'<button type="button" class="msort-btn'+(st.sort==="new"?" on":"")
       +'" data-sort="new">Newest</button></div>'
       +"</div>"
-      +'<div class="mchips">'+chips+"</div>"+down+"</div>";
+      +(st.byCategory?reviewChips(st):'<div class="mchips">'+chips+"</div>")+down+"</div>";
 
     if(!shown.length){
       app.innerHTML=head+'<div class="empty-state fade-in"><div class="icon">🔍</div>'
@@ -1843,6 +1918,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
           +'<span class="mention-meta">'
           +'<span class="mention-stat">'+heartIcon()+esc(fmtNum(m.likes||0))+"</span>"
           +'<span class="mention-stat">'+replyIcon()+esc(fmtNum(m.replies||0))+"</span>"
+          +labelChips(m)
           +"</span></span></label>";
       }).join("");
       return '<div class="mgroup" data-platform="'+esc(plat)+'">'
@@ -1907,7 +1983,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       // is still one the reader asked for when they said "all".
       var t=groupByKey(all.getAttribute("data-group-all")||"");
       if(!t)return;
-      var ids=(t.mentions||[]).map(function(m){return String(m.id||"");}).filter(Boolean);
+      var ids=selectableMentions(t).map(function(m){return String(m.id||"");}).filter(Boolean);
       var turnOn=ids.some(function(id){return pickedMentions.indexOf(id)<0;});
       ids.forEach(function(id){
         var i=pickedMentions.indexOf(id);
@@ -1932,7 +2008,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     document.querySelectorAll("[data-group-all]").forEach(function(b){
       var t=groupByKey(b.getAttribute("data-group-all")||"");
       if(!t)return;
-      var ids=(t.mentions||[]).map(function(m){return String(m.id||"");}).filter(Boolean);
+      var ids=selectableMentions(t).map(function(m){return String(m.id||"");}).filter(Boolean);
       var allOn=ids.length&&ids.every(function(id){return pickedMentions.indexOf(id)>=0;});
       b.textContent=allOn?"Clear these":"Select all "+ids.length;
     });
@@ -2667,6 +2743,10 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
         unavailable:Array.isArray(d.unavailable)?d.unavailable:[],
         hasMore:!!d.hasMore,
         nextOffset:d.nextOffset,
+        // Present only on a show_comment_review: the model's own labels, and
+        // the counts they roll up to.
+        byCategory:(d.byCategory&&typeof d.byCategory==="object")?d.byCategory:null,
+        summary:d.summary?String(d.summary):"",
         filter:"",
         sort:"loud",
       };

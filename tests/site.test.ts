@@ -253,6 +253,7 @@ describe("tool surface", () => {
     "check_orchyn_credits",
     "buy_orchyn_credits",
     "orchyn_login",
+    "show_comment_review",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -309,6 +310,8 @@ describe("tool surface", () => {
       "orchyn_login",
       "watch_creator",
       "unwatch_creator",
+      // Draws what the caller already worked out; makes no request at all.
+      "show_comment_review",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

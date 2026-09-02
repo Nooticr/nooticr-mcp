@@ -16,6 +16,13 @@ import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { createTaskStore, registerSlowTool } from "./tasks.js";
 import {
+  COMMENT_CATEGORIES,
+  COMMENT_SENTIMENTS,
+  platformFromUrl,
+  reviewGuidance,
+  toEvidence,
+} from "./comment-review.js";
+import {
   confirmSpend,
   declinedResult,
   searchMentionsCost,
@@ -535,6 +542,7 @@ export function createMcpServer(
   // state tools have nothing to show and stay view-less, like orchyn_login.
   "catch_up_watchlist",
   "search_mentions",
+  "show_comment_review",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -1172,8 +1180,11 @@ export function createMcpServer(
    description:
     "Read a post's comment section and return what the audience is actually saying: sentiment, " +
     "recurring themes, the questions they ask, objections raised, content they request, the " +
-    "language they use, and follow-up video ideas grounded in it. Use when the goal is 'what " +
-    "should I make next' rather than 'what did people write'. Consumes 6 orchyn credits." +
+    "language they use, and follow-up video ideas grounded in it. " +
+    "mode='ai' (default) has orchyn's model do the reading and costs 6 credits. " +
+    "mode='evidence' returns the comments unanalysed for 2 credits and asks YOU to classify " +
+    "them — cheaper, and you can steer it, sort it and follow up on any single comment. " +
+    "Prefer evidence when the conversation will continue; prefer ai for a one-shot answer. " +
     "Use when the goal is what to make next rather than what people wrote.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_comments") },
@@ -1188,16 +1199,171 @@ export function createMcpServer(
     .object({
      url: z.string().describe("Full public post URL."),
      limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."),
+     mode: z
+      .enum(["ai", "evidence"])
+      .optional()
+      .describe(
+       "'ai' (default) returns orchyn's own analysis for 6 credits. " +
+        "'evidence' returns the raw comments for 2 credits and leaves the analysis to you.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; limit?: number }, extra) => {
+  async (args: { url: string; limit?: number; mode?: "ai" | "evidence" }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
+   const { mode, ...rest } = args;
+   if (mode === "evidence") {
+    try {
+     // The same upstream call get_post_comments makes, so it is billed as the
+     // data call it is rather than as an AI one. The reasoning is the part we
+     // are handing back, and the reasoning was never the expensive half.
+     const res = await client.callTool("get_post_comments", { ...rest });
+     const structured = (res.structured ?? {}) as Record<string, unknown>;
+     const comments = toEvidence(args.url, structured.comments);
+     return {
+      content: [{ type: "text" as const, text: reviewGuidance(args.url, comments.length) }],
+      structuredContent: {
+       mode: "evidence",
+       url: args.url,
+       platform: structured.platform ?? null,
+       commentCount: comments.length,
+       comments,
+       // Passed through rather than re-derived: the platform's own clustering
+       // is evidence too, and it is already paid for.
+       themes: structured.themes ?? [],
+       mcpCredits: structured.mcpCredits ?? null,
+      },
+     };
+    } catch (err) {
+     return toolError("analyze_comments failed", err);
+    }
+   }
    try {
-    return await toToolResult(await client.callTool("analyze_comments", { ...args }));
+    return await toToolResult(await client.callTool("analyze_comments", { ...rest }));
    } catch (err) {
     return toolError("analyze_comments failed", err);
    }
+  }
+ );
+
+ /**
+  * The other half of evidence mode: the model hands back what it concluded and
+  * this draws it.
+  *
+  * It makes no upstream call and costs nothing — everything it needs is
+  * already in the caller's context. The point is that a classification living
+  * only in chat prose cannot be sorted, filtered or acted on one row at a
+  * time; run through here it becomes the same view the brand monitor uses,
+  * with the model's own labels on each row.
+  *
+  * Shaped like a search_mentions payload on purpose, so the existing view
+  * renders it rather than needing a second one.
+  */
+ server.registerTool(
+  "show_comment_review",
+  {
+   title: "Show Comment Review",
+   description:
+    "Display comment classifications you produced from analyze_comments(mode='evidence'). " +
+    "Free, and makes no requests — it only draws what you pass it. Renders each comment with " +
+    "its sentiment and category so a person can sort and act on them. " +
+    "Call this after you have classified the comments, not instead of classifying them.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_comment_review") },
+    "ui/resourceUri": uiResource("show_comment_review"),
+    "openai/outputTemplate": appsSdkResource("show_comment_review"),
+   },
+   annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    // Draws what it is given; reaches nothing.
+    openWorldHint: false,
+   },
+   outputSchema: OUTPUT_SCHEMAS.show_comment_review,
+   inputSchema: z
+    .object({
+     url: z.string().describe("The post the comments came from."),
+     summary: z.string().optional().describe("What the comment section says, in a sentence or two."),
+     title: z.string().optional().describe("The post's title, for the header."),
+     comments: z
+      .array(
+       z.object({
+        id: z.string().describe("The id from evidence mode, so the row addresses the same comment."),
+        text: z.string(),
+        author: z.string().optional(),
+        likes: z.number().optional(),
+        sentiment: z.enum(COMMENT_SENTIMENTS).optional(),
+        category: z.enum(COMMENT_CATEGORIES).optional(),
+        note: z.string().optional().describe("Why you labelled it that way, if it is not obvious."),
+       }),
+      )
+      .describe("One entry per comment you classified."),
+     themes: z.array(z.string()).optional().describe("Recurring themes across the section."),
+     nextSteps: z.array(z.string()).optional().describe("What to do about it."),
+    })
+    .strict(),
+  },
+  async (args: {
+   url: string;
+   summary?: string;
+   title?: string;
+   comments: Array<Record<string, unknown>>;
+   themes?: string[];
+   nextSteps?: string[];
+  }) => {
+   const counts: Record<string, number> = {};
+   for (const c of args.comments) {
+    const key = String(c.category ?? "other");
+    counts[key] = (counts[key] ?? 0) + 1;
+   }
+   const sentiment: Record<string, number> = {};
+   for (const c of args.comments) {
+    const key = String(c.sentiment ?? "neutral");
+    sentiment[key] = (sentiment[key] ?? 0) + 1;
+   }
+   return {
+    content: [
+     {
+      type: "text" as const,
+      text:
+       `Showing ${args.comments.length} classified comment` +
+       `${args.comments.length === 1 ? "" : "s"}.` +
+       (args.summary ? ` ${args.summary}` : ""),
+     },
+    ],
+    // The monitoring view keys off term + threads, so this renders there.
+    structuredContent: {
+     review: true,
+     term: args.title || args.url,
+     url: args.url,
+     summary: args.summary ?? null,
+     totalMentions: args.comments.length,
+     byCategory: counts,
+     bySentiment: sentiment,
+     themes: args.themes ?? [],
+     nextSteps: args.nextSteps ?? [],
+     threads: [
+      {
+       post: { platform: platformFromUrl(args.url), title: args.title ?? "", externalUrl: args.url },
+       postIsAboutTerm: false,
+       mentionCount: args.comments.length,
+       mentions: args.comments.map((c) => ({
+        id: c.id,
+        text: c.text,
+        username: c.author ?? "",
+        likes: c.likes ?? 0,
+        sentiment: c.sentiment ?? null,
+        category: c.category ?? null,
+        note: c.note ?? null,
+        hits: 1,
+       })),
+      },
+     ],
+     // Nothing was fetched, so nothing was charged.
+     mcpCredits: { cost: 0 },
+    },
+   };
   }
  );
 

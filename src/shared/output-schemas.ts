@@ -202,11 +202,44 @@ export const OUTPUT_SCHEMAS = {
     platform: scalar(),
     mcpCredits,
   }),
+  /**
+   * Two shapes behind one tool. `mode: "ai"` returns orchyn's synthesis;
+   * `mode: "evidence"` returns the comments themselves and leaves the reading
+   * to the caller, so both sets of keys are optional here.
+   */
   analyze_comments: open({
     summary: scalar(),
     themes: anyList(),
     commentsAnalyzed: scalar(),
     report: open({}).nullish(),
+    // evidence mode
+    mode: scalar().describe('"evidence" when the comments were returned unanalysed.'),
+    url: scalar(),
+    platform: scalar(),
+    commentCount: scalar(),
+    comments: listOf(
+      open({
+        id: scalar().describe("Addressable — pass it back to show_comment_review."),
+        text: scalar(),
+        author: scalar(),
+        likes: scalar(),
+      }),
+    ).describe("The comments, unanalysed, when mode is evidence."),
+    mcpCredits,
+  }),
+
+  /** What the caller concluded, drawn. Nothing here was fetched. */
+  show_comment_review: open({
+    review: scalar(),
+    term: scalar(),
+    url: scalar(),
+    summary: scalar(),
+    totalMentions: scalar(),
+    byCategory: open({}).nullish().describe("How many comments fell into each category."),
+    bySentiment: open({}).nullish(),
+    themes: listOf(z.string()),
+    nextSteps: listOf(z.string()),
+    threads: anyList().describe("Shaped like search_mentions so one view renders both."),
     mcpCredits,
   }),
 

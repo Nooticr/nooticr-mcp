@@ -47,7 +47,7 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-28 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+29 tools, grouped by what you are trying to do. Prices are in orchyn credits and
 match what the server actually charges.
 
 ### Read a post
@@ -65,7 +65,8 @@ match what the server actually charges.
 | `analyze_post_fast` | 2 | The full analysis built from transcript, caption and stats instead of video frames — **a third the price**. Weaker on visual style, just as strong on hook, script, CTA and audience. The sensible default. |
 | `analyze_post` | 6 (first use free) | The same analysis with the video actually watched. Use when the visuals are the point — framing, editing, on-screen text. |
 | `understand_social_post` | 6 (first use free) | A factual description of what physically happens on screen. Use when you need the events, not the strategy. |
-| `analyze_comments` | 6 (first use free) | The comment section synthesised: sentiment, recurring themes, questions asked, objections raised, content requested, and follow-up ideas. Use when the goal is what to make next. |
+| `analyze_comments` | 6 (first use free), or **2 with `mode: "evidence"`** | The comment section synthesised: sentiment, recurring themes, questions asked, objections raised, content requested, and follow-up ideas. Use when the goal is what to make next. **`mode: "evidence"`** instead returns the comments unanalysed for the price of the fetch and asks *your* model to classify them — cheaper, steerable, and it can label each comment's sentiment and whether it is a bug report, question, request or complaint. |
+| `show_comment_review` | free | Draws the classifications your model produced from `mode: "evidence"` — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
 | `compare_posts` | 8 (first use free) | Two to five posts side by side: which won, what actually differed, and the one test to run next. Use when performance differs and you need to know why. |
 
 ### Research a niche or a creator

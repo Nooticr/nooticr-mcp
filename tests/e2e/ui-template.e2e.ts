@@ -1167,6 +1167,16 @@ test.describe("brand monitoring", () => {
    * platform mark is what makes a column of strangers scannable.
    */
   test("each comment carries a face and the network it came from", async ({ page }) => {
+    // Serve the proxy so the avatar loads. Without this the fake URL 404s and
+    // the fallback correctly swaps it — which is the *next* test's subject,
+    // and made this one a race between the assertion and the error event.
+    const PIXEL = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await page.route("https://proxy.example/**", (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: PIXEL }),
+    );
     await renderTemplate(page, MENTIONS);
     const rows = page.locator(".mention");
     // One badge per row, whatever the picture does.
@@ -1438,5 +1448,102 @@ test.describe("brand monitoring", () => {
     await expect(page.locator(".mgroup-none")).toHaveText(
       "The post names nike, but none of its comments do.");
     await expect(page.locator(".mgroup").first().locator("[data-group-all]")).toHaveCount(0);
+  });
+
+
+  /**
+   * A comment review — the same view, drawn from labels a model produced rather
+   * than from a brand sweep.
+   *
+   * The sentiment and category chips are the thing that could not exist before.
+   * A sweep has no basis for them: nothing in that payload says whether a
+   * comment is angry, and colouring it from a keyword guess would be
+   * confidently wrong about the exact thing being scanned for. Once a model has
+   * read the words, the label is worth drawing.
+   */
+  test.describe("comment review", () => {
+    const REVIEW = {
+      review: true,
+      term: "Why did nike lose 200B in value?",
+      url: "https://www.youtube.com/watch?v=7wrjbQDxqkM",
+      summary: "Mostly negative, with one specific bug worth filing.",
+      totalMentions: 4,
+      byCategory: { bug_report: 2, praise: 1, question: 1 },
+      bySentiment: { negative: 2, positive: 1, neutral: 1 },
+      threads: [
+        {
+          post: { platform: "youtube", title: "Why did nike lose 200B in value?",
+                  externalUrl: "https://www.youtube.com/watch?v=7wrjbQDxqkM", views: 11300 },
+          postIsAboutTerm: false,
+          mentionCount: 4,
+          mentions: [
+            { id: "c:0", text: "checkout does nothing on iOS 18", username: "ana", likes: 12,
+              sentiment: "negative", category: "bug_report", hits: 1 },
+            { id: "c:1", text: "same here, cart empties itself", username: "bo", likes: 4,
+              sentiment: "negative", category: "bug_report", hits: 1 },
+            { id: "c:2", text: "best release yet honestly", username: "cy", likes: 40,
+              sentiment: "positive", category: "praise", hits: 1 },
+            { id: "c:3", text: "when does this ship in the EU?", username: "di", likes: 2,
+              sentiment: "neutral", category: "question", hits: 1 },
+          ],
+        },
+      ],
+    };
+
+    test("labels every comment with what the model decided", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      await expect(page.locator(".mention")).toHaveCount(4);
+      const chips = await page.locator(".mention").first().locator(".chip").allInnerTexts();
+      // CSS capitalises them, which is what a reader sees.
+      expect(chips).toEqual(["Negative", "Bug Report"]);
+      // Sentiment earns colour because a model read the words; category is a
+      // bucket, not a judgement, so it stays neutral.
+      await expect(page.locator(".chip-negative").first()).toBeVisible();
+      await expect(page.locator(".chip-positive")).toHaveCount(1);
+    });
+
+    test("a brand sweep carries no labels, because it has no basis for them", async ({ page }) => {
+      await renderTemplate(page, MENTIONS);
+      await expect(page.locator(".chip")).toHaveCount(0);
+    });
+
+    test("the counts become the filter, by category rather than by network", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      const chips = await text(page, ".mchip");
+      expect(chips.map((c) => c.replace(/\s+/g, " "))).toEqual([
+        "All 4", "bug report 2", "praise 1", "question 1",
+      ]);
+      // One post, so the network is a constant — the useful cut is the label.
+      await page.locator('.mchip[data-filter="bug_report"]').click();
+      await expect(page.locator(".mention")).toHaveCount(2);
+      await page.locator('.mchip[data-filter=""]').click();
+      await expect(page.locator(".mention")).toHaveCount(4);
+    });
+
+    test("filtering inside one post keeps the post, not just its comments", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      await page.locator('.mchip[data-filter="praise"]').click();
+      // The group survives with one row, rather than the whole card vanishing —
+      // the reader still needs to know which post they are looking at.
+      await expect(page.locator(".mgroup")).toHaveCount(1);
+      await expect(page.locator(".mention")).toHaveCount(1);
+      await expect(page.locator(".mgroup-title")).toContainText("nike lose 200B");
+    });
+
+    test("leads with what the model concluded", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      await expect(page.locator(".mention-term")).toContainText("Comment review");
+      await expect(page.locator(".mention-summary")).toHaveText(
+        "Mostly negative, with one specific bug worth filing.");
+    });
+
+    test("selection still works, so a labelled comment can be acted on", async ({ page }) => {
+      await renderTemplate(page, REVIEW);
+      // The point of classifying is doing something about it: the bug reports
+      // have to be selectable as a set.
+      await page.locator('.mchip[data-filter="bug_report"]').click();
+      await page.locator("[data-group-all]").click();
+      await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    });
   });
 });
