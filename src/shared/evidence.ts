@@ -1,18 +1,18 @@
 /**
- * Evidence mode: hand the caller the material instead of a conclusion.
+ * The material, not a conclusion.
  *
  * ## The shape of the argument
  *
- * Every AI tool here does the same two things — fetch something from a
+ * Every tool here used to do the same two things — fetch something from a
  * platform, then have Gemini read it. Only the first half is expensive to us
  * and hard to replicate; the second is text over text, which the model already
  * holding the conversation does better, steers itself, and costs us nothing.
  *
- * So each of these tools gains `mode: "evidence"`. It makes the same upstream
+ * So the second half is gone. Each of these tools now makes the same upstream
  * call the corresponding data tool makes — billed as that call, not as an AI
  * one — and returns the inputs with an explicit account of what to produce.
- *
- * `mode: "ai"` stays the default everywhere. Nothing existing changes.
+ * There is no other behaviour and no argument that selects one: what the
+ * server sells is the fetch, and it never sells a judgement.
  *
  * ## Visual tools are the interesting case
  *
@@ -34,6 +34,7 @@
  * user-controlled and cannot drive anything. So the guidance below is not
  * documentation; it is the steering, and it lands in the model's context.
  */
+import { BACKEND_CALL_CREDITS, costOf } from "./spend.js";
 
 /** Which cheap call stands in for each AI tool's expensive one. */
 export interface EvidencePlan {
@@ -104,9 +105,9 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "",
         "Work out the hook, the script structure, the call to action and the",
         "audience from the words and the numbers. Be explicit that you have not",
-        "seen the visuals; if a judgement needs them, call analyze_post with",
-        "mode 'evidence' yourself and look at the frames — do not ask anyone",
-        "else to fetch them for you.",
+        "seen the visuals; if a judgement needs them, call analyze_post",
+        "yourself and look at the frames — do not ask anyone else to fetch",
+        "them for you.",
         ownIt,
       ].join("\n"),
   },
@@ -117,8 +118,8 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     guidance: (a) =>
       [
         `The first of ${(a.urls as string[])?.length ?? 0} posts to compare.`,
-        "Call get_social_media on each remaining URL, and get_post_transcript",
-        "where you need the words, then compare them yourself:",
+        "Call get_social_media on each remaining URL (1 credit each), and",
+        "get_post_transcript where you need the words, then compare them yourself:",
         "which performed better, what actually differed, and the single test",
         "worth running next. Ground every difference in a number or a quote.",
         ownIt,
@@ -231,13 +232,56 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
 };
 
 /**
- * `score_draft` is deliberately absent.
+ * `score_draft` has no plan, and deliberately so.
  *
- * It reviews text the user already supplied, so there is nothing to fetch —
- * an evidence mode would be a paid call that returned the caller's own input.
- * A caller that wants to judge a draft itself should simply judge it.
+ * It reviews text the caller already supplied, so there is nothing to fetch:
+ * a plan for it would be a paid call that handed back the caller's own input.
+ * It stays on the tool list as a free tool instead — see `scoreDraftGuidance`,
+ * which is the whole of what it now does.
  */
-export const NO_EVIDENCE_MODE = ["score_draft"] as const;
+export const FETCHES_NOTHING = ["score_draft"] as const;
+
+/**
+ * What the calling model is asked to produce for a draft.
+ *
+ * This lives beside the plans because it is the same kind of object: the text
+ * that lands in the model's context and tells it what a good answer looks
+ * like. The difference is only that there is nothing to fetch first, so the
+ * tool costs nothing.
+ *
+ * The tool could have been dropped instead. It is kept because a model reading
+ * a tool list treats the list as the menu of what is worth doing — with no
+ * `score_draft` on it, "check this before I film it" stops being a step
+ * anybody takes, and the `check_my_draft` prompt loses its first move. Naming
+ * the axes also makes two runs comparable, which free-form prose never is.
+ */
+export function scoreDraftGuidance(draft: string, platform: string): string {
+  return [
+    `A draft for ${platform || "tiktok"}, returned to you unchanged and unjudged.`,
+    "Nothing was fetched and nothing was charged: you already have the text,",
+    "so the only thing missing was the standard to hold it to.",
+    "",
+    "Score it 1-10 on each of these, and say what the number is for:",
+    "  hook — does the first line earn the second? Quote the words that do the",
+    "      work, or name what is missing where they should be.",
+    "  clarity — could someone say back what this is about after one pass?",
+    "  payoff — does it deliver what the hook promised, and is the promise",
+    "      kept early enough that nobody leaves before it lands?",
+    "  specificity — a number, a name or a detail beats an adjective. Count them.",
+    "  fit — does it read like the surface it is for, in length and register?",
+    "",
+    "Then give: the three fixes that would move the score most, in order of how",
+    "much they change it; one rewritten opening line; and a tightened version of",
+    "the whole draft that keeps the writer's voice.",
+    "",
+    "Judge the draft in front of you, not a better one you can imagine. If it is",
+    "already good, say so and stop rather than inventing changes.",
+    "",
+    "```",
+    draft,
+    "```",
+  ].join("\n");
+}
 
 /** Frames as MCP image blocks, which is how they reach the model as pixels. */
 export interface FrameBlock {
@@ -276,192 +320,58 @@ export function frameIndex(frames: unknown): Array<Record<string, unknown>> {
 }
 
 /**
- * When the AI pass cannot deliver an analysis, and what to say about it.
+ * What a call to one of these tools costs, derived rather than written down.
  *
- * A user asked Claude to analyze a post, the tool came back with "AI service
- * not configured or request failed", and the model relayed that to the user
- * along with an instruction to call `get_post_frames` so it could look at the
- * images itself. Every ingredient of the better answer was already here: the
- * evidence plan above fetches exactly those frames and that transcript. The
- * tool should have run it rather than handing the user homework.
- *
- * So the AI path is now watched for failure, and failure has two shapes.
+ * The number in a tool's description is the one thing in it a caller can be
+ * charged for getting wrong, and it used to be a hand-typed constant that
+ * outlived two price changes. It is knowable: a plan is a list of backend
+ * calls and `BACKEND_CALL_CREDITS` is what each of those costs, so the
+ * description quotes this instead of a literal and cannot drift from what the
+ * tool actually spends.
  */
-export interface AiFailure {
-  /** `error` when the call threw or the job errored; `degraded` when it returned without an analysis. */
-  kind: "error" | "degraded";
-  /** One line naming the signal, so the result can say what actually happened. */
-  detail: string;
-  /**
-   * The `mcpCredits` note the failed call carried, when it carried one. Only a
-   * degraded call has one: it completed, so the backend billed it.
-   */
-  charge?: Record<string, unknown> | null;
+export function planCalls(tool: string): string[] {
+  const plan = EVIDENCE_PLANS[tool];
+  if (!plan) return [];
+  return plan.also ? [plan.via, plan.also.via] : [plan.via];
+}
+
+export function planCost(tool: string): number {
+  return costOf(planCalls(tool));
 }
 
 /**
- * The backend's own words when it has no model to call.
+ * The price sentence a tool description carries.
  *
- * Only a last resort. Every degraded payload measured against the live server
- * also carries a structural flag — `analyzed: false`, `degraded: true`, a
- * `provider` of stub/mock/unavailable — and those are checked first, because a
- * sentence is a thing someone rewrites without knowing it is load-bearing. The
- * one shape with no flag at all is the mock video-analysis stub in
- * `crates/server/src/ai/handlers.rs`, whose fields simply contain the words
- * "stub data (AI service not configured)". Hence the defensive match.
+ * It names the calls as well as the total because a tool that fans out spends
+ * twice for one ask, and a caller who reads only "3 credits" has no way to
+ * know which two fetches they are paying for or which of them they could have
+ * made on their own.
  */
-const STUB_MARKER =
-  /\bstub(?:bed)? data\b|\[stubbed\b|AI service not configured|AI service (?:is )?unavailable|analysis unavailable/i;
-
-/** Providers that mean "nobody actually read the post". */
-const NON_PROVIDERS = new Set(["stub", "mock", "unavailable", "degraded", "none"]);
-
-/** Keys whose contents are bytes or rendered HTML — never worth scanning. */
-const UNSCANNED = new Set(["data", "frames", "inlineImages", "_htmlCards", "_inlineImages", "thumbnailUrl"]);
-
-function nonEmptyString(v: unknown): v is string {
-  return typeof v === "string" && v.trim() !== "";
-}
-
-/** The structural signals, checked on one object. */
-function flaggedFailure(o: Record<string, unknown>, where: string): AiFailure | null {
-  const at = where ? `${where}.` : "";
-  if (o.analyzed === false) {
-    const why = nonEmptyString(o.warning) ? o.warning : nonEmptyString(o.error) ? o.error : nonEmptyString(o.reason) ? o.reason : "";
-    return { kind: "degraded", detail: `${at}analyzed is false${why ? ` — ${why}` : ""}` };
-  }
-  if (o.degraded === true) {
-    const why = nonEmptyString(o.degradedReason) ? o.degradedReason : nonEmptyString(o.error) ? o.error : "";
-    return { kind: "degraded", detail: `${at}degraded is true${why ? ` — ${why}` : ""}` };
-  }
-  if (nonEmptyString(o.provider) && NON_PROVIDERS.has(o.provider.toLowerCase())) {
-    return { kind: "degraded", detail: `${at}provider is "${o.provider}" — no model read this post` };
-  }
-  if (o.state === "error") {
-    return { kind: "error", detail: `the analysis job ended in state "error"${nonEmptyString(o.error) ? ` — ${o.error}` : ""}` };
-  }
-  if (o.ok === false) {
-    return { kind: "error", detail: `the analysis reported ok: false${nonEmptyString(o.error) ? ` — ${o.error}` : ""}` };
-  }
-  if (nonEmptyString(o.error)) {
-    return { kind: "degraded", detail: `${at}error — ${o.error}` };
-  }
-  if (nonEmptyString(o.warning) && STUB_MARKER.test(o.warning)) {
-    return { kind: "degraded", detail: `${at}warning — ${o.warning}` };
-  }
-  return null;
-}
-
-/** Bounded search for the stub's marker text, wherever the backend put it. */
-function carriesStubText(value: unknown, depth = 0, budget = { chars: 20_000, nodes: 500 }): boolean {
-  if (depth > 5 || budget.nodes-- <= 0 || budget.chars <= 0) return false;
-  if (typeof value === "string") {
-    budget.chars -= value.length;
-    return STUB_MARKER.test(value);
-  }
-  if (Array.isArray(value)) return value.some((v) => carriesStubText(v, depth + 1, budget));
-  if (value && typeof value === "object") {
-    return Object.entries(value as Record<string, unknown>).some(
-      ([k, v]) => !UNSCANNED.has(k) && carriesStubText(v, depth + 1, budget),
-    );
-  }
-  return false;
+export function costSentence(tool: string): string {
+  const calls = planCalls(tool);
+  const total = planCost(tool);
+  const credits = `${total} orchyn credit${total === 1 ? "" : "s"}`;
+  if (calls.length === 1) return `Costs ${credits}, for the one ${calls[0]} call it makes.`;
+  const each = calls.map((c) => `${BACKEND_CALL_CREDITS[c] ?? 0} for ${c}`).join(" plus ");
+  return `Costs ${credits} — ${each}.`;
 }
 
 /**
- * Did this payload actually come back with an analysis in it?
+ * What this call did to the balance, said in the result rather than implied.
  *
- * Called on what the AI path returned rather than on what it threw — a thrown
- * error is unambiguous, while these payloads arrive as ordinary successes: the
- * backend deliberately returns degraded metadata instead of erroring, so the
- * tool used to hand a caller a stub and call it an answer.
+ * A caller reads the description before choosing a tool and the result after
+ * running it; only the second is in front of the model when it reports back to
+ * the user. The `mcpCredits` note that rides along in the payload comes from
+ * the first fetch alone, so on a tool that fans out it understates the charge —
+ * this line is the only place the total is stated.
  */
-export function detectAiFailure(payload: unknown): AiFailure | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
-  const top = payload as Record<string, unknown>;
-  const flagged = flaggedFailure(top, "");
-  if (flagged) return flagged;
-
-  // The video-analysis job nests the whole thing one level down, so the flags
-  // that matter sit inside `analysis` rather than beside it.
-  const analysis = top.analysis;
-  if (analysis && typeof analysis === "object" && !Array.isArray(analysis)) {
-    const nested = flaggedFailure(analysis as Record<string, unknown>, "analysis");
-    if (nested) return nested;
-  } else if (analysis === null && "analysis" in top) {
-    return { kind: "degraded", detail: "analysis is null — nothing was produced" };
-  }
-  // Same for the fields a report tool leaves empty when its model never ran.
-  for (const key of ["profileReport", "comparison"] as const) {
-    if (key in top && top[key] === null) {
-      return { kind: "degraded", detail: `${key} is null — nothing was produced` };
-    }
-  }
-
-  if (top.analyzed === true) return null;
-  if (carriesStubText(top)) {
-    return { kind: "degraded", detail: "the payload carries the backend's stub marker text" };
-  }
-  return null;
-}
-
-/**
- * What the calling model is told when the rescue fires.
- *
- * It lands beside the guidance because that is the one channel to the model,
- * and it is explicit about two things: that orchyn's own analysis is missing,
- * and that nobody is to be asked to fetch anything. The bug this fixes was a
- * model telling its user to call a tool the model itself could have called.
- */
-export function fallbackNote(tool: string, failure: AiFailure): string {
-  return [
-    `orchyn's own analysis was unavailable for this ${tool} call (${failure.detail}).`,
-    "This is the material that analysis is built from, returned instead of an error.",
-    // The billing line is not decoration. A degraded call was charged before it
-    // turned out to be empty, and a model that says "this cost you the fetch
-    // only" would be telling the user something untrue about their money.
-    billingNote(failure),
-    "",
-    "Answer the question that was actually asked, from what is here. Say plainly that",
-    "orchyn's analysis was unavailable and that you read the material yourself — then",
-    "do exactly that. Do not ask anyone to call another tool: nothing is missing that",
-    "you cannot see below.",
-    "",
-  ].join("\n");
-}
-
-/**
- * What the fallback did to the balance, stated rather than implied.
- *
- * The two failure shapes are not billed alike, and the difference is real
- * money. `crates/server/src/mcp_tools.rs` debits before it calls the tool and
- * refunds when that call returns an error — so a thrown failure costs the
- * caller nothing and the fetch below is the only charge. A degraded payload is
- * a *successful* call as far as that code is concerned: it was billed, the
- * refund branch never runs, and nothing on this side can undo it. Saying so is
- * the only honest option available from here.
- */
-export function billingNote(failure: AiFailure): string {
-  if (failure.kind === "error") {
-    return (
-      "The AI call failed rather than returning, and the backend refunds an MCP tool call " +
-      "that errors, so it left no charge behind."
-    );
-  }
-  const cost = failure.charge && typeof failure.charge.cost === "number" ? failure.charge.cost : null;
+export function fetchBillingNote(tool: string): string {
+  const calls = planCalls(tool);
+  if (calls.length === 0) return "";
   return (
-    `The AI call completed and was billed${cost !== null ? ` (${cost} credit${cost === 1 ? "" : "s"})` : ""} ` +
-    "before it turned out to carry no analysis — the backend only refunds calls that error, and " +
-    "this server cannot refund one from here."
-  );
-}
-
-/** The other half: what the material handed back in its place cost. */
-export function fetchBillingNote(plan: EvidencePlan): string {
-  const via = plan.also ? `${plan.via} and ${plan.also.via}` : plan.via;
-  return (
-    `The material below is billed as the fetch that produced it (${via}), at the data price ` +
-    "rather than the analysis one. Retrying this exact call does not charge again: the " +
-    "idempotency key is namespaced per tool, so a retry replays the same debits."
+    `Billed as the fetches that produced it: ${calls.join(" and ")}, ` +
+    `${planCost(tool)} credits in total, at the data price. Retrying this exact call does ` +
+    "not charge again: the idempotency key is namespaced per tool, so a retry replays the " +
+    "same debits."
   );
 }

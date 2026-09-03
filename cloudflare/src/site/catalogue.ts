@@ -11,10 +11,16 @@ export type Group = "read" | "understand" | "research" | "create" | "account";
 
 export interface Tool {
   name: string;
-  /** Credits per call. 0 = free. */
+  /**
+   * Credits per call. 0 = free.
+   *
+   * Every price here is the sum of the upstream fetches the tool makes — the
+   * server sells the fetch and leaves the reasoning to the caller's own model,
+   * so a tool that fans out to two calls costs both and says so below. There
+   * is no free-first-use flag any more: that grant belonged to the AI calls,
+   * and there are none left to spend it on.
+   */
   cost: number;
-  /** AI tools are free the first time each is used. */
-  freeFirstUse?: boolean;
   group: Group;
   /** One line: what it returns. */
   desc: string;
@@ -33,7 +39,7 @@ export const GROUPS: { id: Group; title: string; blurb: string }[] = [
   {
     id: "understand",
     title: "Understand a post",
-    blurb: "AI over a post you already have. Every AI tool is free the first time you use it.",
+    blurb: "The material behind a post you already have, for your own model to read.",
   },
   {
     id: "research",
@@ -75,33 +81,33 @@ export const TOOLS: Tool[] = [
 
   // ── understand ──
   {
-    name: "analyze_post_fast", cost: 2, freeFirstUse: true, group: "understand",
+    name: "analyze_post_fast", cost: 2, group: "understand",
     args: "url",
-    desc: "Hook strength, script structure, why it works, weaknesses, variations — from the transcript and stats.",
-    when: "The default. A third the price of analyze_post and just as strong on script and structure.",
+    desc: "The post's transcript, caption and stats — everything but the pictures. Two fetches: get_social_media and get_post_transcript.",
+    when: "The default. A credit less than analyze_post, and it carries everything the script and structure depend on.",
   },
   {
-    name: "analyze_post", cost: 6, freeFirstUse: true, group: "understand",
+    name: "analyze_post", cost: 3, group: "understand",
     args: "url",
-    desc: "The same analysis with the video actually watched.",
+    desc: "Frames sampled across the video, as images your own model can look at, plus the transcript. Two fetches: get_post_frames (2) and get_post_transcript (1).",
     when: "The visuals are the point — framing, editing, on-screen text, pacing.",
   },
   {
-    name: "understand_social_post", cost: 6, freeFirstUse: true, group: "understand",
+    name: "understand_social_post", cost: 3, group: "understand",
     args: "url, focus?",
-    desc: "A factual description of what physically happens on screen.",
+    desc: "The same frames and transcript as analyze_post, asked for what physically happens on screen rather than why it works.",
     when: "You need the events, not the strategy.",
   },
   {
-    name: "analyze_comments", cost: 6, freeFirstUse: true, group: "understand",
+    name: "analyze_comments", cost: 2, group: "understand",
     args: "url, limit?",
-    desc: "Sentiment, recurring themes, questions asked, objections raised, content requested, follow-up ideas.",
-    when: "The goal is what to make next, not what people wrote.",
+    desc: "The comment section, every comment with an id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam.",
+    when: "The goal is what to make next, not what people wrote. show_comment_review then draws your labels for free.",
   },
   {
-    name: "compare_posts", cost: 8, freeFirstUse: true, group: "understand",
+    name: "compare_posts", cost: 1, group: "understand",
     args: "urls[] (2–5)",
-    desc: "Which post won, what actually differed, shared strengths, testable lessons, one next experiment.",
+    desc: "The first post with its stats, and the comparison left to you — fetch the rest with get_social_media at 1 credit each.",
     when: "Performance differs and you need to know why.",
   },
 
@@ -143,47 +149,47 @@ export const TOOLS: Tool[] = [
     when: "Choosing tags, or catching a wave early.",
   },
   {
-    name: "find_hook_pattern", cost: 2, freeFirstUse: true, group: "research",
+    name: "find_hook_pattern", cost: 2, group: "research",
     args: "username, platform?, limit?",
-    desc: "A creator's repeatable formula as fill-in-the-blank templates.",
-    when: "Reverse-engineering someone you want to learn from. Never watches the videos, so far cheaper than the profile teardown.",
+    desc: "A creator's recent posts, fetched so their opening lines can be read as a set and turned into fill-in-the-blank templates.",
+    when: "Reverse-engineering someone you want to learn from. The same single fetch as analyze_creator_profile, asked a narrower question.",
   },
   {
-    name: "niche_report", cost: 3, freeFirstUse: true, group: "research",
+    name: "niche_report", cost: 2, group: "research",
     args: "niche, platform?, count?",
-    desc: "Dominant formats, hook patterns, what over- and underperforms, the gaps nobody fills.",
+    desc: "Recent posts in the niche with their stats, so the dominant formats, the hook patterns and the gaps can be read off them.",
     when: "Entering a niche, or deciding what to make next.",
   },
   {
-    name: "analyze_creator_profile", cost: 15, freeFirstUse: true, group: "research",
+    name: "analyze_creator_profile", cost: 2, group: "research",
     args: "username, platform?, limit?, focus?",
-    desc: "Full teardown: fetches recent posts, watches up to three, synthesises niche, themes and what works.",
-    when: "A deep read where the visuals matter.",
+    desc: "A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms.",
+    when: "A deep read of one account. Pair it with analyze_post on the posts whose visuals you want to see.",
   },
 
   // ── create ──
   {
-    name: "write_hooks", cost: 2, freeFirstUse: true, group: "create",
+    name: "write_hooks", cost: 2, group: "create",
     args: "url? or topic, count?, tone?",
-    desc: "Alternative opening lines, each with the mechanism it uses and who it stops.",
+    desc: "The source post and its transcript, to write openings against. With a topic and no url it fetches nothing and costs nothing.",
     when: "You know the subject and need openings to choose between.",
   },
   {
-    name: "score_draft", cost: 2, freeFirstUse: true, group: "create",
+    name: "score_draft", cost: 0, group: "create",
     args: "draft, platform?",
-    desc: "Hook, clarity and payoff scores, concrete fixes, a rewritten hook and a tightened draft.",
+    desc: "Your draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the fixes worth making. Free: the text is already yours, so there is nothing to fetch.",
     when: "Before filming, while changing it is still cheap. The only tool that runs before the content exists.",
   },
   {
-    name: "repurpose_post", cost: 2, freeFirstUse: true, group: "create",
+    name: "repurpose_post", cost: 2, group: "create",
     args: "url, targets?",
-    desc: "One post as an X thread, LinkedIn post, carousel, YouTube metadata or newsletter.",
+    desc: "The source post and its transcript, to rewrite as an X thread, LinkedIn post, carousel, YouTube metadata or newsletter.",
     when: "A post worked and you want it on other surfaces.",
   },
   {
-    name: "create_variants", cost: 3, freeFirstUse: true, group: "create",
+    name: "create_variants", cost: 2, group: "create",
     args: "url, count?, angle?",
-    desc: "Variants to film next — hook, the angle that changes, ordered shot beats, CTA.",
+    desc: "The post that worked, with its transcript, to build variants from — hook, the angle that changes, ordered shot beats, CTA.",
     when: "Moving from why it worked to what to make.",
   },
 
@@ -221,7 +227,7 @@ export const TOOLS: Tool[] = [
   {
     name: "check_orchyn_credits", cost: 0, group: "account",
     args: "—",
-    desc: "Balance, billing URL, and which free first uses remain.",
+    desc: "Balance and billing URL.",
     when: "Before a run of paid calls.",
   },
   {

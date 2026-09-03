@@ -56,7 +56,6 @@ table.doc-t td{padding:11px 12px;border-bottom:1px solid var(--border-soft);colo
 table.doc-t td:first-child{color:var(--fg)}
 table.doc-t code{font-size:12.5px;white-space:nowrap}
 .cost-cell{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--brand)}
-.free-note{display:block;font-size:11px;color:var(--good);font-weight:600;margin-top:2px}
 
 .yesno{display:grid;gap:14px;margin:18px 0}
 @media(min-width:700px){.yesno{grid-template-columns:1fr 1fr}}
@@ -104,9 +103,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
       .map(
         (t) =>
           `<tr><td><code>${esc(t.name)}</code></td>` +
-          `<td class="cost-cell">${t.cost === 0 ? "Free" : `${t.cost} cr`}` +
-          (t.freeFirstUse ? `<span class="free-note">1st use free</span>` : "") +
-          `</td>` +
+          `<td class="cost-cell">${t.cost === 0 ? "Free" : `${t.cost} cr`}</td>` +
           `<td><code>${esc(t.args ?? "—")}</code></td>` +
           `<td>${esc(t.desc)}${t.when ? `<br><span style="opacity:.75">${esc(t.when)}</span>` : ""}</td></tr>`
       )
@@ -138,7 +135,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<div class="yesno">` +
         `<div class="does"><h4>What it does</h4><ul>` +
         `<li>Reads <strong>public</strong> posts your users or their assistant explicitly request, by URL or search term</li>` +
-        `<li>Runs AI analysis over that retrieved content</li>` +
+        `<li>Returns that content to the assistant to reason over — it runs no model of its own</li>` +
         `<li>Draws on the signed-in user's own credit balance</li>` +
         `<li>Returns structured data and rendered cards to the assistant</li>` +
         `</ul></div>` +
@@ -220,7 +217,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
       title: "Billing",
       group: "Reference",
       body:
-        `<p>Usage is prepaid in credits. New accounts start with <strong>20 free credits</strong>, and each AI tool is <strong>free the first time</strong> you use it.</p>` +
+        `<p>Usage is prepaid in credits. New accounts start with <strong>20 free credits</strong>. Every tool is priced at what it fetches upstream, so a tool that makes two fetches costs both — the table above says which.</p>` +
         `<table class="doc-t"><thead><tr><th>Pack</th><th>Price</th><th>Credits</th><th>Per credit</th></tr></thead><tbody>` +
         PACKS.map(
           (p) =>
