@@ -3,7 +3,7 @@
 MCP (Model Context Protocol) server for [orchyn](https://orchyn.com).
 
 Gives an AI assistant three things: it can **read** real social posts across
-ten networks (TikTok, Instagram, YouTube, X/Twitter, Reddit, LinkedIn, Douyin,
+ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin,
 Xiaohongshu, Weibo, Bilibili), **understand** them — transcript, video frames,
 comments, the numbers — and **make** something from what it learned: hooks,
 variants to film, a scored draft, a repurposed thread.
@@ -66,7 +66,7 @@ them caps that fan-out with an argument.
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
 | `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
-| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X/Twitter; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
+| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
 ### Understand a post
@@ -410,7 +410,7 @@ per the MCP 2025-03-26 spec):
 - TikTok: `tiktok.com/*`, `vm.tiktok.com/*` (and `www.`/`m.` subdomains)
 - Instagram: `instagram.com/*` (reels, posts, carousels), `instagr.am/*`
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
-- X/Twitter: `x.com/*`, `twitter.com/*`
+- X: `x.com/*`, `twitter.com/*`
 - Reddit: `reddit.com/*`, `redd.it/*`
 - Weibo: `weibo.com/*`, `weibo.cn/*`
 - Douyin: `douyin.com/*`
