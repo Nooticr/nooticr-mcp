@@ -2,12 +2,12 @@
  * Output schemas — what a caller gets back, declared.
  *
  * Every tool here already returns structuredContent and none of them said what
- * shape it was, so anything chaining two Orchyn tools had to call one, look at
+ * shape it was, so anything chaining two Nooticr tools had to call one, look at
  * the result, and guess. Declaring the shape is what lets a host validate it
  * and an agent plan against it.
  *
  * These describe rather than constrain, deliberately. The payloads come from
- * the orchyn backend, not from this repo: a field it adds tomorrow must not
+ * the nooticr backend, not from this repo: a field it adds tomorrow must not
  * turn a working call into a hard failure, because the SDK throws on a
  * structuredContent that fails its schema and the user would see a tool that
  * simply stopped working. So every field is optional and every object passes
@@ -77,7 +77,7 @@ const post = open({
   shares: scalar(),
   engagementRate: scalar(),
   hashtags: listOf(z.string()),
-  // Media comes in threes: the platform URL, an orchyn proxy, and a resolver
+  // Media comes in threes: the platform URL, an nooticr proxy, and a resolver
   // that re-fetches when a signed link has expired.
   videoUrl: scalar(),
   videoProxyUrl: scalar(),
@@ -172,7 +172,7 @@ export const OUTPUT_SCHEMAS = {
             text: scalar(),
             username: scalar(),
             avatarUrl: scalar().describe("The commenter's picture, on the platform's own CDN."),
-            avatarProxyUrl: scalar().describe("The same picture through orchyn, for a sandboxed view."),
+            avatarProxyUrl: scalar().describe("The same picture through nooticr, for a sandboxed view."),
             likes: scalar(),
             replies: scalar().describe("How many people replied to this comment."),
             postedAt: scalar(),
@@ -231,7 +231,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   /**
-   * Two shapes behind one tool. `mode: "ai"` returns orchyn's synthesis;
+   * Two shapes behind one tool. `mode: "ai"` returns nooticr's synthesis;
    * `mode: "evidence"` returns the comments themselves and leaves the reading
    * to the caller, so both sets of keys are optional here.
    */
@@ -374,7 +374,7 @@ export const OUTPUT_SCHEMAS = {
   niche_report: open({
     ...evidence, report: open({}).nullish(), summary: scalar(), niche: scalar(), mcpCredits }),
 
-  check_orchyn_credits: open({
+  check_nooticr_credits: open({
     balance: scalar(),
     tier: scalar(),
     isAdmin: scalar(),
@@ -384,11 +384,11 @@ export const OUTPUT_SCHEMAS = {
     billingUrl: scalar(),
     hint: scalar(),
   }),
-  buy_orchyn_credits: open({
+  buy_nooticr_credits: open({
     checkoutUrl: scalar(),
     packs: listOf(open({})),
   }),
-  orchyn_login: open({
+  nooticr_login: open({
     signedIn: scalar().describe("true when the session is already good and no link is needed."),
     loginUrl: scalar().describe("Only present when a sign-in is actually required."),
     pendingAction: scalar().describe("The call that expiry interrupted; it is re-run on the way back."),

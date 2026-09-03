@@ -10,7 +10,7 @@
  *   npx playwright test tests/e2e/ui-template.e2e.ts
  */
 import { test, expect, type Page } from "@playwright/test";
-import { ORCHYN_UI_TEMPLATE } from "../../src/shared/ui-template.js";
+import { NOOTICR_UI_TEMPLATE } from "../../src/shared/ui-template.js";
 
 // The flat shape postCard() actually reads: a videoUrl is what promotes a
 // card to .card-media and builds the player. Nesting it under video.url (the
@@ -21,7 +21,7 @@ const POSTS = [1, 2, 3].map((i) => ({
   caption: `Post ${i}`,
   creatorHandle: `user${i}`,
   externalUrl: `https://www.tiktok.com/@u${i}/video/${i}`,
-  videoUrl: "https://mcp.orchyn.com/media/x.mp4",
+  videoUrl: "https://mcp.nooticr.com/media/x.mp4",
   contentType: "video",
   views: 1540000, likes: 488700, comments: 2700, shares: 1400,
 }));
@@ -34,7 +34,7 @@ const THUMB_POSTS = [{
   caption: "So you want to be a mangaka huh?",
   creatorHandle: "iruy",
   externalUrl: "https://www.tiktok.com/@iruy/video/1",
-  thumbnailUrl: "https://mcp.orchyn.com/media/t.jpg",
+  thumbnailUrl: "https://mcp.nooticr.com/media/t.jpg",
   views: 1540000, likes: 488700, comments: 2700,
 }];
 
@@ -47,7 +47,7 @@ const HASHTAGS = {
 };
 
 async function renderTemplate(page: Page, data: unknown) {
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(
     (d) => window.postMessage(
       { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -96,7 +96,7 @@ for (const [label, fmt] of [["landscape", "Long-form"], ["portrait", "Short-form
         platform: "youtube", contentType: "video", detectedFormat: fmt,
         duration: fmt === "Long-form" ? 1424 : 42, views: 9,
         externalUrl: "https://www.youtube.com/watch?v=abcdefghijk",
-        videoFallbackUrl: "https://api.orchyn.com/media/resolve?url=x&kind=video&sig=s",
+        videoFallbackUrl: "https://api.nooticr.com/media/resolve?url=x&kind=video&sig=s",
       }] });
       seen.add(await page.locator(".mp-stage").first().evaluate((el) => {
         const r = el.getBoundingClientRect();
@@ -111,7 +111,7 @@ for (const [label, fmt] of [["landscape", "Long-form"], ["portrait", "Short-form
 // listed underneath, permanently -- the thumbnail had a fallback and self-healed
 // through the resolver, slides had none and nothing retried.
 test("a dead slide falls back instead of going black", async ({ page }) => {
-  const cover = "https://api.orchyn.com/media/resolve?url=post&kind=thumbnail&sig=s";
+  const cover = "https://api.nooticr.com/media/resolve?url=post&kind=thumbnail&sig=s";
   await page.route("**/slide-*.jpg", (r) => r.abort());
   await page.route("**/media/resolve**", (r) =>
     r.fulfill({ status: 200, contentType: "image/gif",
@@ -126,7 +126,7 @@ test("a dead slide falls back instead of going black", async ({ page }) => {
   await page.waitForTimeout(900);
   const healed = await page.evaluate(() =>
     [...document.querySelectorAll(".mp-slide")].map((s) => (s as HTMLImageElement).getAttribute("src")));
-  expect(healed.every((s) => s === "https://api.orchyn.com/media/resolve?url=post&kind=thumbnail&sig=s"))
+  expect(healed.every((s) => s === "https://api.nooticr.com/media/resolve?url=post&kind=thumbnail&sig=s"))
     .toBe(true);
 });
 
@@ -137,7 +137,7 @@ test("a dead slide falls back instead of going black", async ({ page }) => {
 // discarded players piled up.
 test("a repeated set_globals does not re-render the view", async ({ page }) => {
   await page.route("**/media/**", () => { /* deliberately hangs */ });
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   const payload = { posts: [{
     platform: "tiktok", contentType: "video", duration: 12, views: 5,
     creatorHandle: "u", externalUrl: "https://www.tiktok.com/@u/video/1",
@@ -180,7 +180,7 @@ test("a repeated set_globals does not re-render the view", async ({ page }) => {
 // here" report. OpenAI's own guidance is to wait for the global and retry.
 test("picks up a window.openai injected after load", async ({ page }) => {
   await page.route("**/media/**", () => { /* deliberately hangs */ });
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   // Nothing yet: the host has not injected anything.
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => document.querySelectorAll(".mp").length)).toBe(0);
@@ -204,7 +204,7 @@ test("picks up a window.openai injected after load", async ({ page }) => {
 // cover signatures expire in hours, so this is the ordinary case: measured on a
 // two-hour-old payload whose cover answered 403 while its video still played.
 test("a dead video poster is swapped for the resolver's", async ({ page }) => {
-  const fresh = "https://api.orchyn.com/media/resolve?url=post&kind=thumbnail&sig=s";
+  const fresh = "https://api.nooticr.com/media/resolve?url=post&kind=thumbnail&sig=s";
   await page.route("**/dead-cover.jpg", (r) => r.abort());
   await page.route("**/media/resolve**", (r) =>
     r.fulfill({ status: 200, contentType: "image/gif",
@@ -229,7 +229,7 @@ test("a dead video poster is swapped for the resolver's", async ({ page }) => {
 // toolInput first meant a host that sets it late, or never, kept the idle
 // placeholder up throughout.
 test("a chatgpt-shaped host with no output yet shows loading, not idle", async ({ page }) => {
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.waitForTimeout(200);
   // Idle before any host appears, which is correct.
   expect(await page.evaluate(() => /Results will appear here/.test(document.body.innerText))).toBe(true);
@@ -254,7 +254,7 @@ test("a chatgpt-shaped host with no output yet shows loading, not idle", async (
 // blinking that was reported. Counting the rebuilds is the assertion; counting
 // what is left on screen would pass either way.
 test("the chatgpt skeleton is painted once, not on every tick", async ({ page }) => {
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(() => {
     const w = window as unknown as Record<string, unknown>;
     w.__paints = 0;
@@ -288,7 +288,7 @@ test("the chatgpt skeleton is painted once, not on every tick", async ({ page })
 // global is ever read, the result that followed was never picked up either.
 test("the chatgpt shimmer outlives a call longer than ten seconds", async ({ page }) => {
   await page.clock.install();
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(() => {
     (window as unknown as Record<string, unknown>).openai = { toolInput: { username: "iruy" } };
   });
@@ -371,7 +371,7 @@ for (const scheme of ["dark", "light"] as const) {
 // Compare was inert for two independent reasons, so both are pinned here.
 test("selecting posts and pressing Compare calls the tool", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(() => {
     (window as unknown as { __sent: unknown[] }).__sent = [];
     const orig = window.parent.postMessage.bind(window.parent);
@@ -421,9 +421,9 @@ const ANALYSIS = {
     // The raw CDN link is signed and short-lived; the proxied companion is
     // what the sandboxed frame can actually load.
     videoUrl: "https://v16-signed.tiktokcdn.com/expiring/video.mp4",
-    videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc",
+    videoProxyUrl: "https://api.nooticr.com/media/proxy?url=enc",
     thumbnailUrl: "https://p16.tiktokcdn.com/t.jpg",
-    thumbnailProxyUrl: "https://api.orchyn.com/media/proxy?url=t",
+    thumbnailProxyUrl: "https://api.nooticr.com/media/proxy?url=t",
     views: 1540000, likes: 488700, comments: 2700,
   },
   analysis: {
@@ -442,7 +442,7 @@ const ANALYSIS = {
 // where it does not. Fail the link deliberately and wait for the swap.
 test("the analysis player falls back to the proxy when the signed CDN url dies", async ({ page }) => {
   await page.route("**/expiring/video.mp4", (r) => r.abort());
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(
     (d) => window.postMessage(
       { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -455,7 +455,7 @@ test("the analysis player falls back to the proxy when the signed CDN url dies",
 });
 
 test("analysis actions are offered once each and call their tool", async ({ page }) => {
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(() => {
     (window as unknown as { __sent: unknown[] }).__sent = [];
     const orig = window.parent.postMessage.bind(window.parent);
@@ -495,7 +495,7 @@ test("analysis actions are offered once each and call their tool", async ({ page
 // view cannot navigate the top-level window, so every "Open on ..." button and
 // every trending-hashtag row was inert.
 test("external links ask the host to open them", async ({ page }) => {
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(() => {
     (window as unknown as { __sent: unknown[] }).__sent = [];
     const orig = window.parent.postMessage.bind(window.parent);
@@ -534,7 +534,7 @@ test.describe("chatgpt host actions", () => {
   // widget iframe's does — so a regression lands on "Copy failed", not on a
   // silent pass because the fallback happened to work.
   const asChatGpt = async (page: Page, payload: unknown) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
       w.__sent = [];
@@ -650,7 +650,7 @@ test("a slow tool call is not reported as a failure", async ({ page }) => {
         isCall ? 4000 : 0);
     });
     f.srcdoc = tpl;
-  }, { tpl: ORCHYN_UI_TEMPLATE, result: RESULT });
+  }, { tpl: NOOTICR_UI_TEMPLATE, result: RESULT });
   await page.waitForTimeout(400);
 
   const inner = page.frames().find((f) => f !== page.mainFrame())!;
@@ -690,7 +690,7 @@ test("a slow tool call is not reported as a failure", async ({ page }) => {
 
 test("the open button sits in the overlay, not in a footer row", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 820 });
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await page.evaluate(
     (d) => window.postMessage(
       { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -731,7 +731,7 @@ test.describe("loading state", () => {
     page.evaluate(() => (document.getElementById("app")?.textContent || "").trim());
 
   test("the required tool-input notification starts the shimmer", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.waitForTimeout(300);
     expect(await appText(page)).toContain("Results will appear");
 
@@ -751,7 +751,7 @@ test.describe("loading state", () => {
     [{ url: "https://x" }, "Working on the post", 1, 0],
   ] as [Record<string, unknown>, string, number, number][]) {
     test(`shapes the skeleton from ${Object.keys(args).join("+")}`, async ({ page }) => {
-      await page.setContent(ORCHYN_UI_TEMPLATE);
+      await page.setContent(NOOTICR_UI_TEMPLATE);
       await send(page, "ui/notifications/tool-input", { arguments: args });
       await page.waitForTimeout(250);
       await expect(page.locator(".load-head")).toContainText(label);
@@ -761,7 +761,7 @@ test.describe("loading state", () => {
   }
 
   test("a cancelled call says so instead of shimmering forever", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await send(page, "ui/notifications/tool-input", { arguments: { url: "https://x" } });
     await page.waitForTimeout(200);
     await send(page, "ui/notifications/tool-cancelled", { reason: "user stopped it" });
@@ -771,7 +771,7 @@ test.describe("loading state", () => {
   });
 
   test("the result replaces the shimmer", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await send(page, "ui/notifications/tool-input", { arguments: { country: "US" } });
     await page.waitForTimeout(200);
     await send(page, "ui/notifications/tool-result", {
@@ -789,7 +789,7 @@ test.describe("loading state", () => {
 // Media plays from the platform URL directly; /media/proxy is only a retry.
 test.describe("media source", () => {
   const render = async (page: Page, post: Record<string, unknown>) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate(
       (d) => window.postMessage(
         { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -810,13 +810,13 @@ test.describe("media source", () => {
     // event, so the initial choice is what we actually measure.
     await page.route("**/direct.mp4", () => { /* deliberately hangs */ });
     await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4",
-      videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc" });
+      videoProxyUrl: "https://api.nooticr.com/media/proxy?url=enc" });
     const initial = await page.evaluate(() => ({
       src: document.querySelector("video")?.getAttribute("src"),
       fallback: document.querySelector(".mp")?.getAttribute("data-mp-fallback"),
     }));
     expect(initial.src).toBe("https://cdn.example/direct.mp4");
-    expect(initial.fallback).toBe("https://api.orchyn.com/media/proxy?url=enc");
+    expect(initial.fallback).toBe("https://api.nooticr.com/media/proxy?url=enc");
   });
 
   // A /media/resolve link is expensive on the server side: a provider call
@@ -830,9 +830,9 @@ test.describe("media source", () => {
     const posts = Array.from({ length: 8 }, (_, i) => ({
       ...BASE, platform: "bilibili", duration: 269, id: `p${i}`,
       externalUrl: `https://www.bilibili.com/video/BV${i}`,
-      videoFallbackUrl: `https://api.orchyn.com/media/resolve?url=enc${i}&kind=video&sig=s`,
+      videoFallbackUrl: `https://api.nooticr.com/media/resolve?url=enc${i}&kind=video&sig=s`,
     }));
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => window.postMessage(
       { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"), { posts });
     await page.waitForTimeout(800);
@@ -853,7 +853,7 @@ test.describe("media source", () => {
   test("shows the real duration before anything has loaded", async ({ page }) => {
     await page.route("**/media/resolve**", () => { /* deliberately hangs */ });
     await render(page, { ...BASE, platform: "youtube", duration: 1424,
-      videoFallbackUrl: "https://api.orchyn.com/media/resolve?url=enc&kind=video&sig=s" });
+      videoFallbackUrl: "https://api.nooticr.com/media/resolve?url=enc&kind=video&sig=s" });
     const shown = await page.locator(".mp-dur").first().textContent();
     expect(shown).toBe("23:44");
   });
@@ -869,11 +869,11 @@ test.describe("media source", () => {
 
   test("retries through the proxy once, then reports failure", async ({ page }) => {
     await render(page, { ...BASE, videoUrl: "https://cdn.example/direct.mp4",
-      videoProxyUrl: "https://api.orchyn.com/media/proxy?url=enc" });
+      videoProxyUrl: "https://api.nooticr.com/media/proxy?url=enc" });
     await page.evaluate(() => document.querySelector("video")!.dispatchEvent(new Event("error")));
     await page.waitForTimeout(150);
     expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("src")))
-      .toBe("https://api.orchyn.com/media/proxy?url=enc");
+      .toBe("https://api.nooticr.com/media/proxy?url=enc");
     // The retry is spent; a second failure is a real failure.
     await page.evaluate(() => document.querySelector("video")!.dispatchEvent(new Event("error")));
     await page.waitForTimeout(150);
@@ -893,23 +893,23 @@ test.describe("media source", () => {
     }));
     await render(page, { ...BASE, videoUrl: "https://cdn.example/v.mp4",
       thumbnailUrl: "https://cdn.example/t.jpg",
-      thumbnailProxyUrl: "https://api.orchyn.com/media/proxy?url=t",
+      thumbnailProxyUrl: "https://api.nooticr.com/media/proxy?url=t",
       musicUrl: "https://cdn.example/m.mp3",
-      musicProxyUrl: "https://api.orchyn.com/media/proxy?url=m" });
+      musicProxyUrl: "https://api.nooticr.com/media/proxy?url=m" });
     expect(await page.evaluate(() => document.querySelector("video")?.getAttribute("poster")))
       .toBe("https://cdn.example/t.jpg");
     expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
       .toBe("https://cdn.example/m.mp3");
 
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate(() => window.postMessage({
       method: "ui/notifications/tool-result",
       params: { structuredContent: { sounds: [{
         title: "t", author: "a", platform: "tiktok",
         coverUrl: "https://cdn.example/cover.jpg",
-        coverProxyUrl: "https://api.orchyn.com/media/proxy?url=c",
+        coverProxyUrl: "https://api.nooticr.com/media/proxy?url=c",
         playUrl: "https://cdn.example/play.mp3",
-        playProxyUrl: "https://api.orchyn.com/media/proxy?url=p", videoCount: 5 }] } },
+        playProxyUrl: "https://api.nooticr.com/media/proxy?url=p", videoCount: 5 }] } },
     }, "*"));
     await page.waitForTimeout(400);
     expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
@@ -938,7 +938,7 @@ test("a second tool call in the same view replaces the first", async ({ page }) 
   const appText = () =>
     page.evaluate(() => (document.getElementById("app")?.textContent || "").trim());
 
-  await page.setContent(ORCHYN_UI_TEMPLATE);
+  await page.setContent(NOOTICR_UI_TEMPLATE);
   await send("ui/notifications/tool-input", { arguments: { niche: "fitness", platform: "instagram" } });
   await page.waitForTimeout(150);
   await send("ui/notifications/tool-result", { structuredContent: feed("instagram") });
@@ -965,12 +965,12 @@ test("a second tool call in the same view replaces the first", async ({ page }) 
 // the post and hands back a fresh link (and for YouTube/Bilibili, which publish
 // no stream at all, downloads it once).
 test.describe("self-healing media", () => {
-  const RESOLVE = "https://api.orchyn.com/media/resolve?url=https%3A%2F%2Ftiktok.com%2F%40u%2Fvideo%2F1";
+  const RESOLVE = "https://api.nooticr.com/media/resolve?url=https%3A%2F%2Ftiktok.com%2F%40u%2Fvideo%2F1";
   const POST = {
     platform: "tiktok", caption: "c", creatorHandle: "u",
     externalUrl: "https://tiktok.com/@u/video/1", contentType: "video", views: 1,
     videoUrl: "https://cdn.example/expired.mp4",
-    videoProxyUrl: "https://api.orchyn.com/media/proxy?url=x",
+    videoProxyUrl: "https://api.nooticr.com/media/proxy?url=x",
     videoFallbackUrl: `${RESOLVE}&kind=video`,
     musicUrl: "https://cdn.example/expired.mp3",
     musicFallbackUrl: `${RESOLVE}&kind=music`,
@@ -978,7 +978,7 @@ test.describe("self-healing media", () => {
 
   test("prefers the resolver over the proxy as the retry target", async ({ page }) => {
     await page.route("**/expired.mp4", () => { /* hold open */ });
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate(
       (d) => window.postMessage(
         { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -996,7 +996,7 @@ test.describe("self-healing media", () => {
 
   test("swaps to the resolver when the platform link fails", async ({ page }) => {
     await page.route("**/expired.mp4", () => { /* hold open */ });
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate(
       (d) => window.postMessage(
         { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -1009,17 +1009,17 @@ test.describe("self-healing media", () => {
   });
 
   test("an expired thumbnail swaps to its fallback", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate(() => {
       const img = document.createElement("img");
       img.src = "https://cdn.example/expired.jpg";
-      img.setAttribute("data-fallback", "https://api.orchyn.com/media/resolve?url=x&kind=thumbnail");
+      img.setAttribute("data-fallback", "https://api.nooticr.com/media/resolve?url=x&kind=thumbnail");
       document.getElementById("app")!.appendChild(img);
       img.dispatchEvent(new Event("error"));
     });
     await page.waitForTimeout(150);
     expect(await page.evaluate(() => document.querySelector("#app img")?.getAttribute("src")))
-      .toBe("https://api.orchyn.com/media/resolve?url=x&kind=thumbnail");
+      .toBe("https://api.nooticr.com/media/resolve?url=x&kind=thumbnail");
   });
 });
 
@@ -1036,7 +1036,7 @@ test.describe("slideshow detection", () => {
 
   const render = async (page: Page, post: Record<string, unknown>) => {
     await page.route("**/*.mp4", () => { /* hold open, never errors */ });
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate(
       (d) => window.postMessage(
         { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
@@ -1293,7 +1293,7 @@ test.describe("brand monitoring", () => {
   });
 
   test("hands the host the ids the tool issued, not the text it rendered", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
       w.__called = [];
@@ -1326,7 +1326,7 @@ test.describe("brand monitoring", () => {
   });
 
   test("pages from the offset the tool handed back, and only unfiltered", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
       w.__called = [];
@@ -1388,7 +1388,7 @@ test.describe("brand monitoring", () => {
   });
 
   test("select all reaches the comments no row is showing", async ({ page }) => {
-    await page.setContent(ORCHYN_UI_TEMPLATE);
+    await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
       w.__called = [];

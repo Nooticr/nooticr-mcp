@@ -12,10 +12,10 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
-function dummyClient(structured: unknown = {}): OrchynClient {
-  return { callTool: async () => ({ contentBlocks: [], structured }) } as unknown as OrchynClient;
+function dummyClient(structured: unknown = {}): NooticrClient {
+  return { callTool: async () => ({ contentBlocks: [], structured }) } as unknown as NooticrClient;
 }
 
 async function connect(structured: unknown = {}) {
@@ -29,7 +29,7 @@ async function connect(structured: unknown = {}) {
 // The one tool with a side effect: it opens a Stripe checkout session, and a
 // second call is a second session.
 const NOT_READ_ONLY = [
-  "buy_orchyn_credits",
+  "buy_nooticr_credits",
   // The watchlist tools write: two change stored state, and the catch-up also
   // moves every baseline forward, which is why it is not idempotent either.
   "watch_creator",
@@ -55,19 +55,19 @@ describe("tool annotations", () => {
 
   it("does not claim a checkout is idempotent", async () => {
     const { tools } = await (await connect()).listTools();
-    const buy = tools.find((t) => t.name === "buy_orchyn_credits");
+    const buy = tools.find((t) => t.name === "buy_nooticr_credits");
     expect(buy?.annotations?.idempotentHint).toBe(false);
     expect(buy?.annotations?.destructiveHint).toBe(false);
   });
 
-  it("says which tools reach outside orchyn", async () => {
+  it("says which tools reach outside nooticr", async () => {
     const { tools } = await (await connect()).listTools();
     const closed = tools.filter((t) => t.annotations?.openWorldHint === false).map((t) => t.name);
-    // Only the account tools stay inside orchyn; everything else hits a platform.
+    // Only the account tools stay inside nooticr; everything else hits a platform.
     // The watchlist tools that only touch stored state are closed-world too.
     expect(closed.sort()).toEqual([
-      "check_orchyn_credits",
-      "orchyn_login",
+      "check_nooticr_credits",
+      "nooticr_login",
       // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
       "unwatch_creator",
@@ -147,7 +147,7 @@ describe("output schemas", () => {
     expect(undeclared, "tools an agent has to call before it can plan").toEqual([]);
   });
 
-  // The shape belongs to the orchyn backend, not to this repo. The SDK throws
+  // The shape belongs to the nooticr backend, not to this repo. The SDK throws
   // on structuredContent that fails its schema, so a schema that constrained
   // would turn a field added upstream into a tool that stopped working for
   // everyone — a self-inflicted outage on someone else's deploy schedule.
@@ -230,7 +230,7 @@ describe("long-running tools", () => {
 describe("media CSP allowlist", () => {
   const cdnDomains = async () => {
     const client = await connect();
-    const res = await client.readResource({ uri: "ui://orchyn/discover_social_posts" });
+    const res = await client.readResource({ uri: "ui://nooticr/discover_social_posts" });
     const meta = res.contents[0]._meta as { ui?: { csp?: { resourceDomains?: string[] } } };
     return meta?.ui?.csp?.resourceDomains ?? [];
   };

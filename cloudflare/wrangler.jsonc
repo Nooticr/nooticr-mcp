@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "orchyn-mcp",
+  "name": "nooticr-mcp",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -25,8 +25,8 @@
     "binding": "CF_VERSION_METADATA"
   },
   "vars": {
-    "PUBLIC_URL": "https://mcp.orchyn.com",
-    "ORCHYN_BASE_URL": "https://api.orchyn.com"
+    "PUBLIC_URL": "https://mcp.nooticr.com",
+    "NOOTICR_BASE_URL": "https://api.nooticr.com"
   },
   "kv_namespaces": [
     {
@@ -50,7 +50,7 @@
   },
   "routes": [
     {
-      "pattern": "mcp.orchyn.com",
+      "pattern": "mcp.nooticr.com",
       "custom_domain": true
     }
   ]

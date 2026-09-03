@@ -1,5 +1,5 @@
 /**
- * mcp.orchyn.com landing page.
+ * mcp.nooticr.com landing page.
  *
  * Written for two very different readers: a developer deciding whether to
  * connect this, and a connector reviewer checking that the server is what it
@@ -123,7 +123,7 @@ document.querySelectorAll('[data-copy]').forEach(function(b){
 });
 `;
 
-export function landingPage(publicUrl: string, orchynBase: string): string {
+export function landingPage(publicUrl: string, nooticrBase: string): string {
   const cloud = PLATFORMS.map(
     (p) =>
       `<div class="plat"><span class="ic">${platformIcon(p, 24)}</span>` +
@@ -150,12 +150,12 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<div class="wrap"><section class="hero">` +
     `<span class="eyebrow">${logoMark(13)} Model Context Protocol server</span>` +
     `<h1>Give your AI <span class="hl">eyes on social</span></h1>` +
-    `<p class="lede">Orchyn MCP lets Claude, ChatGPT and Cursor pull real posts from ten networks — video, slideshows, comments, creators and sounds — and reason over what they actually contain.</p>` +
+    `<p class="lede">Nooticr MCP lets Claude, ChatGPT and Cursor pull real posts from ten networks — video, slideshows, comments, creators and sounds — and reason over what they actually contain.</p>` +
     `<div class="hero-cta">` +
     `<a class="btn btn-primary" href="#install">Connect your assistant</a>` +
     `<a class="btn btn-ghost" href="#pricing">See pricing</a></div>` +
-    `<div class="copy-row"><code>npx -y @orchyn/mcp login</code>` +
-    `<button class="btn btn-ghost btn-sm" data-copy="npx -y @orchyn/mcp login">Copy</button></div>` +
+    `<div class="copy-row"><code>npx -y @nooticr/mcp login</code>` +
+    `<button class="btn btn-ghost btn-sm" data-copy="npx -y @nooticr/mcp login">Copy</button></div>` +
     `<p class="faint" style="margin-top:14px;font-size:13px">20 free credits on signup · every AI tool free once · no card to start</p>` +
     `</section></div>` +
 
@@ -163,7 +163,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<div class="wrap"><section id="platforms">` +
     `<div class="sec-head"><span class="eyebrow">Coverage</span>` +
     `<h2>Ten networks, one interface</h2>` +
-    `<p>Ask in plain language. Orchyn resolves the URL, fetches the media and hands your assistant structured data it can reason about.</p></div>` +
+    `<p>Ask in plain language. Nooticr resolves the URL, fetches the media and hands your assistant structured data it can reason about.</p></div>` +
     `<div class="cloud">${cloud}</div></section></div>` +
 
     // ── how ──
@@ -171,7 +171,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<div class="sec-head"><span class="eyebrow">How it works</span>` +
     `<h2>Three steps to a connected assistant</h2></div>` +
     `<div class="steps">` +
-    `<div class="step"><h3>Connect</h3><p>Add the connector URL, or run the npm package. Sign in with Orchyn over OAuth 2.1 — no API keys to paste or rotate.</p></div>` +
+    `<div class="step"><h3>Connect</h3><p>Add the connector URL, or run the npm package. Sign in with Nooticr over OAuth 2.1 — no API keys to paste or rotate.</p></div>` +
     `<div class="step"><h3>Ask</h3><p>"What's the hook in this TikTok?" · "Find fitness creators under 50k" · "What audio is trending in beauty?"</p></div>` +
     `<div class="step"><h3>Get real answers</h3><p>Posts come back with playable media and inline cards, so the assistant reasons over the content itself — not a guess from the URL.</p></div>` +
     `</div></section></div>` +
@@ -192,7 +192,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<div class="wrap"><section id="pricing">` +
     `<div class="sec-head"><span class="eyebrow">Pricing</span>` +
     `<h2>Pay for what you use</h2>` +
-    `<p>Credits never expire. Top up from your assistant with <code>buy_orchyn_credits</code> or from the dashboard.</p></div>` +
+    `<p>Credits never expire. Top up from your assistant with <code>buy_nooticr_credits</code> or from the dashboard.</p></div>` +
     `<div class="prices">` +
     `<div class="price"><h3>Starter</h3><div class="amt">$15</div>` +
     `<div class="per">600 credits · $0.025 each</div>` +
@@ -208,7 +208,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<a class="btn btn-ghost" href="/dashboard?buy=scale">Choose Scale</a></div>` +
     `</div>` +
     `<p class="faint" style="text-align:center;margin-top:20px;font-size:13px">` +
-    `Payments are handled by Stripe. Orchyn never sees or stores your card details.</p>` +
+    `Payments are handled by Stripe. Nooticr never sees or stores your card details.</p>` +
     `</section></div>` +
 
     // ── install ──
@@ -226,25 +226,25 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
     `<pre><code>${esc(publicUrl)}/mcp</code></pre></div>` +
     `<div class="pane" data-group="i" data-pane="code">` +
     `<p>From the Claude Code prompt:</p>` +
-    `<pre><code>/plugin marketplace add orchynX/mcp\n/plugin install orchyn@orchyn</code></pre></div>` +
+    `<pre><code>/plugin marketplace add orchynX/nooticr-mcp\n/plugin install nooticr@nooticr</code></pre></div>` +
     `<div class="pane" data-group="i" data-pane="gpt">` +
     `<p>Settings → Connectors → Advanced → <strong>Developer mode</strong>, then add:</p>` +
     `<pre><code>${esc(publicUrl)}/mcp</code></pre></div>` +
     `<div class="pane" data-group="i" data-pane="cursor">` +
     `<p>Add to <code>~/.cursor/mcp.json</code>:</p>` +
-    `<pre><code>{\n  "mcpServers": {\n    "orchyn": {\n      "command": "npx",\n      "args": ["-y", "@orchyn/mcp"]\n    }\n  }\n}</code></pre></div>` +
+    `<pre><code>{\n  "mcpServers": {\n    "nooticr": {\n      "command": "npx",\n      "args": ["-y", "@nooticr/mcp"]\n    }\n  }\n}</code></pre></div>` +
     `</div></section></div>` +
 
     // ── faq ──
     `<div class="wrap"><section class="faq">` +
     `<div class="sec-head"><span class="eyebrow">Questions</span><h2>Before you connect</h2></div>` +
     `<div style="max-width:46rem;margin:0 auto">` +
-    faq("What data does Orchyn access?", "Only public posts you or your assistant explicitly ask for, by URL or search. Orchyn never reads your private messages, drafts or account data, and never posts on your behalf.") +
+    faq("What data does Nooticr access?", "Only public posts you or your assistant explicitly ask for, by URL or search. Nooticr never reads your private messages, drafts or account data, and never posts on your behalf.") +
     faq("Do I need a credit card to try it?", "No. New accounts get 20 credits, and every AI analysis tool is free the first time you use it. You only pay when you choose to top up.") +
     faq("What happens if a tool call fails?", "You are not charged. Failed calls are refunded to your balance automatically, and a call interrupted mid-flight is billed once at most, never twice.") +
-    faq("Where is my usage visible?", `Your <a href="/dashboard" style="color:var(--brand)">dashboard</a> shows balance, credits spent, calls per tool and recent activity. Your assistant can also call <code>check_orchyn_credits</code> at any time.`) +
-    faq("Can I revoke access?", `Yes. Disconnect the connector in your AI client, or email <a href="mailto:support@orchyn.com" style="color:var(--brand)">support@orchyn.com</a> to have the account and its data deleted.`) +
-    faq("How is authentication handled?", "OAuth 2.1 with PKCE and dynamic client registration. Your assistant receives a scoped access token; Orchyn never asks you to paste a long-lived API key into a chat window.") +
+    faq("Where is my usage visible?", `Your <a href="/dashboard" style="color:var(--brand)">dashboard</a> shows balance, credits spent, calls per tool and recent activity. Your assistant can also call <code>check_nooticr_credits</code> at any time.`) +
+    faq("Can I revoke access?", `Yes. Disconnect the connector in your AI client, or email <a href="mailto:support@nooticr.com" style="color:var(--brand)">support@nooticr.com</a> to have the account and its data deleted.`) +
+    faq("How is authentication handled?", "OAuth 2.1 with PKCE and dynamic client registration. Your assistant receives a scoped access token; Nooticr never asks you to paste a long-lived API key into a chat window.") +
     `</div></section></div>` +
 
     // ── final cta ──
@@ -259,7 +259,7 @@ export function landingPage(publicUrl: string, orchynBase: string): string {
 
   return page(
     {
-      title: "Orchyn MCP — Social intelligence for AI agents",
+      title: "Nooticr MCP — Social intelligence for AI agents",
       publicUrl,
       css: CSS,
       script: SCRIPT,

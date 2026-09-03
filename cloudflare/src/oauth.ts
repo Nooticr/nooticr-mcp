@@ -1,12 +1,12 @@
 /**
  * OAuth 2.0 authorization server (RFC 6749 + RFC 7636 PKCE) for the
- * Cloudflare Worker deployment of orchyn-mcp.
+ * Cloudflare Worker deployment of nooticr-mcp.
  *
  * The MCP client (Claude, OpenAI, Cursor) redirects to /authorize; the user
- * signs in with their orchyn email/password (the orchyn Google loopback flow
+ * signs in with their nooticr email/password (the nooticr Google loopback flow
  * only works for localhost deployments). On success the browser is redirected
  * back to the client with a one-time code, exchanged at /token for an MCP
- * access token bound to the user's orchyn session.
+ * access token bound to the user's nooticr session.
  *
  * State lives in KV (codes and sessions are short-lived). The pure OAuth
  * primitives (PKCE, redirect validation, metadata) come from
@@ -40,7 +40,7 @@ export {
   protectedResourceMetadata,
 } from "../../src/shared/oauth.js";
 
-// MCP session lifetime. Sessions now self-renew their orchyn access token, so
+// MCP session lifetime. Sessions now self-renew their nooticr access token, so
 // a login should last as long as the account's refresh token (30 days server-
 // side) rather than forcing a re-login every hour.
 export const TOKEN_TTL_SECONDS = 604800;
@@ -48,9 +48,9 @@ export const PENDING_TTL_SECONDS = 600;
 export const LOGIN_RATE_LIMIT = { max: 10, windowSeconds: 300 };
 
 export interface McpSession {
-  orchynAccessToken: string;
-  orchynRefreshToken?: string;
-  orchynUser?: { id: string; email?: string; displayName?: string };
+  nooticrAccessToken: string;
+  nooticrRefreshToken?: string;
+  nooticrUser?: { id: string; email?: string; displayName?: string };
   clientId: string;
   scopes: string[];
   expiresAt: number;
@@ -64,9 +64,9 @@ export interface PendingAuthorization {
   mcpAuthCode: string;
   clientState?: string;
   createdAt: number;
-  orchynAccessToken: string;
-  orchynRefreshToken?: string;
-  orchynUser?: McpSession["orchynUser"];
+  nooticrAccessToken: string;
+  nooticrRefreshToken?: string;
+  nooticrUser?: McpSession["nooticrUser"];
 }
 
 const pendKey = (code: string) => `pend:${code}`;
@@ -100,7 +100,7 @@ export async function storeSession(env: Env, token: string, session: McpSession)
 }
 
 /**
- * Rotates the orchyn tokens inside a stored MCP session and extends its
+ * Rotates the nooticr tokens inside a stored MCP session and extends its
  * lifetime. Called after a refresh so the next tool call picks up the fresh
  * access token instead of a 15-minute-expired one. No-op when the session is
  * gone (already expired or evicted).
@@ -110,15 +110,15 @@ export async function updateSessionTokens(
   token: string,
   accessToken: string,
   refreshToken?: string,
-  orchynUser?: McpSession["orchynUser"]
+  nooticrUser?: McpSession["nooticrUser"]
 ): Promise<void> {
   const raw = await env.STORE.get(sessKey(token));
   if (!raw) return;
   try {
     const session = JSON.parse(raw) as McpSession;
-    session.orchynAccessToken = accessToken;
-    if (refreshToken) session.orchynRefreshToken = refreshToken;
-    if (orchynUser) session.orchynUser = orchynUser;
+    session.nooticrAccessToken = accessToken;
+    if (refreshToken) session.nooticrRefreshToken = refreshToken;
+    if (nooticrUser) session.nooticrUser = nooticrUser;
     session.expiresAt = Date.now() + TOKEN_TTL_SECONDS * 1000;
     await storeSession(env, token, session);
   } catch {
@@ -126,7 +126,7 @@ export async function updateSessionTokens(
   }
 }
 
-/** Removes a stored MCP session. Used when the orchyn refresh token dies so
+/** Removes a stored MCP session. Used when the nooticr refresh token dies so
  * the next request fails fast with a clear re-auth challenge instead of every
  * call going to the backend with an expired access token. */
 export async function deleteSession(env: Env, token: string): Promise<void> {
@@ -151,7 +151,7 @@ export async function verifyToken(env: Env, token: string): Promise<McpSession |
 /** True when a bearer token is valid: OAuth-issued or the env static token. */
 export async function validMcpToken(env: Env, token: string): Promise<boolean> {
   if (await verifyToken(env, token)) return true;
-  const envToken = env.ORCHYN_ACCESS_TOKEN;
+  const envToken = env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }
 

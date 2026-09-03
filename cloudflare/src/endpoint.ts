@@ -10,7 +10,7 @@ type McpRequest = Parameters<
   WebStandardStreamableHTTPServerTransport["handleRequest"]
 >[0];
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import { OrchynClient, jwtExpiry, type TokenProvider } from "../../src/shared/orchyn.js";
+import { NooticrClient, jwtExpiry, type TokenProvider } from "../../src/shared/nooticr.js";
 import { argumentsDigest, createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import { KvWatchStore } from "../../src/shared/watchlist.js";
 import {
@@ -29,7 +29,7 @@ import {
  */
 const PROTOCOL_VERSION = "2025-11-25";
 
-/** Refresh the orchyn JWT before it expires. The backend mints 15-minute
+/** Refresh the nooticr JWT before it expires. The backend mints 15-minute
  * access tokens, so without renewal every login dies a quarter of an hour in
  * and the user must re-authorize. We renew proactively (decoding the JWT's
  * `exp`) and again whenever the API rejects with 401, persisting the rotated
@@ -37,11 +37,11 @@ const PROTOCOL_VERSION = "2025-11-25";
 const REFRESH_LEAD_MS = 60_000;
 
 /**
- * Builds a client for one MCP session. The shared `OrchynClient` gets a
- * `TokenProvider` that resolves the session's orchyn token from this closure,
+ * Builds a client for one MCP session. The shared `NooticrClient` gets a
+ * `TokenProvider` that resolves the session's nooticr token from this closure,
  * refreshes it (proactively before expiry and again on 401), and persists the
  * rotated tokens into the KV session so the next tool call uses a live token.
- * Pre-provisioned deployments (env.ORCHYN_ACCESS_TOKEN) get a static-token
+ * Pre-provisioned deployments (env.NOOTICR_ACCESS_TOKEN) get a static-token
  * provider and never refresh.
  */
 async function makeClientForSession(
@@ -49,21 +49,21 @@ async function makeClientForSession(
   mcpToken: string,
   session: McpSession | undefined,
   idempotencyKey?: string
-): Promise<OrchynClient> {
-  const staticToken = env.ORCHYN_ACCESS_TOKEN;
+): Promise<NooticrClient> {
+  const staticToken = env.NOOTICR_ACCESS_TOKEN;
   if (!session) {
-    return new OrchynClient(env.ORCHYN_BASE_URL, {
+    return new NooticrClient(env.NOOTICR_BASE_URL, {
       getAccessToken: async () => staticToken ?? "",
     });
   }
 
-  let accessToken = session.orchynAccessToken;
-  let refreshToken = session.orchynRefreshToken;
+  let accessToken = session.nooticrAccessToken;
+  let refreshToken = session.nooticrRefreshToken;
 
   const doRefresh = async (): Promise<boolean> => {
     if (!refreshToken) return false;
     try {
-      const renewed = await OrchynClient.refreshSession(env.ORCHYN_BASE_URL, refreshToken);
+      const renewed = await NooticrClient.refreshSession(env.NOOTICR_BASE_URL, refreshToken);
       accessToken = renewed.accessToken;
       refreshToken = renewed.refreshToken ?? refreshToken;
       const user = renewed.user
@@ -75,7 +75,7 @@ async function makeClientForSession(
       // Dead refresh token — there is no way to renew. Drop the MCP session so
       // the *next* request fails with a clean 401 from the session layer (the
       // client re-authorizes) instead of silently sending an expired access
-      // token to the orchyn backend forever.
+      // token to the nooticr backend forever.
       await deleteSession(env, mcpToken).catch(() => {});
       return false;
     }
@@ -92,11 +92,11 @@ async function makeClientForSession(
     await doRefresh();
   }
 
-  return new OrchynClient(env.ORCHYN_BASE_URL, provider, idempotencyKey);
+  return new NooticrClient(env.NOOTICR_BASE_URL, provider, idempotencyKey);
 }
 
 /**
- * MCP endpoint for the orchyn-mcp Cloudflare Worker.
+ * MCP endpoint for the nooticr-mcp Cloudflare Worker.
  *
  * Session handling lives on a Durable Object (one per `mcp-session-id`) so the
  * MCP `initialize` ↔ handleRequest state is kept per client. Cloudflare may
@@ -202,7 +202,7 @@ export class McpEndpoint {
         },
         {
           "www-authenticate":
-            `Bearer realm="orchyn-mcp", ` +
+            `Bearer realm="nooticr-mcp", ` +
             `resource_metadata="${this.env.PUBLIC_URL}/.well-known/oauth-protected-resource"`,
         }
       );
@@ -214,7 +214,7 @@ export class McpEndpoint {
     const authInfo: AuthInfo | undefined = token
       ? {
           token,
-          clientId: session?.clientId ?? "orchyn-mcp",
+          clientId: session?.clientId ?? "nooticr-mcp",
           scopes: session?.scopes ?? [...SCOPES],
           expiresAt: session
             ? Math.floor(session.expiresAt / 1000)
@@ -297,7 +297,7 @@ export class McpEndpoint {
    *
    * A deploy (or any dropped stream) mid-`tools/call` leaves the client with
    * no answer, so it retries the same JSON-RPC id. The call is not free: the
-   * orchyn API has already debited MCP credits and done the work. Replaying it
+   * nooticr API has already debited MCP credits and done the work. Replaying it
    * would charge a second time for a result the user never saw.
    *
    * So the answer is recorded against the request id and replayed verbatim on
@@ -406,7 +406,7 @@ export class McpEndpoint {
       "mcp-protocol-version": PROTOCOL_VERSION,
     };
     // 1. Send initialize
-    const initReq = new Request("https://mcp.orchyn.com/mcp", {
+    const initReq = new Request("https://mcp.nooticr.com/mcp", {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -416,7 +416,7 @@ export class McpEndpoint {
         params: {
           protocolVersion: PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
+          clientInfo: { name: "nooticr-mcp", version: MCP_SERVER_VERSION },
         },
       }),
     }) as unknown as McpRequest;
@@ -425,7 +425,7 @@ export class McpEndpoint {
     await initRes.text().catch(() => "");
 
     // 2. Send initialized notification (required by the protocol)
-    const notifReq = new Request("https://mcp.orchyn.com/mcp", {
+    const notifReq = new Request("https://mcp.nooticr.com/mcp", {
       method: "POST",
       headers,
       body: JSON.stringify({

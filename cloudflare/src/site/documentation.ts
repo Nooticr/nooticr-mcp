@@ -1,5 +1,5 @@
 /**
- * Public documentation for mcp.orchyn.com.
+ * Public documentation for mcp.nooticr.com.
  *
  * Two audiences, in this order:
  *
@@ -11,7 +11,7 @@
  *
  * Every factual claim here has to match the implementation. The tool table is
  * generated from the shared catalogue rather than retyped, and tests pin the
- * prices to what orchyn-server charges.
+ * prices to what nooticr-server charges.
  */
 import { page, esc, BRAND } from "./layout.js";
 import { PLATFORMS } from "./platforms.js";
@@ -95,7 +95,7 @@ interface Section {
   body: string;
 }
 
-export function documentationPage(publicUrl: string, orchynBase: string): string {
+export function documentationPage(publicUrl: string, nooticrBase: string): string {
   const host = esc(publicUrl.replace(/^https?:\/\//, ""));
   const platformNames = PLATFORMS.map((p) => p.name).join(", ");
 
@@ -125,7 +125,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
       title: "Overview",
       group: "Start here",
       body:
-        `<p class="lead">Orchyn MCP is a Model Context Protocol server that lets an AI assistant read public social posts across ${PLATFORMS.length} networks and act on what it finds.</p>` +
+        `<p class="lead">Nooticr MCP is a Model Context Protocol server that lets an AI assistant read public social posts across ${PLATFORMS.length} networks and act on what it finds.</p>` +
         `<p>It connects over Streamable HTTP at <code>${esc(publicUrl)}/mcp</code>, authenticates with OAuth 2.1, and exposes ${TOOLS.length} tools. Assistants use it to fetch a post's media and spoken transcript, read its comment section, survey a niche, and then produce work from that: alternative hooks, variants to film, a draft scored before publication.</p>` +
         `<p>Networks covered: ${esc(platformNames)}.</p>`,
     },
@@ -149,7 +149,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<li>Access anything on the user's device or network</li>` +
         `<li>Reach other systems in your environment — it only calls out to the services listed below</li>` +
         `</ul></div></div>` +
-        `<div class="callout good"><p><strong>Every tool is read-only with respect to your organisation's data.</strong> The only state it writes is the user's own Orchyn credit ledger. The MCP tool annotations declare this: all 24 tools carry <code>destructiveHint: false</code>, and all but the two account actions carry <code>readOnlyHint: true</code>.</p></div>` +
+        `<div class="callout good"><p><strong>Every tool is read-only with respect to your organisation's data.</strong> The only state it writes is the user's own Nooticr credit ledger. The MCP tool annotations declare this: all 24 tools carry <code>destructiveHint: false</code>, and all but the two account actions carry <code>readOnlyHint: true</code>.</p></div>` +
 
         `<h3 id="admins-access">Access and revocation</h3>` +
         `<p>Authentication is OAuth 2.1 with PKCE (S256) and dynamic client registration. No API key is ever pasted into a chat window. Tokens are scoped and expiring.</p>` +
@@ -166,7 +166,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<tr><td>URLs and search terms passed to tools</td><td>No</td><td>Processed, not retained after the call</td></tr>` +
         `<tr><td><strong>Content of retrieved posts</strong></td><td><strong>No</strong></td><td>Streamed through; media cached only transiently so it can be displayed</td></tr>` +
         `<tr><td>Chat conversation content</td><td>No</td><td>The server sees the tool call, not the surrounding conversation</td></tr>` +
-        `<tr><td>Payment card details</td><td>No</td><td>Stripe handles payment; Orchyn receives only a reference</td></tr>` +
+        `<tr><td>Payment card details</td><td>No</td><td>Stripe handles payment; Nooticr receives only a reference</td></tr>` +
         `<tr><td>Operational logs (timestamps, status codes, errors)</td><td>Yes</td><td>Up to 30 days</td></tr>` +
         `</tbody></table>` +
         `<p>Data is not sold, not shared for advertising, and not used to train models.</p>` +
@@ -175,7 +175,7 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<p>The server calls out to these services and no others:</p>` +
         `<table class="doc-t"><thead><tr><th>Service</th><th>Purpose</th></tr></thead><tbody>` +
         `<tr><td>Cloudflare</td><td>Hosting and edge delivery of this server</td></tr>` +
-        `<tr><td>${esc(orchynBase.replace(/^https?:\/\//, ""))}</td><td>The Orchyn API — accounts, credits, tool execution</td></tr>` +
+        `<tr><td>${esc(nooticrBase.replace(/^https?:\/\//, ""))}</td><td>The Nooticr API — accounts, credits, tool execution</td></tr>` +
         `<tr><td>Stripe</td><td>Payment processing</td></tr>` +
         `<tr><td>Social data provider</td><td>Retrieving public posts from the supported networks</td></tr>` +
         `<tr><td>AI provider</td><td>The analysis and generation tools</td></tr>` +
@@ -183,10 +183,10 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<p>If you allowlist egress, the assistant only needs to reach <code>${host}</code>. Everything else is server-to-server.</p>` +
 
         `<h3 id="admins-cost">Cost control</h3>` +
-        `<p>Spend is bounded by the user's prepaid credit balance — there is no invoice, no overage and no auto-renewal. A user cannot spend more than they have loaded. Every tool declares its price in its own description and in <code>_meta.orchyn/creditCost</code>, so an assistant can budget before calling. Failed calls are refunded automatically, and a call interrupted mid-flight is billed once at most.</p>` +
+        `<p>Spend is bounded by the user's prepaid credit balance — there is no invoice, no overage and no auto-renewal. A user cannot spend more than they have loaded. Every tool declares its price in its own description and in <code>_meta.nooticr/creditCost</code>, so an assistant can budget before calling. Failed calls are refunded automatically, and a call interrupted mid-flight is billed once at most.</p>` +
 
         `<h3 id="admins-content">Third-party content</h3>` +
-        `<p>Retrieved posts are published by third parties and may contain personal data about the people who published them. Orchyn processes it only to answer the request. Your users are responsible for using it lawfully — see the <a href="/terms">acceptable use section of the Terms</a>. Orchyn is not affiliated with, endorsed by or sponsored by any of the platforms; their names and marks identify coverage only.</p>` +
+        `<p>Retrieved posts are published by third parties and may contain personal data about the people who published them. Nooticr processes it only to answer the request. Your users are responsible for using it lawfully — see the <a href="/terms">acceptable use section of the Terms</a>. Nooticr is not affiliated with, endorsed by or sponsored by any of the platforms; their names and marks identify coverage only.</p>` +
 
         `<p style="margin-top:20px"><a class="btn btn-ghost" href="/privacy">Privacy Policy</a> <a class="btn btn-ghost" href="/terms">Terms of Use</a></p>`,
     },
@@ -198,14 +198,14 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<h3 id="connect-claude">Claude.ai and Claude Desktop</h3>` +
         `<p>Settings → Connectors → <strong>Add custom connector</strong>, then paste:</p>` +
         `<pre><code>${esc(publicUrl)}/mcp</code></pre>` +
-        `<p>Sign in with Orchyn when prompted. No key to copy.</p>` +
+        `<p>Sign in with Nooticr when prompted. No key to copy.</p>` +
         `<h3 id="connect-code">Claude Code</h3>` +
-        `<pre><code>/plugin marketplace add orchynX/mcp\n/plugin install orchyn@orchyn</code></pre>` +
+        `<pre><code>/plugin marketplace add orchynX/nooticr-mcp\n/plugin install nooticr@nooticr</code></pre>` +
         `<h3 id="connect-gpt">ChatGPT</h3>` +
         `<p>Settings → Connectors → Advanced → <strong>Developer mode</strong>, then add the same URL.</p>` +
         `<h3 id="connect-stdio">Cursor and other stdio clients</h3>` +
-        `<pre><code>{\n  "mcpServers": {\n    "orchyn": {\n      "command": "npx",\n      "args": ["-y", "@orchyn/mcp"]\n    }\n  }\n}</code></pre>` +
-        `<p>Then <code>npx -y @orchyn/mcp login</code> once to sign in.</p>`,
+        `<pre><code>{\n  "mcpServers": {\n    "nooticr": {\n      "command": "npx",\n      "args": ["-y", "@nooticr/mcp"]\n    }\n  }\n}</code></pre>` +
+        `<p>Then <code>npx -y @nooticr/mcp login</code> once to sign in.</p>`,
     },
     {
       id: "tools",
@@ -231,9 +231,9 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<li><strong>Credits do not expire</strong> and there is no subscription or recurring charge.</li>` +
         `<li>A call that fails is refunded automatically.</li>` +
         `<li>A call interrupted after it was charged — a deploy, a dropped connection, a timeout — is billed <strong>once at most</strong>. Retries carry an idempotency key.</li>` +
-        `<li>Payment is handled by Stripe. Orchyn never sees or stores card details.</li>` +
+        `<li>Payment is handled by Stripe. Nooticr never sees or stores card details.</li>` +
         `</ul>` +
-        `<p>Check the balance any time with <code>check_orchyn_credits</code>, top up with <code>buy_orchyn_credits</code>, or use the <a href="/dashboard">dashboard</a>.</p>`,
+        `<p>Check the balance any time with <code>check_nooticr_credits</code>, top up with <code>buy_nooticr_credits</code>, or use the <a href="/dashboard">dashboard</a>.</p>`,
     },
     {
       id: "errors",
@@ -241,8 +241,8 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
       group: "Reference",
       body:
         `<table class="doc-t"><thead><tr><th>You see</th><th>Meaning</th><th>Do</th></tr></thead><tbody>` +
-        `<tr><td><code>401 Unauthorized</code></td><td>No valid token</td><td>Reconnect the connector, or run <code>orchyn_login</code></td></tr>` +
-        `<tr><td><code>-32002</code> insufficient credits</td><td>Balance too low for this tool</td><td><code>buy_orchyn_credits</code>, or top up in the dashboard</td></tr>` +
+        `<tr><td><code>401 Unauthorized</code></td><td>No valid token</td><td>Reconnect the connector, or run <code>nooticr_login</code></td></tr>` +
+        `<tr><td><code>-32002</code> insufficient credits</td><td>Balance too low for this tool</td><td><code>buy_nooticr_credits</code>, or top up in the dashboard</td></tr>` +
         `<tr><td><code>available: false</code></td><td>The post has no caption track</td><td>Not an error — use <code>analyze_post</code> instead</td></tr>` +
         `<tr><td>Unsupported URL</td><td>Not one of the ${PLATFORMS.length} supported networks</td><td>Check the coverage list above</td></tr>` +
         `</tbody></table>` +
@@ -258,8 +258,8 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
         `<ul>` +
         `<li>Service status: <a href="/health">/health</a></li>` +
         `<li>OAuth metadata: <a href="/.well-known/oauth-authorization-server">/.well-known/oauth-authorization-server</a></li>` +
-        `<li>Source: <a href="https://github.com/orchynX/mcp" rel="noopener">github.com/orchynX/mcp</a></li>` +
-        `<li>Package: <a href="https://www.npmjs.com/package/@orchyn/mcp" rel="noopener">@orchyn/mcp</a></li>` +
+        `<li>Source: <a href="https://github.com/orchynX/nooticr-mcp" rel="noopener">github.com/orchynX/nooticr-mcp</a></li>` +
+        `<li>Package: <a href="https://www.npmjs.com/package/@nooticr/mcp" rel="noopener">@nooticr/mcp</a></li>` +
         `</ul>`,
     },
   ];
@@ -285,9 +285,9 @@ export function documentationPage(publicUrl: string, orchynBase: string): string
 
   return page(
     {
-      title: "Documentation — Orchyn MCP",
+      title: "Documentation — Nooticr MCP",
       description:
-        "How the Orchyn MCP server works: what it accesses, what it cannot do, how access is granted and revoked, where data goes, the full tool reference and how billing works.",
+        "How the Nooticr MCP server works: what it accesses, what it cannot do, how access is granted and revoked, where data goes, the full tool reference and how billing works.",
       publicUrl,
       css: CSS,
       script: SCRIPT,

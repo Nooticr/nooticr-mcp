@@ -22,7 +22,7 @@ import {
   searchMentionsCost,
   SEARCH_PLATFORMS,
 } from "../src/shared/spend.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 /**
  * @param answer  what the user does, or null for a client with no elicitation
@@ -31,13 +31,13 @@ import type { OrchynClient } from "../src/shared/orchyn.js";
 async function connect(answer: "accept" | "decline" | "cancel" | "reject-form" | null) {
   const calls: Array<{ name: string; args: unknown }> = [];
   const asked: string[] = [];
-  const orchyn = {
+  const nooticr = {
     me: async () => ({ id: "u1" }),
     callTool: async (name: string, args: unknown) => {
       calls.push({ name, args });
       return { contentBlocks: [], structured: { term: "nike", threads: [], totalMentions: 0 } };
     },
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
 
   const client = new Client(
     { name: "test", version: "1.0.0" },
@@ -52,7 +52,7 @@ async function connect(answer: "accept" | "decline" | "cancel" | "reject-form" |
       return { action: answer };
     });
   }
-  const server = createMcpServer(async () => orchyn);
+  const server = createMcpServer(async () => nooticr);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   await client.listTools();
@@ -85,7 +85,7 @@ describe("a client that can be asked", () => {
     const res = await client.callTool(sweep({ term: "nike" }));
     expect(asked).toHaveLength(1);
     // The number is the point — it is what the caller could not have known.
-    expect(asked[0]).toContain("21 orchyn credits");
+    expect(asked[0]).toContain("21 nooticr credits");
     expect(asked[0]).toContain("nike");
     // And a way out that is cheaper rather than nothing.
     expect(asked[0]).toMatch(/fewer platforms/i);
@@ -133,7 +133,7 @@ describe("a client that can be asked", () => {
       sweep({ term: "nike", platforms: ["reddit", "youtube", "tiktok", "weibo"] }),
     );
     expect(asked).toHaveLength(1);
-    expect(asked[0]).toContain("8 orchyn credits");
+    expect(asked[0]).toContain("8 nooticr credits");
   });
 });
 
@@ -151,13 +151,13 @@ describe("a client that cannot be asked", () => {
 
   it("runs the sweep when the client declares elicitation then breaks", async () => {
     const calls: Array<{ name: string }> = [];
-    const orchyn = {
+    const nooticr = {
       me: async () => ({ id: "u1" }),
       callTool: async (name: string) => {
         calls.push({ name });
         return { contentBlocks: [], structured: {} };
       },
-    } as unknown as OrchynClient;
+    } as unknown as NooticrClient;
     const client = new Client(
       { name: "test", version: "1.0.0" },
       { capabilities: { elicitation: {} } },
@@ -165,7 +165,7 @@ describe("a client that cannot be asked", () => {
     client.setRequestHandler(ElicitRequestSchema, async () => {
       throw new Error("the client's dialog crashed");
     });
-    const server = createMcpServer(async () => orchyn);
+    const server = createMcpServer(async () => nooticr);
     const [a, b] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(a), server.connect(b)]);
     await client.listTools();

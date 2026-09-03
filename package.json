@@ -1,8 +1,8 @@
 {
-  "name": "@orchyn/mcp",
-  "mcpName": "com.orchyn/mcp",
+  "name": "@nooticr/mcp",
+  "mcpName": "com.nooticr/mcp",
   "version": "1.26.17",
-  "description": "MCP server for orchyn - fetch, discover and understand TikTok/Instagram/YouTube/X/Reddit/LinkedIn/Weibo posts with AI (media metadata, niche discovery, brand monitoring, hook & viral analysis)",
+  "description": "MCP server for nooticr - fetch, discover and understand TikTok/Instagram/YouTube/X/Reddit/LinkedIn/Weibo posts with AI (media metadata, niche discovery, brand monitoring, hook & viral analysis)",
   "type": "module",
   "main": "dist/index.js",
   "files": [
@@ -11,7 +11,7 @@
     "LICENSE"
   ],
   "bin": {
-    "orchyn-mcp": "dist/index.js"
+    "nooticr-mcp": "dist/index.js"
   },
   "engines": {
     "node": ">=18"
@@ -29,7 +29,7 @@
   },
   "keywords": [
     "mcp",
-    "orchyn",
+    "nooticr",
     "video",
     "analysis",
     "tiktok",

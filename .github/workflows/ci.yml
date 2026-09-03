@@ -8,7 +8,7 @@ name: CI
 # and npm were on 1.19.0 — the legal pages a connector review fetches were
 # 404 for days. Publishing and deploying now hang off the same green run.
 #
-# Runs on GitHub-hosted runners. The self-hosted box that builds orchyn-server
+# Runs on GitHub-hosted runners. The self-hosted box that builds nooticr-server
 # is registered to that repository only, so `runs-on: ubuntu-latest` here queued
 # forever with nothing to pick it up. Nothing in this workflow needs that
 # machine — it is Node, a browser and wrangler — and the runners are free for
@@ -122,8 +122,8 @@ jobs:
           $INSPECT --method tools/list --strict > /dev/null
 
           # Each family must read back on the mime its host requires.
-          $INSPECT --method resources/read --uri ui://orchyn/discover_social_posts > claude-res.json
-          $INSPECT --method resources/read --uri ui://orchyn/discover_social_posts.html > gpt-res.json
+          $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts > claude-res.json
+          $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts.html > gpt-res.json
 
           python3 - <<'CHECK'
           import json, sys
@@ -134,7 +134,7 @@ jobs:
           # Tools with nothing to draw. watch_creator and unwatch_creator change
           # stored state and return a list; the catch-up that reads that state
           # does have a view, because it returns posts.
-          NO_APP = {"orchyn_login", "watch_creator", "unwatch_creator"}
+          NO_APP = {"nooticr_login", "watch_creator", "unwatch_creator"}
           MCP_APPS_MIME = "text/html;profile=mcp-app"
           APPS_SDK_MIME = "text/html+skybridge"
 
@@ -174,7 +174,7 @@ jobs:
               if want not in mimes:
                   fail.append(f"resources/list advertises no {want}")
           # Connectors created before per-tool URIs still ask for these.
-          for legacy in ("ui://orchyn/view", "ui://orchyn/view.html"):
+          for legacy in ("ui://nooticr/view", "ui://nooticr/view.html"):
               if legacy not in uris:
                   fail.append(f"{legacy} is not listed; stale connectors will 404")
 
@@ -282,7 +282,7 @@ jobs:
       # That case is not hypothetical. 1.26.8 shipped the ChatGPT view twice,
       # once blinking and once fixed: the fix reached the Worker, which deploys
       # on every green push, and never reached npm, which publishes only when
-      # the version moves. Anyone on `npx @orchyn/mcp` kept the broken view
+      # the version moves. Anyone on `npx @nooticr/mcp` kept the broken view
       # while production had the fix, and the repo and npm quietly diverged.
       #
       # The bump is earned by a change under src/, not by the version merely
@@ -377,7 +377,7 @@ jobs:
             echo "can_deploy=true" >> "$GITHUB_OUTPUT"
           else
             echo "can_deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Worker deploy skipped::CLOUDFLARE_API_TOKEN is not set, so the Worker was not deployed and mcp.orchyn.com may be behind main. Create a token with Workers Scripts:Edit and add it as a repository secret."
+            echo "::warning title=Worker deploy skipped::CLOUDFLARE_API_TOKEN is not set, so the Worker was not deployed and mcp.nooticr.com may be behind main. Create a token with Workers Scripts:Edit and add it as a repository secret."
           fi
 
       # Drift is what this workflow exists to prevent, so say plainly when
@@ -385,11 +385,11 @@ jobs:
       - name: Compare production against this commit
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          LIVE="$(curl -fsS -m 20 https://mcp.orchyn.com/health \
+          LIVE="$(curl -fsS -m 20 https://mcp.nooticr.com/health \
                   | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).mcpVersion' 2>/dev/null || echo unknown)"
           echo "repo=${{ steps.pkg.outputs.version }}  live=$LIVE"
           if [ "$LIVE" != "${{ steps.pkg.outputs.version }}" ] && [ "${{ steps.cf.outputs.can_deploy }}" != "true" ]; then
-            echo "::warning title=Production is behind main::mcp.orchyn.com serves $LIVE, this commit is ${{ steps.pkg.outputs.version }}, and no deploy token is configured."
+            echo "::warning title=Production is behind main::mcp.nooticr.com serves $LIVE, this commit is ${{ steps.pkg.outputs.version }}, and no deploy token is configured."
           fi
 
   publish:
@@ -480,7 +480,7 @@ jobs:
       - name: Verify what is actually live
         run: |
           set -euo pipefail
-          BASE=https://mcp.orchyn.com
+          BASE=https://mcp.nooticr.com
           WANT="${{ needs.version.outputs.version }}"
           echo "Waiting for $WANT to serve…"
           for _ in $(seq 1 30); do

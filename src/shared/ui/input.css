@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   Orchyn MCP Apps UI — Tailwind v4 source.
+   Nooticr MCP Apps UI — Tailwind v4 source.
    Compiled at build time (scripts/build-ui.mjs) and inlined into
    src/shared/ui-template.ts, so the served view stays one
    self-contained file with zero external requests and zero

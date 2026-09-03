@@ -7,10 +7,10 @@ import {
   isAllowedRedirectUri,
   isLoopbackUrl,
 } from "../src/oauth.js";
-import { OrchynClient } from "../src/orchyn.js";
+import { NooticrClient } from "../src/nooticr.js";
 
 const PUBLIC_URL = "http://localhost:3457";
-const ORCHYN_BASE = "http://localhost:8080";
+const NOOTICR_BASE = "http://localhost:8080";
 const CLIENT_REDIRECT = "http://127.0.0.1:43210/callback";
 const TEST_VERIFIER = "0123456789abcdefghijklmnopqrstuvwx";
 const TEST_CHALLENGE = "ennwGwPnSmjXnYZLCY88UqxRKsUlHnOSQyOJhPw4s0U";
@@ -58,13 +58,13 @@ function makeRes(): FakeRes {
   return res;
 }
 
-function makeClient(): OrchynClient {
-  return new OrchynClient(ORCHYN_BASE, { getAccessToken: async () => undefined });
+function makeClient(): NooticrClient {
+  return new NooticrClient(NOOTICR_BASE, { getAccessToken: async () => undefined });
 }
 
 async function completeSignIn(
   oauth: OAuthManager,
-  orchynState: string,
+  nooticrState: string,
   completionCode = "google-completion-123"
 ): Promise<FakeRes> {
   vi.stubGlobal(
@@ -72,8 +72,8 @@ async function completeSignIn(
     vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
-          accessToken: "orchyn-jwt",
-          refreshToken: "orchyn-refresh",
+          accessToken: "nooticr-jwt",
+          refreshToken: "nooticr-refresh",
           expiresIn: 3600,
           user: { id: "u1", email: "me@example.com", displayName: "Me" },
         }),
@@ -83,16 +83,16 @@ async function completeSignIn(
   );
   const res = makeRes();
   await oauth.handleCallback(
-    makeReq(`/oauth/callback?state=${encodeURIComponent(orchynState)}&code=${completionCode}&redirect=/`),
+    makeReq(`/oauth/callback?state=${encodeURIComponent(nooticrState)}&code=${completionCode}&redirect=/`),
     res as unknown as ServerResponse
   );
   return res;
 }
 
 const GOOGLE_REDIRECT_URL =
-  "https://accounts.google.com/o/oauth2/v2/auth?client_id=orchyn&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback";
+  "https://accounts.google.com/o/oauth2/v2/auth?client_id=nooticr&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback";
 
-async function runAuthorize(oauth: OAuthManager): Promise<{ res: FakeRes; orchynState: string; redirect: URL }> {
+async function runAuthorize(oauth: OAuthManager): Promise<{ res: FakeRes; nooticrState: string; redirect: URL }> {
   const fetchMock = vi.fn().mockResolvedValue(
     new Response(JSON.stringify({ redirectUrl: GOOGLE_REDIRECT_URL }), { status: 200 })
   );
@@ -105,12 +105,12 @@ async function runAuthorize(oauth: OAuthManager): Promise<{ res: FakeRes; orchyn
     ),
     res as unknown as ServerResponse
   );
-  // The orchyn server is asked to start the Google sign-in with our callback.
+  // The nooticr server is asked to start the Google sign-in with our callback.
   const [startUrl, startInit] = fetchMock.mock.calls[0];
   const ourCallback = JSON.parse(startInit.body).redirect as string;
-  const orchynState = new URL(ourCallback).searchParams.get("state") as string;
+  const nooticrState = new URL(ourCallback).searchParams.get("state") as string;
   const redirect = new URL(res.headers.location);
-  return { res, orchynState, redirect };
+  return { res, nooticrState, redirect };
 }
 
 afterEach(() => {
@@ -175,17 +175,17 @@ describe("OAuthManager flow", () => {
     });
   });
 
-  it("asks orchyn to start Google sign-in and redirects the browser to Google", async () => {
+  it("asks nooticr to start Google sign-in and redirects the browser to Google", async () => {
     const oauth = new OAuthManager({ publicUrl: PUBLIC_URL, client: makeClient() });
-    const { res, redirect, orchynState } = await runAuthorize(oauth);
+    const { res, redirect, nooticrState } = await runAuthorize(oauth);
     expect(res.status).toBe(302);
     expect(redirect.origin).toBe("https://accounts.google.com");
-    // Our loopback callback was sent to the orchyn server, pre-seeded with state.
+    // Our loopback callback was sent to the nooticr server, pre-seeded with state.
     const fetchMock = fetch as ReturnType<typeof vi.fn>;
     const [startUrl, startInit] = fetchMock.mock.calls[0];
-    expect(startUrl).toBe(`${ORCHYN_BASE}/auth/google/start`);
+    expect(startUrl).toBe(`${NOOTICR_BASE}/auth/google/start`);
     expect(JSON.parse(startInit.body).redirect).toBe(
-      `${PUBLIC_URL}/oauth/callback?state=${encodeURIComponent(orchynState)}`
+      `${PUBLIC_URL}/oauth/callback?state=${encodeURIComponent(nooticrState)}`
     );
   });
 
@@ -231,7 +231,7 @@ describe("OAuthManager flow", () => {
     expect(new URL(res.headers.location).searchParams.get("error")).toBe("invalid_scope");
   });
 
-  it("completes the full flow: authorize -> orchyn callback -> token -> session", async () => {
+  it("completes the full flow: authorize -> nooticr callback -> token -> session", async () => {
     const oauth = new OAuthManager({
       publicUrl: PUBLIC_URL,
       client: makeClient(),
@@ -239,11 +239,11 @@ describe("OAuthManager flow", () => {
     });
 
     // 1. authorize
-    const { res: authRes, orchynState } = await runAuthorize(oauth);
+    const { res: authRes, nooticrState } = await runAuthorize(oauth);
     expect(authRes.status).toBe(302);
 
-    // 2. orchyn redirects the browser back to our callback with ?state=<ours>&code=<completion>
-    const cbRes = await completeSignIn(oauth, orchynState);
+    // 2. nooticr redirects the browser back to our callback with ?state=<ours>&code=<completion>
+    const cbRes = await completeSignIn(oauth, nooticrState);
     expect(cbRes.status).toBe(302);
     const clientRedirect = new URL(cbRes.headers.location);
     expect(clientRedirect.origin).toBe("http://127.0.0.1:43210");
@@ -270,11 +270,11 @@ describe("OAuthManager flow", () => {
     expect(tokenBody.expires_in).toBe(604800);
     expect(tokenBody.scope).toBe("analyze:video");
 
-    // 4. the issued token maps to the orchyn JWT
+    // 4. the issued token maps to the nooticr JWT
     const session = oauth.verifyToken(tokenBody.access_token);
     expect(session).toBeDefined();
-    expect(session!.orchynAccessToken).toBe("orchyn-jwt");
-    expect(session!.orchynRefreshToken).toBe("orchyn-refresh");
+    expect(session!.nooticrAccessToken).toBe("nooticr-jwt");
+    expect(session!.nooticrRefreshToken).toBe("nooticr-refresh");
     expect(session!.clientId).toBe("claude");
 
     // 5. the one-time code is consumed
@@ -294,8 +294,8 @@ describe("OAuthManager flow", () => {
 
   it("rejects /token with a wrong PKCE verifier", async () => {
     const oauth = new OAuthManager({ publicUrl: PUBLIC_URL, client: makeClient() });
-    const { orchynState } = await runAuthorize(oauth);
-    const cbRes = await completeSignIn(oauth, orchynState);
+    const { nooticrState } = await runAuthorize(oauth);
+    const cbRes = await completeSignIn(oauth, nooticrState);
     const mcpAuthCode = new URL(cbRes.headers.location).searchParams.get("code") as string;
 
     const tokenRes = makeRes();
@@ -311,7 +311,7 @@ describe("OAuthManager flow", () => {
     expect(JSON.parse(tokenRes.body).error).toBe("invalid_grant");
   });
 
-  it("rejects /token before the orchyn sign-in completes", async () => {
+  it("rejects /token before the nooticr sign-in completes", async () => {
     const oauth = new OAuthManager({ publicUrl: PUBLIC_URL, client: makeClient() });
     await runAuthorize(oauth);
     const tokenRes = makeRes();
@@ -322,16 +322,16 @@ describe("OAuthManager flow", () => {
     expect(JSON.parse(tokenRes.body).error).toBe("invalid_grant");
   });
 
-  it("renders an error page when the orchyn exchange fails", async () => {
+  it("renders an error page when the nooticr exchange fails", async () => {
     const oauth = new OAuthManager({ publicUrl: PUBLIC_URL, client: makeClient() });
-    const { orchynState } = await runAuthorize(oauth);
+    const { nooticrState } = await runAuthorize(oauth);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "bad code" }), { status: 400 }))
     );
     const res = makeRes();
     await oauth.handleCallback(
-      makeReq(`/oauth/callback?state=${encodeURIComponent(orchynState)}&code=broken`),
+      makeReq(`/oauth/callback?state=${encodeURIComponent(nooticrState)}&code=broken`),
       res as unknown as ServerResponse
     );
     expect(res.status).toBe(502);
@@ -340,8 +340,8 @@ describe("OAuthManager flow", () => {
 
   it("expires sessions after TTL", async () => {
     const oauth = new OAuthManager({ publicUrl: PUBLIC_URL, client: makeClient() });
-    const { orchynState } = await runAuthorize(oauth);
-    const cbRes = await completeSignIn(oauth, orchynState);
+    const { nooticrState } = await runAuthorize(oauth);
+    const cbRes = await completeSignIn(oauth, nooticrState);
     const mcpAuthCode = new URL(cbRes.headers.location).searchParams.get("code") as string;
     const verifier = "0123456789abcdefghijklmnopqrstuvwx";
     const tokenRes = makeRes();

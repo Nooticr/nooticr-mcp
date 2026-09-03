@@ -7426,10 +7426,10 @@ var require_dist = __commonJS({
   }
 });
 
-// src/orchyn.ts
-var OrchynError = class extends Error {
+// src/nooticr.ts
+var NooticrError = class extends Error {
   static {
-    __name(this, "OrchynError");
+    __name(this, "NooticrError");
   }
   status;
   code;
@@ -7437,16 +7437,16 @@ var OrchynError = class extends Error {
   body;
   constructor(status, message, opts = {}) {
     super(message);
-    this.name = "OrchynError";
+    this.name = "NooticrError";
     this.status = status;
     this.code = opts.code;
     this.paywall = opts.paywall;
     this.body = opts.body;
   }
 };
-var OrchynClient = class {
+var NooticrClient = class {
   static {
-    __name(this, "OrchynClient");
+    __name(this, "NooticrClient");
   }
   baseUrl;
   token;
@@ -7478,12 +7478,12 @@ var OrchynClient = class {
       body = void 0;
     }
     const json = body ?? {};
-    const errorMessage = typeof json.error === "string" ? json.error : `orchyn API error (${res.status})`;
+    const errorMessage = typeof json.error === "string" ? json.error : `nooticr API error (${res.status})`;
     if (res.status >= 200 && res.status < 300) {
       return body;
     }
     if (res.status === 402) {
-      throw new OrchynError(402, errorMessage, {
+      throw new NooticrError(402, errorMessage, {
         paywall: {
           reason: typeof json.reason === "string" ? json.reason : void 0,
           used: typeof json.used === "number" ? json.used : void 0,
@@ -7493,7 +7493,7 @@ var OrchynClient = class {
         body
       });
     }
-    throw new OrchynError(res.status, errorMessage, {
+    throw new NooticrError(res.status, errorMessage, {
       code: typeof json.code === "string" ? json.code : void 0,
       body
     });
@@ -7529,7 +7529,7 @@ var OrchynClient = class {
     if (res.status >= 200 && res.status < 300) {
       return body;
     }
-    throw new OrchynError(res.status, typeof json.error === "string" ? json.error : `Login failed (${res.status})`, { body });
+    throw new NooticrError(res.status, typeof json.error === "string" ? json.error : `Login failed (${res.status})`, { body });
   }
 };
 
@@ -7646,7 +7646,7 @@ async function verifyToken(env, token) {
 __name(verifyToken, "verifyToken");
 async function validMcpToken(env, token) {
   if (await verifyToken(env, token)) return true;
-  const envToken = env.ORCHYN_ACCESS_TOKEN;
+  const envToken = env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }
 __name(validMcpToken, "validMcpToken");
@@ -23093,7 +23093,7 @@ function formatPaywallError(err) {
   }
   if (p?.cost !== void 0) parts.push(`cost: ${p.cost}`);
   const detail = parts.length > 0 ? ` (${parts.join(", ")})` : "";
-  return `Your orchyn account has no credits left for this analysis${detail}. Top up or check your usage in the orchyn dashboard, then try again. Note: the first analysis is covered by the free grant.`;
+  return `Your nooticr account has no credits left for this analysis${detail}. Top up or check your usage in the nooticr dashboard, then try again. Note: the first analysis is covered by the free grant.`;
 }
 __name(formatPaywallError, "formatPaywallError");
 
@@ -23103,19 +23103,19 @@ var TOOL_INPUT = external_exports.object({
   url: external_exports.string().describe("Public video URL (tiktok.com, instagram.com, youtube.com, youtu.be).")
 });
 function createServer(env, resolveSession) {
-  const server = new McpServer({ name: "orchyn-mcp", version: "1.0.0" });
+  const server = new McpServer({ name: "nooticr-mcp", version: "1.0.0" });
   server.registerTool(
     TOOL_NAME,
     {
       title: "Analyze Video",
-      description: "Start an AI analysis of a TikTok, Instagram, or YouTube video from its link. Requires a connected orchyn account; consumes orchyn credits (first analysis free). Returns the analysis result once finished.",
+      description: "Start an AI analysis of a TikTok, Instagram, or YouTube video from its link. Requires a connected nooticr account; consumes nooticr credits (first analysis free). Returns the analysis result once finished.",
       inputSchema: TOOL_INPUT
     },
     async (args, extra) => {
       const token = extra.authInfo?.token ?? "";
       const session = await resolveSession(token);
-      const accessToken = session ? session.orchynAccessToken : env.ORCHYN_ACCESS_TOKEN ?? "";
-      const client = new OrchynClient(env.ORCHYN_BASE_URL, accessToken);
+      const accessToken = session ? session.nooticrAccessToken : env.NOOTICR_ACCESS_TOKEN ?? "";
+      const client = new NooticrClient(env.NOOTICR_BASE_URL, accessToken);
       const validation = validateVideoUrl(args.url);
       if (!validation.ok) {
         return { content: [{ type: "text", text: `Invalid url: ${validation.error}` }], isError: true };
@@ -23125,7 +23125,7 @@ function createServer(env, resolveSession) {
         const result = await runVideoAnalysis(client, validation.url, { timeoutMs });
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       } catch (err) {
-        if (err instanceof OrchynError && err.paywall) {
+        if (err instanceof NooticrError && err.paywall) {
           return {
             content: [{ type: "text", text: `Analysis blocked: ${formatPaywallError(err)}
 
@@ -23174,13 +23174,13 @@ var McpEndpoint = class {
       });
       this.server = createServer(this.env, async (t) => {
         const s = t === token ? session : await verifyToken(this.env, t);
-        return s ? { clientId: s.clientId, scopes: s.scopes, orchynAccessToken: s.orchynAccessToken } : void 0;
+        return s ? { clientId: s.clientId, scopes: s.scopes, nooticrAccessToken: s.nooticrAccessToken } : void 0;
       });
       await this.server.connect(this.transport);
     }
     const authInfo = token ? {
       token,
-      clientId: session?.clientId ?? "orchyn-mcp",
+      clientId: session?.clientId ?? "nooticr-mcp",
       scopes: session?.scopes ?? ["analyze:video"],
       expiresAt: session ? Math.floor(session.expiresAt / 1e3) : Math.floor(Date.now() / 1e3) + 3600
     } : void 0;
@@ -23227,8 +23227,8 @@ var index_default = {
     }
     if (path === "/" && method === "GET") {
       const meta = authorizationServerMetadata(env.PUBLIC_URL);
-      return htmlResponse(200, htmlPage("orchyn-mcp", `
-        <h1>orchyn-mcp</h1>
+      return htmlResponse(200, htmlPage("nooticr-mcp", `
+        <h1>nooticr-mcp</h1>
         <p>MCP server is running.</p>
         <p>Authorization endpoint: <code>${escapeHtml(meta.authorization_endpoint)}</code></p>
         <p>Token endpoint: <code>${escapeHtml(meta.token_endpoint)}</code></p>
@@ -23275,14 +23275,14 @@ function authorizeError(url, redirectUri, error2, description) {
     if (state) target.searchParams.set("state", state);
     return Response.redirect(target.toString(), 302);
   }
-  return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>${escapeHtml(description)}</p>`));
+  return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>${escapeHtml(description)}</p>`));
 }
 __name(authorizeError, "authorizeError");
 async function handleAuthorizeGet(request, env) {
   const url = new URL(request.url);
   const p = getAuthorizeParams(url);
   if (!p) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Missing required parameters: response_type, client_id, redirect_uri, code_challenge, code_challenge_method.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Missing required parameters: response_type, client_id, redirect_uri, code_challenge, code_challenge_method.</p>`));
   }
   if (p.response_type !== "code") {
     return authorizeError(url, p.redirect_uri, "unsupported_response_type", "Only response_type=code is supported.");
@@ -23291,14 +23291,14 @@ async function handleAuthorizeGet(request, env) {
     return authorizeError(url, p.redirect_uri, "invalid_request", "PKCE is required: code_challenge and code_challenge_method=S256.");
   }
   if (!isAllowedRedirectUri(p.redirect_uri)) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be a loopback URL or an https URL.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>redirect_uri must be a loopback URL or an https URL.</p>`));
   }
   const scopes = p.scope.split(/\s+/).filter(Boolean);
   if (scopes.some((s) => s !== SCOPE)) {
     return authorizeError(url, p.redirect_uri, "invalid_scope", `Unsupported scope(s). Supported: ${SCOPE}.`);
   }
-  return htmlResponse(200, htmlPage("orchyn-mcp: sign in", `
-    <h2>Sign in with your orchyn account</h2>
+  return htmlResponse(200, htmlPage("nooticr-mcp: sign in", `
+    <h2>Sign in with your nooticr account</h2>
     <form method="post" action="/authorize">
       <input type="hidden" name="response_type" value="${escapeHtml(p.response_type)}" />
       <input type="hidden" name="client_id" value="${escapeHtml(p.client_id)}" />
@@ -23311,7 +23311,7 @@ async function handleAuthorizeGet(request, env) {
       <div class="row"><label>Password <input type="password" name="password" autocomplete="current-password" required /></label></div>
       <div class="row"><button type="submit">Sign in</button></div>
     </form>
-    <p><small>Your password is sent directly to the orchyn API; the MCP does not store it.</small></p>
+    <p><small>Your password is sent directly to the nooticr API; the MCP does not store it.</small></p>
   `));
 }
 __name(handleAuthorizeGet, "handleAuthorizeGet");
@@ -23329,14 +23329,14 @@ async function handleAuthorizePost(request, env) {
     password: form.get("password")
   };
   if (!p.response_type || !p.client_id || !p.redirect_uri || !p.code_challenge || !p.code_challenge_method) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Missing required parameters.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Missing required parameters.</p>`));
   }
   if (p.response_type !== "code" || !p.code_challenge || p.code_challenge_method !== "S256") {
     const url = new URL(request.url);
     return authorizeError(url, p.redirect_uri, p.response_type !== "code" ? "unsupported_response_type" : "invalid_request", "Only response_type=code with PKCE S256 is supported.");
   }
   if (!isAllowedRedirectUri(p.redirect_uri)) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be loopback or https.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>redirect_uri must be loopback or https.</p>`));
   }
   const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
   if (await isRateLimited(env, ip)) {
@@ -23344,11 +23344,11 @@ async function handleAuthorizePost(request, env) {
   }
   let session;
   try {
-    session = await OrchynClient.login(env.ORCHYN_BASE_URL, p.email, p.password);
+    session = await NooticrClient.login(env.NOOTICR_BASE_URL, p.email, p.password);
   } catch (err) {
     const msg = err instanceof Error ? escapeHtml(err.message) : "Invalid credentials";
-    return htmlResponse(200, htmlPage("orchyn-mcp: sign in", `
-      <h2>Sign in with your orchyn account</h2>
+    return htmlResponse(200, htmlPage("nooticr-mcp: sign in", `
+      <h2>Sign in with your nooticr account</h2>
       <p style="color:red">Sign-in failed: ${msg}</p>
       <form method="post" action="/authorize">
         <input type="hidden" name="response_type" value="${escapeHtml(p.response_type)}" />
@@ -23373,9 +23373,9 @@ async function handleAuthorizePost(request, env) {
     mcpAuthCode,
     clientState: p.state,
     createdAt: Date.now(),
-    orchynAccessToken: session.accessToken,
-    orchynRefreshToken: session.refreshToken,
-    orchynUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : void 0
+    nooticrAccessToken: session.accessToken,
+    nooticrRefreshToken: session.refreshToken,
+    nooticrUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : void 0
   };
   await storePending(env, pending);
   const target = new URL(p.redirect_uri);
@@ -23410,9 +23410,9 @@ async function handleToken(request, env) {
   await deletePending(env, code);
   const accessToken = randomToken(32);
   await storeSession(env, accessToken, {
-    orchynAccessToken: pending.orchynAccessToken,
-    orchynRefreshToken: pending.orchynRefreshToken,
-    orchynUser: pending.orchynUser,
+    nooticrAccessToken: pending.nooticrAccessToken,
+    nooticrRefreshToken: pending.nooticrRefreshToken,
+    nooticrUser: pending.nooticrUser,
     clientId: pending.clientId,
     scopes: pending.scopes,
     expiresAt: Date.now() + TOKEN_TTL_SECONDS * 1e3

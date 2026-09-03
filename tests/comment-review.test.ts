@@ -22,7 +22,7 @@ import {
   postSlug,
   toEvidence,
 } from "../src/shared/comment-review.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 const URL_ = "https://www.youtube.com/watch?v=7wrjbQDxqkM";
 const RAW = [
@@ -33,7 +33,7 @@ const RAW = [
 
 async function connect() {
   const calls: Array<{ name: string; args: unknown }> = [];
-  const orchyn = {
+  const nooticr = {
     me: async () => ({ id: "u1" }),
     callTool: async (name: string, args: unknown) => {
       calls.push({ name, args });
@@ -50,9 +50,9 @@ async function connect() {
       }
       return { contentBlocks: [], structured: { summary: "gemini says things", mcpCredits: { cost: 6 } } };
     },
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => orchyn);
+  const server = createMcpServer(async () => nooticr);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   await client.listTools();

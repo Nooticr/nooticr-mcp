@@ -17,13 +17,13 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import { EVIDENCE_PLANS, NO_EVIDENCE_MODE } from "../src/shared/evidence.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 const FRAME = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQ==";
 
 async function connect() {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
-  const orchyn = {
+  const nooticr = {
     me: async () => ({ id: "u1" }),
     callTool: async (name: string, args: Record<string, unknown>) => {
       calls.push({ name, args });
@@ -53,9 +53,9 @@ async function connect() {
       // The AI path — the expensive one evidence mode must avoid.
       return { contentBlocks: [], structured: { analysis: { summary: "gemini says things" } } };
     },
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => orchyn);
+  const server = createMcpServer(async () => nooticr);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   await client.listTools();
@@ -120,7 +120,7 @@ describe("every AI tool can hand back its evidence", () => {
 
   it("analyze_post never starts a video analysis in evidence mode", async () => {
     let started = 0;
-    const orchyn = {
+    const nooticr = {
       me: async () => ({ id: "u1" }),
       startVideoAnalysis: async () => {
         started += 1;
@@ -133,9 +133,9 @@ describe("every AI tool can hand back its evidence", () => {
         }
         return { contentBlocks: [], structured: { available: true, transcript: "words" } };
       },
-    } as unknown as OrchynClient;
+    } as unknown as NooticrClient;
     const client = new Client({ name: "test", version: "1.0.0" });
-    const server = createMcpServer(async () => orchyn);
+    const server = createMcpServer(async () => nooticr);
     const [a, b] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(a), server.connect(b)]);
     await client.listTools();
@@ -224,7 +224,7 @@ describe("the visual tools return pixels", () => {
   });
 
   it("still returns frames when the post has no captions", async () => {
-    const orchyn = {
+    const nooticr = {
       me: async () => ({ id: "u1" }),
       callTool: async (name: string) => {
         if (name === "get_post_transcript") throw new Error("no caption track");
@@ -234,9 +234,9 @@ describe("the visual tools return pixels", () => {
         }
         return { contentBlocks: [], structured: {} };
       },
-    } as unknown as OrchynClient;
+    } as unknown as NooticrClient;
     const client = new Client({ name: "test", version: "1.0.0" });
-    const server = createMcpServer(async () => orchyn);
+    const server = createMcpServer(async () => nooticr);
     const [a, b] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(a), server.connect(b)]);
     await client.listTools();

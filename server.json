@@ -1,24 +1,24 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "com.orchyn/mcp",
-  "title": "Orchyn",
+  "name": "com.nooticr/mcp",
+  "title": "Nooticr",
   "description": "Social intelligence for 10 networks: read posts, creators and trends, monitor every comment that names your brand, then create from what you learn.",
   "version": "1.26.17",
-  "websiteUrl": "https://mcp.orchyn.com",
+  "websiteUrl": "https://mcp.nooticr.com",
   "repository": {
-    "url": "https://github.com/orchynX/mcp",
+    "url": "https://github.com/orchynX/nooticr-mcp",
     "source": "github"
   },
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://mcp.orchyn.com/mcp"
+      "url": "https://mcp.nooticr.com/mcp"
     }
   ],
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@orchyn/mcp",
+      "identifier": "@nooticr/mcp",
       "version": "1.26.17",
       "transport": {
         "type": "stdio"

@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "orchyn": {
+    "nooticr": {
       "command": "npx",
-      "args": ["-y", "@orchyn/mcp"],
+      "args": ["-y", "@nooticr/mcp"],
       "env": {
-        "ORCHYN_BASE_URL": "https://api.orchyn.com"
+        "NOOTICR_BASE_URL": "https://api.nooticr.com"
       }
     }
   }

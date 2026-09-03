@@ -1,8 +1,8 @@
 /**
- * Client refresh behavior of the shared orchyn client (used by the Node
+ * Client refresh behavior of the shared nooticr client (used by the Node
  * package and the Cloudflare Worker).
  *
- * The worker used to hold a static orchyn access token (15-minute TTL) with
+ * The worker used to hold a static nooticr access token (15-minute TTL) with
  * no renewal, so every login died a quarter of an hour in and forced a fresh
  * OAuth flow. These tests lock in the renewal: a 401 triggers the
  * TokenProvider's onUnauthorized once and retries with the refreshed token,
@@ -10,7 +10,7 @@
  * `makeClientForSession`.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { jwtExpiry, OrchynClient, OrchynError } from "../src/shared/orchyn.js";
+import { jwtExpiry, NooticrClient, NooticrError } from "../src/shared/nooticr.js";
 
 const BASE = "http://localhost:8080";
 
@@ -33,7 +33,7 @@ function fakeJwt(exp: number): string {
 }
 
 describe("jwtExpiry", () => {
-  it("decodes the exp claim from an orchyn JWT", () => {
+  it("decodes the exp claim from an nooticr JWT", () => {
     const exp = Math.floor(Date.now() / 1000) + 600;
     expect(jwtExpiry(fakeJwt(exp))).toBe(exp);
   });
@@ -44,7 +44,7 @@ describe("jwtExpiry", () => {
   });
 });
 
-describe("OrchynClient 401 refresh (request path)", () => {
+describe("NooticrClient 401 refresh (request path)", () => {
   it("retries once with the refreshed token when the API rejects with 401", async () => {
     const calls: string[] = [];
     let token = "stale-token";
@@ -58,7 +58,7 @@ describe("OrchynClient 401 refresh (request path)", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new OrchynClient(BASE, {
+    const client = new NooticrClient(BASE, {
       getAccessToken: async () => token,
       onUnauthorized: async () => {
         token = "fresh-token";
@@ -77,12 +77,12 @@ describe("OrchynClient 401 refresh (request path)", () => {
       "fetch",
       vi.fn(async () => jsonResponse(401, { error: "token expired" }))
     );
-    const client = new OrchynClient(BASE, { getAccessToken: async () => "stale-token" });
+    const client = new NooticrClient(BASE, { getAccessToken: async () => "stale-token" });
     await expect(client.me()).rejects.toMatchObject({ status: 401 });
   });
 });
 
-describe("OrchynClient 401 refresh (callTool path)", () => {
+describe("NooticrClient 401 refresh (callTool path)", () => {
   it("retries /mcp tools/call with the refreshed token", async () => {
     const calls: string[] = [];
     let token = "stale-token";
@@ -105,21 +105,21 @@ describe("OrchynClient 401 refresh (callTool path)", () => {
       })
     );
 
-    const client = new OrchynClient(BASE, {
+    const client = new NooticrClient(BASE, {
       getAccessToken: async () => token,
       onUnauthorized: async () => {
         token = "fresh-token";
         return true;
       },
     });
-    const result = await client.callTool("check_orchyn_credits", {});
+    const result = await client.callTool("check_nooticr_credits", {});
 
     expect(calls).toEqual(["Bearer stale-token", "Bearer fresh-token"]);
     expect(result.structured).toEqual({ balance: 42 });
   });
 });
 
-describe("OrchynClient.refreshSession", () => {
+describe("NooticrClient.refreshSession", () => {
   it("redeems a refresh token and returns the rotated session", async () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe(`${BASE}/auth/refresh`);
@@ -133,14 +133,14 @@ describe("OrchynClient.refreshSession", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const session = await OrchynClient.refreshSession(BASE, "rt-1");
+    const session = await NooticrClient.refreshSession(BASE, "rt-1");
     expect(session.accessToken).toBe("new-access");
     expect(session.refreshToken).toBe("rt-2");
   });
 
-  it("throws OrchynError when the refresh token is rejected", async () => {
+  it("throws NooticrError when the refresh token is rejected", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(401, { error: "invalid or expired refresh token" })));
-    await expect(OrchynClient.refreshSession(BASE, "dead-rt")).rejects.toMatchObject({
+    await expect(NooticrClient.refreshSession(BASE, "dead-rt")).rejects.toMatchObject({
       status: 401,
       message: "invalid or expired refresh token",
     });
@@ -148,6 +148,6 @@ describe("OrchynClient.refreshSession", () => {
 
   it("throws when the refresh succeeds without an access token", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { refreshToken: "rt-2" })));
-    await expect(OrchynClient.refreshSession(BASE, "rt-1")).rejects.toBeInstanceOf(OrchynError);
+    await expect(NooticrClient.refreshSession(BASE, "rt-1")).rejects.toBeInstanceOf(NooticrError);
   });
 });

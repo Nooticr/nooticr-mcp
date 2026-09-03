@@ -1,13 +1,13 @@
 /**
  * Token storage + resolution.
  *
- * Priority: env ORCHYN_ACCESS_TOKEN > credentials file (auto-refresh when
+ * Priority: env NOOTICR_ACCESS_TOKEN > credentials file (auto-refresh when
  * expired) > per-session tokens (HTTP OAuth mode only).
  */
 
 import fs from "node:fs";
 import path from "node:path";
-import { OrchynClient, OrchynError, OrchynSession, OrchynUser, TokenProvider } from "./orchyn.js";
+import { NooticrClient, NooticrError, NooticrSession, NooticrUser, TokenProvider } from "./nooticr.js";
 
 const REFRESH_BEFORE_EXPIRY_MS = 30_000;
 
@@ -16,13 +16,13 @@ export interface TokenStore {
   refreshToken?: string;
   expiresIn?: number;
   fetchedAt?: number;
-  user?: OrchynUser;
+  user?: NooticrUser;
 }
 
-export class OrchynAuthError extends Error {
+export class NooticrAuthError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "OrchynAuthError";
+    this.name = "NooticrAuthError";
   }
 }
 
@@ -35,14 +35,14 @@ export function isTokenExpired(store: TokenStore, nowMs: number = Date.now()): b
 export class AuthManager {
   baseUrl: string;
   credentialsFile: string;
-  private client: OrchynClient;
+  private client: NooticrClient;
   private lastRefreshToken?: string;
   private lastSource?: "env" | "file" | "session";
 
   constructor(baseUrl: string, credentialsFile: string) {
     this.baseUrl = baseUrl;
     this.credentialsFile = credentialsFile;
-    this.client = new OrchynClient(baseUrl, {
+    this.client = new NooticrClient(baseUrl, {
       getAccessToken: async () => undefined,
     });
   }
@@ -81,7 +81,7 @@ export class AuthManager {
    * per-session tokens issued via our own OAuth /token endpoint (HTTP mode).
    */
   async getAccessToken(session?: { accessToken?: string; refreshToken?: string }): Promise<string | undefined> {
-    const envToken = process.env.ORCHYN_ACCESS_TOKEN;
+    const envToken = process.env.NOOTICR_ACCESS_TOKEN;
     if (envToken) {
       this.lastSource = "env";
       this.lastRefreshToken = undefined;
@@ -104,7 +104,7 @@ export class AuthManager {
         // retried lazily on the next request.
         const msg = err instanceof Error ? err.message : String(err);
         process.stderr.write(
-          `[orchyn-mcp] warning: could not refresh stored token: ${msg}\n`
+          `[nooticr-mcp] warning: could not refresh stored token: ${msg}\n`
         );
       }
     }
@@ -140,7 +140,7 @@ export class AuthManager {
   private async refresh(refreshToken: string): Promise<string> {
     const session = await this.client.refresh(refreshToken);
     if (!session.accessToken) {
-      throw new OrchynError(500, "Refresh succeeded but returned no access token.");
+      throw new NooticrError(500, "Refresh succeeded but returned no access token.");
     }
     const store: TokenStore = {
       accessToken: session.accessToken,
@@ -158,7 +158,7 @@ export class AuthManager {
   /**
    * Persists a session obtained from login/OAuth completion.
    */
-  async persistSession(session: OrchynSession): Promise<void> {
+  async persistSession(session: NooticrSession): Promise<void> {
     const store: TokenStore = {
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
@@ -172,10 +172,10 @@ export class AuthManager {
   }
 
   ensureUnauthenticatedError(): never {
-    throw new OrchynAuthError(
-      "Not authenticated with orchyn. Run `npx orchyn-mcp login` to sign in " +
-        "with Google, or set the ORCHYN_ACCESS_TOKEN environment variable " +
-        "(see `npx orchyn-mcp --help`)."
+    throw new NooticrAuthError(
+      "Not authenticated with nooticr. Run `npx nooticr-mcp login` to sign in " +
+        "with Google, or set the NOOTICR_ACCESS_TOKEN environment variable " +
+        "(see `npx nooticr-mcp --help`)."
     );
   }
 }

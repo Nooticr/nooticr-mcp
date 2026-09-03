@@ -1,9 +1,9 @@
 /**
- * Shared shell for every page mcp.orchyn.com serves.
+ * Shared shell for every page mcp.nooticr.com serves.
  *
  * The MCP site is its own product surface — landing, legal and dashboard —
- * so it owns its own look rather than borrowing orchyn.com's. It stores no
- * data of its own: the dashboard reads everything from the orchyn API with
+ * so it owns its own look rather than borrowing nooticr.com's. It stores no
+ * data of its own: the dashboard reads everything from the nooticr API with
  * the user's bearer token.
  *
  * Everything is inlined (no CDN, no build step) because the Worker serves
@@ -11,22 +11,18 @@
  */
 
 export const BRAND = {
-  name: "Orchyn MCP",
+  name: "Nooticr MCP",
   tagline: "Social intelligence for AI agents",
-  supportEmail: "support@orchyn.com",
-  company: "Orchyn",
+  supportEmail: "support@nooticr.com",
+  company: "Nooticr",
 } as const;
 
-/** Orchyn starburst mark. */
-export function logoMark(size = 28): string {
+/** Nooticr twin-eyes mark. 334x200, so the width follows the height. */
+export function logoMark(height = 28): string {
+  const width = Math.round((height * 334) / 200);
   return (
-    `<svg class="logo-mark" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" aria-hidden="true">` +
-    `<g fill="currentColor" transform="translate(24 24)"><circle r="4.1"/>` +
-    `<g id="ray"><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g>` +
-    [45, 90, 135, 180, 225, 270, 315]
-      .map((d) => `<use href="#ray" transform="rotate(${d})"/>`)
-      .join("") +
-    `</g></svg>`
+    `<svg class="logo-mark" width="${width}" height="${height}" viewBox="0 0 334 200" fill="currentColor" aria-hidden="true">` +
+    `<path d="M167,25.764A100,100 0 1,1 167,174.236A100,100 0 0,0 186.29,150.537A69.5,69.5 0 1,0 186.29,49.463A100,100 0 0,0 167,25.764ZM298.427,73.934A69.5,69.5 0 0,0 215.393,33.037A48.5,48.5 0 1,0 298.427,73.934ZM232.5,66.5a18,18 0 1,1 36,0a18,18 0 1,1 -36,0ZM0,100a100,100 0 1,1 200,0a100,100 0 1,1 -200,0ZM30.5,100a69.5,69.5 0 1,0 139,0a69.5,69.5 0 1,0 -139,0ZM164.427,73.934A69.5,69.5 0 0,0 81.393,33.037A48.5,48.5 0 1,0 164.427,73.934ZM98.5,66.5a18,18 0 1,1 36,0a18,18 0 1,1 -36,0Z"/></svg>`
   );
 }
 
@@ -70,7 +66,7 @@ header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 8
   backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border-soft)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;height:62px;gap:16px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em;flex-shrink:0}
-.logo .logo-mark{color:var(--brand);flex-shrink:0}
+.logo .logo-mark{color:var(--fg);flex-shrink:0}
 .logo small{font-weight:600;letter-spacing:.1em;font-size:9px;color:var(--muted);
   text-transform:uppercase;border:1px solid var(--border);border-radius:5px;padding:2px 5px}
 nav.links{display:none;gap:26px;font-size:14px;color:var(--muted);font-weight:500}
@@ -181,7 +177,7 @@ export function page(opts: PageOpts, body: string): string {
     `<meta property="og:url" content="${esc(canonical)}">` +
     `<meta name="twitter:card" content="summary_large_image">` +
     `<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="#ff4d23" transform="translate(24 24)"><circle r="4.1"/><path d="M-2.85 -5.2 L0 -20.6 L2.85 -5.2 L1.15 1.1 L-1.15 1.1 Z"/></g></svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-22.77 -89.77 379.55 379.55"><style>path{fill:#14151a}@media(prefers-color-scheme:dark){path{fill:#f7f8f5}}</style><path d="M167,25.764A100,100 0 1,1 167,174.236A100,100 0 0,0 186.29,150.537A69.5,69.5 0 1,0 186.29,49.463A100,100 0 0,0 167,25.764ZM298.427,73.934A69.5,69.5 0 0,0 215.393,33.037A48.5,48.5 0 1,0 298.427,73.934ZM232.5,66.5a18,18 0 1,1 36,0a18,18 0 1,1 -36,0ZM0,100a100,100 0 1,1 200,0a100,100 0 1,1 -200,0ZM30.5,100a69.5,69.5 0 1,0 139,0a69.5,69.5 0 1,0 -139,0ZM164.427,73.934A69.5,69.5 0 0,0 81.393,33.037A48.5,48.5 0 1,0 164.427,73.934ZM98.5,66.5a18,18 0 1,1 36,0a18,18 0 1,1 -36,0Z"/></svg>`
     )}">` +
     `<style>${CSS}${opts.css ?? ""}</style></head><body>` +
     header(opts.publicUrl, opts.bareNav) +
@@ -205,7 +201,7 @@ function header(publicUrl: string, bare?: boolean): string {
       `</nav>`;
   return (
     `<header><div class="wrap">` +
-    `<a class="logo" href="/">${logoMark(26)}<span>Orchyn</span><small>MCP</small></a>` +
+    `<a class="logo" href="/">${logoMark(26)}<span>Nooticr</span><small>MCP</small></a>` +
     links +
     `<div class="head-cta">` +
     `<a class="btn btn-ghost btn-sm" href="/dashboard">Dashboard</a>` +
@@ -218,10 +214,10 @@ function footer(publicUrl: string): string {
   const year = new Date().getUTCFullYear();
   return (
     `<footer><div class="wrap"><div class="cols">` +
-    `<div><a class="logo" href="/" style="margin-bottom:12px">${logoMark(24)}<span>Orchyn</span><small>MCP</small></a>` +
+    `<div><a class="logo" href="/" style="margin-bottom:12px">${logoMark(24)}<span>Nooticr</span><small>MCP</small></a>` +
     `<p class="muted" style="margin:0;max-width:22rem;font-size:13.5px">${esc(BRAND.tagline)}. An MCP server that lets AI assistants read and analyse public social posts.</p></div>` +
     `<div><h4>Product</h4><a href="/#tools">Tools</a><a href="/#pricing">Pricing</a><a href="/dashboard">Dashboard</a><a href="/health">Status</a></div>` +
-    `<div><h4>Developers</h4><a href="/documentation">Documentation</a><a href="/#install">Install</a><a href="https://www.npmjs.com/package/@orchyn/mcp" rel="noopener">npm package</a><a href="https://github.com/orchynX/mcp" rel="noopener">GitHub</a><a href="/.well-known/oauth-authorization-server">OAuth metadata</a></div>` +
+    `<div><h4>Developers</h4><a href="/documentation">Documentation</a><a href="/#install">Install</a><a href="https://www.npmjs.com/package/@nooticr/mcp" rel="noopener">npm package</a><a href="https://github.com/orchynX/nooticr-mcp" rel="noopener">GitHub</a><a href="/.well-known/oauth-authorization-server">OAuth metadata</a></div>` +
     `<div><h4>Legal</h4><a href="/terms">Terms of Use</a><a href="/privacy">Privacy Policy</a><a href="mailto:${esc(BRAND.supportEmail)}">Contact</a></div>` +
     `</div><div class="legal-bar"><span>© ${year} ${esc(BRAND.company)}. All rights reserved.</span>` +
     `<span class="faint">${esc(publicUrl.replace(/^https?:\/\//, ""))}</span></div></div></footer>`

@@ -13,7 +13,7 @@
  * `Last-Event-ID` to receive everything it missed. The SDK implements the
  * protocol side of that, but only when it is given an `eventStore` — without
  * one, resumption is silently inert and a dropped stream means a dropped
- * result. With orchyn's 20–70s tool calls, a deploy landing mid-call would
+ * result. With nooticr's 20–70s tool calls, a deploy landing mid-call would
  * otherwise surface to the user as a hard failure.
  *
  * Events live in the session's own DO SQLite storage, so they survive both DO

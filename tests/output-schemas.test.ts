@@ -64,7 +64,7 @@ describe("output schemas", () => {
         {
           id: "1", platform: "tiktok", contentType: "video", duration: 57,
           externalUrl: "https://www.tiktok.com/@a/video/1",
-          videoUrl: "https://api.orchyn.com/media/files/a.mp4",
+          videoUrl: "https://api.nooticr.com/media/files/a.mp4",
           views: 4963693, likes: 438800, slideCount: null,
         },
         {

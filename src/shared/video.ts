@@ -3,7 +3,7 @@
  * the analysis is done (or fails).
  */
 
-import { OrchynClient, JobStatus, VideoJob, OrchynError } from "./orchyn.js";
+import { NooticrClient, JobStatus, VideoJob, NooticrError } from "./nooticr.js";
 
 export const POLL_INTERVAL_MS = 2000;
 export const POLL_TIMEOUT_MS = 300_000;
@@ -90,7 +90,7 @@ export interface PollOptions {
  * Polls a job until state is "done" or "error".
  */
 export async function pollUntilDone(
-  client: OrchynClient,
+  client: NooticrClient,
   jobId: string,
   opts: PollOptions = {}
 ): Promise<JobStatus> {
@@ -134,18 +134,18 @@ export interface AnalysisResult {
   /**
    * Inline thumbnail images (`_inlineImages`) from the job response — emitted
    * as MCP `image` content blocks so Claude web/app renders the post
-   * thumbnail in chat. Each carries a permanent orchyn public `url`.
+   * thumbnail in chat. Each carries a permanent nooticr public `url`.
    */
   inlineImages?: Array<{ url?: string; data?: string; mimeType?: string }>;
 }
 
 /**
  * Full tool workflow: start the analysis, poll until done, return a
- * JSON-serializable result. Throws OrchynError on API-level failures
+ * JSON-serializable result. Throws NooticrError on API-level failures
  * (e.g. 402 paywall).
  */
 export async function runVideoAnalysis(
-  client: OrchynClient,
+  client: NooticrClient,
   url: string,
   opts: { appId?: number } & PollOptions = {}
 ): Promise<AnalysisResult> {
@@ -184,7 +184,7 @@ export async function runVideoAnalysis(
   return result;
 }
 
-export function formatPaywallError(err: OrchynError): string {
+export function formatPaywallError(err: NooticrError): string {
   const p = err.paywall;
   const parts: string[] = [];
   if (p?.reason) parts.push(`reason: ${p.reason}`);
@@ -196,8 +196,8 @@ export function formatPaywallError(err: OrchynError): string {
   if (p?.cost !== undefined) parts.push(`cost: ${p.cost}`);
   const detail = parts.length > 0 ? ` (${parts.join(", ")})` : "";
   return (
-    `Your orchyn account has no credits left for this analysis${detail}. ` +
-    `Top up or check your usage in the orchyn dashboard, then try again. ` +
+    `Your nooticr account has no credits left for this analysis${detail}. ` +
+    `Top up or check your usage in the nooticr dashboard, then try again. ` +
     `Note: the first analysis is covered by the free grant.`
   );
 }

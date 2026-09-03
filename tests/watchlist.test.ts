@@ -9,10 +9,10 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import { MemoryWatchStore, WATCHLIST_URI } from "../src/shared/watchlist.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 /** Records every proxied tool call so a test can assert what was fetched. */
-function fakeOrchyn(posts: () => Array<Record<string, unknown>>) {
+function fakeNooticr(posts: () => Array<Record<string, unknown>>) {
   const calls: string[] = [];
   const client = {
     me: async () => ({ id: "user-1", email: "a@b.c" }),
@@ -20,13 +20,13 @@ function fakeOrchyn(posts: () => Array<Record<string, unknown>>) {
       calls.push(name);
       return { contentBlocks: [], structured: { posts: posts() } };
     },
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
   return { client, calls };
 }
 
-async function connect(orchyn: OrchynClient, store = new MemoryWatchStore()) {
+async function connect(nooticr: NooticrClient, store = new MemoryWatchStore()) {
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => orchyn, { watchStore: store });
+  const server = createMcpServer(async () => nooticr, { watchStore: store });
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   return client;
@@ -41,8 +41,8 @@ const post = (id: string, views = 10) => ({
 
 describe("watchlist", () => {
   it("keeps a creator, and normalises the handle", async () => {
-    const { client: orchyn } = fakeOrchyn(() => []);
-    const client = await connect(orchyn);
+    const { client: nooticr } = fakeNooticr(() => []);
+    const client = await connect(nooticr);
     await client.callTool({ name: "watch_creator", arguments: { username: "@IRUY", note: "hooks" } });
     const res = await client.callTool({ name: "watch_creator", arguments: { username: "iruy" } });
     const out = res.structuredContent as { watching: number; entries: Array<Record<string, unknown>> };
@@ -54,8 +54,8 @@ describe("watchlist", () => {
   });
 
   it("reads the list without fetching anything", async () => {
-    const { client: orchyn, calls } = fakeOrchyn(() => [post("1")]);
-    const client = await connect(orchyn);
+    const { client: nooticr, calls } = fakeNooticr(() => [post("1")]);
+    const client = await connect(nooticr);
     await client.callTool({ name: "watch_creator", arguments: { username: "iruy" } });
     const res = await client.readResource({ uri: WATCHLIST_URI });
     const body = JSON.parse(res.contents[0].text as string);
@@ -66,8 +66,8 @@ describe("watchlist", () => {
   });
 
   it("records a baseline on the first catch-up and claims nothing is new", async () => {
-    const { client: orchyn } = fakeOrchyn(() => [post("1"), post("2")]);
-    const client = await connect(orchyn);
+    const { client: nooticr } = fakeNooticr(() => [post("1"), post("2")]);
+    const client = await connect(nooticr);
     await client.callTool({ name: "watch_creator", arguments: { username: "iruy" } });
     const res = await client.callTool({ name: "catch_up_watchlist", arguments: {} });
     const out = res.structuredContent as { creators: Array<Record<string, unknown>> };
@@ -79,8 +79,8 @@ describe("watchlist", () => {
 
   it("reports only what appeared since the last catch-up", async () => {
     let feed = [post("1"), post("2")];
-    const { client: orchyn } = fakeOrchyn(() => feed);
-    const client = await connect(orchyn);
+    const { client: nooticr } = fakeNooticr(() => feed);
+    const client = await connect(nooticr);
     await client.callTool({ name: "watch_creator", arguments: { username: "iruy" } });
     await client.callTool({ name: "catch_up_watchlist", arguments: {} });
 
@@ -97,8 +97,8 @@ describe("watchlist", () => {
 
   it("keeps the baseline when a creator is re-watched", async () => {
     let feed = [post("1")];
-    const { client: orchyn } = fakeOrchyn(() => feed);
-    const client = await connect(orchyn);
+    const { client: nooticr } = fakeNooticr(() => feed);
+    const client = await connect(nooticr);
     await client.callTool({ name: "watch_creator", arguments: { username: "iruy" } });
     await client.callTool({ name: "catch_up_watchlist", arguments: {} });
     // Re-adding someone already watched must not reset "since I last looked"
@@ -112,14 +112,14 @@ describe("watchlist", () => {
   it("survives one creator failing", async () => {
     const store = new MemoryWatchStore();
     let fail = false;
-    const orchyn = {
+    const nooticr = {
       me: async () => ({ id: "user-1" }),
       callTool: async () => {
         if (fail) throw new Error("upstream is down");
         return { contentBlocks: [], structured: { posts: [post("1")] } };
       },
-    } as unknown as OrchynClient;
-    const client = await connect(orchyn, store);
+    } as unknown as NooticrClient;
+    const client = await connect(nooticr, store);
     await client.callTool({ name: "watch_creator", arguments: { username: "a" } });
     await client.callTool({ name: "watch_creator", arguments: { username: "b" } });
     fail = true;
@@ -132,8 +132,8 @@ describe("watchlist", () => {
   });
 
   it("removes a creator, and says so when there was nothing to remove", async () => {
-    const { client: orchyn } = fakeOrchyn(() => []);
-    const client = await connect(orchyn);
+    const { client: nooticr } = fakeNooticr(() => []);
+    const client = await connect(nooticr);
     await client.callTool({ name: "watch_creator", arguments: { username: "iruy" } });
     const gone = await client.callTool({ name: "unwatch_creator", arguments: { username: "@iruy" } });
     expect((gone.structuredContent as { removed: boolean; watching: number }).removed).toBe(true);
@@ -143,8 +143,8 @@ describe("watchlist", () => {
   });
 
   it("says plainly when the list is empty rather than erroring", async () => {
-    const { client: orchyn, calls } = fakeOrchyn(() => []);
-    const client = await connect(orchyn);
+    const { client: nooticr, calls } = fakeNooticr(() => []);
+    const client = await connect(nooticr);
     const res = await client.callTool({ name: "catch_up_watchlist", arguments: {} });
     expect(res.isError).toBeFalsy();
     expect((res.structuredContent as { checked: number }).checked).toBe(0);

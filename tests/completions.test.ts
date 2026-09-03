@@ -15,14 +15,14 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import { PROMPT_PLATFORMS } from "../src/shared/prompts.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 async function connect() {
-  const orchyn = {
+  const nooticr = {
     callTool: async () => ({ contentBlocks: [], structured: {} }),
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => orchyn);
+  const server = createMcpServer(async () => nooticr);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   return client;

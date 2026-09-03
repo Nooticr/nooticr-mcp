@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-/** Browser E2E for the mcp.orchyn.com pages. Unit tests stay on vitest. */
+/** Browser E2E for the mcp.nooticr.com pages. Unit tests stay on vitest. */
 export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: "**/*.e2e.ts",

@@ -1,7 +1,7 @@
 /**
- * The orchyn MCP tool surface, registered once and shared by the Node
+ * The nooticr MCP tool surface, registered once and shared by the Node
  * package (stdio/HTTP) and the Cloudflare Worker. Both runtimes supply a
- * `makeClient` factory that resolves the caller's orchyn identity (credential
+ * `makeClient` factory that resolves the caller's nooticr identity (credential
  * file for the CLI, KV session for the worker) — the tool bodies, schemas and
  * result formatting live here and nowhere else.
  */
@@ -9,9 +9,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { z } from "zod";
-import { OrchynClient, OrchynError, type McpProxyResult } from "./orchyn.js";
+import { NooticrClient, NooticrError, type McpProxyResult } from "./nooticr.js";
 import { formatPaywallError, runVideoAnalysis, validatePostUrl } from "./video.js";
-import { ORCHYN_UI_TEMPLATE } from "./ui-template.js";
+import { NOOTICR_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { createTaskStore, registerSlowTool } from "./tasks.js";
@@ -61,7 +61,7 @@ const APPS_SDK_MIME_TYPE = "text/html+skybridge";
  */
 function uiResource(tool: string): string {
  const slug = tool.replace(/[^a-z0-9_]/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
- return `ui://orchyn/${slug || "view"}`;
+ return `ui://nooticr/${slug || "view"}`;
 }
 
 /**
@@ -73,7 +73,7 @@ function uiResource(tool: string): string {
  * the URI, named the tool. The server is the one party that always knows.
  */
 function templateFor(tool: string): string {
- return ORCHYN_UI_TEMPLATE.replace("__ORCHYN_TOOL__", tool);
+ return NOOTICR_UI_TEMPLATE.replace("__NOOTICR_TOOL__", tool);
 }
 
 /**
@@ -201,9 +201,9 @@ const RAW_URL_KEYS = new Set([
  * silently misses that and double-wraps.
  */
 function isOwnMediaUrl(url: string): boolean {
- // `/media/files` is orchyn's own re-hosted media — Weibo video arrives that
+ // `/media/files` is nooticr's own re-hosted media — Weibo video arrives that
  // way. It was missing here, so whether it got wrapped a second time depended
- // on the host string matching ORCHYN_BASE_URL exactly: "localhost:8080" and
+ // on the host string matching NOOTICR_BASE_URL exactly: "localhost:8080" and
  // "127.0.0.1:8080" are the same server and different strings, and the proxy
  // then refused its own URL as an SSRF attempt. Recognising the path shape is
  // sturdier than trusting two spellings of a host to agree.
@@ -215,7 +215,7 @@ function isOwnMediaUrl(url: string): boolean {
 }
 
 /**
- * Rewrite external image URLs to go through the orchyn proxy so they
+ * Rewrite external image URLs to go through the nooticr proxy so they
  * work inside ChatGPT's sandboxed iframe (CORS + CSP restrictions).
  */
 function proxyImageUrl(url: string): string {
@@ -224,7 +224,7 @@ function proxyImageUrl(url: string): string {
   const u = new URL(url);
   // Only proxy external HTTP(S) URLs — skip our own proxy and data URIs
   if (u.protocol === "http:" || u.protocol === "https:") {
-   const serverUrl = process.env.ORCHYN_API_URL || process.env.ORCHYN_BASE_URL || "";
+   const serverUrl = process.env.NOOTICR_API_URL || process.env.NOOTICR_BASE_URL || "";
    if (serverUrl && !url.startsWith(serverUrl) && !isOwnMediaUrl(url)) {
     return `${serverUrl.replace(/\/+$/, "")}/media/proxy?url=${encodeURIComponent(url)}`;
    }
@@ -302,12 +302,12 @@ function proxyImageUrlsInHtml(html: string): string {
 /**
  * An expired session, however the API happens to phrase it.
  *
- * It arrives two ways: a 401 from the API, and "No orchyn access token
+ * It arrives two ways: a 401 from the API, and "No nooticr access token
  * available." raised locally when there is nothing left to send. Both mean the
  * same thing to the person reading it.
  */
 export function isAuthFailure(err: unknown): boolean {
- return err instanceof OrchynError && (err.status === 401 || /access token/i.test(err.message));
+ return err instanceof NooticrError && (err.status === 401 || /access token/i.test(err.message));
 }
 
 function toolError(prefix: string, err: unknown): {
@@ -315,17 +315,17 @@ function toolError(prefix: string, err: unknown): {
  isError: true;
 } {
  const msg = err instanceof Error ? err.message : String(err);
- // "orchyn API error (401) from /mcp" tells the reader nothing they can act
- // on, and neither does "No orchyn access token available." Say what happened
+ // "nooticr API error (401) from /mcp" tells the reader nothing they can act
+ // on, and neither does "No nooticr access token available." Say what happened
  // and what fixes it — including that they will not have to ask twice, which
- // is only true now that orchyn_login resumes the interrupted call.
+ // is only true now that nooticr_login resumes the interrupted call.
  if (isAuthFailure(err)) {
   return {
    content: [{
     type: "text",
     text:
-     `${prefix}: your orchyn session has expired — you need to sign in again. ` +
-     `Call orchyn_login to get a sign-in link. This call will be re-run for you ` +
+     `${prefix}: your nooticr session has expired — you need to sign in again. ` +
+     `Call nooticr_login to get a sign-in link. This call will be re-run for you ` +
      `as soon as you are back, so there is no need to ask twice. (${msg})`,
    }],
    isError: true,
@@ -461,7 +461,7 @@ function buildAnalysisHtmlCard(
 async function runEvidenceMode(
  tool: string,
  args: Record<string, unknown>,
- client: OrchynClient,
+ client: NooticrClient,
 ): Promise<{ content: ToolContent[]; structuredContent: Record<string, unknown> }> {
  const plan = EVIDENCE_PLANS[tool];
  if (!plan) throw new Error(`${tool} has no evidence mode`);
@@ -507,7 +507,7 @@ async function runEvidenceMode(
 }
 
 export function createMcpServer(
- rawMakeClient: (ctx: MakeClientContext) => Promise<OrchynClient> | OrchynClient,
+ rawMakeClient: (ctx: MakeClientContext) => Promise<NooticrClient> | NooticrClient,
  // Where the watchlist is kept. Defaults to memory, which is right for a test
  // and wrong for a session — each transport passes the store that outlives it.
  opts?: {
@@ -524,7 +524,7 @@ export function createMcpServer(
   *
   * Signing in used to end with a link and nothing else: the call that provoked
   * it was gone, and the user had to ask for the same thing a second time.
-  * Recorded here so orchyn_login can finish the job instead.
+  * Recorded here so nooticr_login can finish the job instead.
   */
  let pendingAfterLogin: { name: string; args: Record<string, unknown> } | null = null;
 
@@ -534,7 +534,7 @@ export function createMcpServer(
   * twenty-four handlers. A fresh client is built per request on both
   * transports, so this never leaks between calls.
   */
- const makeClient = async (ctx: MakeClientContext): Promise<OrchynClient> => {
+ const makeClient = async (ctx: MakeClientContext): Promise<NooticrClient> => {
   const client = await rawMakeClient(ctx);
   const call = client.callTool.bind(client);
   client.callTool = async (name: string, args: Record<string, unknown>) => {
@@ -548,7 +548,7 @@ export function createMcpServer(
   return client;
  };
  const server = new McpServer(
-  { name: "orchyn-mcp", version: MCP_SERVER_VERSION },
+  { name: "nooticr-mcp", version: MCP_SERVER_VERSION },
   {
    // Per-server, so per session on both transports. See tasks.ts.
    taskStore: opts?.taskStore ?? createTaskStore(),
@@ -592,11 +592,11 @@ export function createMcpServer(
   "repurpose_post",
   "niche_report",
   "find_hook_pattern",
-  "check_orchyn_credits",
-  "buy_orchyn_credits",
+  "check_nooticr_credits",
+  "buy_nooticr_credits",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
-  // state tools have nothing to show and stay view-less, like orchyn_login.
+  // state tools have nothing to show and stay view-less, like nooticr_login.
   "catch_up_watchlist",
   "search_mentions",
   "show_comment_review",
@@ -609,7 +609,7 @@ export function createMcpServer(
    .split("_")
    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
    .join(" ");
-  return `Orchyn ${readable || "View"}`;
+  return `Nooticr ${readable || "View"}`;
  }
 
  // Where the card's outbound "View on <platform>" links go. ChatGPT blocks a
@@ -684,7 +684,7 @@ export function createMcpServer(
   "https://*.licdn.com",
   "https://*.linkedin.com",
  ];
- const apiUrl = process.env.ORCHYN_API_URL || process.env.ORCHYN_BASE_URL;
+ const apiUrl = process.env.NOOTICR_API_URL || process.env.NOOTICR_BASE_URL;
  if (apiUrl && apiUrl.trim()) {
   domains.push(apiUrl.trim().replace(/\/+$/, ""));
  }
@@ -773,9 +773,9 @@ export function createMcpServer(
  }
 
  // Legacy alias. Before per-tool URIs (0159155) every view lived at
- // ui://orchyn/view, and ChatGPT caches a connector's template pointer at the
+ // ui://nooticr/view, and ChatGPT caches a connector's template pointer at the
  // time the connector is created and never refreshes it — so a connector made
- // before that change still asks for ui://orchyn/view and gets a 404 from its
+ // before that change still asks for ui://nooticr/view and gets a 404 from its
  // own widget backend ("Failed to fetch template"). Claude re-reads
  // ui/resourceUri from tools/list each time, which is why only ChatGPT saw it.
  //
@@ -789,9 +789,9 @@ export function createMcpServer(
  // it: it re-reads ui/resourceUri from tools/list every call and so always uses
  // the per-tool URI. Only a stale ChatGPT connector arrives here, so the
  // skybridge entry leads.
- for (const legacyUri of ["ui://orchyn/view", "ui://orchyn/view.html"] as const) {
+ for (const legacyUri of ["ui://nooticr/view", "ui://nooticr/view.html"] as const) {
   server.registerResource(
-   legacyUri.endsWith(".html") ? "Orchyn View (legacy, Apps SDK)" : "Orchyn View (legacy)",
+   legacyUri.endsWith(".html") ? "Nooticr View (legacy, Apps SDK)" : "Nooticr View (legacy)",
    legacyUri,
    { mimeType: APPS_SDK_MIME_TYPE },
    async () => {
@@ -829,7 +829,7 @@ export function createMcpServer(
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -882,7 +882,7 @@ export function createMcpServer(
      structuredContent: proxied,
     };
    } catch (err) {
-    if (err instanceof OrchynError && err.paywall) {
+    if (err instanceof NooticrError && err.paywall) {
      return {
       content: [{ type: "text", text: `Analysis blocked: ${formatPaywallError(err)}\n\nHTTP ${err.status}: ${err.message}` }],
       isError: true,
@@ -900,7 +900,7 @@ export function createMcpServer(
    description:
     "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili URL: " +
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
-    "Returns an inline thumbnail image. Consumes 1 orchyn credit (20 free credits included for new users)." +
+    "Returns an inline thumbnail image. Consumes 1 nooticr credit (20 free credits included for new users)." +
     "Use when you need the post's facts and media and nothing more; if you want it interpreted, use analyze_post_fast instead.",
    _meta: {
     ui: { resourceUri: uiResource("get_social_media") },
@@ -936,7 +936,7 @@ export function createMcpServer(
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. ' +
     "Use to find individual posts to look at; use niche_report when you want the pattern across " +
-    "them rather than the posts themselves. Consumes 2 orchyn credits (20 free credits included for new users).",
+    "them rather than the posts themselves. Consumes 2 nooticr credits (20 free credits included for new users).",
    _meta: {
     ui: { resourceUri: uiResource("discover_social_posts") },
     "ui/resourceUri": uiResource("discover_social_posts"),
@@ -979,7 +979,7 @@ export function createMcpServer(
    description:
     "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn (LinkedIn uses the profile public_id from the URL, e.g. 'williamhgates'). " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
-    "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits (20 free credits included for new users)." +
+    "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 nooticr credits (20 free credits included for new users)." +
     "Use to scan one creator's output; use find_hook_pattern when you want their formula extracted rather than the raw list.",
    _meta: {
     ui: { resourceUri: uiResource("get_user_posts") },
@@ -1039,7 +1039,7 @@ export function createMcpServer(
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1082,7 +1082,7 @@ export function createMcpServer(
    title: "Get Post Comments",
    description:
     "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X/Twitter, Weibo, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
-    "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits (20 free credits included for new users)." +
+    "when available — audience sentiment/audience-signal analysis. Consumes 2 nooticr credits (20 free credits included for new users)." +
     "Use when you want to read what people actually wrote; use analyze_comments when you want it synthesised into what to do next.",
    _meta: {
     ui: { resourceUri: uiResource("get_post_comments") },
@@ -1119,7 +1119,7 @@ export function createMcpServer(
    title: "Search Creators",
    description:
     "Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, " +
-    "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 orchyn credits (20 free credits included for new users)." +
+    "signature, verified status. Use to find influencers to vet or analyze. Consumes 2 nooticr credits (20 free credits included for new users)." +
     "Use when you know the niche but not the names; use get_similar_creators when you already have one creator that works.",
    _meta: {
     ui: { resourceUri: uiResource("search_creators") },
@@ -1162,7 +1162,7 @@ export function createMcpServer(
    title: "Get Similar Creators",
    description:
     "Find lookalike creators for a given handle — TikTok similar-user recommendations or Instagram " +
-    "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 orchyn credits (20 free credits included for new users)." +
+    "similar users. Useful for scaling: 'if this creator works, here are more like them'. Consumes 2 nooticr credits (20 free credits included for new users)." +
     "Use when one creator already fits and you want more of the same.",
    _meta: {
     ui: { resourceUri: uiResource("get_similar_creators") },
@@ -1199,7 +1199,7 @@ export function createMcpServer(
    title: "Discover Sounds",
    description:
     "Discover trending sounds/music for a keyword on TikTok or Instagram — the sound is a huge ranking " +
-    "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 orchyn credits (20 free credits included for new users)." +
+    "signal for TikTok virality. Returns title, artist, duration, play/cover URLs. Consumes 2 nooticr credits (20 free credits included for new users)." +
     "Use when picking audio for a post, or to spot a sound before it peaks.",
    _meta: {
     ui: { resourceUri: uiResource("discover_sounds") },
@@ -1239,7 +1239,7 @@ export function createMcpServer(
     "Get the words actually spoken in a TikTok or YouTube post by reading its caption track. " +
     "Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA " +
     "verbatim rather than an interpretation. Returns plain text with a word count, or " +
-    "available:false with a reason when the post has no captions. Consumes 1 orchyn credit." +
+    "available:false with a reason when the post has no captions. Consumes 1 nooticr credit." +
     "Use before any analysis when the exact wording matters.",
    _meta: {
     ui: { resourceUri: uiResource("get_post_transcript") },
@@ -1275,7 +1275,7 @@ export function createMcpServer(
     "Read a post's comment section and return what the audience is actually saying: sentiment, " +
     "recurring themes, the questions they ask, objections raised, content they request, the " +
     "language they use, and follow-up video ideas grounded in it. " +
-    "mode='ai' (default) has orchyn's model do the reading and costs 6 credits. " +
+    "mode='ai' (default) has nooticr's model do the reading and costs 6 credits. " +
     "mode='evidence' returns the comments unanalysed for 2 credits and asks YOU to classify " +
     "them — cheaper, and you can steer it, sort it and follow up on any single comment. " +
     "Prefer evidence when the conversation will continue; prefer ai for a one-shot answer. " +
@@ -1297,7 +1297,7 @@ export function createMcpServer(
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis for 6 credits. " +
+       "'ai' (default) returns nooticr's own analysis for 6 credits. " +
         "'evidence' returns the raw comments for 2 credits and leaves the analysis to you.",
       ),
     })
@@ -1362,8 +1362,8 @@ export function createMcpServer(
     "rather than an analysis of them. A carousel or slideshow returns its own images unchanged. " +
     "Pair it with get_post_transcript to reconstruct both what happens on screen and what is " +
     "said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. " +
-    "Consumes 2 orchyn credits. Use when you want to see the visuals; use analyze_post when you " +
-    "want orchyn's own opinion of them.",
+    "Consumes 2 nooticr credits. Use when you want to see the visuals; use analyze_post when you " +
+    "want nooticr's own opinion of them.",
    _meta: {
     ui: { resourceUri: uiResource("get_post_frames") },
     "ui/resourceUri": uiResource("get_post_frames"),
@@ -1529,7 +1529,7 @@ export function createMcpServer(
     "Compare 2-5 posts side by side and explain the performance gap: which won, what actually " +
     "differed (hook, format, length, caption, hashtags), shared strengths, testable lessons and " +
     "one concrete next experiment. Use for 'why did this one work and that one not'. " +
-    "Consumes 8 orchyn credits." +
+    "Consumes 8 nooticr credits." +
     "Use when two posts differ in performance and you need to know why.",
    _meta: {
     ui: { resourceUri: uiResource("compare_posts") },
@@ -1545,7 +1545,7 @@ export function createMcpServer(
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1579,7 +1579,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    description:
     "Trending TikTok hashtags from the Creative Center trend board, with post counts, view counts " +
     "and whether each is rising, cooling or steady. Filter by country and time window. Use to find " +
-    "what to tag, or to spot a wave early. Consumes 2 orchyn credits." +
+    "what to tag, or to spot a wave early. Consumes 2 nooticr credits." +
     "Use to find what to tag, or to spot a wave early.",
    _meta: {
     ui: { resourceUri: uiResource("discover_hashtags") },
@@ -1616,7 +1616,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    description:
     "Same analysis as analyze_post but built from the post's transcript, caption and stats " +
     "instead of its video frames — a third of the price. Weaker on visual style, just as strong " +
-    "on hook, script structure, CTA and audience. Consumes 2 orchyn credits." +
+    "on hook, script structure, CTA and audience. Consumes 2 nooticr credits." +
     "Use this by default; reach for analyze_post when the visuals are the point.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_post_fast") },
@@ -1633,7 +1633,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1668,7 +1668,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    description:
     "Write alternative opening hooks — the first line said or shown on screen. Give a url to riff " +
     "on an existing post (it reads the real transcript), or a topic to start from nothing. " +
-    "Consumes 2 orchyn credits." +
+    "Consumes 2 nooticr credits." +
     "Use when you know the subject and need openings to choose between.",
    _meta: {
     ui: { resourceUri: uiResource("write_hooks") },
@@ -1685,7 +1685,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1723,7 +1723,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    description:
     "Turn a post that worked into variants a creator could film next — same mechanism, different " +
     "execution. Each variant has a hook, the angle that changes, ordered shot beats and a CTA. " +
-    "Consumes 3 orchyn credits." +
+    "Consumes 3 nooticr credits." +
     "Use after analysing a post to move from why it worked to what to make.",
    _meta: {
     ui: { resourceUri: uiResource("create_variants") },
@@ -1740,7 +1740,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1776,7 +1776,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    title: "Score Draft",
    description:
     "Review your own draft BEFORE you film or post it: hook strength, clarity and payoff scores, " +
-    "concrete fixes, a rewritten hook and a tightened draft. Consumes 2 orchyn credits." +
+    "concrete fixes, a rewritten hook and a tightened draft. Consumes 2 nooticr credits." +
     "Use before filming, while changing it is still cheap.",
    _meta: {
     ui: { resourceUri: uiResource("score_draft") },
@@ -1810,7 +1810,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    title: "Repurpose Post",
    description:
     "Rewrite one post for other surfaces — X thread, LinkedIn post, carousel slides, YouTube " +
-    "title/description, newsletter. Consumes 2 orchyn credits." +
+    "title/description, newsletter. Consumes 2 nooticr credits." +
     "Use when a post already worked and you want it on other surfaces.",
    _meta: {
     ui: { resourceUri: uiResource("repurpose_post") },
@@ -1827,7 +1827,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1862,7 +1862,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    title: "Niche Report",
    description:
     "What is working in a niche right now: dominant formats, hook patterns, what over- and " +
-    "underperforms, gaps nobody is filling, and what to make next. Consumes 3 orchyn credits." +
+    "underperforms, gaps nobody is filling, and what to make next. Consumes 3 nooticr credits." +
     "Use when entering a niche or deciding what to make next, rather than judging one post.",
    _meta: {
     ui: { resourceUri: uiResource("niche_report") },
@@ -1879,7 +1879,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — at the price of the fetch — and leaves the reasoning to you.",
       ),
      niche: z.string().describe("Niche or topic, e.g. 'home fitness'."),
@@ -1914,7 +1914,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    title: "Find Hook Pattern",
    description:
     "Extract a creator's repeatable formula from their captions and performance, with " +
-    "fill-in-the-blank templates another creator could adapt. Consumes 2 orchyn credits." +
+    "fill-in-the-blank templates another creator could adapt. Consumes 2 nooticr credits." +
     "Use to reverse-engineer a creator you want to learn from.",
    _meta: {
     ui: { resourceUri: uiResource("find_hook_pattern") },
@@ -1931,7 +1931,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),
@@ -1973,7 +1973,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
     "post they were left on, each with an id you can pass to another tool, how many times it " +
     "names the term, and whether the post itself is about the brand or merely where the audience " +
     "raised it. Use `since` to monitor a past window and `offset` to page through. " +
-    "Costs 2 orchyn credits per platform searched, except Xiaohongshu at 5. " +
+    "Costs 2 nooticr credits per platform searched, except Xiaohongshu at 5. " +
     "Use to see what is said about a brand; discover_social_posts is for one platform's posts.",
    _meta: {
     ui: { resourceUri: uiResource("search_mentions") },
@@ -1984,7 +1984,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    outputSchema: OUTPUT_SCHEMAS.search_mentions,
    inputSchema: z
     .object({
-     term: z.string().describe("Brand, product or person to look for, e.g. 'orchyn'."),
+     term: z.string().describe("Brand, product or person to look for, e.g. 'nooticr'."),
      platforms: z
       .array(z.enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo"]))
       .optional()
@@ -2048,70 +2048,70 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
  );
 
  server.registerTool(
-  "check_orchyn_credits",
+  "check_nooticr_credits",
   {
-   title: "Check Orchyn Credits",
+   title: "Check Nooticr Credits",
    description:
-    "Check your orchyn credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools." +
+    "Check your nooticr credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools." +
     "Use before a run of paid calls to confirm the balance covers it.",
    _meta: {
-    ui: { resourceUri: uiResource("check_orchyn_credits") },
-    "ui/resourceUri": uiResource("check_orchyn_credits"),
+    ui: { resourceUri: uiResource("check_nooticr_credits") },
+    "ui/resourceUri": uiResource("check_nooticr_credits"),
     // ChatGPT reads only this one, and reads it to find the
     // text/html+skybridge twin rather than the Claude resource.
-    "openai/outputTemplate": appsSdkResource("check_orchyn_credits"),
+    "openai/outputTemplate": appsSdkResource("check_nooticr_credits"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-   outputSchema: OUTPUT_SCHEMAS.check_orchyn_credits,
+   outputSchema: OUTPUT_SCHEMAS.check_nooticr_credits,
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
    const client = await makeClient(extra);
    try {
-    return await toToolResult(await client.callTool("check_orchyn_credits", {}));
+    return await toToolResult(await client.callTool("check_nooticr_credits", {}));
    } catch (err) {
-    return toolError("check_orchyn_credits failed", err);
+    return toolError("check_nooticr_credits failed", err);
    }
   }
  );
 
  server.registerTool(
-  "buy_orchyn_credits",
+  "buy_nooticr_credits",
   {
-   title: "Buy Orchyn Credits",
+   title: "Buy Nooticr Credits",
    description:
     "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call." +
     "Use when the balance is short and the user has agreed to top up.",
    _meta: {
-    ui: { resourceUri: uiResource("buy_orchyn_credits") },
-    "ui/resourceUri": uiResource("buy_orchyn_credits"),
+    ui: { resourceUri: uiResource("buy_nooticr_credits") },
+    "ui/resourceUri": uiResource("buy_nooticr_credits"),
     // ChatGPT reads only this one, and reads it to find the
     // text/html+skybridge twin rather than the Claude resource.
-    "openai/outputTemplate": appsSdkResource("buy_orchyn_credits"),
+    "openai/outputTemplate": appsSdkResource("buy_nooticr_credits"),
    },
    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-   outputSchema: OUTPUT_SCHEMAS.buy_orchyn_credits,
+   outputSchema: OUTPUT_SCHEMAS.buy_nooticr_credits,
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
    const client = await makeClient(extra);
    try {
-    return await toToolResult(await client.callTool("buy_orchyn_credits", {}));
+    return await toToolResult(await client.callTool("buy_nooticr_credits", {}));
    } catch (err) {
-    return toolError("buy_orchyn_credits failed", err);
+    return toolError("buy_nooticr_credits failed", err);
    }
   }
  );
 
  server.registerTool(
-  "orchyn_login",
+  "nooticr_login",
   {
-   title: "Orchyn Login",
+   title: "Nooticr Login",
    description:
     "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. No cost to call." +
     "Use when a call fails with an authentication error, to re-link the account.",
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-   outputSchema: OUTPUT_SCHEMAS.orchyn_login,
+   outputSchema: OUTPUT_SCHEMAS.nooticr_login,
    inputSchema: z.object({}).strict(),
   },
   async (_args: Record<string, never>, extra) => {
@@ -2128,8 +2128,8 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
    }
 
    if (!signedIn) {
-    const base = process.env.ORCHYN_BASE_URL || "https://api.orchyn.com";
-    const mcpUrl = process.env.MCP_SERVER_URL || "https://mcp.orchyn.com";
+    const base = process.env.NOOTICR_BASE_URL || "https://api.nooticr.com";
+    const mcpUrl = process.env.MCP_SERVER_URL || "https://mcp.nooticr.com";
     const redirect = `${mcpUrl}/auth/callback?state=new`;
     const loginUrl = `${base}/auth/mcp-login?redirect=${encodeURIComponent(redirect)}`;
     const waiting = pendingAfterLogin?.name ?? null;
@@ -2199,7 +2199,7 @@ urls: z.array(z.string()).describe("2-5 post URLs to compare.") })
       .enum(["ai", "evidence"])
       .optional()
       .describe(
-       "'ai' (default) returns orchyn's own analysis. 'evidence' returns the material it " +
+       "'ai' (default) returns nooticr's own analysis. 'evidence' returns the material it " +
         "would have read — for the visual tools, actual frames you can look at — at the " +
         "price of the fetch, and leaves the reasoning to you.",
       ),

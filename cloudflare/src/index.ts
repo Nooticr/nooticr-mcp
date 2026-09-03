@@ -1,8 +1,8 @@
 /**
- * orchyn-mcp Cloudflare Worker.
+ * nooticr-mcp Cloudflare Worker.
  *
- * Exposes the orchyn MCP server at https://mcp.orchyn.com:
- *   - OAuth 2.0 authorization server (email/password via orchyn)
+ * Exposes the nooticr MCP server at https://mcp.nooticr.com:
+ *   - OAuth 2.0 authorization server (email/password via nooticr)
  *   - MCP endpoint at /mcp (Streamable HTTP, stateful sessions on a DO)
  *
  * Run locally: wrangler dev
@@ -13,7 +13,7 @@ import { landingPage as sitelanding } from "./site/landing.js";
 import { termsPage, privacyPage } from "./site/legal.js";
 import { documentationPage } from "./site/documentation.js";
 import { dashboardPage, dashboardSignedOut } from "./site/dashboard.js";
-import { OrchynClient } from "../../src/shared/orchyn.js";
+import { NooticrClient } from "../../src/shared/nooticr.js";
 import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import {
   isClientIdMetadataUrl,
@@ -80,16 +80,16 @@ export default {
       return handleCheckout(request, env);
     }
     if (path === "/documentation" && method === "GET") {
-      return htmlResponse(200, documentationPage(env.PUBLIC_URL, env.ORCHYN_BASE_URL), CACHEABLE);
+      return htmlResponse(200, documentationPage(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
     }
     if (path === "/docs" && method === "GET") {
       return new Response(null, { status: 301, headers: { location: "/documentation" } });
     }
     if (path === "/terms" && method === "GET") {
-      return htmlResponse(200, termsPage(env.PUBLIC_URL, env.ORCHYN_BASE_URL), CACHEABLE);
+      return htmlResponse(200, termsPage(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
     }
     if (path === "/privacy" && method === "GET") {
-      return htmlResponse(200, privacyPage(env.PUBLIC_URL, env.ORCHYN_BASE_URL), CACHEABLE);
+      return htmlResponse(200, privacyPage(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
     }
     if (path === "/robots.txt" && method === "GET") {
       return new Response(
@@ -134,7 +134,7 @@ export default {
       });
     }
     if (path === "/" && method === "GET") {
-      return htmlResponse(200, sitelanding(env.PUBLIC_URL, env.ORCHYN_BASE_URL), CACHEABLE);
+      return htmlResponse(200, sitelanding(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
     }
     if (path === "/mcp" || path === "/mcp/" || path === "" || path === "/") {
       return routeToEndpoint(request, env);
@@ -164,7 +164,7 @@ function htmlPage(title: string, body: string): string {
 }
 
 const CACHEABLE = { "cache-control": "public, max-age=300, s-maxage=3600" };
-const SESSION_COOKIE = "orchyn_mcp_dash";
+const SESSION_COOKIE = "nooticr_mcp_dash";
 
 function sessionCookie(token: string): string {
   // httpOnly so page scripts cannot read it, and so the token never appears
@@ -193,7 +193,7 @@ async function handleDashboardLogin(request: Request, env: Env): Promise<Respons
   });
   const redirect = `${env.PUBLIC_URL}/dashboard/callback?state=${encodeURIComponent(state)}`;
   return Response.redirect(
-    `${env.ORCHYN_BASE_URL}/auth/mcp-login?redirect=${encodeURIComponent(redirect)}`,
+    `${env.NOOTICR_BASE_URL}/auth/mcp-login?redirect=${encodeURIComponent(redirect)}`,
     302
   );
 }
@@ -210,21 +210,21 @@ async function handleDashboardCallback(request: Request, env: Env): Promise<Resp
     return htmlResponse(400, dashboardSignedOut(env.PUBLIC_URL, "That sign-in link has expired. Please try again."));
   }
   await env.STORE.delete(`dash_req:${state}`);
-  let orchyn;
+  let nooticr;
   try {
-    orchyn = await OrchynClient.exchangeCode(env.ORCHYN_BASE_URL, code);
+    nooticr = await NooticrClient.exchangeCode(env.NOOTICR_BASE_URL, code);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Sign-in failed";
     return htmlResponse(400, dashboardSignedOut(env.PUBLIC_URL, msg));
   }
   const token = randomToken(32);
   await storeSession(env, token, {
-    orchynAccessToken: orchyn.accessToken,
-    orchynRefreshToken: orchyn.refreshToken,
-    orchynUser: orchyn.user
-      ? { id: orchyn.user.id, email: orchyn.user.email, displayName: orchyn.user.displayName }
+    nooticrAccessToken: nooticr.accessToken,
+    nooticrRefreshToken: nooticr.refreshToken,
+    nooticrUser: nooticr.user
+      ? { id: nooticr.user.id, email: nooticr.user.email, displayName: nooticr.user.displayName }
       : undefined,
-    clientId: "orchyn-dashboard",
+    clientId: "nooticr-dashboard",
     scopes: [...SCOPES],
     expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
   });
@@ -251,11 +251,11 @@ async function handleDashboard(request: Request, env: Env): Promise<Response> {
     });
   }
 
-  // The dashboard stores nothing itself — read it all from the orchyn API.
+  // The dashboard stores nothing itself — read it all from the nooticr API.
   let usage;
   try {
-    const res = await fetch(`${env.ORCHYN_BASE_URL}/mcp/usage`, {
-      headers: { authorization: `Bearer ${session.orchynAccessToken}` },
+    const res = await fetch(`${env.NOOTICR_BASE_URL}/mcp/usage`, {
+      headers: { authorization: `Bearer ${session.nooticrAccessToken}` },
     });
     if (!res.ok) throw new Error(`usage lookup failed (${res.status})`);
     usage = await res.json();
@@ -265,7 +265,7 @@ async function handleDashboard(request: Request, env: Env): Promise<Response> {
   }
   return htmlResponse(
     200,
-    dashboardPage(env.PUBLIC_URL, session.orchynUser ?? {}, usage as never, token)
+    dashboardPage(env.PUBLIC_URL, session.nooticrUser ?? {}, usage as never, token)
   );
 }
 
@@ -283,10 +283,10 @@ async function handleCheckout(request: Request, env: Env): Promise<Response> {
     return jsonResponse(400, { error: "Unknown credit pack." });
   }
   try {
-    const res = await fetch(`${env.ORCHYN_BASE_URL}/billing/mcp-credits/checkout`, {
+    const res = await fetch(`${env.NOOTICR_BASE_URL}/billing/mcp-credits/checkout`, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${session.orchynAccessToken}`,
+        authorization: `Bearer ${session.nooticrAccessToken}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({ tier: pack }),
@@ -339,7 +339,7 @@ function authorizeError(url: URL, redirectUri: string, error: string, descriptio
     if (state) target.searchParams.set("state", state);
     return Response.redirect(target.toString(), 302);
   }
-  return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>${escapeHtml(description)}</p>`));
+  return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>${escapeHtml(description)}</p>`));
 }
 
 /**
@@ -362,7 +362,7 @@ async function handleAuthorizeGet(request: Request, env: Env): Promise<Response>
   const url = new URL(request.url);
   const p = getAuthorizeParams(url);
   if (!p) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Missing required parameters: response_type, client_id, redirect_uri, code_challenge, code_challenge_method.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Missing required parameters: response_type, client_id, redirect_uri, code_challenge, code_challenge_method.</p>`));
   }
   if (p.response_type !== "code") {
     return authorizeError(url, p.redirect_uri, "unsupported_response_type", "Only response_type=code is supported.");
@@ -371,7 +371,7 @@ async function handleAuthorizeGet(request: Request, env: Env): Promise<Response>
     return authorizeError(url, p.redirect_uri, "invalid_request", "PKCE is required: code_challenge and code_challenge_method=S256.");
   }
   if (!isAllowedRedirectUri(p.redirect_uri)) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be a loopback URL or an https URL.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>redirect_uri must be a loopback URL or an https URL.</p>`));
   }
   // A client_id that is an https URL is a metadata document: fetch it and
   // check the redirect belongs to the client claiming it. Under DCR alone any
@@ -388,7 +388,7 @@ async function handleAuthorizeGet(request: Request, env: Env): Promise<Response>
   // Delegate to the Rust server's branded login (single source of truth)
   const authRequestId = randomToken(16);
   const callbackUrl = `${env.PUBLIC_URL}/auth/callback?state=${encodeURIComponent(authRequestId)}`;
-  const mcpLoginUrl = new URL(`${env.ORCHYN_BASE_URL}/auth/mcp-login`);
+  const mcpLoginUrl = new URL(`${env.NOOTICR_BASE_URL}/auth/mcp-login`);
   mcpLoginUrl.searchParams.set("redirect", callbackUrl);
   await env.STORE.put(`auth_req:${authRequestId}`, JSON.stringify({ ...p, createdAt: Date.now() }), { expirationTtl: PENDING_TTL_SECONDS });
   return Response.redirect(mcpLoginUrl.toString(), 302);
@@ -409,14 +409,14 @@ async function handleAuthorizePost(request: Request, env: Env): Promise<Response
   };
 
   if (!p.response_type || !p.client_id || !p.redirect_uri || !p.code_challenge || !p.code_challenge_method) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Missing required parameters.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Missing required parameters.</p>`));
   }
   if (p.response_type !== "code" || !p.code_challenge || p.code_challenge_method !== "S256") {
     const url = new URL(request.url);
     return authorizeError(url, p.redirect_uri, p.response_type !== "code" ? "unsupported_response_type" : "invalid_request", "Only response_type=code with PKCE S256 is supported.");
   }
   if (!isAllowedRedirectUri(p.redirect_uri)) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>redirect_uri must be loopback or https.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>redirect_uri must be loopback or https.</p>`));
   }
   const cimdPost = await checkClientIdMetadata(p.client_id, p.redirect_uri);
   if (cimdPost) {
@@ -431,11 +431,11 @@ async function handleAuthorizePost(request: Request, env: Env): Promise<Response
 
   let session;
   try {
-    session = await OrchynClient.login(env.ORCHYN_BASE_URL, p.email, p.password);
+    session = await NooticrClient.login(env.NOOTICR_BASE_URL, p.email, p.password);
   } catch (err: any) {
     const msg = err instanceof Error ? escapeHtml(err.message) : "Invalid credentials";
-    return htmlResponse(200, htmlPage("orchyn-mcp: sign in", `
-      <h2>Sign in with your orchyn account</h2>
+    return htmlResponse(200, htmlPage("nooticr-mcp: sign in", `
+      <h2>Sign in with your nooticr account</h2>
       <p style="color:red">Sign-in failed: ${msg}</p>
       <form method="post" action="/authorize">
         <input type="hidden" name="response_type" value="${escapeHtml(p.response_type)}" />
@@ -461,9 +461,9 @@ async function handleAuthorizePost(request: Request, env: Env): Promise<Response
     mcpAuthCode,
     clientState: p.state,
     createdAt: Date.now(),
-    orchynAccessToken: session.accessToken,
-    orchynRefreshToken: session.refreshToken,
-    orchynUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : undefined,
+    nooticrAccessToken: session.accessToken,
+    nooticrRefreshToken: session.refreshToken,
+    nooticrUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : undefined,
   };
   await storePending(env, pending);
 
@@ -497,24 +497,24 @@ async function handleAuthCallback(request: Request, env: Env): Promise<Response>
       if (state) await env.STORE.delete(`auth_req:${state}`);
       return Response.redirect(target.toString(), 302);
     }
-    return htmlResponse(400, htmlPage("orchyn-mcp: auth failed", `<p>${escapeHtml(errorDesc || error)}</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: auth failed", `<p>${escapeHtml(errorDesc || error)}</p>`));
   }
   if (!state || !code) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Missing state or code.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Missing state or code.</p>`));
   }
   if (!reqRaw || !req) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Invalid or expired state. Please try again.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Invalid or expired state. Please try again.</p>`));
   }
   if (!req.redirect_uri || !req.code_challenge) {
-    return htmlResponse(400, htmlPage("orchyn-mcp: bad request", `<p>Invalid state.</p>`));
+    return htmlResponse(400, htmlPage("nooticr-mcp: bad request", `<p>Invalid state.</p>`));
   }
   let session;
   try {
-    session = await OrchynClient.exchangeCode(env.ORCHYN_BASE_URL, code);
+    session = await NooticrClient.exchangeCode(env.NOOTICR_BASE_URL, code);
   } catch (err: any) {
     const msg = err instanceof Error ? escapeHtml(err.message) : "Code exchange failed";
-    const retryUrl = `${env.ORCHYN_BASE_URL}/auth/mcp-login?redirect=${encodeURIComponent(`${env.PUBLIC_URL}/auth/callback?state=${encodeURIComponent(state)}`)}`;
-    return htmlResponse(200, htmlPage("orchyn-mcp: sign in", `<p style="color:red">Sign-in failed: ${msg}</p><p><a href="${escapeHtml(retryUrl)}">Try again</a></p>`));
+    const retryUrl = `${env.NOOTICR_BASE_URL}/auth/mcp-login?redirect=${encodeURIComponent(`${env.PUBLIC_URL}/auth/callback?state=${encodeURIComponent(state)}`)}`;
+    return htmlResponse(200, htmlPage("nooticr-mcp: sign in", `<p style="color:red">Sign-in failed: ${msg}</p><p><a href="${escapeHtml(retryUrl)}">Try again</a></p>`));
   }
   const mcpAuthCode = randomToken(32);
   const pending = {
@@ -525,9 +525,9 @@ async function handleAuthCallback(request: Request, env: Env): Promise<Response>
     mcpAuthCode,
     clientState: req.state,
     createdAt: Date.now(),
-    orchynAccessToken: session.accessToken,
-    orchynRefreshToken: session.refreshToken,
-    orchynUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : undefined,
+    nooticrAccessToken: session.accessToken,
+    nooticrRefreshToken: session.refreshToken,
+    nooticrUser: session.user ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName } : undefined,
   };
   await storePending(env, pending);
   await env.STORE.delete(`auth_req:${state}`);
@@ -565,9 +565,9 @@ async function handleToken(request: Request, env: Env): Promise<Response> {
 
   const accessToken = randomToken(32);
   await storeSession(env, accessToken, {
-    orchynAccessToken: pending.orchynAccessToken,
-    orchynRefreshToken: pending.orchynRefreshToken,
-    orchynUser: pending.orchynUser,
+    nooticrAccessToken: pending.nooticrAccessToken,
+    nooticrRefreshToken: pending.nooticrRefreshToken,
+    nooticrUser: pending.nooticrUser,
     clientId: pending.clientId,
     scopes: pending.scopes,
     expiresAt: Date.now() + TOKEN_TTL_SECONDS * 1000,
@@ -598,7 +598,7 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
       return jsonResponse(400, { error: "invalid_redirect_uri", error_description: `Invalid redirect_uri: ${uri}` });
     }
   }
-  const clientId = `orchyn_${randomToken(16)}`;
+  const clientId = `nooticr_${randomToken(16)}`;
   const now = Math.floor(Date.now() / 1000);
   // Public client — no secret needed (token_endpoint_auth_method: none)
   return jsonResponse(201, {

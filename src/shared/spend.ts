@@ -107,7 +107,7 @@ export async function confirmSpend(
   if (opts.credits <= CONFIRM_ABOVE_CREDITS) return { proceed: true };
   if (!canAsk(server)) return { proceed: true };
 
-  const lines = [`${opts.summary} This costs ${opts.credits} orchyn credits.`];
+  const lines = [`${opts.summary} This costs ${opts.credits} nooticr credits.`];
   if (opts.cheaper) lines.push(opts.cheaper);
 
   let result: { action: string };

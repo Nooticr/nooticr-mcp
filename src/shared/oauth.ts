@@ -1,6 +1,6 @@
 /**
  * Runtime-agnostic OAuth 2.0 / PKCE primitives shared by the Node package
- * (`@orchyn/mcp`) and the Cloudflare Worker (mcp.orchyn.com). Web-standard
+ * (`@nooticr/mcp`) and the Cloudflare Worker (mcp.nooticr.com). Web-standard
  * APIs only (crypto, atob), so the worker's KV-backed OAuth flow and the
  * node `OAuthManager` validate the same way by construction.
  */
