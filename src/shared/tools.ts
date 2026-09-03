@@ -394,58 +394,58 @@ function buildAnalysisHtmlCard(
       )?.preview_url as string | undefined
      : undefined;
 
- let html = `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden;margin:0 auto">`;
- // Thumbnail / video
- const badgeHtml = `<span style="background:${color};color:#fff;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px">${brandSvg} ${platform}</span>`;
- if (videoUrl) {
-  html += `<div style="position:relative"><video src="${videoUrl}" controls preload="metadata" playsinline poster="${thumbnailUrl}" style="width:100%;max-height:400px;object-fit:contain;display:block;background:#000" onerror="this.outerHTML='<img src=&quot;${thumbnailUrl}&quot; style=&quot;width:100%;max-height:400px;object-fit:cover;display:block&quot;/>'">Your browser doesn't support video playback.</video><div style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">${badgeHtml}</div></div>`;
- } else if (thumbnailUrl) {
-  html += `<div style="position:relative"><img src="${thumbnailUrl}" style="width:100%;max-height:400px;object-fit:cover;display:block" onerror="this.style.display='none'" /><div style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">${badgeHtml}</div></div>`;
- }
- // Header
- html += `<div style="padding:16px 20px">`;
- html += `<div style="font-size:18px;font-weight:700;margin-bottom:4px">📊 AI Post Analysis</div>`;
- if (creatorHandle) html += `<div style="color:#8b949e;font-size:13px">@${creatorHandle}</div>`;
- if (title) html += `<div style="color:#c9d1d9;font-size:14px;margin-top:8px;line-height:1.4">${title.slice(0, 150)}</div>`;
- // Stats
- html += `<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">`;
- html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">👁️ ${views}</span>`;
- html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">❤️ ${likes}</span>`;
- html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">💬 ${comments}</span>`;
- html += `<span style="background:#21262d;padding:4px 10px;border-radius:8px;font-size:13px">🔄 ${shares}</span>`;
- html += `</div>`;
- // Hook strength bar
- if (hookStrength !== null) {
-  const pct = Math.min(hookStrength * 10, 100);
-  const barColor = hookStrength >= 7 ? "#3fb950" : hookStrength >= 4 ? "#d29922" : "#f85149";
-  html += `<div style="margin-top:12px"><div style="font-size:12px;color:#8b949e;margin-bottom:4px">Hook Strength: ${hookStrength}/10</div><div style="background:#21262d;border-radius:999px;height:8px"><div style="background:${barColor};width:${pct}%;height:100%;border-radius:999px"></div></div></div>`;
- }
- // Summary
- if (summary) {
-  html += `<div style="margin-top:14px;padding:12px;background:#161b22;border-radius:8px;border-left:3px solid ${color}"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:4px">📝 Summary</div><div style="font-size:13px;line-height:1.5">${summary}</div></div>`;
- }
- // Why it works
- if (whyItWorks) {
-  html += `<div style="margin-top:10px;padding:12px;background:#161b22;border-radius:8px;border-left:3px solid #3fb950"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:4px">✅ Why It Works</div><div style="font-size:13px;line-height:1.5">${whyItWorks}</div></div>`;
- }
- // Viral triggers
- if (viralTriggers.length > 0) {
-  html += `<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:6px">🔥 Viral Triggers</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
-  viralTriggers.forEach((t) => {
-   html += `<span style="background:#1f6feb33;color:#58a6ff;padding:4px 10px;border-radius:999px;font-size:12px">${t}</span>`;
-  });
-  html += `</div></div>`;
- }
- // Suggested hook
- if (suggestedHook) {
-  html += `<div style="margin-top:10px;padding:12px;background:#161b22;border-radius:8px;border-left:3px solid #d29922"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:4px">💡 Suggested Hook</div><div style="font-size:13px;font-style:italic;line-height:1.5">${suggestedHook}</div></div>`;
- }
- // Variation ideas
- if (variationIdeas.length > 0) {
-  html += `<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;color:#8b949e;margin-bottom:6px">🔄 Variation Ideas</div><ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">`;
-  variationIdeas.forEach((v) => { html += `<li>${v}</li>`; });
-  html += `</ol></div>`;
- }
+  let html = `<div class="mx-auto overflow-hidden rounded-xl border border-line bg-surface text-ink" style="max-width:600px">`;
+  // Thumbnail / video
+  const badgeHtml = `<span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white" style="background:${color}">${brandSvg} ${platform}</span>`;
+  if (videoUrl) {
+    html += `<div class="relative"><video src="${videoUrl}" controls preload="metadata" playsinline poster="${thumbnailUrl}" class="block w-full bg-black object-contain" style="max-height:400px" onerror="this.outerHTML='<img src=&quot;${thumbnailUrl}&quot; class=&quot;block w-full object-cover&quot; style=&quot;max-height:400px&quot;/>'">Your browser doesn't support video playback.</video><div class="absolute bottom-3 left-3 flex flex-wrap gap-2">${badgeHtml}</div></div>`;
+  } else if (thumbnailUrl) {
+    html += `<div class="relative"><img src="${thumbnailUrl}" class="block w-full object-cover" style="max-height:400px" onerror="this.style.display='none'" /><div class="absolute bottom-3 left-3 flex flex-wrap gap-2">${badgeHtml}</div></div>`;
+  }
+  // Header
+  html += `<div class="px-5 py-4">`;
+  html += `<div class="mb-1 text-lg font-bold">📊 AI Post Analysis</div>`;
+  if (creatorHandle) html += `<div class="text-sm text-muted">@${creatorHandle}</div>`;
+  if (title) html += `<div class="mt-2 text-sm leading-snug">${title.slice(0, 150)}</div>`;
+  // Stats
+  html += `<div class="mt-3 flex flex-wrap gap-3">`;
+  html += `<span class="rounded-lg bg-soft px-3 py-1 text-sm">👁️ ${views}</span>`;
+  html += `<span class="rounded-lg bg-soft px-3 py-1 text-sm">❤️ ${likes}</span>`;
+  html += `<span class="rounded-lg bg-soft px-3 py-1 text-sm">💬 ${comments}</span>`;
+  html += `<span class="rounded-lg bg-soft px-3 py-1 text-sm">🔄 ${shares}</span>`;
+  html += `</div>`;
+  // Hook strength bar
+  if (hookStrength !== null) {
+    const pct = Math.min(hookStrength * 10, 100);
+    const barColor = hookStrength >= 7 ? "#3fb950" : hookStrength >= 4 ? "#d29922" : "#f85149";
+    html += `<div class="mt-3"><div class="mb-1 text-xs text-muted">Hook Strength: ${hookStrength}/10</div><div class="h-2 overflow-hidden rounded-full bg-soft"><div class="h-full rounded-full" style="background:${barColor};width:${pct}%"></div></div></div>`;
+  }
+  // Summary
+  if (summary) {
+    html += `<div class="mt-4 rounded-lg bg-soft p-3" style="border-left:3px solid ${color}"><div class="mb-1 text-xs font-semibold text-muted">📝 Summary</div><div class="text-sm leading-relaxed">${summary}</div></div>`;
+  }
+  // Why it works
+  if (whyItWorks) {
+    html += `<div class="mt-3 rounded-lg bg-soft p-3" style="border-left:3px solid #3fb950"><div class="mb-1 text-xs font-semibold text-muted">✅ Why It Works</div><div class="text-sm leading-relaxed">${whyItWorks}</div></div>`;
+  }
+  // Viral triggers
+  if (viralTriggers.length > 0) {
+    html += `<div class="mt-3"><div class="mb-2 text-xs font-semibold text-muted">🔥 Viral Triggers</div><div class="flex flex-wrap gap-2">`;
+    viralTriggers.forEach((t) => {
+      html += `<span class="rounded-full border border-line bg-soft px-3 py-1 text-xs">${t}</span>`;
+    });
+    html += `</div></div>`;
+  }
+  // Suggested hook
+  if (suggestedHook) {
+    html += `<div class="mt-3 rounded-lg bg-soft p-3" style="border-left:3px solid #d29922"><div class="mb-1 text-xs font-semibold text-muted">💡 Suggested Hook</div><div class="text-sm italic leading-relaxed">${suggestedHook}</div></div>`;
+  }
+  // Variation ideas
+  if (variationIdeas.length > 0) {
+    html += `<div class="mt-3"><div class="mb-2 text-xs font-semibold text-muted">🔄 Variation Ideas</div><ol class="m-0 pl-5 text-sm leading-relaxed">`;
+    variationIdeas.forEach((v) => { html += `<li>${v}</li>`; });
+    html += `</ol></div>`;
+  }
  html += `</div></div>`;
  return html;
 }
