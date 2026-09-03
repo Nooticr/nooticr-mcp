@@ -39,7 +39,7 @@
  *
  * ## Billing
  *
- * The sum of the calls actually made, exactly as evidence mode is. That is a
+ * The sum of the calls actually made, exactly as every other tool here is. That is a
  * real number here rather than a constant, because these fan out — twelve
  * posts is twelve comment fetches — so each tool caps its fan-out, makes the
  * cap an argument, prints the arithmetic in its description, and routes
@@ -512,9 +512,10 @@ function underperformGuidance(a: {
   }
   lines.push(
     "",
-    "The stats here are reach, not quality. If a judgement needs the video itself, say which, and " +
-      "suggest analyze_post with mode 'evidence' for the frames or get_post_transcript for the " +
-      "exact words.",
+    "The stats here are reach, not quality. If a judgement needs the video itself, call " +
+      "analyze_post with mode 'evidence' for the frames, or get_post_transcript for the exact " +
+      "words, and look for yourself — the tools are yours to call, so nobody should be asked to " +
+      "relay one back to you.",
     ownIt,
   );
   return lines.join("\n");
@@ -587,7 +588,7 @@ const metricArg = z
   .describe("Which stat to rank on (default views).");
 
 export function registerJobTools(server: McpServer, makeClient: MakeClient, store: WatchStore): void {
-  /** Guidance in the text block, evidence in the structured one — as evidence mode does. */
+  /** Guidance in the text block, evidence in the structured one — as every tool here does. */
   const evidence = (guidance: string, payload: Row) => ({
     content: [{ type: "text" as const, text: guidance }],
     structuredContent: payload,

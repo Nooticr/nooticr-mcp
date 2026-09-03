@@ -4,7 +4,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "analyze_post",
  title: "Analyze Post",
- description: "Analyze a social post (video, image, carousel/slideshow) from its link — imports the media and runs AI analysis over the actual content (video frames, carousel images, caption). Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Returns the full analysis once finished. Use when the visuals are the point — framing, editing, on-screen text; for script, hook and structure alone, analyze_post_fast costs a third as much. AI analysis \u2014 1 free use, then 6 credits per use.",
+ description: "Frames sampled evenly across a social post (video, image, carousel/slideshow), returned as real images you can look at, together with the post's transcript, caption and stats. It hands you the material rather than a verdict: read the frames and the words, then work out the hook, the structure, the visual style, the CTA and the audience yourself, citing the frame or line behind each claim. Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Use when the visuals are the point — framing, editing, on-screen text; analyze_post_fast reads the same post without the frames for one credit less. Fans out to get_post_frames and get_post_transcript: 3 orchyn credits, 2 for the frames plus 1 for the transcript.",
  inputSchema: z.object({ url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili).") }).strict(),
  },
  {
@@ -28,7 +28,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "analyze_creator_profile",
  title: "Analyze Creator Profile",
- description: "Deep-dive a whole creator profile on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn: fetch recent posts, run multimodal AI on up to 3, then synthesize a profile report — creator summary, niche, content themes, hook styles, strengths/weaknesses, engagement patterns, audience insights, variation ideas, collaboration fit. Use for a full teardown when the visuals matter; find_hook_pattern gives you their formula from captions for a fraction of the price. AI analysis \u2014 1 free use, then 15 credits per use.",
+ description: "A creator's recent posts with their stats, on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn — the raw material of a profile teardown, for you to read. Work out their niche, content themes, hook formula, strengths and weaknesses, engagement pattern and audience from the spread of the numbers rather than the best post, and name the posts you reason from. find_hook_pattern fetches the same posts and asks only for the formula. Costs 2 orchyn credits, for the one get_user_posts call it makes.",
  inputSchema: z.object({ username: z.string().describe("Creator handle, e.g. 'zoundsapp'."), platform: z.enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo"]).optional().describe("Which platform (default tiktok)."), limit: z.number().int().optional().describe("Posts to fetch (default 6; first 3 analyzed)."), focus: z.string().optional().describe("Extra instruction for the profile synthesis.") }).strict(),
  },
  {
@@ -58,7 +58,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "understand_social_post",
  title: "Understand Social Post",
- description: "Import a social post URL AND understand it with multimodal AI over the actual video/images: summary, hook strength, viral triggers, format breakdown and variation ideas. Includes the thumbnail. Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Use when you need a factual description of what physically happens on screen; analyze_post is the better default for strategy. AI analysis \u2014 1 free use, then 6 credits per use.",
+ description: "The same frames and transcript analyze_post returns, asked a different question: describe what physically happens on screen, in order, with every observation anchored to a frame. Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Use when you need the events rather than the strategy; analyze_post puts the strategic question to the same material. Fans out to get_post_frames and get_post_transcript: 3 orchyn credits, 2 for the frames plus 1 for the transcript.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Douyin/Xiaohongshu/Bilibili)."), focus: z.string().optional().describe("Extra instruction, e.g. 'focus on the CTA'.") }).strict(),
  },
  {
@@ -70,13 +70,13 @@ export const TOOL_DEFINITIONS = [
  {
  name: "analyze_comments",
  title: "Analyze Comments",
- description: "Read a post's comment section and return what the audience is actually saying: sentiment, recurring themes, the questions they ask, objections raised, content they request, the language they use, and follow-up video ideas grounded in it. Use when the goal is 'what should I make next' rather than 'what did people write'. AI analysis — 1 free use, then 6 credits per use.",
- inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."), mode: z.enum(["ai", "evidence"]).optional().describe("'ai' (default) returns orchyn's own analysis for 6 credits. 'evidence' returns the raw comments for 2 credits and leaves the analysis to you.") }).strict(),
+ description: "A post's comment section, fetched and laid out for you to classify: every comment with a stable id, plus whatever themes the platform clustered them into. Label each one's sentiment and what it is doing — praise, complaint, bug report, question, request, comparison, spam — then summarise the themes, the questions worth answering, the objections, and what to make next. The result names the exact labels, and show_comment_review draws them for free afterwards. Use when the goal is 'what should I make next' rather than 'what did people write'. Costs 2 orchyn credits, for the one get_post_comments call it makes.",
+ inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100).") }).strict(),
  },
  {
  name: "compare_posts",
  title: "Compare Posts",
- description: "Compare 2-5 posts side by side and explain the performance gap: which won, what actually differed (hook, format, length, caption, hashtags), shared strengths, testable lessons and one concrete next experiment. Use for 'why did this one work and that one not'. AI analysis — 1 free use, then 8 credits per use.",
+ description: "The first of 2-5 posts you want compared, fetched with its stats — and the comparison left to you. Call get_social_media on each remaining URL yourself (1 credit each), and get_post_transcript where the wording matters, then say which won, what actually differed (hook, format, length, caption, hashtags), what they share worth keeping, and the one experiment that would test your explanation. Use for 'why did this one work and that one not'. Costs 1 orchyn credit for this call, plus 1 per further post you fetch.",
  inputSchema: z.object({ urls: z.array(z.string()).describe("2-5 post URLs to compare.") }).strict(),
  },
  {
@@ -88,43 +88,43 @@ export const TOOL_DEFINITIONS = [
  {
  name: "analyze_post_fast",
  title: "Analyze Post (Fast)",
- description: "Same analysis as analyze_post but built from the post's transcript, caption and stats instead of its video frames — a third of the price. Weaker on visual style and production detail, just as strong on hook, script structure, CTA and audience. Use this by default; reach for analyze_post when the visuals are the point. Consumes 2 orchyn credits.",
+ description: "A post's transcript, caption and stats, with no frames — which is what makes it the cheap read. Work out the hook, the script structure, the CTA and the audience from the words and the numbers yourself, and say plainly that you have not seen the visuals. Use this by default; call analyze_post when a judgement actually needs the frames. Fans out to get_social_media and get_post_transcript: 2 orchyn credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL.") }).strict(),
  },
  {
  name: "write_hooks",
  title: "Write Hooks",
- description: "Write alternative opening hooks — the first line said or shown on screen. Give a url to riff on an existing post (it reads the real transcript), or a topic to start from nothing. Returns each hook with the mechanism it uses and who it stops. Use when you know the subject and need openings to choose between. Consumes 2 orchyn credits.",
+ description: "The source post, its transcript and its stats, so you can write the opening lines yourself — the first line said or shown on screen. Name the device each hook uses and who it stops; one that could open any video in the niche is not grounded in this one. Use when you know the subject and need openings to choose between. With a url it fetches get_social_media and get_post_transcript for 2 orchyn credits; with only a topic there is nothing to fetch and it costs nothing.",
  inputSchema: z.object({ url: z.string().optional().describe("Post to riff on (optional if topic given)."), topic: z.string().optional().describe("Subject to write hooks about (optional if url given)."), count: z.number().int().optional().describe("How many hooks (default 10, max 20)."), tone: z.string().optional().describe("Optional tone, e.g. 'blunt', 'contrarian'.") }).strict(),
  },
  {
  name: "create_variants",
  title: "Create Variants",
- description: "Turn a post that worked into variants a creator could film next — same underlying mechanism, different execution. Each variant comes with a hook, the angle that changes, ordered shot beats and a CTA. Use after analysing a post to move from 'why it worked' to 'what to make'. Consumes 3 orchyn credits.",
+ description: "The post that worked, with its transcript and stats, so you can propose what to film next — same underlying mechanism, different execution. For each variant give the hook, the one angle that changes, the shot beats in order and the CTA, and say what made the original work. Use after reading a post to move from 'why it worked' to 'what to make'. Fans out to get_social_media and get_post_transcript: 2 orchyn credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("The post to make variants of."), count: z.number().int().optional().describe("How many variants (default 3, max 6)."), angle: z.string().optional().describe("Optional steer, e.g. 'for a beginner audience'.") }).strict(),
  },
  {
  name: "score_draft",
  title: "Score Draft",
- description: "Review your own draft BEFORE you film or post it: hook strength, clarity and payoff scores, concrete fixes, a rewritten hook and a tightened draft. The only tool that runs before the content exists. Use before filming, while changing it is still cheap. Consumes 2 orchyn credits.",
+ description: "Score your own draft BEFORE you film or post it. Returns the draft with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10 — and asks you for the three fixes that would move it most, one rewritten opening line and a tightened version. The only tool that runs before the content exists. Use before filming, while changing it is still cheap. Free: it fetches nothing, so it costs no credits.",
  inputSchema: z.object({ draft: z.string().describe("Your script, caption or hook."), platform: z.string().optional().describe("Target platform (default tiktok).") }).strict(),
  },
  {
  name: "repurpose_post",
  title: "Repurpose Post",
- description: "Rewrite one post for other surfaces — X thread, LinkedIn post, carousel slides, YouTube title/description, newsletter — keeping the argument and changing the shape to suit how each is read. Use when a post already worked and you want it on other surfaces without rewriting it yourself. Consumes 2 orchyn credits.",
+ description: "The source post, its transcript and its stats, for you to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube title/description, newsletter — keeping the argument and changing the shape to suit how each is read. The same paragraph with different line breaks is not a repurposing. Use when a post already worked and you want it on other surfaces. Fans out to get_social_media and get_post_transcript: 2 orchyn credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("The post to repurpose."), targets: z.array(z.string()).optional().describe("Which formats to produce (default all).") }).strict(),
  },
  {
  name: "niche_report",
  title: "Niche Report",
- description: "What is working in a niche right now: dominant formats, recurring hook patterns, what over- and underperforms, the gaps nobody is filling, and what to make next. Reads recent posts' captions and performance — no video, so it stays cheap. Use when entering a niche or deciding what to make next, rather than judging one post. Consumes 3 orchyn credits.",
+ description: "Recent posts in a niche with their stats, so you can read what is working right now: dominant formats, recurring hook patterns, what over- and underperforms, and the gaps nobody is filling. Captions and performance, no video, which is what keeps it cheap — and only name a gap whose absence is visible in the set you were handed. Use when entering a niche or deciding what to make next, rather than judging one post. Costs 2 orchyn credits, for the one discover_social_posts call it makes.",
  inputSchema: z.object({ niche: z.string().describe("Niche or topic, e.g. 'home fitness'."), platform: z.string().optional().describe("Platform to survey (default tiktok)."), count: z.number().int().optional().describe("Posts to survey (default 20, max 40).") }).strict(),
  },
  {
  name: "find_hook_pattern",
  title: "Find Hook Pattern",
- description: "Extract a creator's repeatable formula from their captions and performance: the hook types they reuse, caption style, length pattern, and fill-in-the-blank templates another creator could adapt. Much cheaper than analyze_creator_profile because it never watches the videos. Use to reverse-engineer a creator you want to learn from. Consumes 2 orchyn credits.",
+ description: "A creator's recent posts, fetched so their opening lines can be read as a set. Extract the repeatable formula yourself: the hook types they reuse, caption style, length pattern, and fill-in-the-blank templates another creator could adapt — each one saying how many posts it is drawn from, because a template that fits one post is not a pattern. Use to reverse-engineer a creator you want to learn from. Costs 2 orchyn credits, for the one get_user_posts call it makes.",
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts to read (default 20, max 40).") }).strict(),
  },
  {
@@ -136,13 +136,13 @@ export const TOOL_DEFINITIONS = [
  {
  name: "get_post_frames",
  title: "Get Post Frames",
- description: "Sample frames from a post's video and return them as images you can look at yourself, rather than an analysis of them. A carousel or slideshow returns its own images unchanged. Pair it with get_post_transcript to reconstruct both what happens on screen and what is said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. Consumes 2 orchyn credits. Use when you want to see the visuals; use analyze_post when you want orchyn's own opinion of them.",
- inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("Frames to sample, evenly spaced across the video (default 8, max 20).") }).strict(),
+ description: "Frames from a post's video, returned as images you can look at yourself rather than an analysis of them. They are chosen by scene change rather than by the clock: the video is decoded through and a frame kept whenever the picture actually changed, so every distinct shot is represented, where evenly spaced frames can all land inside one long take and miss a cutaway entirely. The result says how many shots were found, how many frames came back and whether the cap left any out, so you never have to guess what you have seen. A carousel or slideshow returns its own images unchanged. Pair it with get_post_transcript to have both what is shown and what is said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. Consumes 2 orchyn credits. Use when the frames are all you want; analyze_post pairs them with the transcript for 1 credit more.",
+ inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("The most frames to return (max 24). Omit it and scene mode returns one frame per shot."), mode: z.enum(["auto", "scene", "even"]).optional().describe("auto (default) picks per video; scene returns one frame per shot; even keeps the old fixed-interval sampling.") }).strict(),
  },
  {
  name: "show_comment_review",
  title: "Show Comment Review",
- description: "Display comment classifications you produced from analyze_comments(mode='evidence'). Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",
+ description: "Display comment classifications you produced from analyze_comments. Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",
  inputSchema: z.object({ url: z.string().describe("The post the comments came from."), summary: z.string().optional(), title: z.string().optional(), comments: z.array(z.object({ id: z.string(), text: z.string(), author: z.string().optional(), likes: z.number().optional(), sentiment: z.string().optional(), category: z.string().optional(), note: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
  },
  {

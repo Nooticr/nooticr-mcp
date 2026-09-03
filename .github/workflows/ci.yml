@@ -203,11 +203,13 @@ jobs:
       # render no widgets at all and fall back to the text result, which is the
       # progressive enhancement the spec asks for.
       #
-      # `mcpjam apps conformance` is deliberately not run here. It scores 73/100
-      # against us, and both failures are it objecting that our .html resources
-      # are text/html+skybridge rather than the MCP Apps mime — which is the
-      # entire reason those resources exist. Gating on a checker that measures
-      # only one of the two contracts we serve would mean dropping ChatGPT.
+      # `mcpjam apps conformance` IS run, below — but not gated on its verdict.
+      # It fails us on exactly one thing: our .html resources are
+      # text/html+skybridge rather than the MCP Apps mime, which is the entire
+      # reason those resources exist. Gating on its pass/fail would mean
+      # dropping ChatGPT to satisfy a checker that measures one of the two
+      # contracts we serve. So that deviation is pinned by id and by the shape
+      # of its violations, and everything else it checks is a hard gate.
       - name: Host compatibility (MCPJam)
         run: |
           set -euo pipefail
@@ -253,6 +255,53 @@ jobs:
 
       # Catches a broken wrangler config or a missing binding before anything
       # has been published.
+      # Everything MCP Apps conformance checks EXCEPT the deliberate
+      # dual-mime deviation. Pinning by id alone would be too loose — a real
+      # regression could hide inside one of those two checks — so every
+      # violation they report must also be the skybridge objection we expect.
+      # Anything else, in any check, fails the build.
+      - name: MCP Apps conformance (deviation pinned)
+        run: |
+          set -euo pipefail
+          npx -y @mcpjam/cli@5 apps conformance --format json \
+            --transport stdio --command node --args dist/index.js > conformance.json || true
+          python3 - <<'CHECK'
+          import json, sys
+
+          d = json.load(open("conformance.json"))
+
+          # The two checks that object to our ChatGPT twin, and nothing else.
+          EXPECTED = {"ui-listed-resources-valid", "ui-resource-contents-valid"}
+
+          failed = [c for c in d.get("checks", [])
+                    if c.get("status") not in ("passed", "not_applicable", "skipped")]
+          unexpected = [c["id"] for c in failed if c.get("id") not in EXPECTED]
+          if unexpected:
+              print("::error title=MCP Apps conformance::New conformance failure(s): "
+                    + ", ".join(unexpected))
+              sys.exit(1)
+
+          # A pinned check must still only be failing for the reason we pinned it.
+          for c in failed:
+              for v in c.get("details", {}).get("violations", []):
+                  if "text/html+skybridge" not in v:
+                      print("::error title=MCP Apps conformance::"
+                            f"{c['id']} failed for a new reason: {v}")
+                      sys.exit(1)
+
+          disc = d.get("discovery", {})
+          if not disc.get("toolCount") or not disc.get("uiToolCount"):
+              print("::error title=MCP Apps conformance::"
+                    f"discovery found nothing to check: {disc}")
+              sys.exit(1)
+
+          cats = d.get("categorySummary", {})
+          print(f"OK: {d.get('summary')}; only the pinned dual-mime deviation fails. "
+                f"tools {cats.get('tools', {}).get('passed')}/{cats.get('tools', {}).get('total')} "
+                f"passed, {disc.get('toolCount')} tools and "
+                f"{disc.get('checkedUiResourceCount')} UI resources checked.")
+          CHECK
+
       - name: Worker build (dry run)
         working-directory: cloudflare
         run: npx wrangler deploy --dry-run

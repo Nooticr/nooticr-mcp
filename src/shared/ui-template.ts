@@ -562,7 +562,7 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     schedule_post:"Schedule Post"
   };
   var TOOL_DESCS={
-    analyze_post:"Deep analysis of any social media post — hook strength, viral triggers, why it works.",
+    analyze_post:"Frames from the post plus its transcript, for you to read yourself.",
     discover_social_posts:"Trending posts from any platform for a given niche.",
     get_user_posts:"Recent posts from a specific creator handle.",
     get_social_media:"Get post data from any social media URL.",
@@ -571,8 +571,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     search_creators:"Find creators in a niche by engagement, followers, and content.",
     get_similar_creators:"Find creators similar to a given handle.",
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
-    understand_social_post:"Multimodal understanding of video/image content.",
-    check_orchyn_credits:"View your Orchyn credit balance and free tool usage.",
+    understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
+    check_orchyn_credits:"View your Orchyn credit balance and usage.",
     buy_orchyn_credits:"Purchase additional Orchyn credits.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
@@ -1029,14 +1029,20 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
     return t;
   }
 
-  // ─── AI actions ───
-  // A button that spends credits must show that it will: sparkle to mark it
-  // as an AI action, and the price on the face. The click asks the host to
-  // run the tool, and falls back to copying a ready prompt where the host
-  // cannot run one from a view.
-  var AI_PRICE={analyze_post_fast:2,write_hooks:2,create_variants:3,score_draft:2,
-    repurpose_post:2,niche_report:3,find_hook_pattern:2,analyze_post:6,
-    analyze_comments:6,compare_posts:8,understand_social_post:6,analyze_creator_profile:15};
+  // ─── Follow-up actions ───
+  // A button that spends credits must show that it will: sparkle to mark it as
+  // a follow-up the model will reason over, and the price on the face. The
+  // click asks the host to run the tool, and falls back to copying a ready
+  // prompt where the host cannot run one from a view.
+  //
+  // These are the fetch prices, which is all any of these tools cost now. The
+  // two that fan out to a second call are the two that are dearer than their
+  // headline fetch: analyze_post and understand_social_post pay 2 for the
+  // frames and 1 more for the transcript. score_draft fetches nothing, so it
+  // has no badge — the || 0 below already hides it.
+  var AI_PRICE={analyze_post_fast:2,write_hooks:2,create_variants:2,
+    repurpose_post:2,niche_report:2,find_hook_pattern:2,analyze_post:3,
+    analyze_comments:2,compare_posts:1,understand_social_post:3,analyze_creator_profile:2};
 
   // ChatGPT's Apps SDK does not answer the MCP Apps postMessage bridge. A
   // widget there reaches its server through window.openai.callTool, and opens
@@ -1905,7 +1911,13 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
       var key=groupKey(t);
       var open=expandedGroups[key],cut=open?all.length:Math.min(all.length,GROUP_PEEK);
       var mentions=all.slice(0,cut).map(function(m){
-        var hits=Number(m.hits||1),id=String(m.id||""),who=String(m.username||"someone");
+        // No invented handle. "@someone" reads as an account you could go and
+        // look at, and there is none — the platform withheld it, or the
+        // commenter is deleted. An empty handle renders as a stated absence
+        // below instead of a fabricated name. (No backticks in here: this
+        // whole view is one TypeScript template literal, and one would end it.)
+        var hits=Number(m.hits||1),id=String(m.id||"");
+        var who=m.username==null?"":String(m.username).trim();
         var pic=String(m.avatarProxyUrl||m.avatarUrl||"");
         var picAlt=String(m.avatarUrl||"");
         // A face and a platform mark, then the words. Reading a feed of
@@ -1922,7 +1934,8 @@ body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:transp
           +avatar
           +'<span class="mention-body">'
           +'<span class="mention-head">'
-          +'<span class="mention-who">@'+esc(who)+"</span>"
+          +(who?'<span class="mention-who">@'+esc(who)+"</span>"
+                :'<span class="mention-who mention-who-unknown">no handle</span>')
           +(m.postedAt?'<span class="mention-when">'+esc(friendlyTime(m.postedAt))+"</span>":"")
           +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
           +"</span>"

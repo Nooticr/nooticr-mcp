@@ -123,11 +123,12 @@ const analysis = open({
 }).nullish();
 
 /**
- * Evidence mode adds keys to every AI tool: what it fetched, and where it came
- * from. Optional throughout, because `mode: "ai"` returns none of them.
+ * What every tool that returns material rather than a conclusion adds: the
+ * marker, what it fetched, and where it came from. Optional throughout,
+ * because the shape of the material itself differs per tool.
  */
 const evidence = {
-  mode: scalar().describe('"evidence" when the material was returned unanalysed.'),
+  mode: scalar().describe('Always "evidence": this payload is material you have still to read.'),
   tool: scalar(),
   evidenceFrom: listOf(z.string()).describe("The cheap calls this was assembled from."),
   frameIndex: anyList().describe("Where each returned frame sits in the video."),
@@ -145,8 +146,7 @@ const analyzed = { ...singlePost, analysis, analyzed: scalar() };
  */
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
-  analyze_post_fast: open({
-    ...evidence, ...analyzed, mode: scalar() }),
+  analyze_post_fast: open({ ...evidence, ...analyzed }),
   understand_social_post: open({ ...analyzed, ...evidence }),
   // No `provider`: the field named the upstream supplier and is no longer
   // returned. Documenting a field that does not exist is worse than omitting it.
@@ -197,6 +197,8 @@ export const OUTPUT_SCHEMAS = {
   get_user_posts: open({ ...feed, username: scalar() }),
 
   /** Frames a caller looks at itself. The pixels ride in the content blocks. */
+  // What the frames COVER matters as much as the frames: a model that does not
+  // know shots were dropped will describe the video as if it saw all of it.
   get_post_frames: open({
     url: scalar(),
     platform: scalar(),
@@ -204,6 +206,18 @@ export const OUTPUT_SCHEMAS = {
     durationSeconds: scalar(),
     frameCount: scalar(),
     frames: anyList().describe("Base64 frames; also delivered as image content blocks."),
+    selection: scalar().describe(
+      "'scene' (one frame per distinct shot), 'even' (fixed interval) or 'images' (a carousel's own pictures).",
+    ),
+    scenesDetected: scalar().describe(
+      "Distinct shots found. Null when no scan ran, which is not the same as zero.",
+    ),
+    truncated: scalar().describe("True when shots were found that are not in `frames`."),
+    scannedSeconds: scalar(),
+    scanComplete: scalar().describe("False when a bound stopped the read before the video ended."),
+    coverageNote: scalar().describe(
+      "The above as one sentence, including that a still cannot show motion within a shot.",
+    ),
     post: post.nullish(),
     mcpCredits,
   }),
@@ -236,17 +250,17 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   /**
-   * Two shapes behind one tool. `mode: "ai"` returns orchyn's synthesis;
-   * `mode: "evidence"` returns the comments themselves and leaves the reading
-   * to the caller, so both sets of keys are optional here.
+   * The comments themselves, with the reading left to the caller. `summary`
+   * and `report` are what the synthesis used to fill in; they are kept and
+   * left optional because the schema is passthrough and a caller that stored
+   * one should not find the key gone.
    */
   analyze_comments: open({
     summary: scalar(),
     themes: anyList(),
     commentsAnalyzed: scalar(),
     report: open({}).nullish(),
-    // evidence mode
-    mode: scalar().describe('"evidence" when the comments were returned unanalysed.'),
+    mode: scalar().describe('Always "evidence": the comments come back unanalysed.'),
     url: scalar(),
     platform: scalar(),
     commentCount: scalar(),
@@ -257,7 +271,7 @@ export const OUTPUT_SCHEMAS = {
         author: scalar(),
         likes: scalar(),
       }),
-    ).describe("The comments, unanalysed, when mode is evidence."),
+    ).describe("The comments, unanalysed, each with an id you can pass back."),
     mcpCredits,
   }),
 
@@ -546,21 +560,15 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
+  /**
+   * No `report`. The key named the scores and fixes the backend's model
+   * produced, and this tool no longer calls a model — it returns the draft and
+   * the rubric and the reading is the caller's. Same rule as `provider` above:
+   * documenting a field that never arrives is worse than omitting it.
+   */
   score_draft: open({
     draft: scalar(),
     platform: scalar(),
-    report: open({
-      verdict: scalar(),
-      hookStrength: scalar(),
-      clarity: scalar(),
-      payoff: scalar(),
-      strengths: listOf(z.string()),
-      weaknesses: listOf(z.string()),
-      fixes: anyList(),
-      rewrittenHook: scalar(),
-      rewrittenDraft: scalar(),
-      predictedComment: scalar(),
-    }).nullish(),
     mcpCredits,
   }),
 
