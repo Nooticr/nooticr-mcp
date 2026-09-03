@@ -744,7 +744,7 @@ export function createMcpServer(
     "lands and who it is aimed at, citing the frame or line behind each claim. " +
     "It fans out to two fetches and you pay for both. " +
     `${costSentence("analyze_post")} Each frame costs roughly 1,200 tokens of your context. ` +
-    "Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. " +
+    "Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. " +
     "Use when the visuals are the point; analyze_post_fast reads the same post without the frames for one credit less.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_post") },
@@ -780,7 +780,7 @@ export function createMcpServer(
   {
    title: "Get Social Media",
    description:
-    "Fetch a social post's media from a TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili URL: " +
+    "Fetch a social post's media from a TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo or Bilibili URL: " +
     "contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. " +
     "Returns an inline thumbnail image. Consumes 1 orchyn credit (20 free credits included for new users)." +
     "Use when you need the post's facts and media and nothing more; if you want it interpreted, use analyze_post_fast instead.",
@@ -814,7 +814,7 @@ export function createMcpServer(
   {
    title: "Discover Social Posts",
    description:
-    "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo or Bilibili. Reddit and Weibo are mostly text rather than video, so a post from either may have no videoUrl and no duration. " +
+    "Discover recent posts (video, image, carousel, slideshow) for a niche on YouTube, TikTok, Instagram, Reddit, Douyin, Xiaohongshu, X, Weibo or Bilibili. Reddit and Weibo are mostly text rather than video, so a post from either may have no videoUrl and no duration. " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     'Say "next" to paginate (offset), or "analyze the 2nd one" / "analyze all" for batch analysis. ' +
     "Use to find individual posts to look at; use niche_report when you want the pattern across " +
@@ -859,7 +859,7 @@ export function createMcpServer(
   {
    title: "Get User Posts",
    description:
-    "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn (LinkedIn uses the profile public_id from the URL, e.g. 'williamhgates'). " +
+    "List recent posts by a creator handle (e.g. @zoundsapp) on TikTok, Instagram, YouTube, Reddit, Douyin, Xiaohongshu, X, Weibo, Bilibili or LinkedIn (LinkedIn uses the profile public_id from the URL, e.g. 'williamhgates'). " +
     "Each post includes title/caption, thumbnailUrl, externalUrl, views/likes/comments and inline thumbnails (up to 4) so they show in chat. " +
     "Use this when Claude needs to pull more posts from the same account to spot a pattern, or to scan a whole profile. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use to scan one creator's output; use find_hook_pattern when you want their formula extracted rather than the raw list.",
@@ -903,7 +903,7 @@ export function createMcpServer(
    title: "Analyze Creator Profile",
    description:
     "A creator's recent posts with their stats, on TikTok, Instagram, YouTube, Reddit, Douyin, " +
-    "Xiaohongshu, X/Twitter, Weibo, Bilibili or LinkedIn — the raw material of a profile teardown. " +
+    "Xiaohongshu, X, Weibo, Bilibili or LinkedIn — the raw material of a profile teardown. " +
     "Work out their niche, recurring themes, hook formula, what over- and under-performs and who " +
     "their audience is, reading the spread of the numbers rather than only the best post, and " +
     `name the posts you reason from. ${costSentence("analyze_creator_profile")} ` +
@@ -947,7 +947,7 @@ export function createMcpServer(
   {
    title: "Get Post Comments",
    description:
-    "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X/Twitter, Weibo, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
+    "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X, Weibo, Bilibili or LinkedIn, plus keyword clusters from TikTok Analytics " +
     "when available — audience sentiment/audience-signal analysis. Consumes 2 orchyn credits (20 free credits included for new users)." +
     "Use when you want to read what people actually wrote; use analyze_comments when you want it synthesised into what to do next.",
    _meta: {
@@ -1735,7 +1735,7 @@ export function createMcpServer(
    title: "Search Mentions",
    description:
     "Brand monitoring: what people are actually saying about a term across every network at once. " +
-    "Searches TikTok, Instagram, YouTube, X/Twitter, Reddit, Weibo, Douyin, Xiaohongshu and " +
+    "Searches TikTok, Instagram, YouTube, X, Reddit, Weibo, Douyin, Xiaohongshu and " +
     "Bilibili in parallel, opens the posts it finds and reads their COMMENTS for the term — the " +
     "mention is usually in the replies, not the caption. Returns the comments grouped under the " +
     "post they were left on, each with an id you can pass to another tool, how many times it " +
@@ -1952,7 +1952,7 @@ export function createMcpServer(
     "what physically happens on screen, in order, with every observation anchored to a frame. " +
     "It fans out to two fetches and you pay for both. " +
     `${costSentence("understand_social_post")} Each frame costs roughly 1,200 tokens of your context. ` +
-    "Supports TikTok, Instagram, YouTube, X/Twitter, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. " +
+    "Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. " +
     "Use when you need the events rather than the strategy; analyze_post puts the strategic question to the same material.",
    _meta: {
     ui: { resourceUri: uiResource("understand_social_post") },

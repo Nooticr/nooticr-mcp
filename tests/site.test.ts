@@ -677,8 +677,11 @@ describe("the declared tools and the shipped tools agree", () => {
     expect(new Set(platforms).size, "the enum should list nine networks").toBe(9);
     const said = (tool.description ?? "").toLowerCase();
     const unnamed = [...new Set(platforms)].filter((p) => {
-      const alias = { twitter: "x/twitter", xiaohongshu: "xiaohongshu" }[p] ?? p;
-      return !said.includes(alias);
+      // The wire value is still `twitter`; the network is called X. A plain
+      // `includes("x")` would pass on the x inside "xiaohongshu" and assert
+      // nothing at all, so every name is matched on a word boundary.
+      const alias = { twitter: "x", xiaohongshu: "xiaohongshu" }[p] ?? p;
+      return !new RegExp(`\\b${alias}\\b`).test(said);
     });
     expect(unnamed, "networks the tool searches but never mentions").toEqual([]);
   });
