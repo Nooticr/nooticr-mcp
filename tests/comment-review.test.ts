@@ -1,15 +1,15 @@
 /**
  * Comment analysis moved to the model that called us.
  *
- * `analyze_comments` sends a comment section to Gemini and returns Gemini's
- * opinion for 6 credits. The reading is text over text — the model already
- * holding the conversation does it better and costs us nothing. What is worth
- * charging for is the fetch.
+ * `analyze_comments` used to send a comment section to Gemini and return
+ * Gemini's opinion for 6 credits. The reading is text over text — the model
+ * already holding the conversation does it better and costs us nothing. What
+ * is worth charging for is the fetch, so the fetch is all that is left.
  *
- * Two things are asserted here that matter more than the plumbing: that
- * evidence mode makes the *cheap* upstream call rather than the expensive one,
- * and that the ids it hands out survive the round trip, since a classification
- * that cannot point back at a comment is not actionable.
+ * Two things are asserted here that matter more than the plumbing: that it
+ * makes the *cheap* upstream call and never the expensive one, and that the
+ * ids it hands out survive the round trip, since a classification that cannot
+ * point back at a comment is not actionable.
  */
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -59,12 +59,12 @@ async function connect() {
   return { client, calls };
 }
 
-describe("evidence mode", () => {
+describe("analyze_comments hands the comments over", () => {
   it("makes the cheap call, not the expensive one", async () => {
     const { client, calls } = await connect();
     const res = await client.callTool({
       name: "analyze_comments",
-      arguments: { url: URL_, mode: "evidence" },
+      arguments: { url: URL_ },
     });
     // The whole economic point: same upstream fetch as get_post_comments, so
     // it bills as the data call it is rather than as an AI one.
@@ -74,18 +74,20 @@ describe("evidence mode", () => {
     expect((out.mcpCredits as { cost: number }).cost).toBe(2);
   });
 
-  it("still runs the AI path by default, so nothing existing changes", async () => {
+  it("never reaches its own AI endpoint, whatever it is asked", async () => {
     const { client, calls } = await connect();
-    const res = await client.callTool({ name: "analyze_comments", arguments: { url: URL_ } });
-    expect(calls.map((c) => c.name)).toEqual(["analyze_comments"]);
-    expect((res.structuredContent as { summary?: string }).summary).toBe("gemini says things");
+    await client.callTool({ name: "analyze_comments", arguments: { url: URL_, limit: 20 } });
+    // There is no branch left that could reach it, and this is what would
+    // catch one growing back: `analyze_comments` on the backend is the 6-credit
+    // call, and nothing here should ever name it.
+    expect(calls.map((c) => c.name)).not.toContain("analyze_comments");
   });
 
   it("hands back comments with addressable ids", async () => {
     const { client } = await connect();
     const res = await client.callTool({
       name: "analyze_comments",
-      arguments: { url: URL_, mode: "evidence" },
+      arguments: { url: URL_ },
     });
     const out = res.structuredContent as { comments: Array<{ id: string; text: string }> };
     // The empty comment is dropped: an id pointing at nothing is worse than
@@ -100,7 +102,7 @@ describe("evidence mode", () => {
     const { client } = await connect();
     const res = await client.callTool({
       name: "analyze_comments",
-      arguments: { url: URL_, mode: "evidence" },
+      arguments: { url: URL_ },
     });
     const guidance = String((res.content as Array<{ text: string }>)[0].text);
     // Prose cannot be rendered, filtered or counted. Naming the shape is what
@@ -117,7 +119,7 @@ describe("evidence mode", () => {
     const { client } = await connect();
     const res = await client.callTool({
       name: "analyze_comments",
-      arguments: { url: URL_, mode: "evidence" },
+      arguments: { url: URL_ },
     });
     // Already fetched and already paid for; it is evidence too.
     expect((res.structuredContent as { themes: unknown[] }).themes).toHaveLength(1);

@@ -1,10 +1,12 @@
 # orchyn-mcp — Platform Submission
 
-`orchyn-mcp` is an MCP server exposing **one tool** — `analyze_post` — that
-starts an AI analysis of a TikTok / Instagram / YouTube / X / Douyin /
-Xiaohongshu / Bilibili / LinkedIn post (video, image, carousel or text) from
-its link, authenticated with the user's orchyn account (OAuth) and billed
-against the user's orchyn server credits.
+`orchyn-mcp` is an MCP server that reads TikTok / Instagram / YouTube / X /
+Reddit / Weibo / Douyin / Xiaohongshu / Bilibili / LinkedIn posts (video,
+image, carousel or text) from their links — media, frames, transcripts,
+comments, creators — and hands the material to the calling model to reason
+over. It runs no model of its own. Authenticated with the user's orchyn
+account (OAuth) and billed against the user's orchyn server credits, at the
+price of the fetch.
 
 This document is the submission package for the three major MCP platforms:
 **Claude Desktop**, **Cursor**, and **OpenAI** (Agents SDK).

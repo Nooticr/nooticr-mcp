@@ -62,6 +62,11 @@ const mcpCredits = open({
 /** The post object every feed, comparison and single-post tool returns. */
 const post = open({
   id: scalar(),
+  // The goal tools in jobs.ts attach an addressable id beside the platform's
+  // own rather than over it, so a caller keeps the value it needs to dedupe
+  // against its own records. Absent on the tools that do not address posts,
+  // which is why it is documented here rather than made required.
+  postId: scalar().describe("Addressable — `post:<platform>:<slug>`. Quote this one back."),
   platform: scalar(),
   contentType: scalar().describe("video, image, carousel or slideshow."),
   detectedFormat: scalar(),
@@ -118,11 +123,12 @@ const analysis = open({
 }).nullish();
 
 /**
- * Evidence mode adds keys to every AI tool: what it fetched, and where it came
- * from. Optional throughout, because `mode: "ai"` returns none of them.
+ * What every tool that returns material rather than a conclusion adds: the
+ * marker, what it fetched, and where it came from. Optional throughout,
+ * because the shape of the material itself differs per tool.
  */
 const evidence = {
-  mode: scalar().describe('"evidence" when the material was returned unanalysed.'),
+  mode: scalar().describe('Always "evidence": this payload is material you have still to read.'),
   tool: scalar(),
   evidenceFrom: listOf(z.string()).describe("The cheap calls this was assembled from."),
   frameIndex: anyList().describe("Where each returned frame sits in the video."),
@@ -140,8 +146,7 @@ const analyzed = { ...singlePost, analysis, analyzed: scalar() };
  */
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
-  analyze_post_fast: open({
-    ...evidence, ...analyzed, mode: scalar() }),
+  analyze_post_fast: open({ ...evidence, ...analyzed }),
   understand_social_post: open({ ...analyzed, ...evidence }),
   // No `provider`: the field named the upstream supplier and is no longer
   // returned. Documenting a field that does not exist is worse than omitting it.
@@ -192,6 +197,8 @@ export const OUTPUT_SCHEMAS = {
   get_user_posts: open({ ...feed, username: scalar() }),
 
   /** Frames a caller looks at itself. The pixels ride in the content blocks. */
+  // What the frames COVER matters as much as the frames: a model that does not
+  // know shots were dropped will describe the video as if it saw all of it.
   get_post_frames: open({
     url: scalar(),
     platform: scalar(),
@@ -199,6 +206,18 @@ export const OUTPUT_SCHEMAS = {
     durationSeconds: scalar(),
     frameCount: scalar(),
     frames: anyList().describe("Base64 frames; also delivered as image content blocks."),
+    selection: scalar().describe(
+      "'scene' (one frame per distinct shot), 'even' (fixed interval) or 'images' (a carousel's own pictures).",
+    ),
+    scenesDetected: scalar().describe(
+      "Distinct shots found. Null when no scan ran, which is not the same as zero.",
+    ),
+    truncated: scalar().describe("True when shots were found that are not in `frames`."),
+    scannedSeconds: scalar(),
+    scanComplete: scalar().describe("False when a bound stopped the read before the video ended."),
+    coverageNote: scalar().describe(
+      "The above as one sentence, including that a still cannot show motion within a shot.",
+    ),
     post: post.nullish(),
     mcpCredits,
   }),
@@ -231,17 +250,17 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   /**
-   * Two shapes behind one tool. `mode: "ai"` returns orchyn's synthesis;
-   * `mode: "evidence"` returns the comments themselves and leaves the reading
-   * to the caller, so both sets of keys are optional here.
+   * The comments themselves, with the reading left to the caller. `summary`
+   * and `report` are what the synthesis used to fill in; they are kept and
+   * left optional because the schema is passthrough and a caller that stored
+   * one should not find the key gone.
    */
   analyze_comments: open({
     summary: scalar(),
     themes: anyList(),
     commentsAnalyzed: scalar(),
     report: open({}).nullish(),
-    // evidence mode
-    mode: scalar().describe('"evidence" when the comments were returned unanalysed.'),
+    mode: scalar().describe('Always "evidence": the comments come back unanalysed.'),
     url: scalar(),
     platform: scalar(),
     commentCount: scalar(),
@@ -252,7 +271,7 @@ export const OUTPUT_SCHEMAS = {
         author: scalar(),
         likes: scalar(),
       }),
-    ).describe("The comments, unanalysed, when mode is evidence."),
+    ).describe("The comments, unanalysed, each with an id you can pass back."),
     mcpCredits,
   }),
 
@@ -268,6 +287,201 @@ export const OUTPUT_SCHEMAS = {
     themes: listOf(z.string()),
     nextSteps: listOf(z.string()),
     threads: anyList().describe("Shaped like search_mentions so one view renders both."),
+    mcpCredits,
+  }),
+
+  /**
+   * The five job tools, and the one view that draws what a model concluded
+   * from the first of them.
+   *
+   * They return evidence rather than an answer, so what is declared here is
+   * the material and where it came from: the groups, the ids that address each
+   * item, the arithmetic done over the stats, and what could not be fetched.
+   * Same rule as everywhere else in this file — the keys and their
+   * descriptions are the contract, the types are as wide as the data can be.
+   */
+  answer_my_audience: open({
+    ...evidence,
+    /** term + threads is the search_mentions shape, so one view draws both. */
+    term: scalar().describe("The creator, as @handle — what the view puts in its header."),
+    username: scalar(),
+    platform: scalar(),
+    since: scalar().describe("The date window asked for, if any."),
+    sinceApplied: scalar().describe("False when the platform returned no dates, so the window could not be honoured."),
+    postsChecked: scalar().describe("Posts whose comments were actually read."),
+    repliesCanBeSent: scalar().describe(
+      "Always false. No orchyn connection carries comment-write permission, so the drafts this " +
+        "produces are for a person to paste in themselves.",
+    ),
+    totalMentions: scalar().describe("Comments returned across every group."),
+    totalThreads: scalar(),
+    wantsReplyCount: scalar().describe("How many carry a reply signal. A sort, not a verdict."),
+    byCategory: open({}).nullish().describe("Flagged against unclear, as the view's filter chips."),
+    threads: listOf(
+      open({
+        post: post.nullish(),
+        mentionCount: scalar(),
+        mentions: listOf(
+          open({
+            id: scalar().describe(
+              "Addressable, and stable across calls — pass it back to show_audience_replies. " +
+                "Built from the platform's own comment id, or from a fingerprint of post, " +
+                "author and text where there is none. Not the positional scheme " +
+                "search_mentions uses, whose ids move when the paging or window changes.",
+            ),
+            text: scalar(),
+            username: scalar(),
+            likes: scalar(),
+            postedAt: scalar().describe(
+              "Null wherever the date could not be believed. Most networks stamp every comment " +
+                "with the moment of the fetch, so anything indistinguishable from now is " +
+                "dropped rather than repeated as fact.",
+            ),
+            wantsReply: scalar().describe("True when it reads like a question or a request."),
+            signals: listOf(z.string()).describe("Which phrasing test matched, so the flag can be argued with."),
+            category: scalar(),
+          }),
+        ),
+      }),
+    ).describe("Comments grouped under the post they were left on."),
+    posts: listOf(post).describe("The posts of this run, flattened for the card view."),
+    unavailable: anyList().describe("Posts whose comments could not be read, with the reason."),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  /** What the caller drafted, drawn. Nothing here was fetched. */
+  show_audience_replies: open({
+    review: scalar(),
+    term: scalar(),
+    username: scalar(),
+    summary: scalar(),
+    totalMentions: scalar(),
+    drafted: scalar().describe("How many rows carry an actual draft reply."),
+    byCategory: open({}).nullish().describe("How many comments fell to each decision."),
+    themes: listOf(z.string()),
+    nextSteps: listOf(z.string()),
+    threads: anyList().describe("Shaped like search_mentions so one view renders both."),
+    mcpCredits,
+  }),
+
+  track_competitor: open({
+    ...evidence,
+    username: scalar(),
+    platform: scalar(),
+    metric: scalar().describe("Which stat everything here is ranked on."),
+    window: scalar().describe("Posts in the window actually scored."),
+    since: scalar(),
+    sinceApplied: scalar(),
+    tracked: scalar().describe("True when this creator is on the watchlist, which is what makes a diff possible."),
+    lastCheckedAt: scalar().describe("When track_competitor last looked, or null on a first look."),
+    newSincePreviousCheck: scalar().describe("Posts not seen at the last check; null when there was none."),
+    baseline: open({
+      count: scalar(),
+      median: scalar().describe("The creator's own median — what outperformance is measured against."),
+      min: scalar(), max: scalar(), p25: scalar(), p75: scalar(),
+    }).nullish().describe("Null when there are too few posts to call anything a baseline."),
+    outperformers: listOf(z.string()).describe(
+      "postIds of the posts that beat the median by a quarter or more.",
+    ),
+    posts: listOf(
+      open({
+        id: scalar().describe("The platform's own id for the post, passed through untouched."),
+        postId: scalar().describe("Addressable — `post:<platform>:<slug>`. Quote this one."),
+        metricValue: scalar(),
+        isNew: scalar().describe("True when it was not there at the last check; null without one."),
+        standing: open({
+          value: scalar(), median: scalar(),
+          ratio: scalar().describe("This post over the creator's median. The number to quote."),
+          percentile: scalar(),
+          verdict: scalar().describe("breakout, above_baseline, typical, below_baseline, flop or no_baseline."),
+        }).nullish(),
+      }),
+    ).describe("The window, best against their own median first."),
+    unavailable: anyList(),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  who_should_i_work_with: open({
+    ...evidence,
+    niche: scalar(),
+    platform: scalar(),
+    seed: scalar().describe("The creator whose lookalikes were added, if one was given."),
+    creators: listOf(
+      creator.extend({
+        id: scalar().describe("Addressable — `creator:<platform>:<handle>`."),
+        foundBy: scalar().describe("search, similar, or both — both is the strongest signal here."),
+      }),
+    ),
+    foundBoth: scalar().describe("How many candidates both searches returned."),
+    audienceOverlap: open({
+      attempted: scalar().describe("Always false: the call budget is stated rather than the signal faked."),
+      reason: scalar(),
+      howTo: scalar().describe("How to measure it for a finalist, if the user wants to pay for it."),
+    }).nullish(),
+    unavailable: anyList().describe("Which of the two searches could not answer, with the reason."),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  why_did_this_underperform: open({
+    ...evidence,
+    url: scalar(),
+    username: scalar(),
+    platform: scalar(),
+    metric: scalar(),
+    metricValue: scalar().describe("What this post did, on the metric being compared."),
+    post: post.nullish(),
+    baseline: open({
+      count: scalar(), median: scalar(), min: scalar(), max: scalar(), p25: scalar(), p75: scalar(),
+    }).nullish().describe("The creator's recent distribution, with this post taken out of it."),
+    standing: open({
+      value: scalar(), median: scalar(),
+      ratio: scalar().describe("This post over the median. Below ~0.75 is genuinely under."),
+      percentile: scalar().describe("Percentage of the window this post beat."),
+      verdict: scalar(),
+    }).nullish(),
+    window: listOf(post).describe("The comparison window, best first, each with its own standing."),
+    unavailable: anyList(),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  what_should_i_make_next: open({
+    ...evidence,
+    username: scalar(),
+    platform: scalar(),
+    niche: scalar().describe("What the supply half was swept for."),
+    nicheSource: scalar().describe("argument, hashtags (inferred from the creator's own tags) or none."),
+    demand: listOf(
+      open({
+        postId: scalar(),
+        url: scalar(),
+        title: scalar(),
+        themes: anyList().describe("The platform's own keyword clustering, passed through."),
+        comments: listOf(
+          open({
+            id: scalar().describe(
+              "Addressable and stable across calls — quote it against any idea you propose.",
+            ),
+            text: scalar(),
+            author: scalar(),
+            likes: scalar(),
+            asking: scalar().describe("True when it reads like a request or a question."),
+            signals: listOf(z.string()),
+          }),
+        ),
+      }),
+    ).describe("What this creator's own audience asked for, grouped under the post."),
+    demandComments: scalar(),
+    askCount: scalar(),
+    supply: listOf(post).describe("What the niche is already making."),
+    supplyBaseline: open({}).nullish().describe("The niche's own view distribution — what 'already saturated' means numerically."),
+    yourBaseline: open({}).nullish().describe("The creator's own distribution, for what 'big for me' means."),
+    posts: listOf(post).describe("The supply sweep, flattened for the card view."),
+    unavailable: anyList(),
+    creditsCharged: scalar(),
     mcpCredits,
   }),
 
@@ -346,21 +560,15 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
+  /**
+   * No `report`. The key named the scores and fixes the backend's model
+   * produced, and this tool no longer calls a model — it returns the draft and
+   * the rubric and the reading is the caller's. Same rule as `provider` above:
+   * documenting a field that never arrives is worse than omitting it.
+   */
   score_draft: open({
     draft: scalar(),
     platform: scalar(),
-    report: open({
-      verdict: scalar(),
-      hookStrength: scalar(),
-      clarity: scalar(),
-      payoff: scalar(),
-      strengths: listOf(z.string()),
-      weaknesses: listOf(z.string()),
-      fixes: anyList(),
-      rewrittenHook: scalar(),
-      rewrittenDraft: scalar(),
-      predictedComment: scalar(),
-    }).nullish(),
     mcpCredits,
   }),
 
@@ -379,8 +587,17 @@ export const OUTPUT_SCHEMAS = {
     tier: scalar(),
     isAdmin: scalar(),
     bypassCredits: scalar(),
-    firstFreeTools: listOf(z.string()),
-    firstFreeRemaining: listOf(z.string()),
+    firstFreeTools: listOf(z.string())
+      .describe("Tools whose first use is still free. This is the one to read."),
+    // Two names, one list. The backend fills both from the same value and only
+    // firstFreeTools has ever been read — the credits card draws its "✨ free"
+    // pills from it, and nothing in either repo looks at firstFreeRemaining.
+    // It stays declared anyway: it was published in this schema, and a host
+    // that validates a response against the advertised output would see the
+    // removal as the contract breaking. A duplicate field costs less than that,
+    // so the description is what steers a reader off it.
+    firstFreeRemaining: listOf(z.string())
+      .describe("Superseded by firstFreeTools, which carries the same value. Kept for backward compatibility — read firstFreeTools."),
     billingUrl: scalar(),
     hint: scalar(),
   }),

@@ -1,18 +1,18 @@
 /**
- * Evidence mode: hand the caller the material instead of a conclusion.
+ * The material, not a conclusion.
  *
  * ## The shape of the argument
  *
- * Every AI tool here does the same two things — fetch something from a
+ * Every tool here used to do the same two things — fetch something from a
  * platform, then have Gemini read it. Only the first half is expensive to us
  * and hard to replicate; the second is text over text, which the model already
  * holding the conversation does better, steers itself, and costs us nothing.
  *
- * So each of these tools gains `mode: "evidence"`. It makes the same upstream
+ * So the second half is gone. Each of these tools now makes the same upstream
  * call the corresponding data tool makes — billed as that call, not as an AI
  * one — and returns the inputs with an explicit account of what to produce.
- *
- * `mode: "ai"` stays the default everywhere. Nothing existing changes.
+ * There is no other behaviour and no argument that selects one: what the
+ * server sells is the fetch, and it never sells a judgement.
  *
  * ## Visual tools are the interesting case
  *
@@ -34,6 +34,7 @@
  * user-controlled and cannot drive anything. So the guidance below is not
  * documentation; it is the steering, and it lands in the model's context.
  */
+import { BACKEND_CALL_CREDITS, costOf } from "./spend.js";
 
 /** Which cheap call stands in for each AI tool's expensive one. */
 export interface EvidencePlan {
@@ -52,43 +53,70 @@ export interface EvidencePlan {
 const url = (a: Record<string, unknown>) => String(a.url ?? "");
 
 /** Closing line every guidance block shares. */
-const ownIt =
+export const ownIt =
   "Reason over this yourself rather than asking for an interpretation of it — " +
   "you can see everything the analysis would have been built from.";
 
 export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
   analyze_post: {
     via: "get_post_frames",
-    args: (a) => ({ url: url(a), count: Number(a.frames ?? 8) }),
+    // No `count` unless the caller asked for one. Forcing 8 here capped a
+    // 12-shot post back to the coverage scene detection exists to replace.
+    args: (a) =>
+      a.frames === undefined
+        ? { url: url(a) }
+        : { url: url(a), count: Number(a.frames) },
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
     frames: true,
     guidance: () =>
       [
-        "Frames sampled evenly across this post, plus its transcript and stats.",
+        "Frames from this post, chosen by scene change rather than by the clock,",
+        "plus its transcript and stats.",
         "",
         "Look at the frames and read the words, then work out: what the hook is",
         "and why it holds, how the piece is structured beat by beat, what the",
         "visual style is doing, where the call to action lands, and who this is",
         "aimed at. Say which frame or line you are drawing each claim from.",
         "",
-        "The frames are samples, not the whole video — if something you need",
-        "happens between them, say so rather than filling the gap.",
+        "What the frames cover is stated in the payload and is not the same on",
+        "every post: `selection` says whether they are one per shot ('scene') or",
+        "evenly spaced samples ('even'), `scenesDetected` how many distinct shots",
+        "the video has, `truncated` whether any were left out, `scanComplete`",
+        "whether the whole video was read, and `coverageNote` says all of it in a",
+        "sentence. Read those before you describe the video. Where they say",
+        "something is missing — frames between samples, shots the cap dropped, a",
+        "read that stopped early — say so rather than filling the gap. And one",
+        "frame per shot is still one frame: it shows what was on screen, never",
+        "what moved while it was there, so do not describe motion you have not",
+        "seen across two frames.",
         ownIt,
       ].join("\n"),
   },
 
   understand_social_post: {
     via: "get_post_frames",
-    args: (a) => ({ url: url(a), count: Number(a.frames ?? 8) }),
+    // No `count` unless the caller asked for one. Forcing 8 here capped a
+    // 12-shot post back to the coverage scene detection exists to replace.
+    args: (a) =>
+      a.frames === undefined
+        ? { url: url(a) }
+        : { url: url(a), count: Number(a.frames) },
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
     frames: true,
     guidance: () =>
       [
-        "Frames sampled evenly across this post, plus its transcript.",
+        "Frames from this post, chosen by scene change rather than by the clock,",
+        "plus its transcript.",
         "",
         "Describe what physically happens on screen, in order — the events, not",
-        "the strategy. Anchor each observation to a frame. Where the frames do",
-        "not show something, say the sampling does not cover it.",
+        "the strategy. Anchor each observation to a frame.",
+        "",
+        "The payload says exactly what these frames cover: `selection`,",
+        "`scenesDetected`, `truncated`, `scanComplete` and `coverageNote`. Where",
+        "the frames do not reach something, say the coverage does not reach it",
+        "rather than inferring it. A frame per shot shows what was on screen and",
+        "not what moved during it, so describe stills unless two frames actually",
+        "show the change.",
         ownIt,
       ].join("\n"),
   },
@@ -104,8 +132,9 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "",
         "Work out the hook, the script structure, the call to action and the",
         "audience from the words and the numbers. Be explicit that you have not",
-        "seen the visuals; if a judgement needs them, say so and suggest",
-        "analyze_post with mode 'evidence' to get frames.",
+        "seen the visuals; if a judgement needs them, call analyze_post",
+        "yourself and look at the frames — do not ask anyone else to fetch",
+        "them for you.",
         ownIt,
       ].join("\n"),
   },
@@ -116,8 +145,8 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     guidance: (a) =>
       [
         `The first of ${(a.urls as string[])?.length ?? 0} posts to compare.`,
-        "Call get_social_media on each remaining URL, and get_post_transcript",
-        "where you need the words, then compare them yourself:",
+        "Call get_social_media on each remaining URL (1 credit each), and",
+        "get_post_transcript where you need the words, then compare them yourself:",
         "which performed better, what actually differed, and the single test",
         "worth running next. Ground every difference in a number or a quote.",
         ownIt,
@@ -230,13 +259,56 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
 };
 
 /**
- * `score_draft` is deliberately absent.
+ * `score_draft` has no plan, and deliberately so.
  *
- * It reviews text the user already supplied, so there is nothing to fetch —
- * an evidence mode would be a paid call that returned the caller's own input.
- * A caller that wants to judge a draft itself should simply judge it.
+ * It reviews text the caller already supplied, so there is nothing to fetch:
+ * a plan for it would be a paid call that handed back the caller's own input.
+ * It stays on the tool list as a free tool instead — see `scoreDraftGuidance`,
+ * which is the whole of what it now does.
  */
-export const NO_EVIDENCE_MODE = ["score_draft"] as const;
+export const FETCHES_NOTHING = ["score_draft"] as const;
+
+/**
+ * What the calling model is asked to produce for a draft.
+ *
+ * This lives beside the plans because it is the same kind of object: the text
+ * that lands in the model's context and tells it what a good answer looks
+ * like. The difference is only that there is nothing to fetch first, so the
+ * tool costs nothing.
+ *
+ * The tool could have been dropped instead. It is kept because a model reading
+ * a tool list treats the list as the menu of what is worth doing — with no
+ * `score_draft` on it, "check this before I film it" stops being a step
+ * anybody takes, and the `check_my_draft` prompt loses its first move. Naming
+ * the axes also makes two runs comparable, which free-form prose never is.
+ */
+export function scoreDraftGuidance(draft: string, platform: string): string {
+  return [
+    `A draft for ${platform || "tiktok"}, returned to you unchanged and unjudged.`,
+    "Nothing was fetched and nothing was charged: you already have the text,",
+    "so the only thing missing was the standard to hold it to.",
+    "",
+    "Score it 1-10 on each of these, and say what the number is for:",
+    "  hook — does the first line earn the second? Quote the words that do the",
+    "      work, or name what is missing where they should be.",
+    "  clarity — could someone say back what this is about after one pass?",
+    "  payoff — does it deliver what the hook promised, and is the promise",
+    "      kept early enough that nobody leaves before it lands?",
+    "  specificity — a number, a name or a detail beats an adjective. Count them.",
+    "  fit — does it read like the surface it is for, in length and register?",
+    "",
+    "Then give: the three fixes that would move the score most, in order of how",
+    "much they change it; one rewritten opening line; and a tightened version of",
+    "the whole draft that keeps the writer's voice.",
+    "",
+    "Judge the draft in front of you, not a better one you can imagine. If it is",
+    "already good, say so and stop rather than inventing changes.",
+    "",
+    "```",
+    draft,
+    "```",
+  ].join("\n");
+}
 
 /** Frames as MCP image blocks, which is how they reach the model as pixels. */
 export interface FrameBlock {
@@ -272,4 +344,61 @@ export function frameIndex(frames: unknown): Array<Record<string, unknown>> {
       atFraction: frame.atFraction ?? null,
     };
   });
+}
+
+/**
+ * What a call to one of these tools costs, derived rather than written down.
+ *
+ * The number in a tool's description is the one thing in it a caller can be
+ * charged for getting wrong, and it used to be a hand-typed constant that
+ * outlived two price changes. It is knowable: a plan is a list of backend
+ * calls and `BACKEND_CALL_CREDITS` is what each of those costs, so the
+ * description quotes this instead of a literal and cannot drift from what the
+ * tool actually spends.
+ */
+export function planCalls(tool: string): string[] {
+  const plan = EVIDENCE_PLANS[tool];
+  if (!plan) return [];
+  return plan.also ? [plan.via, plan.also.via] : [plan.via];
+}
+
+export function planCost(tool: string): number {
+  return costOf(planCalls(tool));
+}
+
+/**
+ * The price sentence a tool description carries.
+ *
+ * It names the calls as well as the total because a tool that fans out spends
+ * twice for one ask, and a caller who reads only "3 credits" has no way to
+ * know which two fetches they are paying for or which of them they could have
+ * made on their own.
+ */
+export function costSentence(tool: string): string {
+  const calls = planCalls(tool);
+  const total = planCost(tool);
+  const credits = `${total} orchyn credit${total === 1 ? "" : "s"}`;
+  if (calls.length === 1) return `Costs ${credits}, for the one ${calls[0]} call it makes.`;
+  const each = calls.map((c) => `${BACKEND_CALL_CREDITS[c] ?? 0} for ${c}`).join(" plus ");
+  return `Costs ${credits} — ${each}.`;
+}
+
+/**
+ * What this call did to the balance, said in the result rather than implied.
+ *
+ * A caller reads the description before choosing a tool and the result after
+ * running it; only the second is in front of the model when it reports back to
+ * the user. The `mcpCredits` note that rides along in the payload comes from
+ * the first fetch alone, so on a tool that fans out it understates the charge —
+ * this line is the only place the total is stated.
+ */
+export function fetchBillingNote(tool: string): string {
+  const calls = planCalls(tool);
+  if (calls.length === 0) return "";
+  return (
+    `Billed as the fetches that produced it: ${calls.join(" and ")}, ` +
+    `${planCost(tool)} credits in total, at the data price. Retrying this exact call does ` +
+    "not charge again: the idempotency key is namespaced per tool, so a retry replays the " +
+    "same debits."
+  );
 }
