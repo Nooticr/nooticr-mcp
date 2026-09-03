@@ -136,8 +136,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "get_post_frames",
  title: "Get Post Frames",
- description: "Sample frames from a post's video and return them as images you can look at yourself, rather than an analysis of them. A carousel or slideshow returns its own images unchanged. Pair it with get_post_transcript to reconstruct both what happens on screen and what is said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. Consumes 2 orchyn credits. Use when the frames are all you want; analyze_post pairs them with the transcript for 1 credit more.",
- inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("Frames to sample, evenly spaced across the video (default 8, max 20).") }).strict(),
+ description: "Frames from a post's video, returned as images you can look at yourself rather than an analysis of them. They are chosen by scene change rather than by the clock: the video is decoded through and a frame kept whenever the picture actually changed, so every distinct shot is represented, where evenly spaced frames can all land inside one long take and miss a cutaway entirely. The result says how many shots were found, how many frames came back and whether the cap left any out, so you never have to guess what you have seen. A carousel or slideshow returns its own images unchanged. Pair it with get_post_transcript to have both what is shown and what is said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. Consumes 2 orchyn credits. Use when the frames are all you want; analyze_post pairs them with the transcript for 1 credit more.",
+ inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("The most frames to return (max 24). Omit it and scene mode returns one frame per shot."), mode: z.enum(["auto", "scene", "even"]).optional().describe("auto (default) picks per video; scene returns one frame per shot; even keeps the old fixed-interval sampling.") }).strict(),
  },
  {
  name: "show_comment_review",

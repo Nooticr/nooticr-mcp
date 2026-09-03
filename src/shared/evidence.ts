@@ -60,36 +60,63 @@ export const ownIt =
 export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
   analyze_post: {
     via: "get_post_frames",
-    args: (a) => ({ url: url(a), count: Number(a.frames ?? 8) }),
+    // No `count` unless the caller asked for one. Forcing 8 here capped a
+    // 12-shot post back to the coverage scene detection exists to replace.
+    args: (a) =>
+      a.frames === undefined
+        ? { url: url(a) }
+        : { url: url(a), count: Number(a.frames) },
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
     frames: true,
     guidance: () =>
       [
-        "Frames sampled evenly across this post, plus its transcript and stats.",
+        "Frames from this post, chosen by scene change rather than by the clock,",
+        "plus its transcript and stats.",
         "",
         "Look at the frames and read the words, then work out: what the hook is",
         "and why it holds, how the piece is structured beat by beat, what the",
         "visual style is doing, where the call to action lands, and who this is",
         "aimed at. Say which frame or line you are drawing each claim from.",
         "",
-        "The frames are samples, not the whole video — if something you need",
-        "happens between them, say so rather than filling the gap.",
+        "What the frames cover is stated in the payload and is not the same on",
+        "every post: `selection` says whether they are one per shot ('scene') or",
+        "evenly spaced samples ('even'), `scenesDetected` how many distinct shots",
+        "the video has, `truncated` whether any were left out, `scanComplete`",
+        "whether the whole video was read, and `coverageNote` says all of it in a",
+        "sentence. Read those before you describe the video. Where they say",
+        "something is missing — frames between samples, shots the cap dropped, a",
+        "read that stopped early — say so rather than filling the gap. And one",
+        "frame per shot is still one frame: it shows what was on screen, never",
+        "what moved while it was there, so do not describe motion you have not",
+        "seen across two frames.",
         ownIt,
       ].join("\n"),
   },
 
   understand_social_post: {
     via: "get_post_frames",
-    args: (a) => ({ url: url(a), count: Number(a.frames ?? 8) }),
+    // No `count` unless the caller asked for one. Forcing 8 here capped a
+    // 12-shot post back to the coverage scene detection exists to replace.
+    args: (a) =>
+      a.frames === undefined
+        ? { url: url(a) }
+        : { url: url(a), count: Number(a.frames) },
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
     frames: true,
     guidance: () =>
       [
-        "Frames sampled evenly across this post, plus its transcript.",
+        "Frames from this post, chosen by scene change rather than by the clock,",
+        "plus its transcript.",
         "",
         "Describe what physically happens on screen, in order — the events, not",
-        "the strategy. Anchor each observation to a frame. Where the frames do",
-        "not show something, say the sampling does not cover it.",
+        "the strategy. Anchor each observation to a frame.",
+        "",
+        "The payload says exactly what these frames cover: `selection`,",
+        "`scenesDetected`, `truncated`, `scanComplete` and `coverageNote`. Where",
+        "the frames do not reach something, say the coverage does not reach it",
+        "rather than inferring it. A frame per shot shows what was on screen and",
+        "not what moved during it, so describe stills unless two frames actually",
+        "show the change.",
         ownIt,
       ].join("\n"),
   },

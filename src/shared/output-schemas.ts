@@ -197,6 +197,8 @@ export const OUTPUT_SCHEMAS = {
   get_user_posts: open({ ...feed, username: scalar() }),
 
   /** Frames a caller looks at itself. The pixels ride in the content blocks. */
+  // What the frames COVER matters as much as the frames: a model that does not
+  // know shots were dropped will describe the video as if it saw all of it.
   get_post_frames: open({
     url: scalar(),
     platform: scalar(),
@@ -204,6 +206,18 @@ export const OUTPUT_SCHEMAS = {
     durationSeconds: scalar(),
     frameCount: scalar(),
     frames: anyList().describe("Base64 frames; also delivered as image content blocks."),
+    selection: scalar().describe(
+      "'scene' (one frame per distinct shot), 'even' (fixed interval) or 'images' (a carousel's own pictures).",
+    ),
+    scenesDetected: scalar().describe(
+      "Distinct shots found. Null when no scan ran, which is not the same as zero.",
+    ),
+    truncated: scalar().describe("True when shots were found that are not in `frames`."),
+    scannedSeconds: scalar(),
+    scanComplete: scalar().describe("False when a bound stopped the read before the video ended."),
+    coverageNote: scalar().describe(
+      "The above as one sentence, including that a still cannot show motion within a shot.",
+    ),
     post: post.nullish(),
     mcpCredits,
   }),

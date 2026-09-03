@@ -1215,12 +1215,16 @@ export function createMcpServer(
   {
    title: "Get Post Frames",
    description:
-    "Sample frames from a post's video and return them as images you can look at yourself, " +
-    "rather than an analysis of them. A carousel or slideshow returns its own images unchanged. " +
-    "Pair it with get_post_transcript to reconstruct both what happens on screen and what is " +
-    "said, and judge them yourself. Each frame costs you roughly 1,200 tokens of context. " +
-    "Consumes 2 orchyn credits. Use when the frames are all you want; analyze_post pairs them " +
-    "with the transcript for 1 credit more.",
+    "Frames from a post's video, returned as images you can look at yourself rather than an " +
+    "analysis of them. They are chosen by scene change rather than by the clock: the video is " +
+    "decoded through and a frame kept whenever the picture actually changed, so every distinct " +
+    "shot is represented, where evenly spaced frames can all land inside one long take and miss " +
+    "a cutaway entirely. The result says how many shots were found, how many frames came back " +
+    "and whether the cap left any out, so you never have to guess what you have seen. A carousel " +
+    "or slideshow returns its own images unchanged. Pair it with get_post_transcript to have " +
+    "both what is shown and what is said, and judge them yourself. Each frame costs you roughly " +
+    "1,200 tokens of context. Consumes 2 orchyn credits. Use when the frames are all you want; " +
+    "analyze_post pairs them with the transcript for 1 credit more.",
    _meta: {
     ui: { resourceUri: uiResource("get_post_frames") },
     "ui/resourceUri": uiResource("get_post_frames"),
@@ -1235,11 +1239,23 @@ export function createMcpServer(
       .number()
       .int()
       .optional()
-      .describe("Frames to sample, evenly spaced across the video (default 8, max 20)."),
+      .describe(
+       "The most frames to return (max 24). Omit it and scene mode returns one frame per shot.",
+      ),
+     // Without this the schema is `.strict()` and zod rejects `mode` here,
+     // before the server that understands it ever sees the call.
+     mode: z
+      .enum(["auto", "scene", "even"])
+      .optional()
+      .describe(
+       "auto (default) decides per video; scene returns one frame per distinct shot; " +
+        "even keeps the old fixed-interval sampling, which is what you want when two " +
+        "posts must be compared at matching positions.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; count?: number }, extra) => {
+  async (args: { url: string; count?: number; mode?: string }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
     const res = await client.callTool("get_post_frames", { ...args });
