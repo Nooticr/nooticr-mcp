@@ -9,6 +9,7 @@
   },
   "homepage": "https://mcp.nooticr.com",
   "repository": "https://github.com/Nooticr/nooticr-mcp",
+  "icon": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
   "license": "MIT",
   "keywords": [
     "social-media",

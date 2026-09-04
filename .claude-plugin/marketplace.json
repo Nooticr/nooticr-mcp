@@ -11,6 +11,7 @@
       "name": "nooticr",
       "source": "./",
       "description": "Social intelligence for Claude. Read posts, spoken transcripts, comments, creators, trending sounds and hashtags across TikTok, Instagram, YouTube, X, LinkedIn, Douyin, Xiaohongshu and Bilibili \u2014 then act on what you learn: write hooks, create variants to film, score a draft before you publish, and repurpose a post for other surfaces. 24 tools, OAuth 2.1, billed in nooticr credits (20 free to start).",
+      "icon": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
       "category": "productivity",
       "keywords": [
         "social-media",
