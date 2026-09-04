@@ -41,6 +41,7 @@ import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlis
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
+import { registerConnectionTools } from "./connections.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.19";
@@ -2002,6 +2003,7 @@ export function createMcpServer(
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
+ registerConnectionTools(server, makeClient);
 
  return server;
 }

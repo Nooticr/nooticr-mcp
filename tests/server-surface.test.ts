@@ -48,6 +48,8 @@ const NOT_READ_ONLY = [
   "draft_post",
   "generate_captions",
   "generate_content_plan",
+  // Mints a fresh OAuth state row every call — a retry is not a no-op.
+  "connect_social_account",
 ];
 
 describe("tool annotations", () => {
@@ -55,7 +57,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(46);
+    expect(tools).toHaveLength(48);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -80,6 +82,9 @@ describe("tool annotations", () => {
     // The watchlist tools that only touch stored state are closed-world too.
     expect(closed.sort()).toEqual([
       "check_nooticr_credits",
+      // Mints a connect link (nooticr's own oauth_start), never a third-party
+      // read or write.
+      "connect_social_account",
       // All three touch nooticr's own stored watch state; the sweep a watch
       // schedules runs later, server-side, never inside the call itself.
       "create_brand_watch",
@@ -93,6 +98,8 @@ describe("tool annotations", () => {
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
+      // Reads nooticr's own connection records, not a third-party network.
+      "list_social_connections",
       "nooticr_login",
       "review_post",
       // Renders drafts the caller already wrote; fetches nothing, and cannot

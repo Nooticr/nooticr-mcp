@@ -236,6 +236,8 @@ describe("tool surface", () => {
     "growth_brief",
     "generate_content_plan",
     "generate_captions",
+    "list_social_connections",
+    "connect_social_account",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -336,6 +338,10 @@ describe("tool surface", () => {
       // Calls AI but the dashboard's own pre-publish review has never
       // billed for it, so nor does this.
       "review_post",
+      // Reads/mints nooticr's own connection records and OAuth links —
+      // no upstream fetch either way.
+      "list_social_connections",
+      "connect_social_account",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

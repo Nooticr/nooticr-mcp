@@ -142,6 +142,8 @@ Everything above reads someone else's content. These read and generate for **you
 | `growth_brief` | plan AI credits | A plain-language brief — the one insight that matters, wins, risks, next actions — grounded in your real post history and synced analytics. |
 | `generate_content_plan` | plan AI credits | A one-week, day-by-day content plan for your creators, grounded in what already worked. Saved — fetch it later with `get_content_plan`. |
 | `generate_captions` | plan AI credits | Timed on-screen caption cues for a video — a transcript plus start/end-timed lines. Returns cue data only. |
+| `list_social_connections` | free | The social accounts you've connected and what each is allowed to do — read, publish, manage comments. Also lists which platforms can be connected at all. |
+| `connect_social_account` | free | A link to open to connect one account. You approve at the provider; nothing connects until you do, and no credential ever passes through this tool. |
 
 ### How billing works
 

@@ -757,6 +757,32 @@ export const OUTPUT_SCHEMAS = {
     captions: listOf(open({ text: scalar(), start: scalar(), end: scalar() })),
     provider: scalar().describe("\"mock\" when no AI provider is configured — the cues are placeholders."),
   }),
+
+  list_social_connections: open({
+    connections: listOf(
+      open({
+        influencerId: scalar(),
+        influencerName: scalar(),
+        platform: scalar(),
+        accountName: scalar(),
+        status: scalar(),
+        canReadAccount: scalar().describe("\"yes\", \"no\" or \"unknown\" — unknown means try it, not a refusal."),
+        canPublishPost: scalar(),
+        canManageComments: scalar(),
+        scopeRecorded: scalar(),
+      }),
+    ),
+    connectedCount: scalar(),
+    connectable: listOf(z.string()).describe("Platforms that can be linked to an account — smaller than what nooticr reads."),
+    note: scalar(),
+  }),
+  connect_social_account: open({
+    platform: scalar(),
+    appId: scalar(),
+    influencerId: scalar(),
+    connectUrl: scalar().describe("Open this in a browser to approve the connection."),
+    message: scalar(),
+  }),
 } as const;
 
 export type OutputSchemaName = keyof typeof OUTPUT_SCHEMAS;

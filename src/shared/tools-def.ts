@@ -242,6 +242,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ appId: z.number().int().describe("Your product's id."), durationSec: z.number().optional(), title: z.string().optional(), caption: z.string().optional(), videoUrl: z.string().optional(), transcriptHint: z.string().optional() }).strict(),
  },
  {
+ name: "list_social_connections",
+ title: "List Social Connections",
+ description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Also returns which platforms can be connected at all. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "connect_social_account",
+ title: "Connect Social Account",
+ description: "Get a link to open so you can connect one social account. The user approves at the provider; nothing is connected until they do, and no credential ever passes through this tool. No cost to call.",
+ inputSchema: z.object({ platform: z.string().describe("Which network to connect."), influencerId: z.number().int().optional(), appId: z.number().int().optional() }).strict(),
+ },
+ {
  name: "answer_my_audience",
  title: "Answer My Audience",
  description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because no nooticr connection carries comment-write permission \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
