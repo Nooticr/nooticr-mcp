@@ -1,5 +1,5 @@
 /**
- * Tests for the mcp.orchyn.com pages.
+ * Tests for the mcp.nooticr.com pages.
  *
  * The point of these is not that the HTML "looks right" — it is that the
  * public claims stay true. The landing page states per-tool prices, which
@@ -16,13 +16,13 @@ import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
 import { EVIDENCE_PLANS, planCost } from "../src/shared/evidence.js";
 
-const URL = "https://mcp.orchyn.com";
-const API = "https://api.orchyn.com";
+const URL = "https://mcp.nooticr.com";
+const API = "https://api.nooticr.com";
 
 /**
  * What the pages must quote.
  *
- * Half of this is transcribed from orchyn-server's `mcp_tool_cost`
+ * Half of this is transcribed from nooticr-server's `mcp_tool_cost`
  * (crates/server/src/mcp_tools.rs); the other half is derived, and that is the
  * point. Those tools make no AI call of their own, so what they cost is the
  * sum of the fetches in their plan — hard-coding those numbers is how the
@@ -86,7 +86,7 @@ describe("landing page", () => {
 
   it("points installers at the real connector URL", () => {
     expect(html).toContain(`${URL}/mcp`);
-    expect(html).toContain("@orchyn/mcp");
+    expect(html).toContain("@nooticr/mcp");
   });
 
   it("escapes interpolated values", () => {
@@ -180,7 +180,7 @@ describe("dashboard", () => {
  */
 describe("UI template dual-host safety", () => {
   it("contains no backslash escapes that the two hosts would read differently", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
     // The TS build is the resolved one; compare against what Rust ships by
     // scanning the source literal for escapes inside the template body.
     // NB: `URL` is shadowed by a const at the top of this file, so resolve
@@ -190,7 +190,7 @@ describe("UI template dual-host safety", () => {
     const { dirname, join } = await import("node:path");
     const here = dirname(fileURLToPath(import.meta.url));
     const raw = readFileSync(join(here, "..", "src", "shared", "ui-template.ts"), "utf8");
-    const start = raw.indexOf("export const ORCHYN_UI_TEMPLATE = `") + "export const ORCHYN_UI_TEMPLATE = `".length;
+    const start = raw.indexOf("export const NOOTICR_UI_TEMPLATE = `") + "export const NOOTICR_UI_TEMPLATE = `".length;
     const body = raw.slice(start, raw.indexOf("`;", start));
 
     // `\uXXXX`, `\n`, `\"` and friends all diverge. A literal `\\` is fine
@@ -206,7 +206,7 @@ describe("UI template dual-host safety", () => {
     ).toEqual([]);
 
     // And the resolved template must still be parseable.
-    const script = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*)<\/script>/)?.[1] ?? "";
+    const script = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*)<\/script>/)?.[1] ?? "";
     expect(() => new Function(script)).not.toThrow();
   });
 });
@@ -214,7 +214,7 @@ describe("UI template dual-host safety", () => {
 /**
  * Tool surface parity.
  *
- * The tool list exists three times — the Rust MCP crate, the orchyn server,
+ * The tool list exists three times — the Rust MCP crate, the nooticr server,
  * and this TS package (which is what the Cloudflare worker and the npm CLI
  * actually serve). They are maintained by hand, and they have silently
  * diverged: four tools shipped in Rust reached no claude.ai user because the
@@ -247,9 +247,9 @@ describe("tool surface", () => {
     "repurpose_post",
     "niche_report",
     "find_hook_pattern",
-    "check_orchyn_credits",
-    "buy_orchyn_credits",
-    "orchyn_login",
+    "check_nooticr_credits",
+    "buy_nooticr_credits",
+    "nooticr_login",
     "show_comment_review",
     "get_post_frames",
     // The job tools (jobs.ts): compositions of the calls above, named after
@@ -311,9 +311,9 @@ describe("tool surface", () => {
     // watchlist tools that only write stored state. catch_up_watchlist is not
     // here — it fetches per creator, and says so.
     const free = [
-      "check_orchyn_credits",
-      "buy_orchyn_credits",
-      "orchyn_login",
+      "check_nooticr_credits",
+      "buy_nooticr_credits",
+      "nooticr_login",
       "watch_creator",
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
@@ -526,9 +526,9 @@ describe("documentation", () => {
       ).toContain(`${cost} cr`);
     }
     for (const free of [
-      "check_orchyn_credits",
-      "buy_orchyn_credits",
-      "orchyn_login",
+      "check_nooticr_credits",
+      "buy_nooticr_credits",
+      "nooticr_login",
       "watch_creator",
       "unwatch_creator",
     ]) {
@@ -564,7 +564,7 @@ describe("documentation", () => {
   it("links the legal documents and support", () => {
     expect(html).toContain('href="/terms"');
     expect(html).toContain('href="/privacy"');
-    expect(html).toContain("support@orchyn.com");
+    expect(html).toContain("support@nooticr.com");
   });
 
   it("quotes the current pack prices", () => {

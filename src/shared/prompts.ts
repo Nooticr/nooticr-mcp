@@ -1,7 +1,7 @@
 /**
  * Prompts — the workflows, named.
  *
- * A tool list is a parts bin. It tells a host what Orchyn can do and nothing
+ * A tool list is a parts bin. It tells a host what Nooticr can do and nothing
  * about what to do first, and the ordering is where most of the value is: the
  * transcript before the analysis when the wording matters, the cheap
  * caption-based pass before the one that watches every frame, the comments

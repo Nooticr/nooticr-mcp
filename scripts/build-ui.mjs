@@ -28,7 +28,7 @@ const root = join(here, "..");
 const INPUT = join(root, "src", "shared", "ui", "input.css");
 const TARGET = join(root, "src", "shared", "ui-template.ts");
 
-const tmp = mkdtempSync(join(tmpdir(), "orchyn-ui-"));
+const tmp = mkdtempSync(join(tmpdir(), "nooticr-ui-"));
 const out = join(tmp, "compiled.css");
 
 execFileSync(

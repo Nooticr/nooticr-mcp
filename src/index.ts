@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * orchyn-mcp — MCP server exposing `analyze_post` (analyze any post: video/image/carousel) that runs
- * AI video analysis through the user's orchyn account.
+ * nooticr-mcp — MCP server exposing `analyze_post` (analyze any post: video/image/carousel) that runs
+ * AI video analysis through the user's nooticr account.
  *
  * Modes:
- *   orchyn-mcp            stdio transport (default; Claude Desktop, Cursor)
- *   orchyn-mcp login      browser-based Google sign-in to orchyn
- *   orchyn-mcp --http     remote HTTP transport with OAuth (OpenAI Agents SDK)
+ *   nooticr-mcp            stdio transport (default; Claude Desktop, Cursor)
+ *   nooticr-mcp login      browser-based Google sign-in to nooticr
+ *   nooticr-mcp --http     remote HTTP transport with OAuth (OpenAI Agents SDK)
  */
 
 import http from "node:http";
@@ -22,8 +22,8 @@ import {
   getTransportMode,
   DEFAULT_PORT,
 } from "./config.js";
-import { AuthManager, OrchynAuthError, createHttpTokenProvider, createStdioTokenProvider } from "./auth.js";
-import { OrchynClient, OrchynError } from "./orchyn.js";
+import { AuthManager, NooticrAuthError, createHttpTokenProvider, createStdioTokenProvider } from "./auth.js";
+import { NooticrClient, NooticrError } from "./nooticr.js";
 import {OAuthManager, type McpSession, SCOPES} from "./oauth.js";
 import { createMcpServer } from "./shared/tools.js";
 import { FileWatchStore } from "./shared/watchlist.js";
@@ -44,7 +44,7 @@ function watchStoreForStdio(): FileWatchStore {
 export async function runStdio(): Promise<void> {
   const auth = new AuthManager(getBaseUrl(), getCredentialsFile());
   const server = createMcpServer(
-    () => new OrchynClient(getBaseUrl(), createStdioTokenProvider(auth)),
+    () => new NooticrClient(getBaseUrl(), createStdioTokenProvider(auth)),
     { watchStore: watchStoreForStdio() }
   );
   const transport = new StdioServerTransport();
@@ -92,7 +92,7 @@ function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
 }
 
 function sendHtml(res: http.ServerResponse, status: number, body: string): void {
-  const payload = `<!doctype html><html><head><meta charset="utf-8"><title>orchyn-mcp</title></head><body>${body}</body></html>`;
+  const payload = `<!doctype html><html><head><meta charset="utf-8"><title>nooticr-mcp</title></head><body>${body}</body></html>`;
   res.writeHead(status, { "content-type": "text/html; charset=utf-8" });
   res.end(payload);
 }
@@ -106,12 +106,12 @@ function bearerToken(req: http.IncomingMessage): string | undefined {
 
 /**
  * A request bearer token is valid when it was issued by our OAuth `/token`
- * endpoint, or when it matches `ORCHYN_ACCESS_TOKEN` (pre-provisioned
+ * endpoint, or when it matches `NOOTICR_ACCESS_TOKEN` (pre-provisioned
  * deployments and local testing — no browser OAuth round-trip needed).
  */
 function validMcpToken(token: string, oauth: OAuthManager): boolean {
   if (oauth.verifyToken(token)) return true;
-  const envToken = process.env.ORCHYN_ACCESS_TOKEN;
+  const envToken = process.env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }
 
@@ -135,7 +135,7 @@ async function handleMcpRequest(
   // handlers via RequestHandlerExtra.authInfo (see shared/protocol.js).
   (req as http.IncomingMessage & { auth?: AuthInfo }).auth = {
     token,
-    clientId: session?.clientId ?? "orchyn-mcp",
+    clientId: session?.clientId ?? "nooticr-mcp",
     scopes: session?.scopes ?? [...SCOPES],
     expiresAt: session
       ? Math.floor(session.expiresAt / 1000)
@@ -185,7 +185,7 @@ async function handleMcpRequest(
     });
     // The SDK's McpServer can only attach to one transport, so each MCP
     // session gets its own server instance (tools are registered per
-    // instance; sessions resolve their orchyn identity via authInfo).
+    // instance; sessions resolve their nooticr identity via authInfo).
     const mcpserver = state.serverFactory();
     state.connections.set(transport, mcpserver);
     transport.onclose = () => {
@@ -239,7 +239,7 @@ async function handleHttpRequest(
     return sendHtml(
       res,
       200,
-      `<h1>orchyn-mcp</h1><p>MCP server is running.</p>` +
+      `<h1>nooticr-mcp</h1><p>MCP server is running.</p>` +
         `<p>Authorization endpoint: <code>${meta.authorization_endpoint}</code></p>` +
         `<p>Token endpoint: <code>${meta.token_endpoint}</code></p>`
     );
@@ -257,7 +257,7 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
 
   const oauth = new OAuthManager({
     publicUrl: pub,
-    client: new OrchynClient(baseUrl, {
+    client: new NooticrClient(baseUrl, {
       getAccessToken: async () => undefined,
     }),
     onSession: async (session) => {
@@ -275,14 +275,14 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
         const session: McpSession | undefined = extra.authInfo?.token
           ? oauth.verifyToken(extra.authInfo.token)
           : undefined;
-        return new OrchynClient(
+        return new NooticrClient(
           baseUrl,
           createHttpTokenProvider(
             auth,
             session
               ? {
-                  accessToken: session.orchynAccessToken,
-                  refreshToken: session.orchynRefreshToken,
+                  accessToken: session.nooticrAccessToken,
+                  refreshToken: session.nooticrRefreshToken,
                 }
               : undefined
           )
@@ -300,9 +300,9 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
 
   server.listen(port, () => {
     process.stdout.write(
-      `[orchyn-mcp] HTTP server listening on ${pub.replace(/:\d+$/, "")}:${port}\n` +
-        `[orchyn-mcp] OAuth metadata: ${pub}/.well-known/oauth-authorization-server\n` +
-        `[orchyn-mcp] MCP endpoint:   ${pub}/mcp\n`
+      `[nooticr-mcp] HTTP server listening on ${pub.replace(/:\d+$/, "")}:${port}\n` +
+        `[nooticr-mcp] OAuth metadata: ${pub}/.well-known/oauth-authorization-server\n` +
+        `[nooticr-mcp] MCP endpoint:   ${pub}/mcp\n`
     );
   });
 }
@@ -320,7 +320,7 @@ export interface LoginOptions {
 export async function runLogin(opts: LoginOptions): Promise<void> {
   const baseUrl = getBaseUrl();
   const auth = new AuthManager(baseUrl, getCredentialsFile());
-  const client = new OrchynClient(baseUrl, {
+  const client = new NooticrClient(baseUrl, {
     getAccessToken: async () => undefined,
   });
 
@@ -333,7 +333,7 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
     return;
   }
 
-  // Browser flow: open the orchyn-branded login page (Google + email/password)
+  // Browser flow: open the nooticr-branded login page (Google + email/password)
   // at /auth/mcp-login?redirect=<loopback callback>. Both paths converge on a
   // single ?code= redirect the listener exchanges for JWTs.
   const callbackPath = "/oauth/callback";
@@ -382,7 +382,7 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
   });
 
   process.stdout.write(
-    `Open this URL in your browser to sign in with your orchyn account:\n\n  ${mcpLoginUrl.toString()}\n\n`
+    `Open this URL in your browser to sign in with your nooticr account:\n\n  ${mcpLoginUrl.toString()}\n\n`
   );
 
   try {
@@ -406,30 +406,30 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function printHelp(): void {
-  process.stdout.write(`orchyn-mcp — MCP server for orchyn AI video analysis
+  process.stdout.write(`nooticr-mcp — MCP server for nooticr AI video analysis
 
 Usage:
-  orchyn-mcp                    Start in stdio mode (default transport)
-  orchyn-mcp --stdio            Same as above
-  orchyn-mcp --http [--port N]    Start the remote HTTP transport with OAuth
-                                (default port ${DEFAULT_PORT}; also ORCHYN_PORT)
-  orchyn-mcp login              Sign in to orchyn via Google in your browser
-  orchyn-mcp login --email me@example.com --password '...'   Password login
-  orchyn-mcp --help             Show this help
+  nooticr-mcp                    Start in stdio mode (default transport)
+  nooticr-mcp --stdio            Same as above
+  nooticr-mcp --http [--port N]    Start the remote HTTP transport with OAuth
+                                (default port ${DEFAULT_PORT}; also NOOTICR_PORT)
+  nooticr-mcp login              Sign in to nooticr via Google in your browser
+  nooticr-mcp login --email me@example.com --password '...'   Password login
+  nooticr-mcp --help             Show this help
 
 Environment variables:
-  ORCHYN_BASE_URL          orchyn server base URL (default http://localhost:8080)
-  ORCHYN_ACCESS_TOKEN      orchyn JWT access token (bypasses login)
-  ORCHYN_CREDENTIALS_FILE  token store path (default ~/.config/orchyn-mcp/credentials.json)
-  ORCHYN_PUBLIC_URL        public base URL for the HTTP mode (default http://localhost:3457)
-  ORCHYN_PORT              port for --http and login (default ${DEFAULT_PORT})
-  ORCHYN_TRANSPORT         "stdio" or "http"
+  NOOTICR_BASE_URL          nooticr server base URL (default http://localhost:8080)
+  NOOTICR_ACCESS_TOKEN      nooticr JWT access token (bypasses login)
+  NOOTICR_CREDENTIALS_FILE  token store path (default ~/.config/nooticr-mcp/credentials.json)
+  NOOTICR_PUBLIC_URL        public base URL for the HTTP mode (default http://localhost:3457)
+  NOOTICR_PORT              port for --http and login (default ${DEFAULT_PORT})
+  NOOTICR_TRANSPORT         "stdio" or "http"
 
 Client setup:
-  Claude Desktop / Cursor (stdio): after "orchyn-mcp login", use
-    "command": "npx", "args": ["orchyn-mcp"]  (plus ORCHYN_ACCESS_TOKEN if needed)
+  Claude Desktop / Cursor (stdio): after "nooticr-mcp login", use
+    "command": "npx", "args": ["nooticr-mcp"]  (plus NOOTICR_ACCESS_TOKEN if needed)
   OpenAI Agents SDK (remote HTTP): use the RemoteMCPClient with URL
-    <ORCHYN_PUBLIC_URL>/mcp — the OAuth flow will open your browser.
+    <NOOTICR_PUBLIC_URL>/mcp — the OAuth flow will open your browser.
 
 See README.md for full instructions.
 `);
@@ -491,10 +491,10 @@ async function main(): Promise<void> {
       await runStdio();
     }
   } catch (err) {
-    if (err instanceof OrchynAuthError) {
+    if (err instanceof NooticrAuthError) {
       process.stderr.write(`${err.message}\n`);
-    } else if (err instanceof OrchynError) {
-      process.stderr.write(`orchyn API error: ${err.message}\n`);
+    } else if (err instanceof NooticrError) {
+      process.stderr.write(`nooticr API error: ${err.message}\n`);
     } else {
       process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
     }

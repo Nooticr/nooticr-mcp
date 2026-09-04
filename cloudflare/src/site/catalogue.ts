@@ -4,7 +4,7 @@
  * The landing page and the documentation both list every tool with its price.
  * When those lived in two arrays they drifted — the landing page silently lost
  * four tools for a release. One source, read by both, plus a test pinning the
- * prices to what orchyn-server actually charges.
+ * prices to what nooticr-server actually charges.
  */
 
 export type Group = "read" | "understand" | "research" | "create" | "account";
@@ -225,19 +225,19 @@ export const TOOLS: Tool[] = [
 
   // ── account ──
   {
-    name: "check_orchyn_credits", cost: 0, group: "account",
+    name: "check_nooticr_credits", cost: 0, group: "account",
     args: "—",
     desc: "Balance and billing URL.",
     when: "Before a run of paid calls.",
   },
   {
-    name: "buy_orchyn_credits", cost: 0, group: "account",
+    name: "buy_nooticr_credits", cost: 0, group: "account",
     args: "—",
     desc: "A Stripe Checkout URL for a credit pack. Credits land automatically after payment.",
     when: "The balance is short.",
   },
   {
-    name: "orchyn_login", cost: 0, group: "account",
+    name: "nooticr_login", cost: 0, group: "account",
     args: "—",
     desc: "Re-link the account.",
     when: "A call fails with an authentication error.",

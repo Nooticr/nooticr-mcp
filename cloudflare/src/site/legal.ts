@@ -1,5 +1,5 @@
 /**
- * Terms of Use and Privacy Policy for mcp.orchyn.com.
+ * Terms of Use and Privacy Policy for mcp.nooticr.com.
  *
  * These are required for connector review, and they are read by people
  * deciding whether to give an AI assistant access to an account — so they
@@ -16,12 +16,12 @@ export const LEGAL_EFFECTIVE = "29 August 2026";
 
 function prose(publicUrl: string, title: string, path: string, inner: string): string {
   return page(
-    { title: `${title} — Orchyn MCP`, publicUrl, canonicalPath: path, description: `${title} for the Orchyn MCP server.` },
+    { title: `${title} — Nooticr MCP`, publicUrl, canonicalPath: path, description: `${title} for the Nooticr MCP server.` },
     `<main class="wrap"><section style="padding:56px 0"><div class="prose">${inner}</div></section></main>`
   );
 }
 
-export function termsPage(publicUrl: string, orchynBase: string): string {
+export function termsPage(publicUrl: string, nooticrBase: string): string {
   const host = esc(publicUrl.replace(/^https?:\/\//, ""));
   return prose(
     publicUrl,
@@ -29,14 +29,14 @@ export function termsPage(publicUrl: string, orchynBase: string): string {
     "/terms",
     `<span class="eyebrow">Legal</span>` +
       `<h1>Terms of Use</h1>` +
-      `<p class="muted">Effective ${esc(LEGAL_EFFECTIVE)} · These terms govern your use of the Orchyn MCP server at ${host}.</p>` +
+      `<p class="muted">Effective ${esc(LEGAL_EFFECTIVE)} · These terms govern your use of the Nooticr MCP server at ${host}.</p>` +
 
       `<h2>1. What this service is</h2>` +
-      `<p>Orchyn MCP is a Model Context Protocol server operated by ${esc(BRAND.company)}. It lets an AI assistant you control — such as Claude, ChatGPT or Cursor — retrieve and analyse <strong>publicly available</strong> posts from supported social networks on your behalf.</p>` +
+      `<p>Nooticr MCP is a Model Context Protocol server operated by ${esc(BRAND.company)}. It lets an AI assistant you control — such as Claude, ChatGPT or Cursor — retrieve and analyse <strong>publicly available</strong> posts from supported social networks on your behalf.</p>` +
       `<p>The service returns data about public posts. It does not post, comment, like, follow, message, or take any other action on your social accounts, and it does not connect to your social accounts at all.</p>` +
 
       `<h2>2. Your account</h2>` +
-      `<p>You need an Orchyn account to use the service. You are responsible for keeping your credentials secure and for everything done through your account. Access is granted to your AI client through OAuth 2.1; you can revoke it at any time by disconnecting the connector in that client.</p>` +
+      `<p>You need an Nooticr account to use the service. You are responsible for keeping your credentials secure and for everything done through your account. Access is granted to your AI client through OAuth 2.1; you can revoke it at any time by disconnecting the connector in that client.</p>` +
       `<p>You must be at least 13 years old, or the minimum age of digital consent where you live, whichever is higher.</p>` +
 
       `<h2>3. Credits and payment</h2>` +
@@ -86,7 +86,7 @@ export function termsPage(publicUrl: string, orchynBase: string): string {
   );
 }
 
-export function privacyPage(publicUrl: string, orchynBase: string): string {
+export function privacyPage(publicUrl: string, nooticrBase: string): string {
   const host = esc(publicUrl.replace(/^https?:\/\//, ""));
   return prose(
     publicUrl,
@@ -123,7 +123,7 @@ export function privacyPage(publicUrl: string, orchynBase: string): string {
       `</ul>` +
 
       `<h2>Retrieved content</h2>` +
-      `<p>When a tool fetches a post, media may pass through an Orchyn proxy so it can be displayed inside your assistant. These copies are short-lived, serve only your request, and are not indexed, mined or used for any other purpose.</p>` +
+      `<p>When a tool fetches a post, media may pass through an Nooticr proxy so it can be displayed inside your assistant. These copies are short-lived, serve only your request, and are not indexed, mined or used for any other purpose.</p>` +
       `<p>Retrieved posts may contain personal data about the people who published them. We process it only to answer your request. You are responsible for using it lawfully — see the acceptable use section of our <a href="/terms">Terms</a>.</p>` +
 
       `<h2>Who we share with</h2>` +

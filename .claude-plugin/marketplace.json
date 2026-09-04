@@ -1,16 +1,16 @@
 {
-  "name": "orchyn",
-  "description": "Orchyn plugins \u2014 social intelligence for Claude: read and understand posts across eight networks, then create from what you learn.",
+  "name": "nooticr",
+  "description": "Nooticr plugins \u2014 social intelligence for Claude: read and understand posts across eight networks, then create from what you learn.",
   "version": "1.0.0",
   "owner": {
-    "name": "Orchyn",
-    "url": "https://github.com/orchynX"
+    "name": "Nooticr",
+    "url": "https://github.com/Nooticr"
   },
   "plugins": [
     {
-      "name": "orchyn",
+      "name": "nooticr",
       "source": "./",
-      "description": "Social intelligence for Claude. Read posts, spoken transcripts, comments, creators, trending sounds and hashtags across TikTok, Instagram, YouTube, X, LinkedIn, Douyin, Xiaohongshu and Bilibili \u2014 then act on what you learn: write hooks, create variants to film, score a draft before you publish, and repurpose a post for other surfaces. 24 tools, OAuth 2.1, billed in orchyn credits (20 free to start).",
+      "description": "Social intelligence for Claude. Read posts, spoken transcripts, comments, creators, trending sounds and hashtags across TikTok, Instagram, YouTube, X, LinkedIn, Douyin, Xiaohongshu and Bilibili \u2014 then act on what you learn: write hooks, create variants to film, score a draft before you publish, and repurpose a post for other surfaces. 24 tools, OAuth 2.1, billed in nooticr credits (20 free to start).",
       "category": "productivity",
       "keywords": [
         "social-media",

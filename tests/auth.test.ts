@@ -3,11 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 import { AuthManager, isTokenExpired } from "../src/auth.js";
-import { OrchynError } from "../src/orchyn.js";
+import { NooticrError } from "../src/nooticr.js";
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete process.env.ORCHYN_ACCESS_TOKEN;
+  delete process.env.NOOTICR_ACCESS_TOKEN;
 });
 
 describe("isTokenExpired", () => {
@@ -31,8 +31,8 @@ describe("isTokenExpired", () => {
 
 describe("AuthManager", () => {
   it("resolves env token first", async () => {
-    process.env.ORCHYN_ACCESS_TOKEN = "env-token";
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    process.env.NOOTICR_ACCESS_TOKEN = "env-token";
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     await fs.promises.mkdir(tmp, { recursive: true });
     const file = path.join(tmp, "credentials.json");
     await fs.promises.writeFile(
@@ -45,7 +45,7 @@ describe("AuthManager", () => {
   });
 
   it("uses the file token when fresh", async () => {
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     await fs.promises.mkdir(tmp, { recursive: true });
     const file = path.join(tmp, "credentials.json");
     await fs.promises.writeFile(
@@ -58,7 +58,7 @@ describe("AuthManager", () => {
   });
 
   it("refreshes an expired file token and persists the new session", async () => {
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     await fs.promises.mkdir(tmp, { recursive: true });
     const file = path.join(tmp, "credentials.json");
     await fs.promises.writeFile(
@@ -97,7 +97,7 @@ describe("AuthManager", () => {
   });
 
   it("persists sessions with 0600 permissions", async () => {
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     const file = path.join(tmp, "credentials.json");
     const auth = new AuthManager("http://localhost:8080", file);
     await auth.persistSession({
@@ -114,7 +114,7 @@ describe("AuthManager", () => {
   });
 
   it("uses file tokens before per-session tokens (env > file > session)", async () => {
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     await fs.promises.mkdir(tmp, { recursive: true });
     const file = path.join(tmp, "credentials.json");
     await fs.promises.writeFile(
@@ -134,7 +134,7 @@ describe("AuthManager", () => {
   it("throws a helpful error when unauthenticated", async () => {
     const auth = new AuthManager("http://localhost:8080", "/nonexistent/creds.json");
     expect(await auth.getAccessToken()).toBeUndefined();
-    expect(() => auth.ensureUnauthenticatedError()).toThrow(/orchyn-mcp login|ORCHYN_ACCESS_TOKEN/);
+    expect(() => auth.ensureUnauthenticatedError()).toThrow(/nooticr-mcp login|NOOTICR_ACCESS_TOKEN/);
   });
 
   it("onUnauthorized returns false without a refresh token", async () => {
@@ -143,7 +143,7 @@ describe("AuthManager", () => {
   });
 
   it("onUnauthorized refreshes using the file refresh token on 401", async () => {
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     await fs.promises.mkdir(tmp, { recursive: true });
     const file = path.join(tmp, "credentials.json");
     await fs.promises.writeFile(
@@ -164,7 +164,7 @@ describe("AuthManager", () => {
   });
 
   it("normalizes refresh failures without throwing (falls back to session)", async () => {
-    const tmp = path.join(os.tmpdir(), `orchyn-test-${Date.now()}`);
+    const tmp = path.join(os.tmpdir(), `nooticr-test-${Date.now()}`);
     await fs.promises.mkdir(tmp, { recursive: true });
     const file = path.join(tmp, "credentials.json");
     await fs.promises.writeFile(

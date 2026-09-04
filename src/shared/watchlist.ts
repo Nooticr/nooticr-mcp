@@ -18,7 +18,7 @@
  * indefensible. Catching up is a tool, because it fetches, and it says what it
  * costs.
  *
- * WHERE THIS SHOULD LIVE EVENTUALLY: in the orchyn account, not here. The two
+ * WHERE THIS SHOULD LIVE EVENTUALLY: in the nooticr account, not here. The two
  * transports keep it in different places — a file beside the credentials for
  * stdio, KV for the worker — so the same person on ChatGPT and on Claude
  * Desktop today has two watchlists. Both implementations sit behind WatchStore
@@ -27,10 +27,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import type { OrchynClient } from "./orchyn.js";
+import type { NooticrClient } from "./nooticr.js";
 import { confirmSpend, declinedResult, CREDITS_PER_CREATOR } from "./spend.js";
 
-export const WATCHLIST_URI = "orchyn://watchlist";
+export const WATCHLIST_URI = "nooticr://watchlist";
 
 export interface WatchEntry {
   /** `platform:handle` — stable, and what unwatch takes. */
@@ -173,13 +173,13 @@ const entryId = watchEntryId;
 /**
  * The account a stored list belongs to.
  *
- * The watchlist belongs to the orchyn account, not to the connection: the same
+ * The watchlist belongs to the nooticr account, not to the connection: the same
  * person on two hosts should see one list. me() is the only identity both
  * transports already have. Exported because jobs.ts reads the same store to
  * answer "what has this competitor shipped since I last checked", and two
  * different owner keys over one store would be two different watchlists.
  */
-export async function watchlistOwner(client: OrchynClient): Promise<string> {
+export async function watchlistOwner(client: NooticrClient): Promise<string> {
   try {
     const me = await client.me();
     return String(me?.id || me?.email || "anonymous");
@@ -207,7 +207,7 @@ export function registerWatchlist(
     authInfo?: AuthInfo;
     requestId?: string | number;
     arguments?: unknown;
-  }) => Promise<OrchynClient> | OrchynClient,
+  }) => Promise<NooticrClient> | NooticrClient,
   store: WatchStore,
 ): void {
   const ownerOf = watchlistOwner;
@@ -218,7 +218,7 @@ export function registerWatchlist(
   });
 
   server.registerResource(
-    "Orchyn Watchlist",
+    "Nooticr Watchlist",
     WATCHLIST_URI,
     {
       mimeType: "application/json",
@@ -330,16 +330,16 @@ export function registerWatchlist(
     {
       title: "Catch Up On Watchlist",
       _meta: {
-        ui: { resourceUri: "ui://orchyn/catch_up_watchlist" },
-        "ui/resourceUri": "ui://orchyn/catch_up_watchlist",
-        "openai/outputTemplate": "ui://orchyn/catch_up_watchlist.html",
+        ui: { resourceUri: "ui://nooticr/catch_up_watchlist" },
+        "ui/resourceUri": "ui://nooticr/catch_up_watchlist",
+        "openai/outputTemplate": "ui://nooticr/catch_up_watchlist.html",
       },
       description:
         "What the creators you watch have posted since you last checked. Fetches each one's recent " +
         "posts and compares them against the snapshot taken at your last catch-up, then moves the " +
         "snapshot forward — so this answers 'what is new' rather than 'what exists'. The first run " +
         "for a creator has nothing to compare against and just records the baseline. " +
-        "Consumes 2 orchyn credits per creator checked.",
+        "Consumes 2 nooticr credits per creator checked.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({

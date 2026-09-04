@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Sync the HTML template from the npm package to the Rust ui.rs file
-const { ORCHYN_UI_TEMPLATE } = require('../dist/shared/ui-template.js');
+const { NOOTICR_UI_TEMPLATE } = require('../dist/shared/ui-template.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,11 +8,11 @@ const path = require('path');
 // machine. An absolute path to one person's home meant the script only worked
 // there, so anyone else regenerated the file by hand — which is how the copy
 // drifted 27KB in the first place.
-const RUST_FILE = process.env.ORCHYN_RUST_UI
-  || path.resolve(__dirname, '../../orchyn-server/crates/mcp/src/ui.rs');
+const RUST_FILE = process.env.NOOTICR_RUST_UI
+  || path.resolve(__dirname, '../../nooticr-server/crates/mcp/src/ui.rs');
 
 const content = [
-  '//! MCP Apps \u2014 interactive UI resource for Orchyn tools.',
+  '//! MCP Apps \u2014 interactive UI resource for Nooticr tools.',
   '//!',
   '//! Contains the single HTML template that all tools share. The host fetches',
   '//! this via `resources/read`, renders it in a sandboxed iframe, and pushes',
@@ -22,7 +22,7 @@ const content = [
   'pub const RESOURCE_MIME_TYPE: &str = "text/html;profile=mcp-app";',
   '',
   '/// The `ui://` resource URI shared by all tools.',
-  'pub const UI_RESOURCE_URI: &str = "ui://orchyn/view";',
+  'pub const UI_RESOURCE_URI: &str = "ui://nooticr/view";',
   '',
   '/// Extension identifier for MCP Apps.',
   'pub const UI_EXTENSION: &str = "io.modelcontextprotocol/ui";',
@@ -32,7 +32,7 @@ const content = [
   '// NOTE: the raw string is delimited with three hashes (r###") because the',
   '// template body contains "# sequences (SVG href="#r", CSS colors) that',
   '// would terminate an r#" delimiter early and break the Rust build.',
-  'pub const UI_TEMPLATE: &str = r###"' + ORCHYN_UI_TEMPLATE + '"###;',
+  'pub const UI_TEMPLATE: &str = r###"' + NOOTICR_UI_TEMPLATE + '"###;',
   '',
 ].join('\n');
 

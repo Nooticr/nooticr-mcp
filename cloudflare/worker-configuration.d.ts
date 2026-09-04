@@ -4,7 +4,7 @@
 interface __BaseEnv_Env {
 	STORE: KVNamespace;
 	CF_VERSION_METADATA: WorkerVersionMetadata;
-	ORCHYN_BASE_URL: string;
+	NOOTICR_BASE_URL: string;
 	PUBLIC_URL: string;
 	MCP_ENDPOINT: DurableObjectNamespace<import("./src/index").McpEndpoint>;
 }
@@ -20,7 +20,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "ORCHYN_BASE_URL" | "PUBLIC_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "NOOTICR_BASE_URL" | "PUBLIC_URL">> {}
 }
 
 // Begin runtime types

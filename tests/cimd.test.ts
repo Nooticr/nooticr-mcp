@@ -232,12 +232,12 @@ describe("server-side request forgery", () => {
 describe("the authorization server metadata", () => {
   it("advertises CIMD so clients stop choosing DCR", async () => {
     const { authorizationServerMetadata } = await import("../src/shared/oauth.js");
-    const meta = authorizationServerMetadata("https://mcp.orchyn.com", { registration: true });
+    const meta = authorizationServerMetadata("https://mcp.nooticr.com", { registration: true });
     // Clients try CIMD before DCR when both are offered. Without this flag
     // every one of them fell through to the deprecated path.
     expect(meta.client_id_metadata_document_supported).toBe(true);
     // DCR stays available: dropping it would lock out already-registered
     // clients, and it is deprecated rather than removed.
-    expect(meta.registration_endpoint).toBe("https://mcp.orchyn.com/register");
+    expect(meta.registration_endpoint).toBe("https://mcp.nooticr.com/register");
   });
 });

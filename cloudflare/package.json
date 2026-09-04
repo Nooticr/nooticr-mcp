@@ -1,9 +1,9 @@
 {
-  "name": "orchyn-mcp-cloudflare",
+  "name": "nooticr-mcp-cloudflare",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker hosting of the orchyn MCP server (https://mcp.orchyn.com)",
+  "description": "Cloudflare Worker hosting of the nooticr MCP server (https://mcp.nooticr.com)",
   "scripts": {
     "build": "tsc --noEmit",
     "dev": "wrangler dev",

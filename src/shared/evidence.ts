@@ -377,7 +377,7 @@ export function planCost(tool: string): number {
 export function costSentence(tool: string): string {
   const calls = planCalls(tool);
   const total = planCost(tool);
-  const credits = `${total} orchyn credit${total === 1 ? "" : "s"}`;
+  const credits = `${total} nooticr credit${total === 1 ? "" : "s"}`;
   if (calls.length === 1) return `Costs ${credits}, for the one ${calls[0]} call it makes.`;
   const each = calls.map((c) => `${BACKEND_CALL_CREDITS[c] ?? 0} for ${c}`).join(" plus ");
   return `Costs ${credits} — ${each}.`;

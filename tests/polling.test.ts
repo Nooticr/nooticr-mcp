@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { OrchynClient, OrchynError } from "../src/orchyn.js";
+import { NooticrClient, NooticrError } from "../src/nooticr.js";
 import { JobTimeoutError, pollUntilDone, runVideoAnalysis, formatPaywallError } from "../src/video.js";
 
-/** Fake job store: a synchronous in-memory map, wrapped in a fake OrchynClient. */
+/** Fake job store: a synchronous in-memory map, wrapped in a fake NooticrClient. */
 function fakeClient(jobs: Record<string, unknown>) {
   return {
     startVideoAnalysis: vi.fn().mockResolvedValue({
@@ -10,13 +10,13 @@ function fakeClient(jobs: Record<string, unknown>) {
       jobId: "job-1",
       state: "pending",
       platform: "youtube",
-      provider: "orchyn",
+      provider: "nooticr",
     }),
     getJob: vi.fn().mockImplementation(async (jobId: string) => {
-      if (!(jobId in jobs)) throw new OrchynError(404, "Job not found");
+      if (!(jobId in jobs)) throw new NooticrError(404, "Job not found");
       return jobs[jobId];
     }),
-  } as unknown as Pick<OrchynClient, "startVideoAnalysis" | "getJob">;
+  } as unknown as Pick<NooticrClient, "startVideoAnalysis" | "getJob">;
 }
 
 describe("pollUntilDone", () => {
@@ -38,7 +38,7 @@ describe("pollUntilDone", () => {
       };
     });
     const onPoll = vi.fn(() => { calls += 1; });
-    const status = await pollUntilDone(client as OrchynClient, "job-1", {
+    const status = await pollUntilDone(client as NooticrClient, "job-1", {
       pollIntervalMs: 1,
       timeoutMs: 1000,
       onPoll,
@@ -57,7 +57,7 @@ describe("pollUntilDone", () => {
       error: "Video could not be downloaded",
       elapsedMs: 500,
     });
-    const status = await pollUntilDone(client as OrchynClient, "job-1", { pollIntervalMs: 1 });
+    const status = await pollUntilDone(client as NooticrClient, "job-1", { pollIntervalMs: 1 });
     expect(status.state).toBe("error");
     expect(status.error).toBe("Video could not be downloaded");
   });
@@ -70,7 +70,7 @@ describe("pollUntilDone", () => {
       state: "thinking",
     });
     await expect(
-      pollUntilDone(client as OrchynClient, "job-1", { pollIntervalMs: 1, timeoutMs: 50 })
+      pollUntilDone(client as NooticrClient, "job-1", { pollIntervalMs: 1, timeoutMs: 50 })
     ).rejects.toBeInstanceOf(JobTimeoutError);
   });
 });
@@ -83,12 +83,12 @@ describe("runVideoAnalysis", () => {
       jobId: "job-1",
       state: "done",
       platform: "youtube",
-      provider: "orchyn",
+      provider: "nooticr",
       analysis: { summary: "Done" },
       elapsedMs: 1234,
     });
 
-    const result = await runVideoAnalysis(client as OrchynClient, "https://youtu.be/x", {
+    const result = await runVideoAnalysis(client as NooticrClient, "https://youtu.be/x", {
       pollIntervalMs: 1,
     });
 
@@ -98,7 +98,7 @@ describe("runVideoAnalysis", () => {
       jobId: "job-1",
       state: "done",
       platform: "youtube",
-      provider: "orchyn",
+      provider: "nooticr",
       analysis: { summary: "Done" },
     });
     expect(result.job).toMatchObject({ jobId: "job-1", platform: "youtube" });
@@ -127,7 +127,7 @@ describe("runVideoAnalysis", () => {
       analysis: { summary: "Done", hookStrength: 8 },
     });
 
-    const result = await runVideoAnalysis(client as OrchynClient, "https://youtu.be/x", {
+    const result = await runVideoAnalysis(client as NooticrClient, "https://youtu.be/x", {
       pollIntervalMs: 1,
     });
 
@@ -143,26 +143,26 @@ describe("runVideoAnalysis", () => {
       state: "error",
       error: "x",
     });
-    await runVideoAnalysis(client as OrchynClient, "https://youtu.be/x", { appId: 7, pollIntervalMs: 1 });
+    await runVideoAnalysis(client as NooticrClient, "https://youtu.be/x", { appId: 7, pollIntervalMs: 1 });
     expect(client.startVideoAnalysis).toHaveBeenCalledWith("https://youtu.be/x", 7);
   });
 
   it("surfaces 402 paywall errors from the start call", async () => {
     const client = fakeClient({});
     (client.startVideoAnalysis as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new OrchynError(402, "Insufficient credits", {
+      new NooticrError(402, "Insufficient credits", {
         paywall: { reason: "no_credits", used: 5, max: 3, cost: 2 },
       })
     );
     await expect(
-      runVideoAnalysis(client as OrchynClient, "https://youtu.be/x")
+      runVideoAnalysis(client as NooticrClient, "https://youtu.be/x")
     ).rejects.toMatchObject({ status: 402 });
   });
 });
 
 describe("formatPaywallError", () => {
   it("includes reason, usage, cost and dashboard pointer", () => {
-    const err = new OrchynError(402, "Insufficient credits", {
+    const err = new NooticrError(402, "Insufficient credits", {
       paywall: { reason: "no_credits", used: 5, max: 3, cost: 2 },
     });
     const text = formatPaywallError(err);

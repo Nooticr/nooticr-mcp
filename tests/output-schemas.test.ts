@@ -64,7 +64,7 @@ describe("output schemas", () => {
         {
           id: "1", platform: "tiktok", contentType: "video", duration: 57,
           externalUrl: "https://www.tiktok.com/@a/video/1",
-          videoUrl: "https://api.orchyn.com/media/files/a.mp4",
+          videoUrl: "https://api.nooticr.com/media/files/a.mp4",
           views: 4963693, likes: 438800, slideCount: null,
         },
         {
@@ -102,7 +102,7 @@ describe("output schemas", () => {
 });
 
 /**
- * check_orchyn_credits ships the same list under two names.
+ * check_nooticr_credits ships the same list under two names.
  *
  * firstFreeRemaining has no reader anywhere — the credits card draws its pills
  * from firstFreeTools — but it was published in this schema, so removing it
@@ -111,8 +111,8 @@ describe("output schemas", () => {
  * giving two answers, and a caller that picked the undocumented one would then
  * be quietly wrong. These pin the alias to being a duplicate.
  */
-describe("check_orchyn_credits free-tool aliases", () => {
-  const credits = OUTPUT_SCHEMAS.check_orchyn_credits;
+describe("check_nooticr_credits free-tool aliases", () => {
+  const credits = OUTPUT_SCHEMAS.check_nooticr_credits;
   const shape = credits.shape;
 
   /** The invariant, stated once: while both ship, they are one list. */

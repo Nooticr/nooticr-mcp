@@ -175,7 +175,7 @@ export async function fetchClientMetadata(
       redirect: "manual",
       headers: {
         accept: "application/json",
-        "user-agent": "orchyn-mcp/1.0 (+https://mcp.orchyn.com)",
+        "user-agent": "nooticr-mcp/1.0 (+https://mcp.nooticr.com)",
       },
       signal: abort.signal,
     });

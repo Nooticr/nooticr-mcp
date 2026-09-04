@@ -56,7 +56,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import type { OrchynClient } from "./orchyn.js";
+import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
 import { ownIt } from "./evidence.js";
@@ -361,7 +361,7 @@ function audienceGuidance(a: {
       "ones asking the same thing: a single pinned reply beats twenty individual ones, and a " +
       "question that recurs across posts is a video rather than a reply.",
     "",
-    "You are drafting, not sending. Nothing in orchyn can post a comment on any network — the " +
+    "You are drafting, not sending. Nothing in nooticr can post a comment on any network — the " +
       "connections carry upload and read permission only — so these are for the creator to paste " +
       "in themselves. Say that rather than implying the replies will go out.",
     "",
@@ -571,15 +571,15 @@ function nextGuidance(a: {
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
-    | Promise<OrchynClient>
-    | OrchynClient;
+    | Promise<NooticrClient>
+    | NooticrClient;
 }
 
 /** A view for every one of these, at the URIs both hosts read. */
 const viewMeta = (tool: string) => ({
-  ui: { resourceUri: `ui://orchyn/${tool}` },
-  "ui/resourceUri": `ui://orchyn/${tool}`,
-  "openai/outputTemplate": `ui://orchyn/${tool}.html`,
+  ui: { resourceUri: `ui://nooticr/${tool}` },
+  "ui/resourceUri": `ui://nooticr/${tool}`,
+  "openai/outputTemplate": `ui://nooticr/${tool}.html`,
 });
 
 const metricArg = z
@@ -617,11 +617,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "reads the comments on each, and returns them grouped under the post they were left on — " +
         "every comment with a stable id, and the ones that look like questions or requests " +
         "flagged and sorted to the top. This FINDS and helps you DRAFT answers; it cannot post " +
-        "them. No orchyn connection carries comment-write permission on any network, so the " +
+        "them. No nooticr connection carries comment-write permission on any network, so the " +
         "replies are for a person to paste in themselves — never promise the user they will be " +
         "sent. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
         "posts are opened. Pair it with show_audience_replies to lay the drafts out for triage. " +
-        "Costs 2 orchyn credits for the post list plus 2 per post opened — 14 credits at the " +
+        "Costs 2 nooticr credits for the post list plus 2 per post opened — 14 credits at the " +
         "default of 6 posts. Use when the job is to answer people; search_mentions is for what " +
         "strangers say elsewhere.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -833,7 +833,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "view count mostly measures follower count — outperformance against themselves is the " +
         "signal. If they are on your watchlist it also marks what is new since your last " +
         "track_competitor call and moves that marker forward. " +
-        "Consumes 2 orchyn credits — one post list, whatever the window size. Use for a rival you " +
+        "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival you " +
         "follow; analyze_creator_profile is the full teardown of one you do not.",
       annotations: {
         readOnlyHint: false,
@@ -981,7 +981,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "search found each one, and gives every candidate an id. It does NOT measure audience " +
         "overlap: proving the same people comment under two accounts costs roughly nine credits " +
         "per candidate, so the result says so and tells you how to check a finalist yourself. " +
-        "Consumes 2 orchyn credits, or 4 with a seed creator. Use to build a list to vet; " +
+        "Consumes 2 nooticr credits, or 4 with a seed creator. Use to build a list to vet; " +
         "get_similar_creators is the raw lookalike call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.who_should_i_work_with,
@@ -1108,7 +1108,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "post. Fetches the post, fetches that creator's recent window, excludes the post from its " +
         "own baseline, and returns where it actually sits in the distribution — median, " +
         "quartiles, ratio and percentile — so the answer can be 'this is a normal result, not a " +
-        "failure'. Consumes 3 orchyn credits (1 for the post, 2 for the window). Use when you " +
+        "failure'. Consumes 3 nooticr credits (1 for the post, 2 for the window). Use when you " +
         "have one post and no comparison; compare_posts is for two URLs you already picked.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.why_did_this_underperform,
@@ -1245,7 +1245,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "made, and returns both with ids so an idea can be traced back to the comment that asked " +
         "for it. A gap nobody asked for is noise; a request nobody serves is the opportunity. " +
         "Names the niche from the creator's most-used hashtag when you do not give one. " +
-        "Consumes 2 orchyn credits for the post list, 2 per post read for comments, and 2 for the " +
+        "Consumes 2 nooticr credits for the post list, 2 per post read for comments, and 2 for the " +
         "niche sweep — 12 at the default of 4 posts. Use to decide what to film; niche_report " +
         "covers the supply half alone.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -1450,7 +1450,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       description:
         "Lay out the replies you drafted from answer_my_audience so a person can read them. " +
         "Free, and makes no requests — it only draws what you pass it. It does NOT send " +
-        "anything: no orchyn connection can post a comment, so each row is a draft for the " +
+        "anything: no nooticr connection can post a comment, so each row is a draft for the " +
         "creator to copy into the app themselves. Each comment shows with what you decided to do " +
         "about it and your draft underneath, grouped under its post, so they can work through " +
         "them one at a time and skip the rest. Call this after you have drafted the replies, not " +

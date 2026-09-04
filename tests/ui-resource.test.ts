@@ -2,23 +2,23 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
-import type { OrchynClient, McpProxyResult } from "../src/shared/orchyn.js";
+import type { NooticrClient, McpProxyResult } from "../src/shared/nooticr.js";
 
 // claude.ai gates the iframe on ui.domain == sha256("<endpoint>/mcp")[:32] +
-// ".claudemcpcontent.com". Precomputed for https://mcp.orchyn.com/mcp.
-const EXPECTED_DOMAIN = "4f32726b407d5d9929c7eff16b781080.claudemcpcontent.com";
+// ".claudemcpcontent.com". Precomputed for https://mcp.nooticr.com/mcp.
+const EXPECTED_DOMAIN = "ad85271428025d212d42271bf75531e2.claudemcpcontent.com";
 
 // Each tool gets its own distinct app resource URI (ext-apps#558) so Claude
 // renders a separated app/session per view instead of sharing one for all tools.
-const RESOURCE_URI = "ui://orchyn/analyze_post";
+const RESOURCE_URI = "ui://nooticr/analyze_post";
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-function dummyClient(): OrchynClient {
+function dummyClient(): NooticrClient {
   // resources/read and tools/list never touch makeClient, so this is unused.
-  return { callTool: async () => ({ contentBlocks: [], structured: {} }) } as unknown as OrchynClient;
+  return { callTool: async () => ({ contentBlocks: [], structured: {} }) } as unknown as NooticrClient;
 }
 
 async function connect(client: Client, makeClient = dummyClient) {
@@ -39,8 +39,8 @@ describe("MCP Apps resource metadata", () => {
   });
 
   it("serves the UI resource with the Claude domain, CSP and prefersBorder", async () => {
-    vi.stubEnv("PUBLIC_URL", "https://mcp.orchyn.com");
-    vi.stubEnv("ORCHYN_BASE_URL", "https://api.orchyn.com");
+    vi.stubEnv("PUBLIC_URL", "https://mcp.nooticr.com");
+    vi.stubEnv("NOOTICR_BASE_URL", "https://api.nooticr.com");
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
     const res = await client.readResource({ uri: RESOURCE_URI });
@@ -58,7 +58,7 @@ describe("MCP Apps resource metadata", () => {
     const ui = contents[0]._meta?.ui;
     expect(ui?.domain).toBe(EXPECTED_DOMAIN);
     expect(ui?.prefersBorder).toBe(false);
-    expect(ui?.csp?.resourceDomains).toContain("https://api.orchyn.com");
+    expect(ui?.csp?.resourceDomains).toContain("https://api.nooticr.com");
     await client.close();
   });
 
@@ -95,12 +95,12 @@ describe("MCP Apps resource metadata", () => {
     expect(uris.length).toBeGreaterThan(1);
     expect(new Set(uris).size).toBe(uris.length);
     // Each resource also exposes a distinct human-readable name (not all
-    // "Orchyn Interactive View") so tools are distinguishable in a controller.
+    // "Nooticr Interactive View") so tools are distinguishable in a controller.
     const listed = await client.listResources();
     const names = (listed.resources ?? []).map((r) => r.name).filter(Boolean);
     expect(names.length).toBeGreaterThan(1);
     expect(new Set(names).size).toBe(names.length);
-    expect(names[0]).not.toBe("Orchyn Interactive View");
+    expect(names[0]).not.toBe("Nooticr Interactive View");
     // Each distinct URI is actually readable as an MCP Apps HTML resource.
     for (const uri of uris.slice(0, 2)) {
       const r = await client.readResource({ uri: uri as string });
@@ -129,10 +129,10 @@ describe("app-view tool results", () => {
           structured: { ok: true },
         };
       },
-    } as unknown as OrchynClient;
+    } as unknown as NooticrClient;
     const client = new Client({ name: "test", version: "1" });
     await connect(client, () => fake);
-    const res = await client.callTool({ name: "check_orchyn_credits", arguments: {} });
+    const res = await client.callTool({ name: "check_nooticr_credits", arguments: {} });
     const content = res.content ?? [];
     const images = content.filter((c) => c.type === "image");
     expect(images).toHaveLength(0);
@@ -145,8 +145,8 @@ describe("app-view tool results", () => {
 
 describe("UI template validity", () => {
   it("template HTML contains valid JavaScript (no syntax errors)", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    const scriptMatch = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
     expect(scriptMatch).not.toBeNull();
     const script = scriptMatch![1];
 
@@ -158,22 +158,22 @@ describe("UI template validity", () => {
   });
 
   it("template is valid HTML5 with required structure", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    expect(ORCHYN_UI_TEMPLATE).toContain("<!DOCTYPE html>");
-    expect(ORCHYN_UI_TEMPLATE).toContain("<html");
-    expect(ORCHYN_UI_TEMPLATE).toContain("</html>");
-    expect(ORCHYN_UI_TEMPLATE).toContain("<script>");
-    expect(ORCHYN_UI_TEMPLATE).toContain("</script>");
-    expect(ORCHYN_UI_TEMPLATE).toContain("<style>");
-    expect(ORCHYN_UI_TEMPLATE).toContain("</style>");
-    expect(ORCHYN_UI_TEMPLATE).toContain('id="app"');
-    expect(ORCHYN_UI_TEMPLATE).toContain("ui/initialize");
-    expect(ORCHYN_UI_TEMPLATE).toContain("ui/notifications/initialized");
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    expect(NOOTICR_UI_TEMPLATE).toContain("<!DOCTYPE html>");
+    expect(NOOTICR_UI_TEMPLATE).toContain("<html");
+    expect(NOOTICR_UI_TEMPLATE).toContain("</html>");
+    expect(NOOTICR_UI_TEMPLATE).toContain("<script>");
+    expect(NOOTICR_UI_TEMPLATE).toContain("</script>");
+    expect(NOOTICR_UI_TEMPLATE).toContain("<style>");
+    expect(NOOTICR_UI_TEMPLATE).toContain("</style>");
+    expect(NOOTICR_UI_TEMPLATE).toContain('id="app"');
+    expect(NOOTICR_UI_TEMPLATE).toContain("ui/initialize");
+    expect(NOOTICR_UI_TEMPLATE).toContain("ui/notifications/initialized");
   });
 
   it("template does not contain broken regex patterns (// at start of expression)", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    const scriptMatch = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
     const script = scriptMatch![1];
     // A broken regex like /ui:\/\/... becomes //ui:\/\/... which is a comment.
     // Check that no line starts with a bare // followed by a known keyword.
@@ -188,8 +188,8 @@ describe("UI template validity", () => {
   });
 
   it("template has no unescaped apostrophes that break JS strings", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    const scriptMatch = ORCHYN_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
     const script = scriptMatch![1];
     // Find single-quoted strings and check for unescaped apostrophes
     const singleQuoteStrings = script.match(/'[^'\\]*(?:\\.[^'\\]*)*'/g) ?? [];
@@ -210,12 +210,12 @@ describe("UI template validity", () => {
 // matched nothing in the Worker-served copy while working fine in Rust.
 describe("dual-host template safety", () => {
   it("contains no backslashes at all", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
     const at: number[] = [];
-    for (let i = 0; i < ORCHYN_UI_TEMPLATE.length; i++) {
-      if (ORCHYN_UI_TEMPLATE[i] === "\\") at.push(i);
+    for (let i = 0; i < NOOTICR_UI_TEMPLATE.length; i++) {
+      if (NOOTICR_UI_TEMPLATE[i] === "\\") at.push(i);
     }
-    const context = at.slice(0, 3).map((i) => ORCHYN_UI_TEMPLATE.slice(i - 60, i + 30));
+    const context = at.slice(0, 3).map((i) => NOOTICR_UI_TEMPLATE.slice(i - 60, i + 30));
     expect(context).toEqual([]);
   });
 });
@@ -226,9 +226,9 @@ describe("dual-host template safety", () => {
 // clipboard fallback and looked broken.
 describe("host bridge methods", () => {
   it("invokes tools with tools/call and no ui-prefixed variant", async () => {
-    const { ORCHYN_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    expect(ORCHYN_UI_TEMPLATE).toContain('send("tools/call"');
-    expect(ORCHYN_UI_TEMPLATE).not.toContain("ui/tool-call");
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    expect(NOOTICR_UI_TEMPLATE).toContain('send("tools/call"');
+    expect(NOOTICR_UI_TEMPLATE).not.toContain("ui/tool-call");
   });
 });
 
@@ -289,10 +289,10 @@ describe("Apps SDK (ChatGPT) support", () => {
 
 // A ChatGPT connector caches its template pointer when it is created and never
 // refreshes it. Connectors made before per-tool URIs (0159155) still ask for
-// ui://orchyn/view, which stopped existing — so ChatGPT's widget backend
+// ui://nooticr/view, which stopped existing — so ChatGPT's widget backend
 // answered 404 and the app showed "Failed to fetch template". Claude re-reads
 // ui/resourceUri from tools/list every time, which is why it never noticed.
-describe("legacy ui://orchyn/view pointer", () => {
+describe("legacy ui://nooticr/view pointer", () => {
   // Resolving the pointer was not enough. A host handed the wrong mime does not
   // error — it renders the HTML and never attaches its bridge, so the view sits
   // on its idle placeholder with no window.openai and no postMessage, which
@@ -306,7 +306,7 @@ describe("legacy ui://orchyn/view pointer", () => {
   it("serves the skybridge mime, since only ChatGPT asks for it", async () => {
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
-    const res = await client.readResource({ uri: "ui://orchyn/view" });
+    const res = await client.readResource({ uri: "ui://nooticr/view" });
     expect(res.contents).toHaveLength(1);
     const only = res.contents[0] as Record<string, unknown>;
     expect(only.mimeType).toBe("text/html+skybridge");
@@ -330,14 +330,14 @@ describe("legacy ui://orchyn/view pointer", () => {
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
     const uris = (await client.listResources()).resources.map((r) => r.uri);
-    expect(uris).toContain("ui://orchyn/view");
-    expect(uris).toContain("ui://orchyn/view.html");
+    expect(uris).toContain("ui://nooticr/view");
+    expect(uris).toContain("ui://nooticr/view.html");
   });
 
   it("serves the skybridge variant of the legacy pointer too", async () => {
     const client = new Client({ name: "test", version: "1" });
     await connect(client);
-    const res = await client.readResource({ uri: "ui://orchyn/view.html" });
+    const res = await client.readResource({ uri: "ui://nooticr/view.html" });
     const c = res.contents[0] as Record<string, unknown>;
     expect(c.mimeType).toBe("text/html+skybridge");
     expect((c._meta as Record<string, unknown>)["openai/widgetCSP"]).toBeTruthy();

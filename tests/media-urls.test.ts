@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { proxyUrls } from "../src/shared/tools.js";
 
-const API = "https://api.orchyn.com";
+const API = "https://api.nooticr.com";
 
 /**
  * A post as the Rust server emits it: a permalink, a platform embed, a raw
@@ -21,12 +21,12 @@ function post() {
 describe("structured URL rewriting", () => {
  let saved: string | undefined;
  beforeEach(() => {
-  saved = process.env.ORCHYN_API_URL;
-  process.env.ORCHYN_API_URL = API;
+  saved = process.env.NOOTICR_API_URL;
+  process.env.NOOTICR_API_URL = API;
  });
  afterEach(() => {
-  if (saved === undefined) delete process.env.ORCHYN_API_URL;
-  else process.env.ORCHYN_API_URL = saved;
+  if (saved === undefined) delete process.env.NOOTICR_API_URL;
+  else process.env.NOOTICR_API_URL = saved;
  });
 
  it("leaves the permalink and the platform embed alone", () => {
@@ -58,10 +58,10 @@ describe("structured URL rewriting", () => {
   // The server may mint links against a base this process does not know;
   // a startsWith check on our own origin misses those and double-wraps.
   const out = proxyUrls({
-   videoFallbackUrl: "https://orchyn.com/media/resolve?url=x&kind=video&sig=s",
-   nested: { deep: "https://orchyn.com/media/proxy?url=y" },
+   videoFallbackUrl: "https://nooticr.com/media/resolve?url=x&kind=video&sig=s",
+   nested: { deep: "https://nooticr.com/media/proxy?url=y" },
   }) as Record<string, unknown>;
-  expect(out.videoFallbackUrl).toBe("https://orchyn.com/media/resolve?url=x&kind=video&sig=s");
-  expect((out.nested as Record<string, string>).deep).toBe("https://orchyn.com/media/proxy?url=y");
+  expect(out.videoFallbackUrl).toBe("https://nooticr.com/media/resolve?url=x&kind=video&sig=s");
+  expect((out.nested as Record<string, string>).deep).toBe("https://nooticr.com/media/proxy?url=y");
  });
 });

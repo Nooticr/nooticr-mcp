@@ -7,14 +7,14 @@
  *   GET  /.well-known/oauth-protected-resource
  *   GET  /authorize            (Authorization Code + PKCE S256)
  *   POST /token                (public client, no client auth)
- *   GET  /oauth/callback       (our own loopback: orchyn Google sign-in result)
+ *   GET  /oauth/callback       (our own loopback: nooticr Google sign-in result)
  *
  * The MCP access tokens issued at /token are opaque random strings bound to
- * the orchyn JWT obtained through the Google sign-in flow.
+ * the nooticr JWT obtained through the Google sign-in flow.
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OrchynClient, OrchynSession } from "./shared/orchyn.js";
+import type { NooticrClient, NooticrSession } from "./shared/nooticr.js";
 import {
   LEGACY_SCOPE,
   SCOPE,
@@ -40,22 +40,22 @@ export {
   generateState,
 } from "./shared/oauth.js";
 
-// MCP session lifetime. Sessions self-renew their orchyn access token, so a
+// MCP session lifetime. Sessions self-renew their nooticr access token, so a
 // login lasts as long as the account's refresh token (30 days server-side)
 // rather than forcing a re-login every hour.
 export const TOKEN_TTL_SECONDS = 604800;
 
 export interface McpSession {
-  orchynAccessToken: string;
-  orchynRefreshToken?: string;
-  orchynUser?: { id: string; email?: string; displayName?: string };
+  nooticrAccessToken: string;
+  nooticrRefreshToken?: string;
+  nooticrUser?: { id: string; email?: string; displayName?: string };
   clientId: string;
   scopes: string[];
   expiresAt: number;
 }
 
 interface PendingAuthorization {
-  orchynState: string;
+  nooticrState: string;
   clientId: string;
   redirectUri: string;
   codeChallenge: string;
@@ -64,9 +64,9 @@ interface PendingAuthorization {
   clientState?: string;
   createdAt: number;
   completed?: boolean;
-  orchynAccessToken?: string;
-  orchynRefreshToken?: string;
-  orchynUser?: McpSession["orchynUser"];
+  nooticrAccessToken?: string;
+  nooticrRefreshToken?: string;
+  nooticrUser?: McpSession["nooticrUser"];
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -104,20 +104,20 @@ function sendHtml(res: ServerResponse, status: number, title: string, body: stri
 
 export interface OAuthManagerOptions {
   publicUrl: string;
-  client: OrchynClient;
+  client: NooticrClient;
   /**
-   * Called with the completed orchyn session (Google sign-in) so callers can
+   * Called with the completed nooticr session (Google sign-in) so callers can
    * persist it to the token file as a courtesy. Optional.
    */
-  onSession?: (session: OrchynSession) => Promise<void>;
+  onSession?: (session: NooticrSession) => Promise<void>;
 }
 
 export class OAuthManager {
   private publicUrl: string;
-  private client: OrchynClient;
-  private onSession?: (session: OrchynSession) => Promise<void>;
+  private client: NooticrClient;
+  private onSession?: (session: NooticrSession) => Promise<void>;
 
-  private pendingByOrchynState = new Map<string, PendingAuthorization>();
+  private pendingByNooticrState = new Map<string, PendingAuthorization>();
   private pendingByMcpCode = new Map<string, PendingAuthorization>();
   private sessions = new Map<string, McpSession>();
 
@@ -200,10 +200,10 @@ export class OAuthManager {
         `Unsupported scope(s): ${unsupported.join(", ")}. Supported: ${SCOPES.join(", ")}.`);
     }
 
-    const orchynState = randomToken();
+    const nooticrState = randomToken();
     const mcpAuthCode = randomToken();
     const pending: PendingAuthorization = {
-      orchynState,
+      nooticrState,
       clientId,
       redirectUri,
       codeChallenge,
@@ -212,53 +212,53 @@ export class OAuthManager {
       clientState: params.get("state") ?? undefined,
       createdAt: Date.now(),
     };
-    this.pendingByOrchynState.set(orchynState, pending);
+    this.pendingByNooticrState.set(nooticrState, pending);
     this.pendingByMcpCode.set(mcpAuthCode, pending);
 
-    // Ask the orchyn server to start a Google sign-in. We pre-seed ?state=
-    // with our own pending-request id; orchyn appends
+    // Ask the nooticr server to start a Google sign-in. We pre-seed ?state=
+    // with our own pending-request id; nooticr appends
     // ?code=<completion>&redirect=... when it redirects back to us.
-    const ourCallback = `${this.publicUrl}/oauth/callback?state=${encodeURIComponent(orchynState)}`;
+    const ourCallback = `${this.publicUrl}/oauth/callback?state=${encodeURIComponent(nooticrState)}`;
     let redirectUrl: string;
     try {
       const res = await this.client.startGoogleSignIn(ourCallback);
       redirectUrl = res.redirectUrl;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return sendHtml(res, 502, "orchyn-mcp: sign-in unavailable",
-        `<p>Could not reach the orchyn server to start sign-in: ${escapeHtml(msg)}</p>`);
+      return sendHtml(res, 502, "nooticr-mcp: sign-in unavailable",
+        `<p>Could not reach the nooticr server to start sign-in: ${escapeHtml(msg)}</p>`);
     }
     return sendRedirect(res, redirectUrl);
   }
 
-  /** GET /oauth/callback?state=<ours>&code=<orchyn completion code>&redirect=<path> */
+  /** GET /oauth/callback?state=<ours>&code=<nooticr completion code>&redirect=<path> */
   async handleCallback(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", this.publicUrl);
-    const orchynState = url.searchParams.get("state") ?? "";
+    const nooticrState = url.searchParams.get("state") ?? "";
     const completionCode = url.searchParams.get("code") ?? "";
-    const pending = this.pendingByOrchynState.get(orchynState);
+    const pending = this.pendingByNooticrState.get(nooticrState);
     if (!pending) {
-      return sendHtml(res, 400, "orchyn-mcp: sign-in failed",
+      return sendHtml(res, 400, "nooticr-mcp: sign-in failed",
         "<p>Unknown or expired sign-in request. Please close this tab and try again.</p>");
     }
     if (!completionCode) {
-      return sendHtml(res, 400, "orchyn-mcp: sign-in failed",
-        "<p>The orchyn sign-in did not return a completion code. Please close this tab and try again.</p>");
+      return sendHtml(res, 400, "nooticr-mcp: sign-in failed",
+        "<p>The nooticr sign-in did not return a completion code. Please close this tab and try again.</p>");
     }
 
-    let session: OrchynSession;
+    let session: NooticrSession;
     try {
       session = await this.client.exchangeCompletionCode(completionCode);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return sendHtml(res, 502, "orchyn-mcp: sign-in failed",
-        `<p>Could not complete sign-in with the orchyn server: ${escapeHtml(msg)}</p>`);
+      return sendHtml(res, 502, "nooticr-mcp: sign-in failed",
+        `<p>Could not complete sign-in with the nooticr server: ${escapeHtml(msg)}</p>`);
     }
 
     pending.completed = true;
-    pending.orchynAccessToken = session.accessToken;
-    pending.orchynRefreshToken = session.refreshToken;
-    pending.orchynUser = session.user
+    pending.nooticrAccessToken = session.accessToken;
+    pending.nooticrRefreshToken = session.refreshToken;
+    pending.nooticrUser = session.user
       ? { id: session.user.id, email: session.user.email, displayName: session.user.displayName }
       : undefined;
 
@@ -313,13 +313,13 @@ export class OAuthManager {
     }
 
     this.pendingByMcpCode.delete(code);
-    this.pendingByOrchynState.delete(pending.orchynState);
+    this.pendingByNooticrState.delete(pending.nooticrState);
 
     const accessToken = randomToken();
     this.sessions.set(accessToken, {
-      orchynAccessToken: pending.orchynAccessToken ?? "",
-      orchynRefreshToken: pending.orchynRefreshToken,
-      orchynUser: pending.orchynUser,
+      nooticrAccessToken: pending.nooticrAccessToken ?? "",
+      nooticrRefreshToken: pending.nooticrRefreshToken,
+      nooticrUser: pending.nooticrUser,
       clientId: pending.clientId,
       scopes: pending.scopes,
       expiresAt: Date.now() + TOKEN_TTL_SECONDS * 1000,
@@ -348,6 +348,6 @@ export class OAuthManager {
     if (state) target.searchParams.set("state", state);
     return sendRedirect(res, target.toString());
     }
-    return sendHtml(res, 400, "orchyn-mcp: bad request", `<p>${escapeHtml(description)}</p>`);
+    return sendHtml(res, 400, "nooticr-mcp: bad request", `<p>${escapeHtml(description)}</p>`);
   }
 }

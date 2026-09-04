@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
-import { OrchynError, type OrchynClient } from "../src/shared/orchyn.js";
+import { NooticrError, type NooticrClient } from "../src/shared/nooticr.js";
 
 const FRAME = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQ==";
 const URL = "https://www.youtube.com/watch?v=abc";
@@ -63,7 +63,7 @@ function evidenceData(name: string) {
  */
 async function connect(fail?: (name: string) => unknown) {
   const calls: Call[] = [];
-  const orchyn = {
+  const nooticr = {
     me: async () => ({ id: "u1" }),
     startVideoAnalysis: async () => {
       calls.push({ name: "startVideoAnalysis", args: {} });
@@ -75,10 +75,10 @@ async function connect(fail?: (name: string) => unknown) {
       if (thrown instanceof Error) throw thrown;
       return evidenceData(name);
     },
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
 
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => orchyn);
+  const server = createMcpServer(async () => nooticr);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   await client.listTools();
@@ -187,7 +187,7 @@ describe("a failed fetch is reported as a failure", () => {
     // do about it. Nothing should be retried or substituted here.
     const { client, calls } = await connect((name) =>
       name === "get_social_media"
-        ? new OrchynError(402, "Insufficient MCP credits", { paywall: { cost: 2, used: 20, max: 20 } })
+        ? new NooticrError(402, "Insufficient MCP credits", { paywall: { cost: 2, used: 20, max: 20 } })
         : undefined,
     );
     const res = await call(client, "analyze_post_fast", { url: URL });
@@ -199,15 +199,15 @@ describe("a failed fetch is reported as a failure", () => {
 
   it("keeps the sign-in message when the session has expired", async () => {
     const { client } = await connect((name) =>
-      name === "get_social_media" ? new OrchynError(401, "No orchyn access token available.") : undefined,
+      name === "get_social_media" ? new NooticrError(401, "No nooticr access token available.") : undefined,
     );
     const res = await call(client, "analyze_post_fast", { url: URL });
 
     expect(res.isError).toBe(true);
-    // orchyn_login re-runs the interrupted call, which is what makes "no need
+    // nooticr_login re-runs the interrupted call, which is what makes "no need
     // to ask twice" true rather than a platitude.
     expect(text(res)).toMatch(/sign in again/i);
-    expect(text(res)).toContain("orchyn_login");
+    expect(text(res)).toContain("nooticr_login");
   });
 });
 

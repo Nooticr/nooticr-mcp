@@ -19,15 +19,15 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 async function callWith(tool: string, args: Record<string, unknown>, structured: unknown) {
-  const orchyn = {
+  const nooticr = {
     me: async () => ({ id: "u1" }),
     callTool: async () => ({ contentBlocks: [{ type: "text", text: "{}" }], structured }),
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
   const client = new Client({ name: "test", version: "1.0.0" });
-  const server = createMcpServer(async () => orchyn);
+  const server = createMcpServer(async () => nooticr);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   // Not optional: the client builds its output validator from the cached
@@ -128,9 +128,9 @@ describe("a client can read what the server returns", () => {
   // The generated schema is the contract clients hold us to, so assert the
   // shape of it directly: an items rule that only admits null is the bug.
   it("never generates a list that admits nothing but null", async () => {
-    const orchyn = { callTool: async () => ({ contentBlocks: [], structured: {} }) } as unknown as OrchynClient;
+    const nooticr = { callTool: async () => ({ contentBlocks: [], structured: {} }) } as unknown as NooticrClient;
     const client = new Client({ name: "test", version: "1.0.0" });
-    const server = createMcpServer(async () => orchyn);
+    const server = createMcpServer(async () => nooticr);
     const [a, b] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(a), server.connect(b)]);
     const { tools } = await client.listTools();

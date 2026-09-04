@@ -1,6 +1,6 @@
-# @orchyn/mcp
+# @nooticr/mcp
 
-MCP (Model Context Protocol) server for [orchyn](https://orchyn.com).
+MCP (Model Context Protocol) server for [nooticr](https://nooticr.com).
 
 Gives an AI assistant three things: it can **read** real social posts across
 ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin,
@@ -15,23 +15,23 @@ model of ours for an opinion first. You pay for the fetch and nothing else.
 It also **monitors a name**: `search_mentions` sweeps nine of those networks for
 every comment that says your brand, inside a date window you choose.
 
-Runs over stdio locally or as a hosted connector at `https://mcp.orchyn.com/mcp`.
-Billed against your orchyn credits; new accounts get 20 free.
+Runs over stdio locally or as a hosted connector at `https://mcp.nooticr.com/mcp`.
+Billed against your nooticr credits; new accounts get 20 free.
 
 ## Install (one link)
 
 **Claude Code** — register the marketplace, then install the plugin:
 
 ```
-/plugin marketplace add orchynX/mcp
-/plugin install orchyn@orchyn
+/plugin marketplace add Nooticr/nooticr-mcp
+/plugin install nooticr@nooticr
 ```
 
 **Claude Code / CLI without the plugin**:
 
 ```bash
-claude mcp add orchyn --user -- npx -y @orchyn/mcp
-npx @orchyn/mcp login   # one-time sign-in (Google)
+claude mcp add nooticr --user -- npx -y @nooticr/mcp
+npx @nooticr/mcp login   # one-time sign-in (Google)
 ```
 
 **Cursor / any stdio MCP client** (`claude_desktop_config.json`, `.mcp.json`, …):
@@ -39,10 +39,10 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 ```json
 {
   "mcpServers": {
-    "orchyn": {
+    "nooticr": {
       "command": "npx",
-      "args": ["-y", "@orchyn/mcp"],
-      "env": { "ORCHYN_BASE_URL": "https://api.orchyn.com" }
+      "args": ["-y", "@nooticr/mcp"],
+      "env": { "NOOTICR_BASE_URL": "https://api.nooticr.com" }
     }
   }
 }
@@ -50,7 +50,7 @@ npx @orchyn/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-36 tools, grouped by what you are trying to do. Prices are in orchyn credits and
+36 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Six of them — the ones under **Answer a question you actually have** — are not
@@ -102,7 +102,7 @@ them caps that fan-out with an argument.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply, because no orchyn connection carries comment-write permission on any network. `limit` caps how many posts are opened, which is the price. |
+| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply, because no nooticr connection carries comment-write permission on any network. `limit` caps how many posts are opened, which is the price. |
 | `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
 | `track_competitor` | 2 | What a creator shipped, and which of it beat **their own** median rather than a raw view count that mostly measures follower count. One post list, whatever the window. If they are on your watchlist it also marks what is new since your last check and moves that marker forward — its own marker, not the one `catch_up_watchlist` keeps. |
 | `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
@@ -122,9 +122,9 @@ them caps that fan-out with an argument.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `check_orchyn_credits` | free | Balance and billing URL. |
-| `buy_orchyn_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
-| `orchyn_login` | free | Re-link the account when a call fails with an authentication error. |
+| `check_nooticr_credits` | free | Balance and billing URL. |
+| `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
+| `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 
 ### How billing works
 
@@ -140,7 +140,7 @@ them caps that fan-out with an argument.
 ## Interactive cards in Claude / ChatGPT chat
 
 Every tool that returns posts also renders **inline interactive cards** directly
-in the chat (MCP Apps `ui://orchyn/view` resource rendered in a sandboxed
+in the chat (MCP Apps `ui://nooticr/view` resource rendered in a sandboxed
 iframe):
 
 - **Video posts** (TikTok/IG/YouTube/Douyin/LinkedIn) — an inline `<video>`
@@ -228,57 +228,57 @@ as it always did.
 ## Prerequisites
 
 - Node.js >= 18 (tested on Node 22)
-- An orchyn account (created automatically on first sign-in — Google sign-in
-  via `npx @orchyn/mcp login`; the dashboard is **not** required: the server
+- An nooticr account (created automatically on first sign-in — Google sign-in
+  via `npx @nooticr/mcp login`; the dashboard is **not** required: the server
   auto-creates a default workspace + app for new accounts)
-- Access to an orchyn server — defaults to the cloud API
-  (`https://api.orchyn.com`); point `ORCHYN_BASE_URL` at your own deployment
+- Access to an nooticr server — defaults to the cloud API
+  (`https://api.nooticr.com`); point `NOOTICR_BASE_URL` at your own deployment
   for local development
 
 ## Quick start
 
 ```bash
-# 1. Sign in with your orchyn account (Google sign-in opens in your browser)
-npx @orchyn/mcp login
+# 1. Sign in with your nooticr account (Google sign-in opens in your browser)
+npx @nooticr/mcp login
 #    or with email/password:
-npx @orchyn/mcp login --email you@example.com --password '...'
+npx @nooticr/mcp login --email you@example.com --password '...'
 
 # 2. Add it to your MCP client (see install section above) — or run it manually:
-npx @orchyn/mcp            # stdio (default; for Claude Desktop / Cursor)
-npx @orchyn/mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
+npx @nooticr/mcp            # stdio (default; for Claude Desktop / Cursor)
+npx @nooticr/mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
 ```
 
-`login` stores your orchyn tokens in `~/.config/orchyn-mcp/credentials.json`
+`login` stores your nooticr tokens in `~/.config/nooticr-mcp/credentials.json`
 (mode `0600`). If your browser cannot be opened automatically, copy the URL it
 prints into a browser manually.
 
 ## Usage in Claude Desktop
 
-After `npx @orchyn/mcp login`, add to `claude_desktop_config.json`:
+After `npx @nooticr/mcp login`, add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "orchyn": {
+    "nooticr": {
       "command": "npx",
-      "args": ["-y", "@orchyn/mcp"]
+      "args": ["-y", "@nooticr/mcp"]
     }
   }
 }
 ```
 
 Tokens are resolved from the credentials file written by `login` (or from
-`ORCHYN_ACCESS_TOKEN`). If your client does not inherit your shell environment,
+`NOOTICR_ACCESS_TOKEN`). If your client does not inherit your shell environment,
 set the env vars explicitly:
 
 ```json
 {
   "mcpServers": {
-    "orchyn": {
+    "nooticr": {
       "command": "npx",
-      "args": ["-y", "@orchyn/mcp"],
+      "args": ["-y", "@nooticr/mcp"],
       "env": {
-        "ORCHYN_BASE_URL": "http://localhost:8080"
+        "NOOTICR_BASE_URL": "http://localhost:8080"
       }
     }
   }
@@ -292,19 +292,19 @@ In `.mcp.json` (project root) or `~/.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "orchyn": {
+    "nooticr": {
       "command": "npx",
-      "args": ["-y", "@orchyn/mcp"]
+      "args": ["-y", "@nooticr/mcp"]
     }
   }
 }
 ```
 
-After adding the server, run `npx @orchyn/mcp login` in your terminal — Cursor
+After adding the server, run `npx @nooticr/mcp login` in your terminal — Cursor
 spawns the server with your environment, so it picks up the stored credentials.
 
 For remote/HTTP usage, Cursor can connect to the OAuth-enabled HTTP mode with
-`npx @orchyn/mcp --http` running, pointing the server URL at
+`npx @nooticr/mcp --http` running, pointing the server URL at
 `http://localhost:3457/mcp`. Remote clients (including Cursor) discover the
 OAuth endpoints from
 `http://localhost:3457/.well-known/oauth-authorization-server`, open the
@@ -315,7 +315,7 @@ OAuth endpoints from
 Start the HTTP transport:
 
 ```bash
-npx @orchyn/mcp --http --port 3457
+npx @nooticr/mcp --http --port 3457
 ```
 
 Python:
@@ -329,7 +329,7 @@ async def main():
         url="http://localhost:3457/mcp",
         auth_provider="oidc",  # OAuth flow opens your browser once
     ) as client:
-        agent = Agent(name="orchyn", mcp_servers=[client])
+        agent = Agent(name="nooticr", mcp_servers=[client])
         result = await Runner.run(
             agent,
             "Analyze this video: https://www.youtube.com/watch?v=dQw4w9WgXcQ",
@@ -349,7 +349,7 @@ const client = new RemoteMCPClient({
 });
 
 const agent = new Agent({
-  name: "orchyn",
+  name: "nooticr",
   mcpServers: [client],
 });
 
@@ -360,36 +360,36 @@ console.log(result.output);
 ```
 
 For a local stdio process with the Agents SDK, use `StdioMCPClient` (Python:
-`StdioMCPClient(command="npx", args=["@orchyn/mcp"])`).
+`StdioMCPClient(command="npx", args=["@nooticr/mcp"])`).
 
 ## Command line
 
 ```
-orchyn-mcp                    Start in stdio mode (default transport)
-orchyn-mcp --stdio            Same as above
-orchyn-mcp --http [--port N]  Start the remote HTTP transport with OAuth (default port 3457)
-orchyn-mcp login              Sign in to orchyn via Google in your browser
-orchyn-mcp login --email ... --password ...   Password login
-orchyn-mcp --help             Show help
+nooticr-mcp                    Start in stdio mode (default transport)
+nooticr-mcp --stdio            Same as above
+nooticr-mcp --http [--port N]  Start the remote HTTP transport with OAuth (default port 3457)
+nooticr-mcp login              Sign in to nooticr via Google in your browser
+nooticr-mcp login --email ... --password ...   Password login
+nooticr-mcp --help             Show help
 ```
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ORCHYN_BASE_URL` | `https://api.orchyn.com` | orchyn server base URL (trailing slash stripped) |
-| `ORCHYN_ACCESS_TOKEN` | — | orchyn JWT access token; takes priority over the credentials file |
-| `ORCHYN_CREDENTIALS_FILE` | `~/.config/orchyn-mcp/credentials.json` | token store path |
-| `ORCHYN_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
-| `ORCHYN_PORT` | `3457` | port for `--http` and `login` |
-| `ORCHYN_TRANSPORT` | `stdio` | `stdio` or `http` (same as `--http`) |
+| `NOOTICR_BASE_URL` | `https://api.nooticr.com` | nooticr server base URL (trailing slash stripped) |
+| `NOOTICR_ACCESS_TOKEN` | — | nooticr JWT access token; takes priority over the credentials file |
+| `NOOTICR_CREDENTIALS_FILE` | `~/.config/nooticr-mcp/credentials.json` | token store path |
+| `NOOTICR_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
+| `NOOTICR_PORT` | `3457` | port for `--http` and `login` |
+| `NOOTICR_TRANSPORT` | `stdio` | `stdio` or `http` (same as `--http`) |
 
 ## How authentication works
 
 **stdio mode** (Claude Desktop, Cursor): the server uses the token from
-`ORCHYN_ACCESS_TOKEN` or the credentials file written by `login`. If the token
+`NOOTICR_ACCESS_TOKEN` or the credentials file written by `login`. If the token
 is expired it is automatically refreshed with the stored refresh token, and if
-the orchyn API returns `401` the request is retried once after a refresh.
+the nooticr API returns `401` the request is retried once after a refresh.
 
 **HTTP mode** (OpenAI Agents SDK, remote clients): the server runs its own
 OAuth 2.0 authorization server (Authorization Code + PKCE S256, public client,
@@ -397,12 +397,12 @@ per the MCP 2025-03-26 spec):
 
 - `GET /.well-known/oauth-authorization-server` — metadata
 - `GET /authorize` — validates the request (loopback or https redirect URIs)
-  and forwards the browser to orchyn's Google sign-in
-- `GET /oauth/callback` — our own loopback callback; exchanges orchyn's
-  completion code for orchyn JWTs and redirects back to the MCP client with a
+  and forwards the browser to nooticr's Google sign-in
+- `GET /oauth/callback` — our own loopback callback; exchanges nooticr's
+  completion code for nooticr JWTs and redirects back to the MCP client with a
   one-time code
 - `POST /token` — verifies PKCE and issues an opaque Bearer token bound to the
-  orchyn session (valid 1 hour)
+  nooticr session (valid 1 hour)
 - every MCP RPC validates the Bearer token against the session map
 
 ## Supported URLs
@@ -423,21 +423,21 @@ and text** posts.
 
 ## Troubleshooting
 
-- **`Not authenticated with orchyn` / 401**: run `npx @orchyn/mcp login` or set
-  `ORCHYN_ACCESS_TOKEN`.
-- **402 paywall / `insufficient MCP credits`**: your orchyn account is out of
+- **`Not authenticated with nooticr` / 401**: run `npx @nooticr/mcp login` or set
+  `NOOTICR_ACCESS_TOKEN`.
+- **402 paywall / `insufficient MCP credits`**: your nooticr account is out of
   credits. Prices are listed per tool in [Tools](#tools) — 1 credit for a post
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
   for the two that fetch frames *and* transcript. Every tool bills from the
   first call. Top up via
-  `buy_orchyn_credits`, `check_orchyn_credits`, or the orchyn dashboard at
-  `https://orchyn.com/settings?tab=billing`.
+  `buy_nooticr_credits`, `check_nooticr_credits`, or the nooticr dashboard at
+  `https://nooticr.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the
-  orchyn server. Run `npx @orchyn/mcp login` again to re-authenticate.
-- **`Could not reach the orchyn server`**: `ORCHYN_BASE_URL` is unreachable or
+  nooticr server. Run `npx @nooticr/mcp login` again to re-authenticate.
+- **`Could not reach the nooticr server`**: `NOOTICR_BASE_URL` is unreachable or
   wrong.
 - **Client shows "Bad Request" or connection errors in HTTP mode**: make sure
-  the port matches `ORCHYN_PUBLIC_URL` and that the client fetched a token
+  the port matches `NOOTICR_PUBLIC_URL` and that the client fetched a token
   first (the OAuth flow must complete once in your browser).
 
 ## Platform submissions
@@ -456,7 +456,7 @@ package for **Claude Desktop**, **Cursor**, and **OpenAI Agents SDK**.
   (in-memory).
 - Access tokens are opaque, random, and bound to the in-memory session map;
   they expire after 1 hour. Restarting the server invalidates all sessions.
-- Never share your credentials file or `ORCHYN_ACCESS_TOKEN`.
+- Never share your credentials file or `NOOTICR_ACCESS_TOKEN`.
 
 ## Development
 

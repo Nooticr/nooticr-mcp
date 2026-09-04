@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OrchynClient, OrchynError } from "../src/orchyn.js";
+import { NooticrClient, NooticrError } from "../src/nooticr.js";
 
 const BASE = "http://localhost:8080";
 const noToken = { getAccessToken: async () => "jwt-token" };
@@ -17,12 +17,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("OrchynClient", () => {
+describe("NooticrClient", () => {
   it("builds the startVideoAnalysis request with auth header and JSON body", async () => {
     const fetchMock = mockFetchOnce(200, { ok: true, jobId: "job-1", state: "pending" });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
     const job = await client.startVideoAnalysis("https://youtu.be/x");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -50,7 +50,7 @@ describe("OrchynClient", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
     const job = await client.startVideoAnalysis("https://youtu.be/x");
 
     expect(job.post).toEqual(post);
@@ -61,7 +61,7 @@ describe("OrchynClient", () => {
     const fetchMock = mockFetchOnce(200, { ok: true, jobId: "job-1", state: "pending" });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
     const job = await client.startVideoAnalysis("https://youtu.be/x");
     expect(job.inlineImages).toBeUndefined();
   });
@@ -70,16 +70,16 @@ describe("OrchynClient", () => {
     const fetchMock = mockFetchOnce(200, { ok: true, jobId: "job-1", state: "thinking" });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
     await client.getJob("job-1");
 
     const [url] = fetchMock.mock.calls[0];
     expect(url).toBe(`${BASE}/ai/analyze-post?jobId=job-1`);
   });
 
-  it("normalizes 400 errors into OrchynError with message from {error}", async () => {
+  it("normalizes 400 errors into NooticrError with message from {error}", async () => {
     vi.stubGlobal("fetch", mockFetchOnce(400, { error: "Bad video URL" }));
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
 
     await expect(client.startVideoAnalysis("https://youtu.be/x")).rejects.toMatchObject({
       status: 400,
@@ -99,14 +99,14 @@ describe("OrchynClient", () => {
         cost: 2,
       })
     );
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
 
     try {
       await client.startVideoAnalysis("https://youtu.be/x");
       expect.unreachable("should have thrown");
     } catch (err) {
-      expect(err).toBeInstanceOf(OrchynError);
-      const e = err as OrchynError;
+      expect(err).toBeInstanceOf(NooticrError);
+      const e = err as NooticrError;
       expect(e.status).toBe(402);
       expect(e.paywall).toEqual({ reason: "no_credits", used: 5, max: 3, cost: 2 });
       expect(e.message).toBe("Insufficient credits");
@@ -117,13 +117,13 @@ describe("OrchynClient", () => {
     vi.stubGlobal("fetch", () =>
       Promise.resolve(new Response("gateway timeout", { status: 502 }))
     );
-    const client = new OrchynClient(BASE, noToken);
+    const client = new NooticrClient(BASE, noToken);
 
     // The message names the endpoint: these surface to the user as tool
     // errors, and a bare status code says nothing about which call failed.
     await expect(client.startVideoAnalysis("https://youtu.be/x")).rejects.toMatchObject({
       status: 502,
-      message: "orchyn API error (502) from /mcp/analyze-post",
+      message: "nooticr API error (502) from /mcp/analyze-post",
     });
   });
 
@@ -140,7 +140,7 @@ describe("OrchynClient", () => {
     }));
 
     const onUnauthorized = vi.fn().mockResolvedValue(true);
-    const client = new OrchynClient(BASE, {
+    const client = new NooticrClient(BASE, {
       getAccessToken: vi
         .fn()
         .mockResolvedValueOnce("stale-token")
@@ -158,7 +158,7 @@ describe("OrchynClient", () => {
 
   it("does not retry when refresh fails", async () => {
     vi.stubGlobal("fetch", mockFetchOnce(401, { error: "Unauthorized" }));
-    const client = new OrchynClient(BASE, {
+    const client = new NooticrClient(BASE, {
       getAccessToken: async () => "stale-token",
       onUnauthorized: async () => false,
     });
@@ -172,16 +172,16 @@ describe("OrchynClient", () => {
   it("strips trailing slashes from the base URL", async () => {
     const fetchMock = mockFetchOnce(200, { ok: true, jobId: "job-1", state: "pending" });
     vi.stubGlobal("fetch", fetchMock);
-    const client = new OrchynClient("http://localhost:8080///", noToken);
+    const client = new NooticrClient("http://localhost:8080///", noToken);
     await client.startVideoAnalysis("https://youtu.be/x");
     expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8080/mcp/analyze-post");
   });
 
-  it("throws a 401 OrchynError when no token is available", async () => {
-    const client = new OrchynClient(BASE, { getAccessToken: async () => undefined });
+  it("throws a 401 NooticrError when no token is available", async () => {
+    const client = new NooticrClient(BASE, { getAccessToken: async () => undefined });
     await expect(client.startVideoAnalysis("https://youtu.be/x")).rejects.toMatchObject({
       status: 401,
-      message: "No orchyn access token available.",
+      message: "No nooticr access token available.",
     });
   });
 });

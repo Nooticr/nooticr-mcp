@@ -1,5 +1,5 @@
 /**
- * The networks Orchyn MCP can read, as real brand marks.
+ * The networks Nooticr MCP can read, as real brand marks.
  *
  * Paths are the simple-icons glyphs, drawn in `currentColor` so one set works
  * on both the dark and light shell. Kept in one place because the landing
@@ -84,7 +84,7 @@ export const PLATFORMS: Platform[] = [
 export const CLIENTS = [
   { name: "Claude", note: "claude.ai + Claude Desktop + Claude Code" },
   { name: "ChatGPT", note: "Custom connector (Developer mode)" },
-  { name: "Cursor", note: "npx @orchyn/mcp" },
+  { name: "Cursor", note: "npx @nooticr/mcp" },
   { name: "Any MCP client", note: "Streamable HTTP + OAuth 2.1" },
 ];
 

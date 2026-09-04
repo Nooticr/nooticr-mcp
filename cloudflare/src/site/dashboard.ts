@@ -1,8 +1,8 @@
 /**
- * mcp.orchyn.com dashboard.
+ * mcp.nooticr.com dashboard.
  *
  * The MCP site is its own product surface but owns no data: everything here
- * is read from the orchyn API with the signed-in user's bearer token, through
+ * is read from the nooticr API with the signed-in user's bearer token, through
  * this Worker so the browser never needs a cross-origin credentialed call.
  *
  * Signed out, this is a sign-in page. Signed in, it shows balance, usage,
@@ -137,15 +137,15 @@ export function dashboardSignedOut(publicUrl: string, error?: string): string {
     (error ? `<div class="err">${esc(error)}</div>` : "") +
     `<h1>Your MCP dashboard</h1>` +
     `<p>Sign in to see your balance, usage and billing.</p>` +
-    `<a class="btn btn-primary" href="/dashboard/login">Sign in with Orchyn</a>` +
+    `<a class="btn btn-primary" href="/dashboard/login">Sign in with Nooticr</a>` +
     `<div class="panel"><h2 style="font-size:14px;margin-bottom:10px">Prefer the command line?</h2>` +
-    `<ol><li>Run <code>npx -y @orchyn/mcp login</code></li>` +
+    `<ol><li>Run <code>npx -y @nooticr/mcp login</code></li>` +
     `<li>Complete sign-in in the browser window that opens</li>` +
     `<li>Your assistant is connected — usage shows up here</li></ol></div>` +
-    `<p class="faint" style="margin-top:20px;font-size:13px">New here? <a href="/" style="color:var(--brand)">See what Orchyn MCP does</a></p>` +
+    `<p class="faint" style="margin-top:20px;font-size:13px">New here? <a href="/" style="color:var(--brand)">See what Nooticr MCP does</a></p>` +
     `</section></main>`;
   return page(
-    { title: "Dashboard — Orchyn MCP", publicUrl, css: CSS, bareNav: true, canonicalPath: "/dashboard" },
+    { title: "Dashboard — Nooticr MCP", publicUrl, css: CSS, bareNav: true, canonicalPath: "/dashboard" },
     body
   );
 }
@@ -243,7 +243,7 @@ export function dashboardPage(
     `<div class="card" id="billing"><div class="card-h"><h2>Add credits</h2>` +
     `<span class="pill">Stripe</span></div><div class="card-b">` +
     `<div class="packs">${packs}</div>` +
-    `<p class="faint" style="font-size:12.5px;margin:14px 0 0">Secure checkout via Stripe. Cards are never seen or stored by Orchyn.</p>` +
+    `<p class="faint" style="font-size:12.5px;margin:14px 0 0">Secure checkout via Stripe. Cards are never seen or stored by Nooticr.</p>` +
     `</div></div>` +
 
     `<div class="card"><div class="card-h"><h2>Free trials</h2></div>` +
@@ -255,8 +255,8 @@ export function dashboardPage(
     `<div class="conn-row"><code>${esc(publicUrl)}/mcp</code>` +
     `<button class="btn btn-ghost btn-sm" data-copy="${esc(publicUrl)}/mcp">Copy</button></div>` +
     `<p class="muted" style="font-size:13px;margin:16px 0 4px">Command line</p>` +
-    `<div class="conn-row"><code>npx -y @orchyn/mcp login</code>` +
-    `<button class="btn btn-ghost btn-sm" data-copy="npx -y @orchyn/mcp login">Copy</button></div>` +
+    `<div class="conn-row"><code>npx -y @nooticr/mcp login</code>` +
+    `<button class="btn btn-ghost btn-sm" data-copy="npx -y @nooticr/mcp login">Copy</button></div>` +
     `<p class="faint" style="font-size:12.5px;margin:16px 0 0">Revoke access by removing the connector in your AI client.</p>` +
     `</div></div>` +
 
@@ -271,7 +271,7 @@ export function dashboardPage(
     `</section></main>`;
 
   return page(
-    { title: "Dashboard — Orchyn MCP", publicUrl, css: CSS, script: SCRIPT, bareNav: true, canonicalPath: "/dashboard" },
+    { title: "Dashboard — Nooticr MCP", publicUrl, css: CSS, script: SCRIPT, bareNav: true, canonicalPath: "/dashboard" },
     body
   );
 }

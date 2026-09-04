@@ -12,7 +12,7 @@
 # bridge — the widget sits on its idle placeholder with a clean console.
 # "Fixing" those two checks would break ChatGPT widgets for real users.
 # The behaviour is pinned by tests/ui-resource.test.ts ("Apps SDK (ChatGPT)
-# support" and "legacy ui://orchyn/view pointer"), which fail if the twins
+# support" and "legacy ui://nooticr/view pointer"), which fail if the twins
 # ever change mime or leave resources/list (ChatGPT resolves its template
 # pointer against the listing).
 set -eu

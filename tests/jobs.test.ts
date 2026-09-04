@@ -34,7 +34,7 @@ import {
   standing,
 } from "../src/shared/performance.js";
 import { CONFIRM_ABOVE_CREDITS, costOf } from "../src/shared/spend.js";
-import type { OrchynClient } from "../src/shared/orchyn.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
 
 type Row = Record<string, unknown>;
 
@@ -58,7 +58,7 @@ async function connect(
   const answer = opts.answer === undefined ? "accept" : opts.answer;
   const calls: Array<{ name: string; args: Row }> = [];
   const asked: string[] = [];
-  const orchyn = {
+  const nooticr = {
     me: async () => ({ id: "u1" }),
     callTool: async (name: string, args: Row) => {
       calls.push({ name, args });
@@ -66,7 +66,7 @@ async function connect(
       if (!handler) throw new Error(`no stub for ${name}`);
       return { contentBlocks: [], structured: handler(args) };
     },
-  } as unknown as OrchynClient;
+  } as unknown as NooticrClient;
 
   const client = new Client(
     { name: "test", version: "1.0.0" },
@@ -81,7 +81,7 @@ async function connect(
     });
   }
   const store = opts.store ?? new MemoryWatchStore();
-  const server = createMcpServer(async () => orchyn, { watchStore: store });
+  const server = createMcpServer(async () => nooticr, { watchStore: store });
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(a), server.connect(b)]);
   await client.listTools();
@@ -158,7 +158,7 @@ describe("answer_my_audience", () => {
   });
 
   /**
-   * The promise the tool is allowed to make. No orchyn connection carries
+   * The promise the tool is allowed to make. No nooticr connection carries
    * comment-write permission on any network — TikTok's asks for upload and
    * list, YouTube's for upload and readonly — and there is no send path in the
    * server at all. A model that believes otherwise promises the user something
@@ -333,7 +333,7 @@ describe("asking before a fan-out spends", () => {
     await client.callTool({ name: "answer_my_audience", arguments: { username: "a" } });
     expect(asked).toHaveLength(1);
     // Six posts is six comment fetches at 2 credits each.
-    expect(asked[0]).toContain("12 orchyn credits");
+    expect(asked[0]).toContain("12 nooticr credits");
     expect(asked[0]).toContain("@a");
     // And a way out that is cheaper rather than nothing.
     expect(asked[0]).toMatch(/limit/i);

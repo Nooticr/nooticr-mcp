@@ -1,5 +1,5 @@
 /**
- * Browser end-to-end tests for mcp.orchyn.com.
+ * Browser end-to-end tests for mcp.nooticr.com.
  *
  * These render the real pages the Worker serves and drive them the way a
  * visitor (or a connector reviewer) would: no horizontal overflow at any
@@ -19,8 +19,8 @@ import { landingPage } from "../../cloudflare/src/site/landing.js";
 import { termsPage, privacyPage } from "../../cloudflare/src/site/legal.js";
 import { dashboardPage, dashboardSignedOut } from "../../cloudflare/src/site/dashboard.js";
 
-const PUBLIC_URL = "https://mcp.orchyn.com";
-const API = "https://api.orchyn.com";
+const PUBLIC_URL = "https://mcp.nooticr.com";
+const API = "https://api.nooticr.com";
 
 const USAGE = {
   balance: 1284,
@@ -42,7 +42,7 @@ const ROUTES: Record<string, () => string> = {
   "/": () => landingPage(PUBLIC_URL, API),
   "/terms": () => termsPage(PUBLIC_URL, API),
   "/privacy": () => privacyPage(PUBLIC_URL, API),
-  "/dashboard": () => dashboardPage(PUBLIC_URL, { email: "e2e@orchyn.com", displayName: "E2E" }, USAGE, "secret-token"),
+  "/dashboard": () => dashboardPage(PUBLIC_URL, { email: "e2e@nooticr.com", displayName: "E2E" }, USAGE, "secret-token"),
   "/signed-out": () => dashboardSignedOut(PUBLIC_URL),
 };
 
@@ -108,7 +108,7 @@ test.describe("landing page", () => {
     await page.click('.tab[data-pane="cursor"]');
     await expect(cursorPane).toBeVisible();
     await expect(claudePane).toBeHidden();
-    await expect(cursorPane).toContainText("@orchyn/mcp");
+    await expect(cursorPane).toContainText("@nooticr/mcp");
   });
 
   test("shows the connector URL a reviewer needs to paste", async ({ page }) => {
