@@ -14,15 +14,21 @@ import { dashboardPage, dashboardSignedOut } from "../cloudflare/src/site/dashbo
 import { TOOLS } from "../cloudflare/src/site/catalogue.js";
 import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
+import { EVIDENCE_PLANS, planCost } from "../src/shared/evidence.js";
 
 const URL = "https://mcp.nooticr.com";
 const API = "https://api.nooticr.com";
 
 /**
- * The authoritative cost table, mirrored from nooticr-server's `mcp_tool_cost`
- * (crates/server/src/mcp_tools.rs). Keep both in step.
+ * What the pages must quote.
+ *
+ * Half of this is transcribed from nooticr-server's `mcp_tool_cost`
+ * (crates/server/src/mcp_tools.rs); the other half is derived, and that is the
+ * point. Those tools make no AI call of their own, so what they cost is the
+ * sum of the fetches in their plan — hard-coding those numbers is how the
+ * pages came to advertise prices the server had stopped charging.
  */
-const SERVER_PRICING: Record<string, number> = {
+const DATA_PRICING: Record<string, number> = {
   get_social_media: 1,
   discover_social_posts: 2,
   get_user_posts: 2,
@@ -30,23 +36,20 @@ const SERVER_PRICING: Record<string, number> = {
   search_creators: 2,
   get_similar_creators: 2,
   discover_sounds: 2,
-  analyze_post: 6,
-  understand_social_post: 6,
-  analyze_creator_profile: 15,
-  analyze_post_fast: 2,
-  write_hooks: 2,
-  score_draft: 2,
-  repurpose_post: 2,
-  find_hook_pattern: 2,
-  create_variants: 3,
-  niche_report: 3,
-  compare_posts: 8,
+  // The one comment tool with no entry in EVIDENCE_PLANS: it makes the same
+  // single get_post_comments call, and its guidance lives in comment-review.ts.
+  analyze_comments: 2,
   // Per creator checked, not per call — the unit price is what the pages show.
   catch_up_watchlist: 2,
 };
 
-/** Tools the server grants one free use of (AI_MCP_TOOLS). */
-const FREE_FIRST_USE = ["analyze_post", "understand_social_post", "analyze_creator_profile"];
+const SERVER_PRICING: Record<string, number> = {
+  ...DATA_PRICING,
+  ...Object.fromEntries(Object.keys(EVIDENCE_PLANS).map((t) => [t, planCost(t)])),
+};
+
+/** Tools that fetch nothing at all, so they cost nothing and show no price. */
+const FREE_TOOLS = ["score_draft", "show_comment_review", "show_audience_replies", "watch_creator", "unwatch_creator"];
 
 describe("landing page", () => {
   const html = landingPage(URL, API);
@@ -63,18 +66,12 @@ describe("landing page", () => {
     }
   });
 
-  it("advertises a free first use for exactly the tools that get one", () => {
-    for (const tool of FREE_FIRST_USE) {
+  it("shows no price for a tool that fetches nothing", () => {
+    for (const tool of FREE_TOOLS) {
       const at = html.indexOf(`>${tool}</h3>`);
-      expect(at, `${tool} missing`).toBeGreaterThan(-1);
-      expect(
-        html.slice(at, at + 460),
-        `${tool} should be marked free-first-use`
-      ).toContain("First use free");
+      // The pricing grid lists billable tools only; a free one is simply absent.
+      expect(at, `${tool} is in the priced grid`).toBe(-1);
     }
-    // A paid-only tool must not claim a free use.
-    const at = html.indexOf(">get_social_media</h3>");
-    expect(html.slice(at, at + 320)).not.toContain("First use free");
   });
 
   it("names every platform the server supports", () => {
@@ -255,6 +252,14 @@ describe("tool surface", () => {
     "nooticr_login",
     "show_comment_review",
     "get_post_frames",
+    // The job tools (jobs.ts): compositions of the calls above, named after
+    // the question rather than the endpoint.
+    "answer_my_audience",
+    "show_audience_replies",
+    "track_competitor",
+    "who_should_i_work_with",
+    "why_did_this_underperform",
+    "what_should_i_make_next",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -313,6 +318,8 @@ describe("tool surface", () => {
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
       "show_comment_review",
+      // The same, for the replies a model drafted from answer_my_audience.
+      "show_audience_replies",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;
@@ -378,12 +385,13 @@ describe("README", () => {
     }
   });
 
-  it("does not promise a free first use for every tool", async () => {
+  it("promises no free first use, because there is none to promise", async () => {
     const doc = await readme();
-    // Only AI_MCP_TOOLS get one; data tools bill from the first call.
-    expect(doc).not.toMatch(/every tool.{0,30}first use is free/i);
-    expect(doc).not.toMatch(/Every tool has \*\*one free first use/i);
-    expect(doc).toMatch(/AI (analysis )?tools?\b[\s\S]{0,120}free the first time/i);
+    // The grant belonged to the AI calls. Every tool here is a fetch now, and
+    // a fetch bills from the first call.
+    expect(doc).not.toMatch(/first use free/i);
+    expect(doc).not.toMatch(/free the first time/i);
+    expect(doc).not.toMatch(/\(first use free\)/i);
   });
 });
 
@@ -572,25 +580,35 @@ describe("documentation", () => {
 
 // The public docs once claimed 5 tools were free on first use when the server
 // treated 12 that way — understating our own free tier, and wrong in the
-// direction that makes a reviewer's evaluation run out of credits early.
-// This is the server's list, transcribed from AI_MCP_TOOLS in mcp_tools.rs.
+// direction that makes a reviewer's evaluation run out of credits early. That
+// grant was attached to the AI calls in AI_MCP_TOOLS, and nothing on this
+// surface makes one now: every tool here is a fetch, and a fetch is billed
+// from the first call. So the claim has to be gone from every page at once,
+// which is the failure this describe now catches.
 describe("free first use", () => {
-  const SERVER_AI_TOOLS = [
-    "analyze_post", "understand_social_post", "analyze_creator_profile",
-    "analyze_comments", "compare_posts", "analyze_post_fast", "write_hooks",
-    "create_variants", "score_draft", "repurpose_post", "niche_report",
-    "find_hook_pattern",
-  ].sort();
+  const pages = () => [
+    landingPage(URL, API),
+    documentationPage(URL, API),
+    termsPage(URL, API),
+  ];
 
-  it("marks exactly the tools the server bills as AI", () => {
-    const marked = TOOLS.filter((t) => t.freeFirstUse).map((t) => t.name).sort();
-    expect(marked).toEqual(SERVER_AI_TOOLS);
+  it("is not advertised anywhere", () => {
+    for (const html of pages()) {
+      expect(html).not.toMatch(/free the first time/i);
+      expect(html).not.toMatch(/first use free/i);
+      expect(html).not.toMatch(/1st use free/i);
+      expect(html).not.toMatch(/used once at no charge/i);
+    }
   });
 
-  it("keeps a full review pass inside the 20-credit welcome grant", () => {
-    const payable = TOOLS.filter((t) => !t.freeFirstUse)
+  /**
+   * The number that matters to a reviewer: they connect, read one post every
+   * way this server can read it, and must not hit a paywall doing it.
+   */
+  it("keeps a full pass over one post inside the 20-credit welcome grant", () => {
+    const pass = TOOLS.filter((t) => t.group === "understand")
       .reduce((sum, t) => sum + t.cost, 0);
-    expect(payable).toBeLessThanOrEqual(20);
+    expect(pass).toBeLessThanOrEqual(20);
   });
 });
 
@@ -659,8 +677,11 @@ describe("the declared tools and the shipped tools agree", () => {
     expect(new Set(platforms).size, "the enum should list nine networks").toBe(9);
     const said = (tool.description ?? "").toLowerCase();
     const unnamed = [...new Set(platforms)].filter((p) => {
-      const alias = { twitter: "x/twitter", xiaohongshu: "xiaohongshu" }[p] ?? p;
-      return !said.includes(alias);
+      // The wire value is still `twitter`; the network is called X. A plain
+      // `includes("x")` would pass on the x inside "xiaohongshu" and assert
+      // nothing at all, so every name is matched on a word boundary.
+      const alias = { twitter: "x", xiaohongshu: "xiaohongshu" }[p] ?? p;
+      return !new RegExp(`\\b${alias}\\b`).test(said);
     });
     expect(unnamed, "networks the tool searches but never mentions").toEqual([]);
   });

@@ -3,9 +3,9 @@
  *
  * ## Why
  *
- * `analyze_comments` fetches a comment section, sends it to Gemini, and returns
- * Gemini's opinion. That costs 6 credits, takes a round trip to a third party,
- * and dies when that third party declines — measured: `Gemini text 403
+ * `analyze_comments` used to fetch a comment section, send it to Gemini, and
+ * return Gemini's opinion. That cost 6 credits, took a round trip to a third
+ * party, and died when that third party declined — measured: `Gemini text 403
  * Forbidden` while `get_post_comments` returned the same post's comments fine.
  *
  * The reasoning itself is not the hard part. It is text over text, and the
@@ -13,9 +13,9 @@
  * costs us nothing. What we are actually selling is the fetch: the upstream
  * call is where the money goes.
  *
- * So evidence mode returns the comments and gets out of the way. It is the
- * same upstream call `get_post_comments` makes, priced the same, with the
- * material laid out for analysis and an explicit account of what to produce.
+ * So the tool returns the comments and gets out of the way. It is the same
+ * upstream call `get_post_comments` makes, priced the same, with the material
+ * laid out for analysis and an explicit account of what to produce.
  *
  * ## Why the caller is told what to produce
  *

@@ -4,13 +4,13 @@
   "version": "1.0.0",
   "owner": {
     "name": "Nooticr",
-    "url": "https://github.com/orchynX"
+    "url": "https://github.com/Nooticr"
   },
   "plugins": [
     {
       "name": "nooticr",
       "source": "./",
-      "description": "Social intelligence for Claude. Read posts, spoken transcripts, comments, creators, trending sounds and hashtags across TikTok, Instagram, YouTube, X/Twitter, LinkedIn, Douyin, Xiaohongshu and Bilibili \u2014 then act on what you learn: write hooks, create variants to film, score a draft before you publish, and repurpose a post for other surfaces. 24 tools, OAuth 2.1, billed in nooticr credits (20 free to start).",
+      "description": "Social intelligence for Claude. Read posts, spoken transcripts, comments, creators, trending sounds and hashtags across TikTok, Instagram, YouTube, X, LinkedIn, Douyin, Xiaohongshu and Bilibili \u2014 then act on what you learn: write hooks, create variants to film, score a draft before you publish, and repurpose a post for other surfaces. 24 tools, OAuth 2.1, billed in nooticr credits (20 free to start).",
       "category": "productivity",
       "keywords": [
         "social-media",

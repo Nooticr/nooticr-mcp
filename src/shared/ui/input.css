@@ -887,6 +887,24 @@
     padding: 1px 3px;
     font-weight: 600;
   }
+  /* The drafted reply from show_audience_replies, or the note explaining a
+     label on a show_comment_review. It was already in both payloads and drawn
+     by neither, so a person reading the view could see the label and never the
+     reasoning behind it. Indented and quieter than the comment, because the
+     comment is the thing being read and this is the answer to it. */
+  .mention-note {
+    display: block;
+    margin-top: 6px;
+    padding: 6px 9px;
+    border-left: 2px solid var(--brand, #f43f5e);
+    background: var(--tag);
+    border-radius: 0 6px 6px 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
   .mention-meta {
     @apply flex items-center gap-3.5;
     margin-top: 6px;

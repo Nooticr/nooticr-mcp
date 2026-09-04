@@ -3,11 +3,14 @@
 MCP (Model Context Protocol) server for [nooticr](https://nooticr.com).
 
 Gives an AI assistant three things: it can **read** real social posts across
-ten networks (TikTok, Instagram, YouTube, X/Twitter, Reddit, LinkedIn, Douyin,
-Xiaohongshu, Weibo, Bilibili), **understand** them — transcript, hook, script
-structure, comment themes, why one post beat another — and **make** something
-from what it learned: hooks, variants to film, a scored draft, a repurposed
-thread.
+ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin,
+Xiaohongshu, Weibo, Bilibili), **understand** them — transcript, video frames,
+comments, the numbers — and **make** something from what it learned: hooks,
+variants to film, a scored draft, a repurposed thread.
+
+The understanding is your model's, not ours. Every tool here fetches material
+and hands it over with an account of what to do with it; none of them ask a
+model of ours for an opinion first. You pay for the fetch and nothing else.
 
 It also **monitors a name**: `search_mentions` sweeps nine of those networks for
 every comment that says your brand, inside a date window you choose.
@@ -20,7 +23,7 @@ Billed against your nooticr credits; new accounts get 20 free.
 **Claude Code** — register the marketplace, then install the plugin:
 
 ```
-/plugin marketplace add orchynX/nooticr-mcp
+/plugin marketplace add Nooticr/nooticr-mcp
 /plugin install nooticr@nooticr
 ```
 
@@ -47,8 +50,15 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-30 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+36 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
+
+Six of them — the ones under **Answer a question you actually have** — are not
+endpoint wrappers. Each names a job, fans out over the calls that job needs,
+groups the evidence by whatever you are deciding about, gives every item an id
+a follow-up tool can act on, and hands the reading to your model rather than to
+ours. They fan out, so they cost the sum of what they fetched and every one of
+them caps that fan-out with an argument.
 
 ### Read a post
 
@@ -56,19 +66,19 @@ match what the server actually charges.
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
 | `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
-| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X/Twitter; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
+| `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
 ### Understand a post
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `analyze_post_fast` | 2 | The full analysis built from transcript, caption and stats instead of video frames — **a third the price**. Weaker on visual style, just as strong on hook, script, CTA and audience. The sensible default. |
-| `analyze_post` | 6 (first use free) | The same analysis with the video actually watched. Use when the visuals are the point — framing, editing, on-screen text. |
-| `understand_social_post` | 6 (first use free) | A factual description of what physically happens on screen. Use when you need the events, not the strategy. |
-| `analyze_comments` | 6 (first use free), or **2 with `mode: "evidence"`** | The comment section synthesised: sentiment, recurring themes, questions asked, objections raised, content requested, and follow-up ideas. Use when the goal is what to make next. **`mode: "evidence"`** instead returns the comments unanalysed for the price of the fetch and asks *your* model to classify them — cheaper, steerable, and it can label each comment's sentiment and whether it is a bug report, question, request or complaint. |
-| `show_comment_review` | free | Draws the classifications your model produced from `mode: "evidence"` — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
-| `compare_posts` | 8 (first use free) | Two to five posts side by side: which won, what actually differed, and the one test to run next. Use when performance differs and you need to know why. |
+| `analyze_post_fast` | 2 | The post's transcript, caption and stats — everything but the pictures, which is what makes it the cheap read. Two fetches: `get_social_media` (1) and `get_post_transcript` (1). The sensible default. |
+| `analyze_post` | 3 | Frames sampled across the video, as **images your model can actually look at**, plus the transcript. Two fetches: `get_post_frames` (2) and `get_post_transcript` (1). Use when the visuals are the point — framing, editing, on-screen text. |
+| `understand_social_post` | 3 | The same two fetches, asked for a description of what physically happens on screen rather than why it works. Use when you need the events, not the strategy. |
+| `analyze_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. |
+| `show_comment_review` | free | Draws the classifications your model produced — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
+| `compare_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
 
 ### Research a niche or a creator
 
@@ -80,42 +90,52 @@ match what the server actually charges.
 | `get_similar_creators` | 2 | Lookalikes for a creator that already works. |
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
 | `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
-| `find_hook_pattern` | 2 | A creator's repeatable formula from their captions, as fill-in-the-blank templates. Much cheaper than the full profile teardown because it never watches the videos. |
+| `find_hook_pattern` | 2 | A creator's recent posts, so their opening lines can be read as a set and turned into fill-in-the-blank templates. One `get_user_posts` call. |
 | `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
-| `niche_report` | 3 | What is working in a niche right now: dominant formats, hook patterns, what over- and underperforms, the gaps nobody is filling. Use when deciding what to make. |
-| `analyze_creator_profile` | 15 (first use free) | Full teardown — fetches recent posts, watches up to three, then synthesises niche, themes, hook styles, strengths, audience and collaboration fit. |
+| `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
+| `analyze_creator_profile` | 2 | A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms, who the audience is. One `get_user_posts` call. |
+
+### Answer a question you actually have
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply, because no nooticr connection carries comment-write permission on any network. `limit` caps how many posts are opened, which is the price. |
+| `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
+| `track_competitor` | 2 | What a creator shipped, and which of it beat **their own** median rather than a raw view count that mostly measures follower count. One post list, whatever the window. If they are on your watchlist it also marks what is new since your last check and moves that marker forward — its own marker, not the one `catch_up_watchlist` keeps. |
+| `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
+| `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
+| `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
 
 ### Make something
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `write_hooks` | 2 | Alternative opening lines, grounded in a real post's transcript or in a bare topic. Each comes with the mechanism it uses and who it stops. |
-| `score_draft` | 2 | Reviews **your** draft before you film it: hook, clarity and payoff scores, concrete fixes, a rewritten hook. The only tool that runs before the content exists. |
-| `repurpose_post` | 2 | One post rewritten for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
-| `create_variants` | 3 | Turns a post that worked into variants you could film next: hook, the angle that changes, ordered shot beats and a CTA. |
+| `write_hooks` | 2, or free | The source post and its transcript, to write openings against. Give a topic instead of a url and it fetches nothing and costs nothing. |
+| `score_draft` | free | **Your** draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the three fixes worth making and a rewritten opening. Fetches nothing: the text is already yours. The only tool that runs before the content exists. |
+| `repurpose_post` | 2 | The source post and its transcript, to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
+| `create_variants` | 2 | The post that worked, with its transcript, to build variants from: hook, the angle that changes, ordered shot beats and a CTA. |
 
 ### Account
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `check_nooticr_credits` | free | Balance, billing URL, and which AI tools still have their free first use. |
+| `check_nooticr_credits` | free | Balance and billing URL. |
 | `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 
 ### How billing works
 
 - New accounts get **20 free credits**.
-- The **AI analysis tools** (`analyze_post`, `understand_social_post`,
-  `analyze_creator_profile`, `analyze_comments`, `compare_posts`, and the
-  text-only tools) are **free the first time you use each one**. Data tools bill
-  from the first call.
+- **Every tool is priced at what it fetches upstream**, and bills from the first
+  call. A tool that fans out to two fetches costs both — `analyze_post` is 2 for
+  the frames plus 1 for the transcript — and its description says so. There is
+  no free first use: that grant belonged to the AI calls, and there are none.
 - A call that fails is **refunded automatically**, and a call interrupted
   mid-flight is billed **once at most** — retries are idempotent.
 - Platform admins bypass credit debiting entirely.
-- `check_nooticr_credits` lists which free first uses you still have.
 
 ## Interactive cards in Claude / ChatGPT chat
 
@@ -163,30 +183,28 @@ Also **inline thumbnails** render for the model / plain-text clients:
 - `discover_social_posts` / `get_user_posts` / `analyze_creator_profile` — each returned post shows its thumbnail inline (up to 4 at once) together with its title/caption + views/likes/comments. Say **"next"** or **"show more"** — Claude will re-call with `offset`/`limit` pagination. Say **"analyze the 2nd one"** — Claude calls `analyze_post` or `understand_social_post` on that URL.
 - **Batch analysis** — ask "analyze all 4" or "understand these 3 in batch" and Claude will call `analyze_post`/`understand_social_post` once per URL in parallel and summarize. For large batches, `discover_social_posts` + a follow-up `analyze_post` per URL is the recommended flow.
 
-> The backend's `analyze_post` now watches the **actual video/images** (direct MP4, YouTube `fileUri`, or 6 carousel frames via AI multimodal) — not just the caption. The analysis includes a `whatHappens` field describing exactly what is seen.
+## Your own model does the thinking
 
-## Let your own model do the thinking
-
-Every AI tool takes `mode: "evidence"`. Instead of returning nooticr's analysis,
-it returns **the material that analysis would have been built from**, at the
-price of the fetch, and asks your model to reason over it.
+There is no other mode. Every tool returns **the material an analysis would have
+been built from**, at the price of the fetch, and asks your model to reason over
+it. Nothing here calls a model of ours, so nothing here sells you a judgement.
 
 For the visual tools that means **actual frames** — real image content blocks,
 not a description of them — paired with the transcript. Measured on Claude Code:
 ~1,200 tokens per 1280×720 frame, eight frames read back correctly and in order.
 Twenty frames is about 2.4% of a million-token context.
 
-| | `mode: "ai"` (default) | `mode: "evidence"` |
+| Tool | What comes back | Credits |
 |---|---|---|
-| Who reasons | nooticr's model | **yours** |
-| `analyze_post` | 6 credits | **2** — frames + transcript + stats |
-| `analyze_comments` | 6 credits | **2** — the comments, with ids |
-| `analyze_creator_profile` | 15 credits | **2** — the posts and their numbers |
-| Steerable mid-conversation | no | **yes** |
+| `analyze_post` | frames as images, plus the transcript and stats | **3** (2 + 1) |
+| `analyze_comments` | the comments, each with an id, and the labels to use | **2** |
+| `analyze_creator_profile` | the creator's recent posts and their numbers | **2** |
+| `score_draft` | your own draft, and the rubric to score it against | **free** |
 
-Nothing changes for callers who do not ask for it: `ai` remains the default
-everywhere. `score_draft` has no evidence mode — it reviews text you already
-have, so there is nothing to fetch.
+The prices above are derived from the fetches each tool makes rather than
+written down twice — see `EVIDENCE_PLANS` and `planCost` in
+`src/shared/evidence.ts`. `score_draft` has no plan at all: it reviews text you
+already have, so there is nothing to fetch and nothing to charge for.
 
 `show_comment_review` closes the loop: hand back your classifications and it
 draws them — every comment with its sentiment and category, filterable and
@@ -392,7 +410,7 @@ per the MCP 2025-03-26 spec):
 - TikTok: `tiktok.com/*`, `vm.tiktok.com/*` (and `www.`/`m.` subdomains)
 - Instagram: `instagram.com/*` (reels, posts, carousels), `instagr.am/*`
 - YouTube: `youtube.com/*` (including `/shorts/`), `youtu.be/*`, `m.youtube.com/*`
-- X/Twitter: `x.com/*`, `twitter.com/*`
+- X: `x.com/*`, `twitter.com/*`
 - Reddit: `reddit.com/*`, `redd.it/*`
 - Weibo: `weibo.com/*`, `weibo.cn/*`
 - Douyin: `douyin.com/*`
@@ -409,9 +427,9 @@ and text** posts.
   `NOOTICR_ACCESS_TOKEN`.
 - **402 paywall / `insufficient MCP credits`**: your nooticr account is out of
   credits. Prices are listed per tool in [Tools](#tools) — 1 credit for a post
-  lookup or transcript, 2-3 for discovery and the text-only AI tools, 6-15 for
-  the ones that watch the video. The **AI tools** are free the first time you
-  use each; data tools bill from the first call. Top up via
+  lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
+  for the two that fetch frames *and* transcript. Every tool bills from the
+  first call. Top up via
   `buy_nooticr_credits`, `check_nooticr_credits`, or the nooticr dashboard at
   `https://nooticr.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the

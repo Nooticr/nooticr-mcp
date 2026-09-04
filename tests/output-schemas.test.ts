@@ -100,3 +100,87 @@ describe("output schemas", () => {
     expect(result.success).toBe(true);
   });
 });
+
+/**
+ * check_nooticr_credits ships the same list under two names.
+ *
+ * firstFreeRemaining has no reader anywhere — the credits card draws its pills
+ * from firstFreeTools — but it was published in this schema, so removing it
+ * would break a host that validates a response against the advertised output.
+ * Both stay, which leaves one hazard: two names for one answer can start
+ * giving two answers, and a caller that picked the undocumented one would then
+ * be quietly wrong. These pin the alias to being a duplicate.
+ */
+describe("check_nooticr_credits free-tool aliases", () => {
+  const credits = OUTPUT_SCHEMAS.check_nooticr_credits;
+  const shape = credits.shape;
+
+  /** The invariant, stated once: while both ship, they are one list. */
+  function agrees(payload: Record<string, unknown>): boolean {
+    const { firstFreeTools: tools, firstFreeRemaining: alias } = payload;
+    if (tools === undefined || alias === undefined) return true;
+    return JSON.stringify(alias) === JSON.stringify(tools);
+  }
+
+  it("still declares both names", () => {
+    expect(keysOf(credits)).toEqual(
+      expect.arrayContaining(["firstFreeTools", "firstFreeRemaining"]),
+    );
+  });
+
+  // The description is what a client actually sees — it is carried through to
+  // the JSON Schema in tools/list — so losing it is losing the only signpost
+  // off the dead field.
+  it("tells a client which name to read", () => {
+    expect(shape.firstFreeRemaining.description).toContain("firstFreeTools");
+    expect(shape.firstFreeTools.description).toBeTruthy();
+  });
+
+  it.each([
+    ["neither present", {}],
+    ["only firstFreeTools", { firstFreeTools: ["analyze_comments"] }],
+    ["only firstFreeRemaining", { firstFreeRemaining: ["analyze_comments"] }],
+    ["both, agreeing", {
+      firstFreeTools: ["analyze_comments", "get_post_transcript"],
+      firstFreeRemaining: ["analyze_comments", "get_post_transcript"],
+    }],
+    ["both empty", { firstFreeTools: [], firstFreeRemaining: [] }],
+    ["both null", { firstFreeTools: null, firstFreeRemaining: null }],
+  ])("holds when %s", (_label, payload) => {
+    expect(agrees(payload)).toBe(true);
+    expect(credits.safeParse(payload).success).toBe(true);
+  });
+
+  // Without this the check above would pass on any payload at all, including
+  // the drift it exists to catch.
+  it.each([
+    ["the lists differ", {
+      firstFreeTools: ["analyze_comments"],
+      firstFreeRemaining: ["get_post_transcript"],
+    }],
+    ["one has been spent and the other has not", {
+      firstFreeTools: [],
+      firstFreeRemaining: ["analyze_comments"],
+    }],
+    ["the order differs", {
+      firstFreeTools: ["a", "b"],
+      firstFreeRemaining: ["b", "a"],
+    }],
+  ])("catches disagreement when %s", (_label, payload) => {
+    expect(agrees(payload)).toBe(false);
+  });
+
+  // Deliberately a test and not a `.refine`. The SDK throws on structuredContent
+  // that fails its schema, so enforcing this in the schema would turn a backend
+  // that drifted into a credits tool that returns nothing at all — the exact
+  // failure the null-handling above was written to stop.
+  it("does not fail the call when they disagree", () => {
+    const drifted = {
+      balance: 18,
+      firstFreeTools: ["analyze_comments"],
+      firstFreeRemaining: ["get_post_transcript"],
+    };
+    expect(agrees(drifted)).toBe(false);
+    expect(credits.safeParse(drifted).success).toBe(true);
+  });
+});

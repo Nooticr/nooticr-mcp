@@ -62,21 +62,13 @@ const CASES: Array<[string, Record<string, unknown>, unknown]> = [
       report: { objections: ["too advanced"] },
     },
   ],
-  // fixes are objects with their own shape.
+  // Nothing upstream answers for this one any more: it returns the draft it
+  // was handed, and the payload below is ignored. Kept as a case because the
+  // declared schema still has to accept what the handler builds.
   [
     "score_draft",
     { draft: "x" },
-    {
-      draft: "x",
-      platform: "tiktok",
-      report: {
-        verdict: "needs a stronger open",
-        hookStrength: 6,
-        fixes: [{ issue: "vague hook", fix: "name the audience" }],
-        strengths: ["clear payoff"],
-        rewrittenHook: "If your lower back hurts on back day…",
-      },
-    },
+    { draft: "x", platform: "tiktok" },
   ],
   // A slideshow: the nulls that broke discovery.
   [

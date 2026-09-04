@@ -52,6 +52,36 @@ export const XIAOHONGSHU_CREDITS = 5;
 export const CREDITS_PER_CREATOR = 2;
 
 /**
+ * What each backend call costs, so a tool that fans out can price itself.
+ *
+ * The five job tools in jobs.ts are compositions: `answer_my_audience` is one
+ * `get_user_posts` plus a `get_post_comments` per post it opens, and nothing
+ * else. Billing is therefore the sum of what it actually called, which is only
+ * knowable if the per-call prices are written down somewhere. Mirrors
+ * `mcp_tool_cost_for` in crates/server/src/mcp_tools.rs, same as the constants
+ * above — a call missing from here prices as zero, which would understate a
+ * confirmation rather than overstate it, so add to it when a tool grows a
+ * new fetch.
+ */
+export const BACKEND_CALL_CREDITS: Record<string, number> = {
+  get_social_media: 1,
+  get_post_transcript: 1,
+  get_user_posts: 2,
+  get_post_comments: 2,
+  discover_social_posts: 2,
+  search_creators: 2,
+  get_similar_creators: 2,
+  discover_sounds: 2,
+  discover_hashtags: 2,
+  get_post_frames: 2,
+};
+
+/** What a run of backend calls costs, named one per call actually made. */
+export function costOf(calls: string[]): number {
+  return calls.reduce((total, name) => total + (BACKEND_CALL_CREDITS[name] ?? 0), 0);
+}
+
+/**
  * What a `search_mentions` call will cost.
  *
  * Omitting `platforms` means every network — which is the expensive default,
@@ -139,15 +169,23 @@ export async function confirmSpend(
   }
 }
 
-/** What the caller returns when the user said no. Not an error — a choice. */
-export function declinedResult(credits: number, what: string) {
+/**
+ * What the caller returns when the user said no. Not an error — a choice.
+ *
+ * `cheaper` is the way out. It defaults to the platforms argument because
+ * `search_mentions` was the first caller and that is its lever, but a tool
+ * that fans out over posts rather than networks has a different one, and
+ * telling a user to narrow a "platforms" argument the tool does not have is
+ * worse than saying nothing.
+ */
+export function declinedResult(credits: number, what: string, cheaper?: string) {
   return {
     content: [
       {
         type: "text" as const,
         text:
           `Cancelled — no credits were spent. ${what} would have cost ${credits} credits. ` +
-          `Narrow it with the "platforms" argument to spend less.`,
+          (cheaper ?? `Narrow it with the "platforms" argument to spend less.`),
       },
     ],
     structuredContent: { cancelled: true, wouldHaveCost: credits },

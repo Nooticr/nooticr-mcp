@@ -2,8 +2,14 @@
 // Sync the HTML template from the npm package to the Rust ui.rs file
 const { NOOTICR_UI_TEMPLATE } = require('../dist/shared/ui-template.js');
 const fs = require('fs');
+const path = require('path');
 
-const RUST_FILE = '/home/ondonda/rust/nooticr-server/crates/mcp/src/ui.rs';
+// The checkout this runs against, which is not the same directory on every
+// machine. An absolute path to one person's home meant the script only worked
+// there, so anyone else regenerated the file by hand — which is how the copy
+// drifted 27KB in the first place.
+const RUST_FILE = process.env.NOOTICR_RUST_UI
+  || path.resolve(__dirname, '../../nooticr-server/crates/mcp/src/ui.rs');
 
 const content = [
   '//! MCP Apps \u2014 interactive UI resource for Nooticr tools.',
@@ -30,5 +36,24 @@ const content = [
   '',
 ].join('\n');
 
-fs.writeFileSync(RUST_FILE, content);
-console.log('Written', content.length, 'bytes to', RUST_FILE);
+// The file this overwrites carries its own tests, and they are the only thing
+// standing between a stale copy and a server that quietly serves last month's
+// UI. Regenerating used to drop them: the template was rewritten, the
+// `#[cfg(test)]` block went with it, and four drift checks disappeared without
+// a single failure to show for it. Carry them across instead.
+let tests = '';
+if (fs.existsSync(RUST_FILE)) {
+  const existing = fs.readFileSync(RUST_FILE, 'utf8');
+  const at = existing.indexOf('#[cfg(test)]');
+  if (at !== -1) tests = existing.slice(at);
+}
+if (!tests) {
+  console.error(
+    'refusing to write: %s has no #[cfg(test)] block to carry over, so this ' +
+    'would silently drop the drift tests. Restore them first.', RUST_FILE);
+  process.exit(1);
+}
+
+fs.writeFileSync(RUST_FILE, content + tests);
+console.log('Written', (content + tests).length, 'bytes to', RUST_FILE,
+  '(template + ' + tests.length + ' bytes of tests carried over)');

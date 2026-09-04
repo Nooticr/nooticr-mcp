@@ -1,22 +1,23 @@
 /**
- * Evidence mode across every AI tool.
+ * What every tool built on an evidence plan does — which is now all it does.
  *
- * Each of these fetches something from a platform and then has Gemini read it.
- * Only the first half is expensive to us; the second is text over text, which
- * the calling model does better and steers itself. So every one of them can
- * now hand back the material instead of a conclusion.
+ * Each of these used to fetch something from a platform and then have Gemini
+ * read it. Only the first half was expensive to us; the second is text over
+ * text, which the calling model does better and steers itself. So the second
+ * half is gone: every one of them hands back the material and the instructions
+ * for reading it, and there is no argument that asks for anything else.
  *
- * Two things are asserted that matter more than the plumbing: that evidence
- * mode makes the **cheap** upstream call rather than the expensive one, and
- * that the visual tools deliver frames as real image content blocks — the
- * thing a text model could not previously substitute for, and which a probe
- * measured at ~1,212 tokens per frame with eight read back correctly.
+ * Two things are asserted that matter more than the plumbing: that a tool
+ * makes the **cheap** upstream call and never its own expensive one, and that
+ * the visual tools deliver frames as real image content blocks — the thing a
+ * text model could not previously substitute for, and which a probe measured
+ * at ~1,212 tokens per frame with eight read back correctly.
  */
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
-import { EVIDENCE_PLANS, NO_EVIDENCE_MODE } from "../src/shared/evidence.js";
+import { EVIDENCE_PLANS, FETCHES_NOTHING, planCost } from "../src/shared/evidence.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
 
 const FRAME = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQ==";
@@ -50,7 +51,7 @@ async function connect() {
       if (name === "discover_social_posts") {
         return { contentBlocks: [], structured: { posts: [{ id: "1" }] } };
       }
-      // The AI path — the expensive one evidence mode must avoid.
+      // The AI path — the expensive one no tool here may reach.
       return { contentBlocks: [], structured: { analysis: { summary: "gemini says things" } } };
     },
   } as unknown as NooticrClient;
@@ -78,19 +79,19 @@ const ARGS: Record<string, Record<string, unknown>> = {
 
 const TOOLS = Object.keys(EVIDENCE_PLANS);
 
-describe("every AI tool can hand back its evidence", () => {
-  it("covers the whole AI surface, minus the one with nothing to fetch", () => {
+describe("every tool hands back its evidence", () => {
+  it("covers the whole surface, minus the one with nothing to fetch", () => {
     expect(TOOLS.length).toBe(10);
-    // score_draft reviews text the caller already has: an evidence mode there
-    // would be a paid call returning the caller's own input.
-    expect(NO_EVIDENCE_MODE).toContain("score_draft");
+    // score_draft reviews text the caller already has: a plan there would be a
+    // paid call returning the caller's own input, so it is free instead.
+    expect(FETCHES_NOTHING).toContain("score_draft");
     expect(TOOLS).not.toContain("score_draft");
   });
 
   it.each(TOOLS)("%s makes the cheap call, not the AI one", async (tool) => {
     const { client, calls } = await connect();
     const res = await client.callTool(
-      { name: tool, arguments: { ...ARGS[tool], mode: "evidence" } },
+      { name: tool, arguments: ARGS[tool] },
       undefined,
       { timeout: 30_000 },
     );
@@ -100,25 +101,34 @@ describe("every AI tool can hand back its evidence", () => {
     expect(calls[0].name).toBe(EVIDENCE_PLANS[tool].via);
   });
 
-  // analyze_post reaches the backend through startVideoAnalysis rather than
-  // callTool, which is exactly why its evidence branch has to sit before
-  // everything else in the handler — asserted separately below.
-  it.each(TOOLS.filter((t) => t !== "analyze_post"))(
-    "%s still runs the AI path by default",
-    async (tool) => {
-      const { client, calls } = await connect();
-      await client.callTool({ name: tool, arguments: ARGS[tool] }, undefined, { timeout: 30_000 });
-      // These are registered as task tools: the work continues past the
-      // response, so the backend call can land just after it.
-      for (let i = 0; i < 60 && !calls.some((c) => c.name === tool); i++) {
-        await new Promise((r) => setTimeout(r, 50));
-      }
-      // Nothing existing changes for a caller that does not ask for evidence.
-      expect(calls.map((c) => c.name)).toContain(tool);
-    },
-  );
+  /**
+   * The mode argument is gone, and `.strict()` is what makes that stick: a
+   * caller who still sends `mode: "ai"` is told the argument does not exist
+   * rather than quietly getting the evidence and believing it got an analysis.
+   */
+  it.each(TOOLS)("%s rejects the mode argument outright", async (tool) => {
+    const { client, calls } = await connect();
+    const res = await client.callTool(
+      { name: tool, arguments: { ...ARGS[tool], mode: "ai" } },
+      undefined,
+      { timeout: 30_000 },
+    );
+    expect(res.isError, `${tool} accepted mode`).toBe(true);
+    expect(calls, `${tool} spent money on a call it should have refused`).toHaveLength(0);
+  });
 
-  it("analyze_post never starts a video analysis in evidence mode", async () => {
+  /**
+   * The price in the description is derived from the plan, so this pins the
+   * arithmetic rather than the sentence: a plan that grows a second fetch
+   * doubles a caller's bill, and the number they read has to move with it.
+   */
+  it.each(TOOLS)("%s says what it costs, and the number is the plan's", async (tool) => {
+    const { client } = await connect();
+    const listed = (await client.listTools()).tools.find((t) => t.name === tool)!;
+    expect(String(listed.description)).toContain(`${planCost(tool)} nooticr credit`);
+  });
+
+  it("analyze_post never starts a video analysis at all", async () => {
     let started = 0;
     const nooticr = {
       me: async () => ({ id: "u1" }),
@@ -140,20 +150,21 @@ describe("every AI tool can hand back its evidence", () => {
     await Promise.all([client.connect(a), server.connect(b)]);
     await client.listTools();
     const res = await client.callTool(
-      { name: "analyze_post", arguments: { url: "https://x/1", mode: "evidence" } },
+      { name: "analyze_post", arguments: { url: "https://x/1" } },
       undefined,
       { timeout: 30_000 },
     );
-    // The expensive path is a video job that costs 6 credits and minutes of
-    // wall clock. Evidence mode must not start one.
-    expect(started, "evidence mode started a video analysis").toBe(0);
+    // The expensive path was a video job costing 6 credits and minutes of wall
+    // clock. Nothing starts one now, and this is the assertion that would fail
+    // if the handler ever reached for startVideoAnalysis again.
+    expect(started, "a video analysis was started").toBe(0);
     expect((res.content as Array<{ type: string }>).filter((b) => b.type === "image")).toHaveLength(1);
   });
 
   it.each(TOOLS)("%s tells the caller what to produce", async (tool) => {
     const { client } = await connect();
     const res = await client.callTool(
-      { name: tool, arguments: { ...ARGS[tool], mode: "evidence" } },
+      { name: tool, arguments: ARGS[tool] },
       undefined,
       { timeout: 30_000 },
     );
@@ -171,7 +182,7 @@ describe("the visual tools return pixels", () => {
     async (tool) => {
       const { client } = await connect();
       const res = await client.callTool(
-        { name: tool, arguments: { url: "https://www.youtube.com/watch?v=abc", mode: "evidence" } },
+        { name: tool, arguments: { url: "https://www.youtube.com/watch?v=abc" } },
         undefined,
         { timeout: 30_000 },
       );
@@ -189,7 +200,7 @@ describe("the visual tools return pixels", () => {
   it("says where each frame sits, so a caller can cite one", async () => {
     const { client } = await connect();
     const res = await client.callTool(
-      { name: "analyze_post", arguments: { url: "https://x/1", mode: "evidence" } },
+      { name: "analyze_post", arguments: { url: "https://x/1" } },
       undefined,
       { timeout: 30_000 },
     );
@@ -203,7 +214,7 @@ describe("the visual tools return pixels", () => {
   it("does not repeat the base64 in the structured payload", async () => {
     const { client } = await connect();
     const res = await client.callTool(
-      { name: "analyze_post", arguments: { url: "https://x/1", mode: "evidence" } },
+      { name: "analyze_post", arguments: { url: "https://x/1" } },
       undefined,
       { timeout: 30_000 },
     );
@@ -215,7 +226,7 @@ describe("the visual tools return pixels", () => {
   it("pairs the frames with the transcript", async () => {
     const { client, calls } = await connect();
     await client.callTool(
-      { name: "analyze_post", arguments: { url: "https://x/1", mode: "evidence" } },
+      { name: "analyze_post", arguments: { url: "https://x/1" } },
       undefined,
       { timeout: 30_000 },
     );
@@ -241,7 +252,7 @@ describe("the visual tools return pixels", () => {
     await Promise.all([client.connect(a), server.connect(b)]);
     await client.listTools();
     const res = await client.callTool(
-      { name: "analyze_post", arguments: { url: "https://x/1", mode: "evidence" } },
+      { name: "analyze_post", arguments: { url: "https://x/1" } },
       undefined,
       { timeout: 30_000 },
     );

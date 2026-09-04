@@ -42,7 +42,7 @@ export function termsPage(publicUrl: string, nooticrBase: string): string {
       `<h2>3. Credits and payment</h2>` +
       `<ul>` +
       `<li>Tool calls are priced in credits. Current prices are shown on the <a href="/#pricing">pricing section</a> and in your <a href="/dashboard">dashboard</a>.</li>` +
-      `<li>New accounts receive a starting credit grant, and each AI analysis tool may be used once at no charge. These are promotional and may change for future accounts.</li>` +
+      `<li>New accounts receive a starting credit grant. It is promotional and may change for future accounts.</li>` +
       `<li>Credits are purchased through Stripe. We do not receive or store your card details.</li>` +
       `<li>A tool call that fails is refunded automatically. A call interrupted in flight is charged at most once.</li>` +
       `<li>Credits do not expire, have no cash value, and are not transferable or redeemable for money.</li>` +

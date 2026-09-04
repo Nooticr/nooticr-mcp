@@ -14,8 +14,8 @@
  * type.
  *
  * Each prompt below is a workflow someone actually runs, written to spend the
- * user's credits in the right order: cheapest evidence first, and the
- * expensive multimodal pass only where it changes the answer.
+ * user's credits in the right order: the cheapest fetch first, and the one
+ * that also pulls frames only where the visuals change the answer.
  */
 import { z } from "zod";
 import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
@@ -91,9 +91,10 @@ function userMessage(text: string) {
 
 /** Shared preamble: spend credits in the right order, and say what was used. */
 const COST_RULE =
-  "Prefer the cheapest tool that answers the question, and only reach for a multimodal " +
-  "analysis when the visuals are actually the point. Do not call a paid tool twice for " +
-  "the same input. When you are done, say briefly which tools you used.";
+  "Every tool here hands you material to reason over rather than a conclusion, so the reading " +
+  "is yours to do. Prefer the cheapest tool that fetches what the question needs, and only " +
+  "reach for the ones that pull video frames when the visuals are actually the point. Do not " +
+  "call a paid tool twice for the same input. When you are done, say briefly which tools you used.";
 
 export function registerPrompts(server: McpServer): void {
   server.registerPrompt(
@@ -109,9 +110,9 @@ export function registerPrompts(server: McpServer): void {
         depth: completableOptional(
           z
             .string()
-            .describe("'fast' (captions only, cheap) or 'full' (also watches their videos). Default fast."),
-          // A closed set where one value costs several times the other, so
-          // guessing it wrong is a billing surprise rather than a typo.
+            .describe("'fast' (their formula only) or 'full' (also their whole recent run, with the numbers). Default fast."),
+          // A closed set where one value fetches a second time and the other
+          // does not, so guessing it wrong is a charge the user did not ask for.
           (value) => startingWith(["fast", "full"], value ?? ""),
         ),
       },
@@ -125,8 +126,8 @@ export function registerPrompts(server: McpServer): void {
           `2. get_user_posts to see the actual recent posts behind that pattern, and note which ones ` +
           `outperformed the rest.\n` +
           (depth === "full"
-            ? `3. analyze_creator_profile for the visual and production side — framing, editing, on-screen ` +
-              `text — since the user asked for the full pass.\n`
+            ? `3. analyze_creator_profile for the wider view — their whole recent run with the numbers ` +
+              `beside it — since the user asked for the full pass.\n`
             : `3. Only run analyze_creator_profile if the caption-level pattern leaves something important ` +
               `unexplained. Say so before you spend it.\n`) +
           `\nThen give me: the hook types they reuse, their caption and length pattern, what their best ` +
@@ -191,7 +192,8 @@ export function registerPrompts(server: McpServer): void {
       userMessage(
         `Review this draft before I film it${platform ? ` for ${platform}` : ""}:\n\n"""\n${draft}\n"""\n\n` +
           `Work in this order:\n` +
-          `1. score_draft on it — hook strength, clarity, payoff, and the concrete fixes.\n` +
+          `1. score_draft on it — free, and it returns the draft with the rubric to score it against: ` +
+          `hook, clarity, payoff, specificity and fit, plus the fixes worth making.\n` +
           `2. write_hooks on the same topic for alternative openings to choose between.\n\n` +
           `Then tell me plainly: is the hook doing work in the first two seconds, where does attention ` +
           `leak, and which of the alternative hooks you would actually use and why. If the draft is ` +
@@ -223,8 +225,8 @@ export function registerPrompts(server: McpServer): void {
           `2. analyze_post_fast — hook, structure, CTA and audience, built from that transcript.\n` +
           (visuals === "yes"
             ? `3. analyze_post — the visual pass, since the framing and editing are the point here.\n`
-            : `3. Skip analyze_post unless the fast pass leaves the visuals genuinely unexplained. It costs ` +
-              `three times as much; say so before spending it.\n`) +
+            : `3. Skip analyze_post unless the fast pass leaves the visuals genuinely unexplained. It ` +
+              `fetches frames on top of the transcript, so it costs a credit more; say so before spending it.\n`) +
           `4. analyze_comments — what the audience actually took away, which is often not what the ` +
           `creator intended.\n\n` +
           `Then give me: the hook and why it stops someone, the structure beat by beat, the CTA, and the ` +
@@ -245,8 +247,8 @@ export function registerPrompts(server: McpServer): void {
     ({ urls }) =>
       userMessage(
         `Compare these posts and explain the performance gap:\n${urls}\n\n` +
-          `Use compare_posts on all of them at once rather than analysing each separately — the comparison ` +
-          `is the point, and one call is cheaper than several.\n\n` +
+          `Start with compare_posts, then fetch the remaining URLs it names with get_social_media — it ` +
+          `pulls the first post and leaves the comparison, which is the part you should be doing.\n\n` +
           `Then tell me: which won, what actually differed (hook, format, length, caption, tags), what ` +
           `they share that I should keep, and one concrete experiment that would test your explanation. ` +
           `Be honest about which differences are evidence and which are guesses — sample sizes this small ` +

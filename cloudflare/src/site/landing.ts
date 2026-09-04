@@ -59,7 +59,6 @@ section{padding:52px 0}
 .cost{font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-soft);
   border-radius:999px;padding:3px 9px;white-space:nowrap}
 .tool p{margin:0;font-size:13.5px;color:var(--muted)}
-.free-badge{font-size:11px;color:var(--good);font-weight:600;margin-top:9px;display:block}
 
 /* clients */
 .clients{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
@@ -136,7 +135,6 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
       (t) =>
         `<div class="tool"><div class="tool-top"><h3>${esc(t.name)}</h3>` +
         `<span class="cost">${t.cost} cr</span></div><p>${esc(t.desc)}</p>` +
-        (t.freeFirstUse ? `<span class="free-badge">First use free</span>` : "") +
         `</div>`
     ).join("");
 
@@ -226,7 +224,7 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     `<pre><code>${esc(publicUrl)}/mcp</code></pre></div>` +
     `<div class="pane" data-group="i" data-pane="code">` +
     `<p>From the Claude Code prompt:</p>` +
-    `<pre><code>/plugin marketplace add orchynX/nooticr-mcp\n/plugin install nooticr@nooticr</code></pre></div>` +
+    `<pre><code>/plugin marketplace add Nooticr/nooticr-mcp\n/plugin install nooticr@nooticr</code></pre></div>` +
     `<div class="pane" data-group="i" data-pane="gpt">` +
     `<p>Settings → Connectors → Advanced → <strong>Developer mode</strong>, then add:</p>` +
     `<pre><code>${esc(publicUrl)}/mcp</code></pre></div>` +
@@ -240,7 +238,7 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     `<div class="sec-head"><span class="eyebrow">Questions</span><h2>Before you connect</h2></div>` +
     `<div style="max-width:46rem;margin:0 auto">` +
     faq("What data does Nooticr access?", "Only public posts you or your assistant explicitly ask for, by URL or search. Nooticr never reads your private messages, drafts or account data, and never posts on your behalf.") +
-    faq("Do I need a credit card to try it?", "No. New accounts get 20 credits, and every AI analysis tool is free the first time you use it. You only pay when you choose to top up.") +
+    faq("Do I need a credit card to try it?", "No. New accounts get 20 credits, which is enough for a full pass over a post and its comments several times over. You only pay when you choose to top up.") +
     faq("What happens if a tool call fails?", "You are not charged. Failed calls are refunded to your balance automatically, and a call interrupted mid-flight is billed once at most, never twice.") +
     faq("Where is my usage visible?", `Your <a href="/dashboard" style="color:var(--brand)">dashboard</a> shows balance, credits spent, calls per tool and recent activity. Your assistant can also call <code>check_nooticr_credits</code> at any time.`) +
     faq("Can I revoke access?", `Yes. Disconnect the connector in your AI client, or email <a href="mailto:support@nooticr.com" style="color:var(--brand)">support@nooticr.com</a> to have the account and its data deleted.`) +
