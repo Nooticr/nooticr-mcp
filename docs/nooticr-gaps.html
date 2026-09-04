@@ -1,0 +1,731 @@
+<title>What Nooticr Still Needs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root {
+    /* Light palette — neutral biased warm toward the signal accent */
+    --paper:      #f6f4f1;
+    --surface:    #fffefc;
+    --surface-2:  #efece7;
+    --ink:        #1d1a17;
+    --ink-2:      #4a453f;
+    --ink-3:      #7d766d;
+    --rule:       #ddd8d0;
+    --rule-2:     #c9c2b8;
+
+    --signal:     #ff4d23;   /* brand — spent sparingly */
+    --signal-ink: #b8320f;
+    --signal-wash:#ffe9e2;
+
+    --built:      #0f5c58;   /* exists / shipped */
+    --built-wash: #dfeceb;
+    --later:      #3c4a72;   /* real build */
+    --later-wash: #e2e6f0;
+    --never:      #8a8279;   /* don't build */
+
+    --shadow: 0 1px 2px rgb(29 26 23 / .05), 0 8px 24px -12px rgb(29 26 23 / .12);
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #16151a;
+      --surface:    #1e1d23;
+      --surface-2:  #26252c;
+      --ink:        #f0ece6;
+      --ink-2:      #b8b2aa;
+      --ink-3:      #8b857d;
+      --rule:       #322f38;
+      --rule-2:     #443f4c;
+
+      --signal:     #ff6a45;
+      --signal-ink: #ff8f70;
+      --signal-wash:#3a1f18;
+
+      --built:      #4fb3aa;
+      --built-wash: #16302e;
+      --later:      #93a4d8;
+      --later-wash: #1f2436;
+      --never:      #6e6862;
+
+      --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px -12px rgb(0 0 0 / .5);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #16151a;
+    --surface:    #1e1d23;
+    --surface-2:  #26252c;
+    --ink:        #f0ece6;
+    --ink-2:      #b8b2aa;
+    --ink-3:      #8b857d;
+    --rule:       #322f38;
+    --rule-2:     #443f4c;
+
+    --signal:     #ff6a45;
+    --signal-ink: #ff8f70;
+    --signal-wash:#3a1f18;
+
+    --built:      #4fb3aa;
+    --built-wash: #16302e;
+    --later:      #93a4d8;
+    --later-wash: #1f2436;
+    --never:      #6e6862;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px -12px rgb(0 0 0 / .5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 28px 96px;
+  }
+
+  /* ---------- header ---------- */
+
+  header.masthead {
+    padding: 56px 0 32px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--signal-ink);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 6vw, 3.9rem);
+    line-height: 1.02;
+    letter-spacing: -.022em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+
+  .thesis {
+    font-size: 1.22rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .thesis strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- figures strip ---------- */
+
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 0 56px;
+  }
+  .fig {
+    background: var(--paper);
+    padding: 22px 20px 20px;
+  }
+  .fig-n {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 2.1rem;
+    line-height: 1;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .fig-l {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-top: 9px;
+    display: block;
+    line-height: 1.45;
+  }
+  .fig.hot .fig-n { color: var(--signal-ink); }
+
+  /* ---------- sections ---------- */
+
+  section { margin-bottom: 60px; }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.02rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule-2);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h2 .tier {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--paper);
+    background: var(--ink);
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: none;
+  }
+  .sec-note {
+    color: var(--ink-3);
+    font-size: .95rem;
+    margin: 14px 0 26px;
+    max-width: 68ch;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.16rem;
+    letter-spacing: -.01em;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+
+  p { margin: 0 0 14px; max-width: 68ch; }
+  p:last-child { margin-bottom: 0; }
+
+  code, .mono { font-family: var(--mono); font-size: .84em; }
+  code {
+    background: var(--surface-2);
+    padding: .12em .38em;
+    border-radius: 3px;
+    color: var(--ink);
+    word-break: break-word;
+  }
+
+  a { color: var(--signal-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+
+  /* ---------- item list ---------- */
+
+  .items { display: flex; flex-direction: column; gap: 18px; }
+
+  .item {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule-2);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .item.now   { border-left-color: var(--signal); }
+  .item.next  { border-left-color: var(--later); }
+  .item.fix   { border-left-color: var(--signal); }
+
+  .item-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+  }
+  .item-head h3 { margin: 0; flex: 1 1 auto; min-width: 240px; }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill.built { background: var(--built-wash); color: var(--built); border-color: var(--built); }
+  .pill.wire  { background: var(--signal-wash); color: var(--signal-ink); border-color: var(--signal); }
+  .pill.build { background: var(--later-wash); color: var(--later); border-color: var(--later); }
+  .pill.gated { background: transparent; color: var(--never); border-color: var(--rule-2); }
+
+  .prov {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px dashed var(--rule);
+    line-height: 1.6;
+    word-break: break-word;
+  }
+  .prov b {
+    color: var(--ink-2);
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  .why {
+    color: var(--ink-2);
+    font-size: .97rem;
+  }
+  .why em { color: var(--ink); font-style: italic; }
+
+  /* ---------- tables ---------- */
+
+  .tscroll {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    background: var(--surface-2);
+    position: sticky;
+    top: 0;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.net { font-weight: 600; font-family: var(--display); }
+  td.c { text-align: center; font-family: var(--mono); font-size: 1rem; }
+  .y { color: var(--built); }
+  .p { color: var(--signal-ink); }
+  .n { color: var(--ink-3); opacity: .55; }
+  td.note { white-space: normal; font-size: .82rem; color: var(--ink-3); min-width: 200px; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-top: 12px;
+  }
+
+  /* ---------- protocol grid ---------- */
+
+  .proto {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 14px;
+  }
+  .pcard {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 15px 16px;
+  }
+  .pcard .pname {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .pcard.on  { border-top: 2px solid var(--built); }
+  .pcard.off { border-top: 2px solid var(--rule-2); }
+  .pcard.off .pname { color: var(--ink-3); }
+  .pcard p { font-size: .86rem; color: var(--ink-2); margin: 0; max-width: none; }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    background: var(--signal-wash);
+    border: 1px solid var(--signal);
+    padding: 20px 22px;
+    margin: 0 0 26px;
+  }
+  .callout h3 { color: var(--signal-ink); }
+  .callout p { color: var(--ink-2); }
+  .callout p strong { color: var(--ink); }
+
+  .quiet {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 18px 20px;
+  }
+  .quiet p { font-size: .93rem; color: var(--ink-2); }
+
+  ul.tight { margin: 0; padding-left: 1.15em; }
+  ul.tight li { margin-bottom: 7px; color: var(--ink-2); font-size: .97rem; max-width: 66ch; }
+  ul.tight li:last-child { margin-bottom: 0; }
+  ul.tight li b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    border-top: 2px solid var(--ink);
+    padding-top: 20px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    line-height: 1.7;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 620px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 18px 64px; }
+    header.masthead { padding-top: 36px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Capability review · Sept 2026 · nooticr-mcp</p>
+    <h1>What Nooticr Still Needs</h1>
+    <p class="thesis">The protocol layer is nearly finished. The gaps are that <strong>every one of the 36 tools is read-only, points outward, and runs only when asked</strong> — and that monitoring matches text only, so a brand criticised aloud in a video is invisible to us. Meanwhile three pools of already-built server capability sit unexposed, including a complete scheduled brand-monitoring engine.</p>
+  </header>
+
+  <div class="figures">
+    <div class="fig"><span class="fig-n">36</span><span class="fig-l">tools registered</span></div>
+    <div class="fig"><span class="fig-n">71</span><span class="fig-l">MCP resources / Apps views</span></div>
+    <div class="fig hot"><span class="fig-n">38</span><span class="fig-l">tools in other registries</span></div>
+    <div class="fig hot"><span class="fig-n">0</span><span class="fig-l">tools that write to a network</span></div>
+    <div class="fig hot"><span class="fig-n">0</span><span class="fig-l">background schedulers</span></div>
+    <div class="fig hot"><span class="fig-n">1<span style="font-size:.5em;letter-spacing:0;color:var(--ink-3)"> of 4</span></span><span class="fig-l">mention modes detected</span></div>
+  </div>
+
+  <section>
+    <h2>Where we actually are</h2>
+    <p class="sec-note">Worth stating plainly because it reframes the roadmap: the usual advice for a 36-tool MCP server is “add prompts, add resources, add a UI.” All three are already done. Spending the next quarter on protocol surface would be spending it on solved problems.</p>
+
+    <div class="proto">
+      <div class="pcard on"><span class="pname">resources ✓</span><p>~71 registered. Two MCP&nbsp;Apps views per tool for 34 of 36 tools, in both Claude’s and ChatGPT’s widget mimes, plus a JSON watchlist resource.</p></div>
+      <div class="pcard on"><span class="pname">prompts ✓</span><p>7 slash-command entry points — creator teardown, niche briefing, draft check, repurpose, and three more.</p></div>
+      <div class="pcard on"><span class="pname">elicitation ✓</span><p>One call site: spend confirmation above 6 credits on the two variable-cost tools. Fails open by design.</p></div>
+      <div class="pcard on"><span class="pname">completions ✓</span><p>On prompt arguments (platform, depth, country). Not on tool inputs.</p></div>
+      <div class="pcard on"><span class="pname">tasks ✓</span><p>Experimental Tasks on the 3 slow tools, with a Durable&nbsp;Object-backed store so they survive eviction.</p></div>
+      <div class="pcard off"><span class="pname">sampling ✗</span><p>Correctly absent. Unsupported by every mainstream client <em>and</em> on the deprecation path in SEP-2577.</p></div>
+      <div class="pcard off"><span class="pname">logging ✗</span><p>Also correctly absent — same deprecation proposal. Nothing to do here.</p></div>
+      <div class="pcard on"><span class="pname">annotations ✓</span><p>All 36 tools carry them — 31 <code>readOnlyHint: true</code>, 5 false. Already correct, and already the right hook for a publish tool’s confirmation.</p></div>
+      <div class="pcard on"><span class="pname">output schemas ✓</span><p>Declared per tool, so clients get typed structured content rather than prose to re-parse.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tier">Tier 0</span> Fix before adding anything</h2>
+    <p class="sec-note">Small, cheap, and two of them are correctness problems rather than roadmap items.</p>
+
+    <div class="callout">
+      <h3>We bill for fetches that cannot succeed</h3>
+      <p><code>analyze_post</code>, <code>analyze_post_fast</code> and <code>understand_social_post</code> each advertise nine-platform support and each unconditionally fan out to <code>get_post_transcript</code> — which the same repo documents as TikTok/YouTube-only. The call fails non-fatally, so nothing broke and nobody noticed. <strong>On seven of the nine advertised platforms, a credit is charged for a call that is structurally impossible.</strong> Gate the transcript leg on platform, or drop its cost from the quote.</p>
+    </div>
+
+    <div class="items">
+      <div class="item fix">
+        <div class="item-head"><h3>The “ten networks” claim doesn’t survive the code</h3><span class="pill wire">honesty</span></div>
+        <p class="why">LinkedIn appears in only 2 of 13 network-taking tools (<code>get_user_posts</code>, <code>analyze_creator_profile</code>) and is absent from discovery, creator search, sounds, hashtags, mentions, transcripts, and the nine-platform lists the composite tools advertise. Separately, <code>search_creators</code>’ own description promises five platforms while its schema accepts three — a comment explains YouTube 400s upstream and Douyin returns hollow user objects, which is the right call, just not the documented one.</p>
+        <p class="why">Either narrow the claim to “nine networks, plus LinkedIn creator reads,” or close the gap. Overclaiming in a listing that gets reviewed before publication is the expensive version of this bug.</p>
+        <div class="prov"><b>Code</b> src/shared/tools.ts:879, 924, 987, 1003–1005</div>
+      </div>
+
+      <div class="item fix">
+        <div class="item-head"><h3>Two dead files that mislead anyone auditing the repo</h3><span class="pill wire">hygiene</span></div>
+        <p class="why"><code>src/shared/tools-def.ts</code> is a stale duplicate tool-definition file imported only by one test, never by the live server — and it disagrees with the real runtime enums. <code>src/shared/video.ts</code>’s URL validators and host allowlists are reachable from nothing but their own tests, and predate Reddit, Weibo and LinkedIn entirely. Both will mislead a human reviewer and an LLM reading the codebase.</p>
+        <p class="why">Also: <code>PLATFORM_LINK_DOMAINS</code> has nine entries and omits Reddit and Weibo, so monitoring hits on those two can’t render an outbound link under ChatGPT’s redirect allowlist.</p>
+        <div class="prov"><b>Code</b> src/shared/tools-def.ts · src/shared/video.ts:11–165 · src/shared/tools.ts:543–552</div>
+      </div>
+
+      <div class="item fix">
+        <div class="item-head"><h3>OAuth scopes are carried but never enforced</h3><span class="pill wire">pre-req for writes</span></div>
+        <p class="why"><code>social:read</code> and <code>credits:spend</code> are validated at <code>/authorize</code> and then never checked at dispatch — the code says so outright. Harmless while all 36 tools are read-only. It stops being harmless the day <code>enqueue_publish_job</code> ships, because that’s the moment a scope becomes a security boundary rather than a label.</p>
+        <div class="prov"><b>Code</b> src/shared/oauth.ts:19–22, 50–53</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tier">Tier 1</span> Already built. Not exposed.</h2>
+    <p class="sec-note">The backend has three pools of tool-shaped capability the public MCP server never registers. This is the highest value-per-hour work available, and none of it is new engineering.</p>
+
+    <div class="items">
+      <div class="item now">
+        <div class="item-head"><h3>Scheduled brand monitoring</h3><span class="pill built">built &amp; unit-tested</span></div>
+        <p class="why">The single most valuable unexposed thing we own. <code>create_brand_watch</code>, <code>list_brand_watches</code> and <code>stop_brand_watch</code> already exist server-side with recurring cadence, email digests, a budget cap and debit-first billing — complete with its own test suite.</p>
+        <p class="why">This matters more than its cost suggests, because <em>monitoring that runs without being asked is the entire premise of the social listening category</em>, and today we have no scheduler anywhere: <code>catch_up_watchlist</code> computes its diff only when you call it, and the repo says so in a comment. We have the pull half of the feature shipped and the push half sitting unregistered. It also changes the revenue shape from per-query to recurring.</p>
+        <div class="prov"><b>Code</b> crates/server/src/brand_watch.rs · dispatch at crates/server/src/mcp_tools.rs:730–732 · <b>Work</b> TypeScript registration only</div>
+      </div>
+
+      <div class="item now">
+        <div class="item-head"><h3>Own-account intelligence</h3><span class="pill built">27 tools exist</span></div>
+        <p class="why">The conceptual hole in the product: the MCP can analyse every creator <em>except the person using it</em>. The dashboard’s internal copilot already has a separate registry of 27 tools covering the user’s own scheduled posts, post performance, brand playbook, connected accounts, GA4 / Search Console / PostHog analytics, competitor comparison and store-listing compliance. None of it crosses into the public surface.</p>
+        <p class="why">Port the read-only subset first. The tool-calling scaffolding exists on both ends; this is a registration exercise, not a build.</p>
+        <div class="prov"><b>Code</b> crates/server/src/copilot_tools.rs:349–567 · <b>Work</b> port + re-register, read-only subset</div>
+      </div>
+
+      <div class="item now">
+        <div class="item-head"><h3>Connection state and account linking</h3><span class="pill built">built</span></div>
+        <p class="why"><code>list_social_connections</code> and <code>connect_social_account</code> already exist. Right now, when a user isn’t connected to a platform, they get an opaque failure instead of “you’re not connected to Instagram — here’s a link.” Cheap to expose, and URL-mode elicitation (new in the 2025-11-25 spec) is exactly the right mechanism for the consent hand-off, so credentials never pass through the model’s context. We already have elicitation plumbing to extend.</p>
+        <div class="prov"><b>Code</b> crates/server/src/mcp_tools.rs:715–716 · <b>Work</b> registration + URL-mode elicitation path</div>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>The content-generation surface</h3><span class="pill build">exists as REST, not as tools</span></div>
+        <p class="why">The whole <code>/ai/*</code> surface — captions, voice-over, draft-post, review-post, growth-brief, content-plan, generative fill — is reachable by the web app and by nothing else. It isn’t in the Rust <code>/mcp</code> dispatch table either, so this one needs wrapper tools on both sides rather than pure registration. Still worth it: pure generation carries none of the irreversibility risk of publishing, and “write captions for this,” “score this before I post,” “build me a weekly plan from last month’s numbers” are exactly what an assistant user reaches for.</p>
+        <div class="prov"><b>Code</b> crates/server/src/routes/ai.rs:15–55 · crates/server/src/ai/growth.rs · <b>Caution</b> review_post has a stub fallback that returns canned scores when the AI call fails — don’t surface it before that path is honest</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tier">The blind spot</span> Mentions we structurally cannot see</h2>
+    <p class="sec-note">This is the strongest single item in the review, and it isn’t on any competitor’s feature list at accessible pricing. It also happens to sit on primitives we already own.</p>
+
+    <div class="callout">
+      <h3>Text search systematically misses the mentions that matter most</h3>
+      <p><code>search_mentions</code> matches a term against captions, post bodies and comments. So a brand is found when someone <em>types</em> its name — and missed when someone <em>says</em> it. That bias isn’t random: the most damaging content is exactly the content least likely to name the brand in text. A three-minute rant, a “things I regret buying,” a side-by-side comparison — the name is spoken aloud, the caption says <span class="mono">“watch till the end 😭”</span>, and we return zero results.</p>
+      <p><strong>A brand should be able to learn it was criticised in a video, and read the transcript of what was actually said.</strong> Nothing in the product does that today.</p>
+    </div>
+
+    <p class="sec-note" style="margin-top:0">There are four ways a brand appears in short-form video. We detect one.</p>
+
+    <div class="tscroll" style="margin-bottom:22px">
+      <table>
+        <thead><tr><th>Mode</th><th>Where the mention lives</th><th>Primitive</th><th>State</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="net">Text</td>
+            <td class="note" style="white-space:nowrap">Caption, post body, comments</td>
+            <td><code>search_mentions</code></td>
+            <td><span class="pill built">shipped</span></td>
+            <td class="c">2cr<span class="n">/network</span></td>
+          </tr>
+          <tr>
+            <td class="net">Spoken</td>
+            <td class="note" style="white-space:nowrap">The audio — what’s said out loud</td>
+            <td><code>get_post_transcript</code></td>
+            <td><span class="pill wire">primitive exists, never used for monitoring</span></td>
+            <td class="c">1cr<span class="n">/video</span></td>
+          </tr>
+          <tr>
+            <td class="net">On-screen</td>
+            <td class="note" style="white-space:nowrap">Burned-in overlay text</td>
+            <td><code>get_post_frames</code> + OCR</td>
+            <td><span class="pill build">needs OCR layer</span></td>
+            <td class="c">2cr<span class="n">/video</span></td>
+          </tr>
+          <tr>
+            <td class="net">Visual</td>
+            <td class="note" style="white-space:nowrap">Product or logo on screen, never named</td>
+            <td><code>get_post_frames</code> + model vision</td>
+            <td><span class="pill build">frames already return real images</span></td>
+            <td class="c">2cr<span class="n">/video</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="items">
+      <div class="item now">
+        <div class="item-head"><h3>Spoken-word monitoring is nearly free on TikTok and YouTube</h3><span class="pill wire">ship first</span></div>
+        <p class="why">The architectural detail that makes this viable: <code>get_post_transcript</code> doesn’t run our own speech recognition — it <em>reads the platform’s existing caption track</em>, and returns <code>available:false</code> with a reason when a post has none. That is why it costs 1 credit and why it covers TikTok and YouTube only: those two auto-generate captions.</p>
+        <p class="why">So the first version of spoken-mention monitoring is a matching layer over data we can already pull cheaply, on the two networks where short-form brand criticism actually happens. Coverage will be honestly incomplete — videos without a caption track are invisible — and that’s a disclosable limit, not a blocker.</p>
+        <div class="prov"><b>Code</b> src/shared/tools.ts:1100–1120 — “by reading its caption track… available:false when the post has no captions”</div>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Everywhere else needs real speech recognition</h3><span class="pill build">genuine build</span></div>
+        <p class="why">Instagram, X, Reddit and the four Chinese networks don’t hand us a caption track, so spoken monitoring there means running ASR over the audio ourselves — a real inference cost per minute of video, not a 1-credit read. Worth doing, worth pricing differently, and worth sequencing after the caption-track version proves the demand.</p>
+        <p class="why">This also cleanly resolves the Tier 0 billing bug: the fix for “we charge for transcripts on platforms where they can’t work” and the foundation for this feature are <em>the same piece of work</em> — making transcript coverage explicit per platform instead of implicit.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Burned-in overlay text is a TikTok-shaped blind spot</h3><span class="pill build">OCR over existing frames</span></div>
+        <p class="why">A creator types <span class="mono">“don’t waste your money on this”</span> as an on-screen overlay, never says it, never captions it. On TikTok that’s a native format convention, not an edge case — and it’s invisible to both text search and transcripts. We already extract scene-change-sampled frames; this is OCR over frames we can already fetch.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Visual presence, with the market’s own number attached</h3><span class="pill build">frames already return images</span></div>
+        <p class="why">Talkwalker’s pitch for image recognition claims <strong>up to 80% of brand images carry no text mention at all</strong> — their argument for why text-only listening under-counts, and it applies with more force to video than to stills. Brandwatch sells the same capability as Image Insights, enterprise tier only.</p>
+        <p class="why">Our version has an unusual advantage: <code>get_post_frames</code> already returns frames as <em>real image blocks</em>, so the client’s own model can see them. We don’t have to train a vision model to answer “is our product on screen here” — we have to route frames to a model that already can.</p>
+      </div>
+
+      <div class="item now">
+        <div class="item-head"><h3>The funnel is the actual design problem</h3><span class="pill wire">solved by an existing budget cap</span></div>
+        <p class="why">You cannot know whether a video mentions a brand until you have transcribed it, so naive monitoring transcribes everything and the cost explodes — 100 credits spent to surface three hits. The feature is only viable as a funnel: narrow candidates on cheap signals first (watchlisted creators, niche plus keyword, hashtag, engagement threshold, caption near-miss), then transcribe the survivors, then send only the smallest set to frames.</p>
+        <p class="why">Which is precisely what the unexposed <code>create_brand_watch</code> was already built with — cadence, an email digest, and <em>a budget cap with debit-first billing</em>. A <span class="mono">modes: [text, spoken, onscreen, visual]</span> parameter on top of that existing budget cap is the whole product shape: <em>“watch for spoken mentions of our brand on TikTok and YouTube, up to 40 transcripts a day.”</em></p>
+        <div class="prov"><b>Code</b> crates/server/src/brand_watch.rs — budget cap and debit-first billing already implemented and tested</div>
+      </div>
+    </div>
+
+    <div class="quiet" style="margin-top:22px">
+      <p><b>Why this outranks everything in Tier 2.</b> Adding sentiment or share-of-voice makes us comparable to incumbents on their own axes. This makes us the only accessible product that can tell a brand what was <em>said</em> about it in a video — the crisis-detection use case, which carries the highest urgency and the highest willingness to pay in the whole category. Enterprise vendors gate audio and image recognition behind five-figure annual contracts; nothing found in the research does spoken-word brand monitoring on short-form video at self-serve pricing. And we are two primitives and a scheduler away, all three of which already exist.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tier">Tier 2</span> Category table stakes we don’t have</h2>
+    <p class="sec-note">Every one of these is standard in the products buyers compare us against, and every one is buildable from data we already fetch — no platform partnership, no gated API.</p>
+
+    <div class="items">
+      <div class="item next">
+        <div class="item-head"><h3>Sentiment, as a server-side tool</h3><span class="pill build">real build</span></div>
+        <p class="why">Universal in the category and absent here. We return comments and platform-clustered themes; we never score them. The design worth copying is Facebook MCP’s <code>filter_negative_comments</code>: classify server-side and return the verdict, rather than dumping raw comments into context and asking the model to grade each one — cheaper in tokens and more consistent between runs.</p>
+        <p class="why">One honesty note: reported real-world accuracy across the whole industry sits at 59–87% in aggregate and worse per-post, with sarcasm unsolved. Ship it as directional, and say so — Sprout gates sentiment behind a $399/seat tier and still draws accuracy complaints.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Share of voice and competitive leaderboards</h3><span class="pill build">real build</span></div>
+        <p class="why">We have <code>track_competitor</code>, which scores one creator against their own median — genuinely good, and not what buyers mean by competitive benchmarking. Missing: percentage of category conversation held by you versus named rivals, and Rival IQ-style side-by-side leaderboards on engagement, post frequency and follower growth. Pure aggregation of public data we can already read.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Audience quality / fake-follower scoring</h3><span class="pill build">real build</span></div>
+        <p class="why">The core of the influencer-vetting market — HypeAuditor models 53 behavioural signals, Modash checks 1,200 fraud factors — and it’s built entirely from follower-growth curves, engagement timing and comment quality. No special access required, just statistical modelling on data we fetch today.</p>
+        <p class="why">This also closes a gap the product currently admits: <code>who_should_i_work_with</code> explicitly declines to measure audience overlap because it would cost ~9 credits per candidate. Honest, and a hole a competitor fills.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Alerting and spike detection</h3><span class="pill build">needs Tier 1 scheduler</span></div>
+        <p class="why">Near-universal at mid-tier and up, and impossible for us today for one reason: nothing runs in the background. Falls out almost free once scheduled brand watch is exposed — the engine is the same, the addition is a threshold and a notification.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Trend lifecycle and virality forecasting</h3><span class="pill build">real build</span></div>
+        <p class="why">We surface trending sounds and hashtags as snapshots. Exolyt tracks how a hashtag or sound trends over time and where it spreads; its Growth Prediction score forecasts follower trajectory; Dash Social predicts post performance <em>before</em> publish. All ML on engagement time series — well within reach, and it maps directly onto reads we already do.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Scheduled reporting and bulk export</h3><span class="pill build">real build</span></div>
+        <p class="why">Unglamorous and a documented retention driver — agencies buy recurring, on-brand, client-facing reports as a separate SKU (AgencyAnalytics, DashThis, Determ all sell it that way). It also solves a real technical problem: large pulls should leave the context window entirely. Return a <code>resource_link</code> to a generated CSV/PDF, the way the best YouTube MCP hands back bulk report jobs, instead of inlining rows.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tier">Tier 3</span> Where we could be alone in the market</h2>
+    <p class="sec-note">Two of these need engineering. The first mostly needs saying out loud.</p>
+
+    <div class="items">
+      <div class="item now">
+        <div class="item-head"><h3>We own a moat we don’t market</h3><span class="pill built">already shipped</span></div>
+        <p class="why">Enterprise vendors — Synthesio, Brandwatch, Meltwater, Talkwalker — charge <strong>$36–50K per year specifically for Chinese platform coverage</strong>, and essentially nothing below enterprise tier covers Douyin, Xiaohongshu, Weibo or Bilibili at all. We cover all four as baseline. Meltwater and Brandwatch only added <em>TikTok</em> listening in 2025; we treated it as first-class from day one.</p>
+        <p class="why">Nothing found in the research combines this network list with both raw reads and AI-native content helpers in one product. That’s the positioning, and today the README leads with “ten networks” instead.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Natural-language monitoring setup</h3><span class="pill build">our natural advantage</span></div>
+        <p class="why">The category’s most persistent onboarding complaint is hand-crafting Boolean queries; Brand24’s AI topic clustering exists specifically to remove that burden. We are an LLM-native product by construction — a user describes what to watch in a sentence and we compile the query. This is the one place where being an MCP server first is a structural advantage rather than a distribution choice.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Share of voice inside AI answer engines</h3><span class="pill build">cheap, novel</span></div>
+        <p class="why">How often does ChatGPT or Perplexity name your brand versus a competitor when asked about your category? Brand24 shipped this in 2025 and it is still a differentiator rather than table stakes. Implementation is unglamorous — query the models, log and compare mentions over time — and it is a conspicuously apt thing for a company that lives on the MCP surface to measure.</p>
+      </div>
+
+      <div class="item next">
+        <div class="item-head"><h3>Closing the loop to publish</h3><span class="pill build">highest value, highest risk</span></div>
+        <p class="why">Every tool we have stops at the recommendation. The backend already holds <code>enqueue_publish_job</code>, <code>schedule_post</code>, <code>compose_sequence</code>, <code>overlay_bake</code>, <code>spawn_variants</code> and <code>bake_job_status</code>. Ayrshare is the closest competitor shape here — one surface, publish and schedule across 13+ platforms — and it prices per connected profile, which rhymes with our credit model.</p>
+        <p class="why">Do it last and do it carefully. Publishing is irreversible, an LLM is the caller, and the mitigations are already patterned in our own codebase: <code>destructiveHint</code> so clients raise a confirmation, real per-call scope enforcement, and the two-step quote-then-confirm flow <code>create_brand_watch</code> already uses.</p>
+        <div class="prov"><b>Code</b> crates/server/src/mcp_tools.rs:665–708 · <b>Blocker</b> Tier 0 scope enforcement should land first</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Real network coverage, from the code</h2>
+    <p class="sec-note">Derived from schema enums and hardcoded platform branches rather than tool descriptions — the two disagree in several places. “Opaque” reads pass a URL through with no platform check, so the network is named in prose but never enforced.</p>
+
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Network</th><th>Read</th><th>Transcript</th><th>Comments</th><th>Discovery</th><th>Creator search</th><th>Hashtags</th><th>Monitoring</th><th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="net">TikTok</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="note">Only fully-covered network. Hashtags are TikTok-only by design.</td></tr>
+          <tr><td class="net">Instagram</td><td class="c y">●</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c y">●</td><td class="note">Transcript fanned out to but out of scope.</td></tr>
+          <tr><td class="net">YouTube</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c y">●</td><td class="note">Creator search dropped — 400s upstream.</td></tr>
+          <tr><td class="net">X / Twitter</td><td class="c y">●</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c y">●</td><td class="note">—</td></tr>
+          <tr><td class="net">Reddit</td><td class="c y">●</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c y">●</td><td class="note">Missing from the outbound-link allowlist.</td></tr>
+          <tr><td class="net">LinkedIn</td><td class="c n">○</td><td class="c n">○</td><td class="c p">◐</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c n">○</td><td class="note">2 of 13 tools. Bespoke public_id handling.</td></tr>
+          <tr><td class="net">Douyin</td><td class="c y">●</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c y">●</td><td class="note">Creator search dropped — hollow user objects.</td></tr>
+          <tr><td class="net">Xiaohongshu</td><td class="c y">●</td><td class="c p">◐</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c y">●</td><td class="note">Mentions cost 5cr vs 2cr. Absent from comments’ own description.</td></tr>
+          <tr><td class="net">Weibo</td><td class="c y">●</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c y">●</td><td class="note">Missing from the outbound-link allowlist.</td></tr>
+          <tr><td class="net">Bilibili</td><td class="c y">●</td><td class="c p">◐</td><td class="c y">●</td><td class="c y">●</td><td class="c n">○</td><td class="c n">○</td><td class="c y">●</td><td class="note">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><span class="y">●</span> enforced in schema or hardcoded</span>
+      <span><span class="p">◐</span> partial or documented as degraded</span>
+      <span><span class="n">○</span> absent from schema and description</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>What not to build</h2>
+    <p class="sec-note">Each of these is gated by something we cannot buy our way past at our size. Knowing them is worth as much as the roadmap.</p>
+
+    <div class="items">
+      <div class="item">
+        <div class="item-head"><h3>Historical X archives, Instagram competitor data, LinkedIn at scale</h3><span class="pill gated">platform-gated</span></div>
+        <p class="why">Full-archive X search exists only on an enterprise tier reported at $42–50K/month; the self-serve path was discontinued and no bulk backfill is purchasable at any self-serve price. Instagram’s Graph API structurally returns data only for the connected account — competitor analytics and audience demographics for accounts you don’t own aren’t rate-limited, they’re absent, and Meta cut third-party limits from 5,000 to 200 requests/hour. LinkedIn’s API terms prohibit scraping outright, with real ban and civil exposure regardless of the <em>hiQ</em> precedent on public data.</p>
+      </div>
+      <div class="item">
+        <div class="item-head"><h3>Third-party audience demographics</h3><span class="pill gated">inference, not data</span></div>
+        <p class="why">Age, gender and location for <em>someone else’s</em> audience is inferred from bios and names, not sourced. Vendors are retreating from it on both accuracy and privacy grounds. Don’t ship a number we’d have to defend.</p>
+      </div>
+      <div class="item">
+        <div class="item-head"><h3>Journalist databases, PR distribution, enterprise vision models</h3><span class="pill gated">different business</span></div>
+        <p class="why">Meltwater’s media-contacts database is a licensing-and-CRM business, not an API-reads business. Brandwatch and Talkwalker’s logo-in-untagged-image detection needs purpose-built vision models at scale. Both are out of reach and neither is what our users came for.</p>
+      </div>
+      <div class="item">
+        <div class="item-head"><h3>Server-initiated sampling, and native async Tasks as a product bet</h3><span class="pill gated">deprecated / unstable</span></div>
+        <p class="why">Sampling is unsupported by every mainstream client and formally proposed for deprecation in SEP-2577 alongside Roots and Logging. Native Tasks are being restructured into the Extensions framework with a redesigned lifecycle. We already use experimental Tasks on three tools, which is fine — just don’t make either a load-bearing part of a new feature. Roll our own job pattern with plain tools; it works on every client today.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Two things to decide, not build</h2>
+    <div class="quiet">
+      <p><b>A stated position on public-data privacy.</b> Sixteen privacy regulators have jointly affirmed that publicly-posted personal data remains subject to data-protection law — “it was public” is not a lawful basis under GDPR, and consent at listening scale is structurally impossible. The industry’s answer is data minimisation, pseudonymisation and a legitimate-interest argument. Every competitor is quiet about this. Having a written position is cheap, and it is the kind of thing an enterprise buyer asks about on the first call.</p>
+      <p style="margin-top:14px"><b>Whether transparent pricing is a feature.</b> Roughly 72% of listening tools use custom enterprise packaging; the loudest complaint across G2, Trustpilot and Reddit for Sprout, Hootsuite and Meltwater is pricing — opacity, renewals that double, auto-renew traps. We meter per fetch, publish the number in every tool description, and charge nothing for the tools that don’t fetch. That is the opposite of the category norm and currently reads as an implementation detail rather than a stance.</p>
+    </div>
+  </section>
+
+  <footer>
+    Sources: code audit of nooticr-mcp @ HEAD and nooticr-server crates/{server,mcp,ai}; MCP specification 2025-11-25 plus the 2026-07-28 release candidate and SEP-2577; vendor documentation and pricing for Brandwatch, Talkwalker, Meltwater, Sprout Social, Hootsuite, Brand24, Determ, Rival IQ, Exolyt, HypeAuditor, Modash, Dash Social, Ayrshare, Apify and Bright Data; buyer reviews on G2, Trustpilot and Capterra.<br>
+    Credit prices, tool names and file:line references reflect the repository at time of audit.
+  </footer>
+
+</div>
