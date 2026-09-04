@@ -967,6 +967,20 @@
     opacity: 0.6;
     cursor: default;
   }
+  /* ─── Spoken mentions (search_spoken_mentions) ───
+     A sibling of the brand-monitoring surface above, not a copy: the header,
+     the platform chips and the sort toggle reuse .mhead/.mchip/.msort-btn
+     exactly, and each hit reuses .mgroup for its frame. The one new thing a
+     video needs that a comment does not is a small identifying thumbnail —
+     everything else the excerpt needs (the highlighted term, the quoted
+     line) already exists as .quote-box + .mention-text. */
+  .sm-thumb {
+    @apply flex-none rounded-lg object-cover;
+    width: 56px;
+    height: 56px;
+    background: var(--tag);
+    border: 1px solid var(--border);
+  }
   .tag.copyable {
     cursor: pointer;
     border: 1px solid var(--border);

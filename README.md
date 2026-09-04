@@ -13,7 +13,9 @@ and hands it over with an account of what to do with it; none of them ask a
 model of ours for an opinion first. You pay for the fetch and nothing else.
 
 It also **monitors a name**: `search_mentions` sweeps nine of those networks for
-every comment that says your brand, inside a date window you choose.
+every comment that says your brand, inside a date window you choose, and
+`search_spoken_mentions` reads the words actually said out loud in TikTok and
+YouTube videos for the mentions that were never typed anywhere.
 
 Runs over stdio locally or as a hosted connector at `https://mcp.nooticr.com/mcp`.
 Billed against your nooticr credits; new accounts get 20 free.
@@ -50,10 +52,10 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-36 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+37 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
-Six of them — the ones under **Answer a question you actually have** — are not
+Seven of them — the ones under **Answer a question you actually have** — are not
 endpoint wrappers. Each names a job, fans out over the calls that job needs,
 groups the evidence by whatever you are deciding about, gives every item an id
 a follow-up tool can act on, and hands the reading to your model rather than to
@@ -91,7 +93,7 @@ them caps that fan-out with an argument.
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
 | `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
 | `find_hook_pattern` | 2 | A creator's recent posts, so their opening lines can be read as a set and turned into fill-in-the-blank templates. One `get_user_posts` call. |
-| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video. |
+| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok and YouTube. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
@@ -108,6 +110,7 @@ them caps that fan-out with an argument.
 | `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
 | `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
+| `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok and YouTube only, and only where the platform actually supplies a caption track. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
 
 ### Make something
 

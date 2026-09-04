@@ -528,6 +528,10 @@ export function createMcpServer(
   "who_should_i_work_with",
   "why_did_this_underperform",
   "what_should_i_make_next",
+  // Shaped like search_mentions (term + a grouped list) but of transcript
+  // hits rather than comments, so it gets its own view rather than the
+  // monitoring one.
+  "search_spoken_mentions",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).

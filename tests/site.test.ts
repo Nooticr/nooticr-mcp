@@ -260,6 +260,7 @@ describe("tool surface", () => {
     "who_should_i_work_with",
     "why_did_this_underperform",
     "what_should_i_make_next",
+    "search_spoken_mentions",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
