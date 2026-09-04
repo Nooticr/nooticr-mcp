@@ -200,6 +200,48 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ watchId: z.string().optional().describe("The watch's id, from list_brand_watches."), term: z.string().optional().describe("Alternative to watchId — the term it was watching.") }).strict(),
  },
  {
+ name: "list_own_apps",
+ title: "List Own Apps",
+ description: "List every product (\"app\") in your own workspace — id, name, niche and product type. Call this first when your workspace has more than one product and another own-account tool asks for appId. Reads only your own workspace. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "get_content_plan",
+ title: "Get Content Plan",
+ description: "The saved weekly content plan for your own product, if one has been generated (see generate_content_plan). Read-only and free even when a plan exists. Returns plan: null when none has been made yet. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().describe("Your product's id.") }).strict(),
+ },
+ {
+ name: "review_post",
+ title: "Review Post",
+ description: "Score a post before you publish it: hook strength, an optional A-vs-B hook comparison, aesthetic and storytelling notes, and rewritten hook/caption suggestions. Pass postId for something already in your pipeline, or appId plus draft fields otherwise. Nothing is published. Free — nothing is billed for this, same as the dashboard's own pre-publish review.",
+ inputSchema: z.object({ postId: z.number().int().optional(), appId: z.number().int().optional(), title: z.string().optional(), titleB: z.string().optional(), caption: z.string().optional(), contentType: z.string().optional(), thumbnailUrl: z.string().optional(), mediaItems: z.array(z.unknown()).optional(), platform: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
+ },
+ {
+ name: "draft_post",
+ title: "Draft Post",
+ description: "Generate a ready-to-use post draft (title, caption, hashtags, and a per-slide script) for a topic on your own product. Does not save or schedule anything. Billed like the dashboard's own Draft Post button: consumes your workspace's plan AI credits, not your personal MCP credits.",
+ inputSchema: z.object({ appId: z.number().int().describe("Your product's id."), topic: z.string().describe("What the post should be about."), contentType: z.string().optional(), slideCount: z.number().int().optional() }).strict(),
+ },
+ {
+ name: "growth_brief",
+ title: "Growth Brief",
+ description: "A plain-language growth brief for your own product: the single most important insight, wins, risks and concrete next actions, grounded in your real post history and synced analytics. Read-only. Billed like the dashboard's own Growth Brief button: your workspace's plan AI credits, not your personal MCP credits.",
+ inputSchema: z.object({ appId: z.number().int().describe("Your product's id.") }).strict(),
+ },
+ {
+ name: "generate_content_plan",
+ title: "Generate Content Plan",
+ description: "Generate a one-week content plan for your own product's creators: day-by-day posts with a hook, caption, hashtags and a full production script, grounded in what already worked in your post history. Saves the plan (fetch it later with get_content_plan) but does not schedule or publish. Billed like the dashboard's own Content Plan button: your workspace's plan AI credits, not your personal MCP credits.",
+ inputSchema: z.object({ appId: z.number().int().describe("Your product's id."), weekStart: z.string().optional().describe("ISO date. Defaults to next Monday."), influencerIds: z.array(z.number().int()).optional().describe("Subset of your creators to plan for.") }).strict(),
+ },
+ {
+ name: "generate_captions",
+ title: "Generate Captions",
+ description: "Generate timed on-screen caption cues for a video on your own product — a transcript plus start/end-timed lines. Does not burn captions onto any video. Billed like the dashboard's own Generate Captions button: your workspace's plan AI credits, not your personal MCP credits.",
+ inputSchema: z.object({ appId: z.number().int().describe("Your product's id."), durationSec: z.number().optional(), title: z.string().optional(), caption: z.string().optional(), videoUrl: z.string().optional(), transcriptHint: z.string().optional() }).strict(),
+ },
+ {
  name: "answer_my_audience",
  title: "Answer My Audience",
  description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because no nooticr connection carries comment-write permission \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",

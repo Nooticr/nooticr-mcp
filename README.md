@@ -129,6 +129,20 @@ them caps that fan-out with an argument.
 | `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 
+### Your own product
+
+Everything above reads someone else's content. These read and generate for **your own** — a different product, a different balance (your workspace's plan AI credits, not the personal MCP credits above), billed exactly like the matching dashboard button.
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `list_own_apps` | free | Every product in your workspace — call this first when you have more than one and another tool below asks for `appId`. |
+| `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
+| `review_post` | free | Score a draft before you publish it — hook strength, an A/B hook comparison, aesthetic and storytelling notes, rewritten hooks/captions. Never billed, same as the dashboard's own pre-publish review. |
+| `draft_post` | plan AI credits | A ready-to-use draft (title, caption, hashtags, per-slide script) for a topic, grounded in your product's name. Returns text only — saves nothing. |
+| `growth_brief` | plan AI credits | A plain-language brief — the one insight that matters, wins, risks, next actions — grounded in your real post history and synced analytics. |
+| `generate_content_plan` | plan AI credits | A one-week, day-by-day content plan for your creators, grounded in what already worked. Saved — fetch it later with `get_content_plan`. |
+| `generate_captions` | plan AI credits | Timed on-screen caption cues for a video — a transcript plus start/end-timed lines. Returns cue data only. |
+
 ### How billing works
 
 - New accounts get **20 free credits**.

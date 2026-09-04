@@ -679,6 +679,84 @@ export const OUTPUT_SCHEMAS = {
     message: scalar(),
     cost: scalar(),
   }),
+
+  list_own_apps: open({
+    apps: listOf(
+      open({
+        appId: scalar(),
+        name: scalar(),
+        description: scalar(),
+        niche: scalar(),
+        productType: scalar(),
+        createdAt: scalar(),
+      }),
+    ),
+    count: scalar(),
+  }),
+  get_content_plan: open({
+    ok: scalar(),
+    plan: open({}).nullish().describe("null when no plan has been generated yet."),
+  }),
+  review_post: open({
+    review: open({
+      degraded: scalar(),
+      degradedReason: scalar(),
+      scoreA: open({}).nullish(),
+      scoreB: open({}).nullish().describe("Only present when titleB was given."),
+      aestheticAdvice: scalar(),
+      storytellingAdvice: scalar(),
+      improvedHooks: listOf(z.string()),
+      improvedCaptions: listOf(z.string()),
+    })
+      .passthrough()
+      .nullish(),
+    degraded: scalar().describe("Hoisted from review.degraded so it's never missed."),
+    warning: scalar().describe("Present when degraded — treat the scores as placeholders."),
+  }),
+  draft_post: open({
+    ok: scalar(),
+    title: scalar(),
+    caption: scalar(),
+    hashtags: listOf(z.string()),
+    script: scalar(),
+    provider: scalar(),
+  }),
+  growth_brief: open({
+    ok: scalar(),
+    brief: open({
+      headline: scalar(),
+      wins: listOf(open({}).passthrough()),
+      risks: listOf(open({}).passthrough()),
+      actions: listOf(open({}).passthrough()),
+    })
+      .passthrough()
+      .nullish(),
+  }),
+  generate_content_plan: open({
+    ok: scalar(),
+    plan: listOf(
+      open({
+        influencerId: scalar(),
+        influencerName: scalar(),
+        posts: listOf(
+          open({
+            day: scalar(),
+            hook: scalar(),
+            caption: scalar(),
+            hashtags: listOf(z.string()),
+            contentType: scalar(),
+            script: scalar(),
+            rationale: scalar(),
+          }),
+        ),
+      }),
+    ),
+  }),
+  generate_captions: open({
+    ok: scalar(),
+    captions: listOf(open({ text: scalar(), start: scalar(), end: scalar() })),
+    provider: scalar().describe("\"mock\" when no AI provider is configured — the cues are placeholders."),
+  }),
 } as const;
 
 export type OutputSchemaName = keyof typeof OUTPUT_SCHEMAS;

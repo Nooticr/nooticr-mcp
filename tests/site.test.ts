@@ -229,6 +229,13 @@ describe("tool surface", () => {
     "create_brand_watch",
     "list_brand_watches",
     "stop_brand_watch",
+    "list_own_apps",
+    "get_content_plan",
+    "review_post",
+    "draft_post",
+    "growth_brief",
+    "generate_content_plan",
+    "generate_captions",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -323,6 +330,12 @@ describe("tool surface", () => {
       "show_comment_review",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
+      // Own-account reads: nooticr's own already-stored data, never billed.
+      "list_own_apps",
+      "get_content_plan",
+      // Calls AI but the dashboard's own pre-publish review has never
+      // billed for it, so nor does this.
+      "review_post",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

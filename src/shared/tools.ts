@@ -40,6 +40,7 @@ import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/int
 import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
+import { registerOwnAccountTools } from "./own-account.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.19";
@@ -529,6 +530,14 @@ export function createMcpServer(
   "who_should_i_work_with",
   "why_did_this_underperform",
   "what_should_i_make_next",
+  // Own-account intelligence (own-account.ts). list_own_apps and
+  // get_content_plan stay view-less like watch_creator: one lists
+  // metadata, the other returns null when nothing has been generated yet.
+  "review_post",
+  "draft_post",
+  "growth_brief",
+  "generate_content_plan",
+  "generate_captions",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -1992,6 +2001,7 @@ export function createMcpServer(
  registerWatchlist(server, makeClient, watchStore);
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);
+ registerOwnAccountTools(server, makeClient);
 
  return server;
 }

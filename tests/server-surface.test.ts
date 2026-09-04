@@ -43,6 +43,11 @@ const NOT_READ_ONLY = [
   // state. list_brand_watches only reads, so it stays out of this list.
   "create_brand_watch",
   "stop_brand_watch",
+  // Own-account generation: each spends the workspace's plan AI credits.
+  // review_post reads/scores only and is never billed, so it stays out.
+  "draft_post",
+  "generate_captions",
+  "generate_content_plan",
 ];
 
 describe("tool annotations", () => {
@@ -50,7 +55,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(39);
+    expect(tools).toHaveLength(46);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -78,8 +83,18 @@ describe("tool annotations", () => {
       // All three touch nooticr's own stored watch state; the sweep a watch
       // schedules runs later, server-side, never inside the call itself.
       "create_brand_watch",
+      // Own-account tools: every one of these reads or generates for the
+      // caller's own product, never a third party's — nothing here reaches
+      // outside nooticr.
+      "draft_post",
+      "generate_captions",
+      "generate_content_plan",
+      "get_content_plan",
+      "growth_brief",
       "list_brand_watches",
+      "list_own_apps",
       "nooticr_login",
+      "review_post",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
       // send them either — no connection carries comment-write permission.
       "show_audience_replies",
