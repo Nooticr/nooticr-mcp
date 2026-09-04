@@ -182,6 +182,24 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ limit: z.number().int().optional().describe("Posts to check per creator (default 6)."), platform: z.string().optional().describe("Only check creators on this platform.") }).strict(),
  },
  {
+ name: "create_brand_watch",
+ title: "Create Brand Watch",
+ description: "Run a brand-mentions sweep on a schedule and email what is new, instead of remembering to ask. Two calls by design: call it once with no confirmation to get back the cost per run and what it multiplies out to per day, then call it again with confirm: true and the confirmationToken to actually start it. The first call creates nothing and spends nothing. Bills 2 credits per network per run (5 for Xiaohongshu), trimmed to fit budgetCredits. A run that finds nothing new sends no mail. No cost to call.",
+ inputSchema: z.object({ term: z.string().describe("What to watch for (max 120 chars)."), platforms: z.array(z.string()).optional().describe("Networks to sweep (default: every searchable network)."), cadence: z.enum(["hourly", "every_6_hours", "every_12_hours", "daily", "weekly"]).optional().describe("How often to run (default daily)."), budgetCredits: z.number().int().optional().describe("Hard per-run credit ceiling (default the full sweep's cost)."), deliverTo: z.string().optional().describe("Digest email (default the account's own)."), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted cost."), confirmationToken: z.string().optional().describe("The token the first call returned.") }).strict(),
+ },
+ {
+ name: "list_brand_watches",
+ title: "List Brand Watches",
+ description: "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "stop_brand_watch",
+ title: "Stop Brand Watch",
+ description: "Stop a scheduled brand-monitoring watch, by watchId or by term. Takes effect immediately — the run that was due does not happen and nothing further is charged. Works even at a zero balance, since a user out of credits is exactly the user who needs to turn off what is spending them. No cost to call.",
+ inputSchema: z.object({ watchId: z.string().optional().describe("The watch's id, from list_brand_watches."), term: z.string().optional().describe("Alternative to watchId — the term it was watching.") }).strict(),
+ },
+ {
  name: "answer_my_audience",
  title: "Answer My Audience",
  description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because no nooticr connection carries comment-write permission \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",

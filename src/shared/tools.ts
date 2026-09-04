@@ -39,6 +39,7 @@ import {
 import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/interfaces.js";
 import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
+import { registerBrandWatch } from "./brand-watch.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.19";
@@ -1990,6 +1991,7 @@ export function createMcpServer(
  const watchStore = opts?.watchStore ?? new MemoryWatchStore();
  registerWatchlist(server, makeClient, watchStore);
  registerJobTools(server, makeClient, watchStore);
+ registerBrandWatch(server, makeClient);
 
  return server;
 }

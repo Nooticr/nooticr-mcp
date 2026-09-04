@@ -95,6 +95,9 @@ them caps that fan-out with an argument.
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
+| `create_brand_watch` | free to call | Schedule a recurring `search_mentions` sweep and get emailed only what is new. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling `search_mentions` yourself. |
+| `list_brand_watches` | free | Every watch you have scheduled: term, networks, cadence, cost per run, credits spent so far, runs made, and when the next one is due. |
+| `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
 | `analyze_creator_profile` | 2 | A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms, who the audience is. One `get_user_posts` call. |
 

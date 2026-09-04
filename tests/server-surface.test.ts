@@ -39,6 +39,10 @@ const NOT_READ_ONLY = [
   // watchlist it moves that creator's "last tracked" marker forward, so a
   // second call in a row does not answer the same question as the first.
   "track_competitor",
+  // Creates a recurring watch (on confirm) / stops one — both change stored
+  // state. list_brand_watches only reads, so it stays out of this list.
+  "create_brand_watch",
+  "stop_brand_watch",
 ];
 
 describe("tool annotations", () => {
@@ -46,7 +50,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(36);
+    expect(tools).toHaveLength(39);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -71,12 +75,17 @@ describe("tool annotations", () => {
     // The watchlist tools that only touch stored state are closed-world too.
     expect(closed.sort()).toEqual([
       "check_nooticr_credits",
+      // All three touch nooticr's own stored watch state; the sweep a watch
+      // schedules runs later, server-side, never inside the call itself.
+      "create_brand_watch",
+      "list_brand_watches",
       "nooticr_login",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
       // send them either — no connection carries comment-write permission.
       "show_audience_replies",
       // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
+      "stop_brand_watch",
       "unwatch_creator",
       "watch_creator",
     ]);
