@@ -1727,6 +1727,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // — is confirmed before a single call is made, the same way search_mentions
   // confirms a worst case from its own arguments alone.
   // ───────────────────────────────────────────────────────────────────────────
+  const SPOKEN_TRANSCRIBE_BUDGET_MS = 12_000;
   server.registerTool(
     "search_spoken_mentions",
     {
@@ -2001,9 +2002,29 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }
         transcribed++;
         try {
-          const res = await client.callTool("get_post_transcript", { url });
-          const structured = structuredOf(res);
+          // A speech-to-text fallback can come back "transcribing: true,
+          // retryAfterMs" — the job is accepted and running, not a caption-track
+          // miss — and treating it as one would silently misreport every post
+          // whose answer just hadn't finished yet. Poll it out under a bounded
+          // budget so one slow job can't hang the whole search; the first
+          // callTool above already spent this post's credit, and every retry
+          // below re-reads the same cached job rather than spending again.
+          let structured = structuredOf(await client.callTool("get_post_transcript", { url }));
           spend.record("get_post_transcript", structured);
+          const pollStartedAt = Date.now();
+          while (structured.transcribing && Date.now() - pollStartedAt < SPOKEN_TRANSCRIBE_BUDGET_MS) {
+            const waitMs = Math.min(Number(structured.retryAfterMs) || 1000, 5000);
+            await new Promise((r) => setTimeout(r, waitMs));
+            structured = structuredOf(await client.callTool("get_post_transcript", { url }));
+          }
+          if (structured.transcribing) {
+            unavailable.push({
+              postId: id,
+              url,
+              reason: "still listening to this post's audio — try again shortly",
+            });
+            continue;
+          }
           if (!structured.available) {
             unavailable.push({ postId: id, url, reason: String(structured.reason ?? "no caption track") });
             continue;

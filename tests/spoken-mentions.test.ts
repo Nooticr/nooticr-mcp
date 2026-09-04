@@ -17,8 +17,36 @@
  * asks for.
  */
 import { describe, expect, it } from "vitest";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { matchExcerpts } from "../src/shared/jobs.js";
 import { MAX_SPOKEN_HANDLE_CALLS, MAX_SPOKEN_TRANSCRIPTS } from "../src/shared/spend.js";
+import { createMcpServer } from "../src/shared/tools.js";
+import { MemoryWatchStore } from "../src/shared/watchlist.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
+
+type Row = Record<string, unknown>;
+
+/** Minimal version of jobs.test.ts's harness — a client wired straight to the
+ *  real MCP server, with the nooticr backend replaced by scripted handlers. */
+async function connect(backend: { [tool: string]: (args: Row) => Row }) {
+  const calls: Array<{ name: string; args: Row }> = [];
+  const nooticr = {
+    me: async () => ({ id: "u1" }),
+    callTool: async (name: string, args: Row) => {
+      calls.push({ name, args });
+      const handler = backend[name];
+      if (!handler) throw new Error(`no stub for ${name}`);
+      return { contentBlocks: [], structured: handler(args) };
+    },
+  } as unknown as NooticrClient;
+  const client = new Client({ name: "test", version: "1.0.0" }, { capabilities: { elicitation: {} } });
+  const server = createMcpServer(async () => nooticr, { watchStore: new MemoryWatchStore() });
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  await Promise.all([client.connect(a), server.connect(b)]);
+  await client.listTools();
+  return { client, calls };
+}
 
 describe("matchExcerpts — where a term is actually said", () => {
   it("does not fire inside a longer word", () => {
@@ -95,6 +123,81 @@ describe("matchExcerpts — where a term is actually said", () => {
   it("terminates on a term that could match zero-width", () => {
     // Guards the lastIndex stall that would otherwise spin forever.
     expect(() => matchExcerpts("some transcript text", "*")).not.toThrow();
+  });
+});
+
+describe("search_spoken_mentions — polling a still-transcribing post", () => {
+  // Whisper is queue-backed: get_post_transcript can answer "transcribing:
+  // true, retryAfterMs" for a job that is accepted and running rather than a
+  // caption-track miss. Confusing the two would silently misreport every post
+  // whose answer just had not finished yet — this proves the tool asks again
+  // instead, and gives up honestly if it never finishes in time.
+
+  it("retries until the transcript is ready, and still finds the term", async () => {
+    let calls = 0;
+    const { client } = await connect({
+      get_user_posts: () => ({
+        posts: [{ externalUrl: "https://tiktok.com/@a/video/1", views: 100 }],
+      }),
+      get_post_transcript: () => {
+        calls++;
+        if (calls < 3) {
+          return { available: false, transcribing: true, retryAfterMs: 1 };
+        }
+        return { available: true, transcript: "and that is why I switched to acme for good" };
+      },
+    });
+    const res = await client.callTool({
+      name: "search_spoken_mentions",
+      arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
+    });
+    expect(calls).toBe(3);
+    const structured = res.structuredContent as Row;
+    expect(structured.matched).toBe(1);
+    expect(structured.transcriptsAvailable).toBe(1);
+    expect(structured.unavailable).toEqual([]);
+  });
+
+  it("reports honestly, not as a caption miss, if it never finishes in the budget", async () => {
+    const { client } = await connect({
+      get_user_posts: () => ({
+        posts: [{ externalUrl: "https://tiktok.com/@a/video/1", views: 100 }],
+      }),
+      get_post_transcript: () => ({ available: false, transcribing: true, retryAfterMs: 1 }),
+    });
+    const res = await client.callTool({
+      name: "search_spoken_mentions",
+      arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
+    });
+    const structured = res.structuredContent as Row;
+    expect(structured.matched).toBe(0);
+    const unavailable = structured.unavailable as Row[];
+    expect(unavailable).toHaveLength(1);
+    // The whole point: this must not read like "no caption track" — that
+    // would tell a caller the post stays permanently invisible, when the
+    // truth is just "ask again".
+    expect(String(unavailable[0].reason)).toMatch(/still listening|try again/i);
+    expect(String(unavailable[0].reason)).not.toMatch(/no caption track/i);
+  }, 15_000);
+
+  it("does not confuse a genuine caption-track miss with a still-running job", async () => {
+    const { client } = await connect({
+      get_user_posts: () => ({
+        posts: [{ externalUrl: "https://tiktok.com/@a/video/1", views: 100 }],
+      }),
+      get_post_transcript: () => ({
+        available: false,
+        reason: "This post has no caption track (the creator did not enable captions).",
+      }),
+    });
+    const res = await client.callTool({
+      name: "search_spoken_mentions",
+      arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
+    });
+    const structured = res.structuredContent as Row;
+    const unavailable = structured.unavailable as Row[];
+    expect(unavailable).toHaveLength(1);
+    expect(String(unavailable[0].reason)).toMatch(/no caption track/i);
   });
 });
 
