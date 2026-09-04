@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "out=$(npx tsc --noEmit 2>&1); if [ -n \"$out\" ]; then jq -n --arg r \"$out\" '{decision:\"block\", reason: (\"npx tsc --noEmit found type errors:\\n\\n\" + $r + \"\\n\\nFix them before finishing.\")}'; else echo '{}'; fi",
+            "timeout": 60,
+            "statusMessage": "Type-checking..."
+          }
+        ]
+      }
+    ]
+  }
+}
