@@ -531,9 +531,11 @@ export function createMcpServer(
   "who_should_i_work_with",
   "why_did_this_underperform",
   "what_should_i_make_next",
-  // Own-account intelligence (own-account.ts). list_own_apps and
-  // get_content_plan stay view-less like watch_creator: one lists
-  // metadata, the other returns null when nothing has been generated yet.
+  // Own-account intelligence (own-account.ts). list_own_apps stays
+  // view-less like watch_creator — it lists metadata, nothing to draw.
+  // get_content_plan gets the same card generate_content_plan does: they
+  // return the same `plan` shape, so the generic template already renders it.
+  "get_content_plan",
   "review_post",
   "draft_post",
   "growth_brief",

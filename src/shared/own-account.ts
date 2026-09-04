@@ -88,6 +88,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "The saved weekly content plan for your own product, if one has been generated (see " +
         "generate_content_plan). Read-only and free even when a plan exists — generating a new " +
         "one is the paid step. Returns plan: null when none has been made yet. No cost to call.",
+      _meta: viewMeta("get_content_plan"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
