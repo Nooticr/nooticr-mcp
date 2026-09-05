@@ -11,6 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { requestKey } from "../cloudflare/src/endpoint.js";
 import { argumentsDigest } from "../src/shared/tools.js";
+import { stdioIdempotencyKey } from "../src/idempotency.js";
 
 const call = (id: number | string, name: string, args: unknown) =>
   JSON.stringify({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
@@ -101,5 +102,41 @@ describe("CORS exposure for browser MCP clients", () => {
     // the client cannot discover where to log in.
     expect(exposed).toContain("www-authenticate");
     expect(exposed).toContain("mcp-protocol-version");
+  });
+});
+
+/**
+ * The stdio half of the same guarantee.
+ *
+ * `NooticrClient` documents "a retried tool call is billed once" and the
+ * backend implements it, but the local package constructed its client with no
+ * key at all, so it never sent the header and the promise only held for the
+ * hosted connector. Driving the built stdio server against a fixture backend
+ * showed `idempotency-key: NONE` on every call before this.
+ */
+describe("the stdio package's billing key", () => {
+  it("keeps a genuine second call distinct from the first", () => {
+    const args = { url: "https://example.invalid/p/1" };
+    expect(stdioIdempotencyKey({ requestId: 2, arguments: args })).not.toBe(
+      stdioIdempotencyKey({ requestId: 3, arguments: args }),
+    );
+  });
+
+  it("replays a retry — same id, same arguments — onto one charge", () => {
+    const args = { url: "https://example.invalid/p/1" };
+    expect(stdioIdempotencyKey({ requestId: 2, arguments: args })).toBe(
+      stdioIdempotencyKey({ requestId: 2, arguments: args }),
+    );
+  });
+
+  // A client that restarts its ids at 1 must not charge one call for another.
+  it("separates two calls that reused an id with different arguments", () => {
+    expect(stdioIdempotencyKey({ requestId: 1, arguments: { url: "a" } })).not.toBe(
+      stdioIdempotencyKey({ requestId: 1, arguments: { url: "b" } }),
+    );
+  });
+
+  it("sends nothing when there is no request id to key on", () => {
+    expect(stdioIdempotencyKey({ arguments: { url: "a" } })).toBeUndefined();
   });
 });
