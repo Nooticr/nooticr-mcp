@@ -76,6 +76,21 @@ something specific rather than a paraphrase. If a future tool's comments
 *don't* carry a stable id, that's the actual gap to fix — everything else in
 this chain already composes.
 
+**The report doesn't have to be written down.** A creator can describe the
+same bug out loud in a video — "this stopped working for me after a week" is
+just as much a bug report said in a review as typed in its comments. That
+content reaches the model through `get_post_transcript`, which
+`analyze_post`, `analyze_post_fast` and `understand_social_post` all fetch
+alongside frames/captions/stats (see `evidence.ts`'s `EVIDENCE_PLANS`) — the
+model classifies a transcript line exactly the same way it classifies a
+comment. The one real difference: a transcript isn't chunked into
+individually-addressable units the way comments are, so there is no
+`comment:`-shaped id for "the sentence at 0:42" — the addressable unit is the
+post itself (`post:<platform>:<slug>`, from `get_social_media`'s `postId` or
+`postIdOf()`). A bug reported in a video's own words gets filed the same way,
+quoting the post id and the relevant line, rather than a comment id that
+doesn't exist for it.
+
 ## Per-tool pipeline
 
 | Tool | Stage 1 (search/list) | Stage 2 (fan-out) | Stage 3 (local pre-sort) | Addressable ids | Stage 4 hand-off |
