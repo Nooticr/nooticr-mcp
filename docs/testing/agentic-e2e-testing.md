@@ -170,21 +170,37 @@ different things:
   behavior, but against **hand-crafted fixture data**. Thorough on layout
   and interaction logic; proves nothing about whether that data shape is
   what a real tool call actually produces.
-- **`tests/e2e/agentic-visual.e2e.ts`** (new) — closes that gap: boots
-  `scripts/fixture-server.mjs`, makes a real `discover_social_posts`
-  `tools/call` through this repo's real built CLI, takes the **real**
-  `structuredContent` that came back, renders the same widget with it, and
-  clicks two posts + Compare — asserting the resulting `tools/call` carries
-  the real post URLs the backend returned. One flow, not a replacement for
-  the ~90 above; it's the thing neither of the two existing layers (data
-  round-trip, widget-with-fixtures) could catch on its own: a real backend
-  response shape the widget can't actually render or act on.
+- **`tests/e2e/agentic-visual.e2e.ts`** and **`tests/e2e/agentic-visual-full-app.e2e.ts`**
+  (new) close that gap, across every view the template can reach: boot
+  `scripts/fixture-server.mjs` (each on its own port, via the shared
+  `tests/e2e/support/mcp-e2e-session.ts`, so Playwright's `fullyParallel`
+  running both files at once never collides), make a real `tools/call`
+  through this repo's real built CLI, take the **real** `structuredContent`
+  that came back, render the same widget with it, and click every
+  host-facing button in that view — not just checking the resulting
+  `postMessage` shape, but for buttons whose click issues another
+  `tools/call`, actually executing that follow-up call for real through the
+  same client and confirming it succeeds. That's the literal answer to "do
+  these buttons really drive the right next thing": not a guess from
+  reading the message, but making the call the button asked for and
+  watching whether it works.
 
-  Verified for real in the environment that wrote this doc, twice
-  (warm and from a clean `dist/`, to confirm the self-build fallback
-  works): `npx playwright test tests/e2e/agentic-visual.e2e.ts` passes,
-  and the full suite (`npx playwright test`, 91 tests) passes together.
-  Needs the same Chromium install as the existing e2e suite
+  Between the two files: the posts gallery (`discover_social_posts`) in
+  depth (`agentic-visual.e2e.ts`), and all nine other reachable views —
+  single post card + its four `ai-btn` actions round-tripped for real,
+  the two Monitor variants (`search_mentions`, `show_comment_review`),
+  transcript, hashtags, comments, sounds, creators, credits, checkout
+  (`agentic-visual-full-app.e2e.ts`). What's covered vs. not, precisely:
+  `docs`/§ below lists the tools with no UI view at all (nothing to click),
+  and every reachable view now has at least one real-call test; the
+  meaningfully-interactive ones (posts gallery, single post, both Monitor
+  variants, transcript, hashtags) have every host-facing control clicked,
+  not just rendered.
+
+  Verified for real in the environment that wrote this doc, from a clean
+  `dist/`: both files pass on their own, and the full suite
+  (`npx playwright test`, 105 tests) passes together. Needs the same
+  Chromium install as the existing e2e suite
   (`npx playwright install --with-deps chromium`).
 
 **On MCPJam specifically** — the user prompt that led to this section was
@@ -214,6 +230,62 @@ assertion result themselves (only `apps conformance`, `conformance-suite`,
 and `apps render --require-render` do) — a script driving `apps session`
 in CI has to check the JSON `ok` field itself, the same thing
 `agentic-visual.e2e.ts`'s own `expect()` calls do.
+
+## Bugs this exercise surfaced
+
+Testing every reachable view against real tool-call output — not the
+hand-crafted fixtures the pre-existing widget suite uses — found six real
+product bugs, each proven with an actual executed call in
+`tests/e2e/agentic-visual-full-app.e2e.ts` (see that file's comments for
+exact line references), not inferred from reading the code:
+
+1. **`compare_posts` never produces a comparison.** Its real evidence plan
+   (`evidence.ts`) only fetches `urls[0]` via `get_social_media` — never
+   sets `.comparison`, never returns `.posts`. The dedicated comparison
+   scoreboard view is unreachable; a real `compare_posts` call — including
+   one triggered by picking two gallery posts and pressing Compare — always
+   renders as an ordinary single-post card for the first URL, silently
+   dropping the rest.
+2. **`analyze_post`/`analyze_post_fast`/`understand_social_post` never
+   produce `.analysis`.** Same root cause as #1: they run through
+   `runEvidence()`, which never sets that key. The `analysisCard` view — an
+   AI verdict, meters, a "More hooks" follow-up row, copyable quote/hashtag
+   chips — is unreachable by any tool call in this repo today.
+3. **The Monitor view's "Analyse these" button sends an argument shape
+   `analyze_comments` rejects.** It posts `{comments, ids}`; the tool's real
+   `inputSchema` is `{url, limit?}.strict()`. A real host executing this
+   call — rather than timing out into the (also broken, sandboxed-iframe)
+   clipboard fallback — gets a schema validation failure every time.
+   Reachable from `search_mentions`, `answer_my_audience`,
+   `show_comment_review` and `show_audience_replies` alike.
+4. **`buy_nooticr_credits`'s pack cards have no click handler at all**,
+   despite `.pack{cursor:pointer}` in the CSS — and even if one existed,
+   the view hardcodes three fixed prices and ignores the real
+   `d.checkoutUrl`/`d.packs` entirely.
+5. **That same `checkoutUrl` arrives mangled before bug 4 would even
+   matter.** `tools.ts`'s `proxyUrls()` only exempts a fixed key list
+   (`RAW_URL_KEYS`, plus a few image-specific keys) from rewriting; any
+   other string value shaped like a URL — `checkoutUrl` included — gets
+   routed through the image proxy regardless of key name, turning a real
+   Stripe Checkout link into `<base>/media/proxy?url=<encoded>`, a URL
+   meant to serve image/video bytes.
+6. **`generate_captions` renders "No transcript available" despite
+   returning real cues.** Its real output (`{ok, cues, transcript, cost,
+   provider}`) has no `available` field; the transcript view's gate treats
+   `transcript !== undefined` as "maybe show it" but then requires
+   `d.available` truthy to actually draw it — so real captions never
+   appear, and `cues[]` is drawn by no view at all.
+7. **The transcript view's own "Copy" button is dead** — it carries
+   `class="btn btn-sm"` with a `data-copy` attribute, but the only two
+   copy-click handlers in the file target `.copy-btn[data-copy]` and
+   `.copyable[data-copy]`; neither matches, so clicking it does nothing.
+
+None of these are fixed by this change — the brief was to test the app,
+and testing it surfaced these; deciding whether/how to fix each (the
+`analyze_comments` argument mismatch and the dead Copy handler look like
+small, low-risk fixes; the `checkoutUrl`/proxy one touches shared
+URL-rewriting logic other tools rely on and deserves more care) is a
+separate decision this doc leaves open rather than presupposes.
 
 ## CI
 
