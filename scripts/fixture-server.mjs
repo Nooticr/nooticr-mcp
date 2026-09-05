@@ -3,8 +3,9 @@
 // scripts/e2e-server-lib.sh and this repo's own NooticrClient actually touch
 // during the E2E harness's boot/login/tool-call sequence: GET /health,
 // POST /auth/dev-login, POST /graphql (createWorkspace/createApp only), and
-// POST /mcp (tools/call for the few tools scripts/mcp-smoke-client.mjs
-// exercises). Pure Node, no native deps, no network calls of its own.
+// POST /mcp (tools/call for the tools scripts/mcp-smoke-client.mjs and
+// tests/e2e/agentic-visual.e2e.ts exercise). Pure Node, no native deps, no
+// network calls of its own.
 //
 // What this is for: nooticr-server needs a real Rust/Postgres/FFmpeg/ONNX
 // toolchain to build — not available in every environment (this one
@@ -113,6 +114,28 @@ function handleMcpCall(name, args, workspaceId) {
         content: [{ type: "text", text: "No social accounts connected (fixture)." }],
         structuredContent: { connections: [] },
       };
+    case "discover_social_posts": {
+      // Flat shape the UI template's postCard() actually reads (see
+      // tests/e2e/ui-template.e2e.ts's POSTS fixture) — this is what lets
+      // tests/e2e/agentic-visual.e2e.ts render and click real posts that
+      // came from an actual tools/call, not a hand-crafted fixture.
+      const niche = String(args?.niche ?? "demo");
+      const posts = [1, 2].map((i) => ({
+        platform: "tiktok",
+        caption: `Fixture post ${i} about ${niche}`,
+        creatorHandle: `fixture_creator_${i}`,
+        externalUrl: `https://www.tiktok.com/@fixture_creator_${i}/video/${i}`,
+        videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
+        contentType: "video",
+        views: 1000 * i,
+        likes: 100 * i,
+        comments: 10 * i,
+      }));
+      return {
+        content: [{ type: "text", text: `Found ${posts.length} fixture posts about ${niche}.` }],
+        structuredContent: { platform: "tiktok", posts },
+      };
+    }
     case "get_social_media": {
       if (args?.url !== STUB_URL) {
         return { error: { code: -32602, message: `fixture only answers ${STUB_URL}` } };

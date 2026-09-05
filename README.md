@@ -494,7 +494,10 @@ end-to-end tests — no Rust, no Postgres, no API key —
 drives it over stdio against a pure-Node stand-in for nooticr-server. See
 `docs/testing/agentic-e2e-testing.md` for that plus the two tiers above it
 (`npm run test:e2e-smoke` against a real nooticr-server, and
-`npm run test:agentic-e2e`, a real model driving it).
+`npm run test:agentic-e2e`, a real model driving it), and for
+`tests/e2e/agentic-visual.e2e.ts` — a real tool-call result rendered in a
+real browser and clicked, not just checked as data
+(`npx playwright test tests/e2e/agentic-visual.e2e.ts`).
 
 ## License
 

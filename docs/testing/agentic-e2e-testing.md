@@ -156,6 +156,65 @@ mirrors the same sequence against its own in-memory state):
 pointing at `test:e2e-smoke`) if `ANTHROPIC_API_KEY` is unset — what makes
 it safe to land in CI before that secret exists.
 
+## Visual / click testing
+
+Everything above tests *data* — does the right tool get called, with the
+right structured content back. None of it renders the actual widget a user
+sees or clicks anything in it. Two layers cover that, and they test
+different things:
+
+- **`tests/e2e/ui-template.e2e.ts`** (pre-existing, ~90 Playwright tests) —
+  loads `NOOTICR_UI_TEMPLATE` in a real browser and clicks real buttons
+  (`.mp-pick`, `#pickgo`, `.ai-btn`, filter chips, sort buttons, ...),
+  asserting on the exact `postMessage` the widget sends back — real widget
+  behavior, but against **hand-crafted fixture data**. Thorough on layout
+  and interaction logic; proves nothing about whether that data shape is
+  what a real tool call actually produces.
+- **`tests/e2e/agentic-visual.e2e.ts`** (new) — closes that gap: boots
+  `scripts/fixture-server.mjs`, makes a real `discover_social_posts`
+  `tools/call` through this repo's real built CLI, takes the **real**
+  `structuredContent` that came back, renders the same widget with it, and
+  clicks two posts + Compare — asserting the resulting `tools/call` carries
+  the real post URLs the backend returned. One flow, not a replacement for
+  the ~90 above; it's the thing neither of the two existing layers (data
+  round-trip, widget-with-fixtures) could catch on its own: a real backend
+  response shape the widget can't actually render or act on.
+
+  Verified for real in the environment that wrote this doc, twice
+  (warm and from a clean `dist/`, to confirm the self-build fallback
+  works): `npx playwright test tests/e2e/agentic-visual.e2e.ts` passes,
+  and the full suite (`npx playwright test`, 91 tests) passes together.
+  Needs the same Chromium install as the existing e2e suite
+  (`npx playwright install --with-deps chromium`).
+
+**On MCPJam specifically** — the user prompt that led to this section was
+right that MCPJam has something here, and it's more than the evals feature
+above: verified directly against `MCPJam/inspector`'s source (not just its
+docs, which were unreachable from this sandbox), `apps render` and
+`apps session start/action/snapshot/step/close`
+(`cli/src/commands/apps.ts`) genuinely mount a `ui://` resource in a real
+headless Chromium and let you drive it — by role/name/testId, Playwright-
+locator-style — then report `widgetToolCalls` (what the widget posted back)
+with a dedicated `widgetToolCalled` assertion. That's a real alternative to
+the hand-written spec above, done through the same CLI already used for
+conformance/compat rather than a bespoke Playwright file. Two reasons this
+change uses the hand-written spec instead, both practical rather than
+"MCPJam can't do it": (1) `tests/e2e/ui-template.e2e.ts` already established
+this repo's own Playwright pattern, so `agentic-visual.e2e.ts` is one more
+file in a style already reviewed and trusted here, not a new tool surface;
+(2) it's what I could actually run and verify end-to-end in this sandbox —
+standing up MCPJam's own Inspector server to drive `apps session` wasn't
+something I exercised, so I'm not claiming it works here, only reporting
+precisely what the source says it does. If `agentic-visual.e2e.ts`'s
+one-flow coverage needs to grow into several widget-interaction cases,
+`mcpjam apps session` is worth adopting then — one caveat found in the
+source worth knowing before relying on it for a CI gate: the raw
+`apps session action/step` commands don't set a process exit code from the
+assertion result themselves (only `apps conformance`, `conformance-suite`,
+and `apps render --require-render` do) — a script driving `apps session`
+in CI has to check the JSON `ok` field itself, the same thing
+`agentic-visual.e2e.ts`'s own `expect()` calls do.
+
 ## CI
 
 The **fixture tier needs none of nooticr-server's toolchain** (see the table
@@ -192,7 +251,7 @@ the shape of the decision:
 
 | Tool | What it actually does | Verdict |
 |---|---|---|
-| **MCPJam** (`@mcpjam/cli`) | Real agent loop against a real MCP server; `expectedToolCalls` diffing, `runs: N` for stability. Already used here for conformance. | **Chosen** — one tool family, not two |
+| **MCPJam** (`@mcpjam/cli`) | Real agent loop against a real MCP server; `expectedToolCalls` diffing, `runs: N` for stability. Also — verified directly against its source, not just docs — a genuine widget-rendering/click layer (`apps session`/`apps render`): real headless Chromium via Playwright, drives a rendered `ui://` resource by role/name/testId, and reports `widgetToolCalls` back with a `widgetToolCalled` assertion type. Already used here for conformance. | **Chosen for evals**; its widget-interaction layer is a real alternative to the Playwright spec below — see "Visual / click testing" |
 | Official `@modelcontextprotocol/inspector` | Headless CLI mode, but scripted single JSON-RPC calls — not an agent loop. Most mature/widely-used project surveyed (10k+★). | Good for protocol checks (already used here); not sufficient alone for agentic behavior |
 | `modelcontextprotocol/conformance`, `YawLabs/mcp-compliance` | Official / third-party protocol-spec conformance, no LLM involved | Complementary, not agentic; worth a spike alongside the existing MCPJam conformance step |
 | `lastmile-ai/mcp-eval` | Python, richest assertion vocabulary (call sequence, OTel traces, weighted LLM-judge rubrics), pytest-native | Real alternative if assertions need to grow past tool-call matching |
