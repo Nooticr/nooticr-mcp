@@ -16,7 +16,14 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
-import { CAPABILITIES, KNOWN_PLATFORMS, capabilityOf } from "../src/shared/platform-capabilities.js";
+import {
+  CAPABILITIES,
+  KNOWN_PLATFORMS,
+  capabilityOf,
+  commentsUnavailable,
+  listIsCeiling,
+  platformsFor,
+} from "./platform-capabilities.js";
 
 async function shippedTools() {
   const client = new Client({ name: "platform-claims", version: "1.0.0" });
@@ -64,8 +71,8 @@ describe("platform claims match what the server serves", () => {
     for (const tool of await shippedTools()) {
       const found = capabilityOf(tool.name);
       if (!found) continue; // covered by the undeclared-capability test below
-      const [capName, cap] = found;
-      const serves = new Set(cap.platforms);
+      const [capName] = found;
+      const serves = new Set(platformsFor(capName));
       for (const p of claimed(proseOf(tool))) {
         if (!serves.has(p)) {
           offenders.push(`${tool.name} claims ${p}, but ${capName} cannot reach it`);
@@ -82,9 +89,9 @@ describe("platform claims match what the server serves", () => {
     for (const tool of await shippedTools()) {
       const found = capabilityOf(tool.name);
       if (!found || !found[1].enumerating.includes(tool.name)) continue;
-      const [capName, cap] = found;
+      const [capName] = found;
       const named = claimed(proseOf(tool));
-      const missing = cap.platforms.filter((p) => !named.has(p));
+      const missing = platformsFor(capName).filter((p) => !named.has(p));
       if (missing.length) {
         offenders.push(`${tool.name} does not mention ${missing.join(", ")} — ${capName} serves them`);
       }
@@ -97,11 +104,9 @@ describe("platform claims match what the server serves", () => {
     // route, not the boundary; everything else is transcribed by listening.
     const offenders: string[] = [];
     for (const [capName, cap] of Object.entries(CAPABILITIES)) {
-      if (!cap.listIsFastPath) continue;
+      if (listIsCeiling(capName)) continue;
       for (const name of cap.enumerating) {
-        offenders.push(
-          `${name} enumerates ${capName}, whose list is a fast path, not a ceiling (${cap.beyondList})`,
-        );
+        offenders.push(`${name} enumerates ${capName}, whose list is a fast path, not a ceiling`);
       }
     }
     expect(offenders).toEqual([]);
@@ -113,7 +118,8 @@ describe("platform claims match what the server serves", () => {
     const offenders: string[] = [];
     const tools = await shippedTools();
     for (const [capName, cap] of Object.entries(CAPABILITIES)) {
-      for (const platform of Object.keys(cap.caveats ?? {})) {
+      const flagged = [...new Set([...commentsUnavailable(capName), ...Object.keys(cap.caveats ?? {})])];
+      for (const platform of flagged) {
         for (const name of [...cap.enumerating, ...(cap.quiet ?? [])]) {
           const tool = tools.find((t) => t.name === name);
           if (!tool) continue;
