@@ -35,7 +35,7 @@ export const TOOL_DEFINITIONS = [
  name: "get_post_comments",
  title: "Get Post Comments",
  description: "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X, Weibo, Bilibili or LinkedIn (plus keyword clusters from TikTok Analytics when available) — audience sentiment/audience-signal analysis. (20 free credits for new users). Use when you want to read what people actually wrote; use analyze_comments when you want it synthesised into what to do next. Consumes 2 nooticr credits.",
- inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Weibo/Bilibili/LinkedIn). Xiaohongshu comments cannot be fetched upstream."), limit: z.number().int().optional().describe("Max comments (default 20).") }).strict(),
+ inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Weibo/Bilibili/LinkedIn). Not searchable here: xiaohongshu — it publishes no comment endpoint."), limit: z.number().int().optional().describe("Max comments (default 20).") }).strict(),
  },
  {
  name: "search_creators",

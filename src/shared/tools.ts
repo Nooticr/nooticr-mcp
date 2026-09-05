@@ -1062,7 +1062,7 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.get_post_comments,
    inputSchema: z
     .object({
-     url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Weibo/Bilibili/LinkedIn). Xiaohongshu comments cannot be fetched upstream."),
+     url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Weibo/Bilibili/LinkedIn). Not searchable here: xiaohongshu — it publishes no comment endpoint."),
      limit: z.number().int().optional().describe("Max comments (default 20)."),
     })
     .strict(),
