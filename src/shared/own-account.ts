@@ -9,9 +9,11 @@
  * (crates/server/src/mcp_tools.rs) — this file is what makes that subset
  * reachable from Claude/ChatGPT, which is the whole gap.
  *
- * Billing is not uniform across these seven tools, and that is deliberate,
+ * Billing is not uniform across these ten tools, and that is deliberate,
  * not a bug to paper over:
- *  - list_own_apps and get_content_plan are free reads.
+ *  - list_own_apps, get_scheduled_posts, get_post_performance,
+ *    get_video_stats and get_content_plan are free reads — nooticr's own
+ *    already-stored data, never an upstream call.
  *  - review_post calls AI but the dashboard's own pre-publish review has
  *    never billed for it, so neither does this.
  *  - draft_post, growth_brief, generate_content_plan and generate_captions
@@ -19,6 +21,16 @@
  *    personal MCP credits every other tool in this file spends, and one
  *    check_nooticr_credits does not report on. Their descriptions say so
  *    explicitly rather than implying "free" by omitting a credit count.
+ *
+ * get_scheduled_posts, get_post_performance and get_video_stats are the
+ * measurement half of the same gap `growth_brief` only half-closed:
+ * `growth_brief` hands back a narrative built from these same numbers, and
+ * an agent asked to check whether something it made actually worked had no
+ * way to see the numbers themselves — only nooticr's plain-language opinion
+ * of them. All three already existed as tool descriptors in nooticr-server's
+ * `/mcp` dispatch (`crates/server/src/mcp_tools.rs`'s `own_account_read`,
+ * reusing `copilot_tools::execute_tool` exactly like `list_own_apps` and
+ * `get_content_plan` above); this file is what makes them reachable here.
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -69,6 +81,115 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         return toResult(await client.callTool("list_own_apps", {}));
       } catch (err) {
         return failed("list_own_apps failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_scheduled_posts",
+    {
+      title: "Get Scheduled Posts",
+      description:
+        "Your own scheduled and draft posts in the content pipeline — title, status, scheduled " +
+        "time, approval status. What is queued to publish, not what already has (see " +
+        "get_post_performance for that). Does not publish or change anything. No cost to call.",
+      _meta: viewMeta("get_scheduled_posts"),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
+          limit: z.number().int().optional().describe("Max rows (default 20, capped at 50)."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.get_scheduled_posts,
+    },
+    async (args: { appId?: number; limit?: number }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("get_scheduled_posts", args));
+      } catch (err) {
+        return failed("get_scheduled_posts failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_post_performance",
+    {
+      title: "Get Post Performance",
+      description:
+        "Your own already-published posts with their engagement counters — views, likes, " +
+        "comments, shares, platform, post date. This is the raw performance history, not an " +
+        "interpretation of it; pair with growth_brief for that. No cost to call.",
+      _meta: viewMeta("get_post_performance"),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
+          limit: z.number().int().optional().describe("Max rows (default 15, capped at 50)."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.get_post_performance,
+    },
+    async (args: { appId?: number; limit?: number }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("get_post_performance", args));
+      } catch (err) {
+        return failed("get_post_performance failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_video_stats",
+    {
+      title: "Get Video Stats",
+      description:
+        "Your own most recently synced video performance stats across every connected creator — " +
+        "views, likes, comments, shares, plus a running total. Reads the last sync; does not " +
+        "trigger a new one. No cost to call.",
+      _meta: viewMeta("get_video_stats"),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
+          limit: z.number().int().optional().describe("Max videos (default 20, capped at 50)."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.get_video_stats,
+    },
+    async (args: { appId?: number; limit?: number }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        const result = toResult(await client.callTool("get_video_stats", args));
+        // Reused rather than given a fourth rendering branch: a video row here
+        // (id, title, platform, views, likes, comments, shares) is structurally
+        // the same object ui-template.ts's shared "posts gallery" branch
+        // already draws (`d.posts && Array.isArray(d.posts)` in renderView) for
+        // get_post_performance. `videos` stays untouched for a caller reading
+        // the declared field; `posts` is an alias added only so that existing
+        // gallery renders it, the same trick show_comment_review plays on the
+        // monitoring view's shape.
+        const structured = result.structuredContent;
+        if (structured && Array.isArray(structured.videos) && structured.posts === undefined) {
+          return { ...result, structuredContent: { ...structured, posts: structured.videos } };
+        }
+        return result;
+      } catch (err) {
+        return failed("get_video_stats failed", err);
       }
     },
   );

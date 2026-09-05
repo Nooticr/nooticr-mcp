@@ -230,6 +230,9 @@ describe("tool surface", () => {
     "list_brand_watches",
     "stop_brand_watch",
     "list_own_apps",
+    "get_scheduled_posts",
+    "get_post_performance",
+    "get_video_stats",
     "get_content_plan",
     "review_post",
     "draft_post",
@@ -339,6 +342,9 @@ describe("tool surface", () => {
       "show_audience_replies",
       // Own-account reads: nooticr's own already-stored data, never billed.
       "list_own_apps",
+      "get_scheduled_posts",
+      "get_post_performance",
+      "get_video_stats",
       "get_content_plan",
       // Calls AI but the dashboard's own pre-publish review has never
       // billed for it, so nor does this.
