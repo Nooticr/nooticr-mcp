@@ -52,6 +52,76 @@ export interface EvidencePlan {
 
 const url = (a: Record<string, unknown>) => String(a.url ?? "");
 
+/**
+ * Platforms whose accounts can be found by NAME. This is the backend's
+ * search_creators enum, not a preference — no other network has a keyword
+ * search behind it, so on the rest a handle has to arrive from outside.
+ */
+export const NAME_SEARCHABLE = ["tiktok", "instagram", "xiaohongshu"] as const;
+
+/**
+ * The `platform` argument description every tool sharing the silent tiktok
+ * default should use.
+ *
+ * Saying "default tiktok" was technically true and operationally useless: it
+ * reads as a harmless convenience rather than as the thing that will answer a
+ * question about X with TikTok data. The default cannot simply be removed —
+ * hosts already call these without it — so the description has to carry the
+ * warning instead.
+ */
+export const PLATFORM_ARG =
+  "Platform. Defaults to tiktok, so SET IT whenever the user named a network — otherwise a " +
+  "question about X, LinkedIn or Reddit is silently answered with TikTok data, and an empty " +
+  "result looks like the account does not exist. Accepts what get_user_posts does: tiktok, " +
+  "instagram, youtube, douyin, xiaohongshu, twitter, bilibili, linkedin, reddit, weibo.";
+
+/**
+ * What to say when a handle lookup comes back empty.
+ *
+ * Written because of a real session: someone asked what a competitor was doing
+ * on X, the tool searched TikTok (the silent default), found nothing, offered
+ * to guess another TikTok handle, and gave up. Every part of that was the
+ * surface's fault. It never said which network it had searched, so the wrong
+ * one looked like an absent account; and an empty result carried no next step,
+ * so the only move left was to apologise.
+ *
+ * The fix is to be specific about what happened and to hand back the one step
+ * that actually works. We cannot search X, LinkedIn or Reddit by name — but the
+ * model calling us can search the open web, and `get_user_posts` will happily
+ * fetch any of them once it has the handle. So ask for that rather than
+ * substituting a network the user did not ask about.
+ */
+export function handleMissGuidance(a: {
+  handle: string;
+  platform: string;
+  defaulted: boolean;
+}): string {
+  const searchable = (NAME_SEARCHABLE as readonly string[]).includes(a.platform);
+  const lines = [
+    `No posts for @${a.handle} on ${a.platform}.`,
+    "",
+    a.defaulted
+      ? `Note that ${a.platform} was the default here — it was not asked for. If the user named a ` +
+        "different network, call this again with `platform` set to it before concluding anything: " +
+        "an empty result on the wrong network says nothing about the account they meant."
+      : `That is the network that was searched, so the account either does not exist there, is ` +
+        "private, or uses a different handle.",
+    "",
+    searchable
+      ? `${a.platform} can be searched by name: call search_creators with the brand or person as ` +
+        "the keyword to find the right handle, then come back."
+      : `${a.platform} cannot be searched by name here — there is no keyword index behind it, so ` +
+        "guessing handles will not converge. Find the account yourself with a web search, or ask " +
+        "the user for the handle or profile URL, then call this again with that. Do NOT quietly " +
+        "switch to a network you can search instead: answering about TikTok when the question " +
+        "was about X is worse than saying you need the handle.",
+    "",
+    "Say plainly that nothing was found and which network was checked. Do not present an empty " +
+      "result as evidence the competitor is inactive.",
+  ];
+  return lines.filter((l, i, all) => !(l === "" && all[i - 1] === "")).join("\n");
+}
+
 /** Closing line every guidance block shares. */
 export const ownIt =
   "Reason over this yourself rather than asking for an interpretation of it — " +

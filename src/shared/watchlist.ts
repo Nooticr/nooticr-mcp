@@ -48,6 +48,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { confirmSpend, declinedResult, CREDITS_PER_CREATOR } from "./spend.js";
+import { PLATFORM_ARG } from "./evidence.js";
 
 export const WATCHLIST_URI = "nooticr://watchlist";
 
@@ -533,7 +534,7 @@ export function registerWatchlist(
       inputSchema: z
         .object({
           username: z.string().describe("Creator handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           note: z.string().optional().describe("Why you are watching them — shown back to you later."),
         })
         .strict(),
@@ -576,7 +577,7 @@ export function registerWatchlist(
       inputSchema: z
         .object({
           username: z.string().describe("Creator handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
         })
         .strict(),
       outputSchema: z

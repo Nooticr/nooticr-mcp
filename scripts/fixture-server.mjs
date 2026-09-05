@@ -187,20 +187,29 @@ function handleMcpCall(name, args, workspaceId) {
     }
     case "get_user_posts": {
       const username = String(args?.username ?? "fixture_user");
-      const posts = [1, 2, 3].map((i) => ({
-        platform: "tiktok",
-        caption: `Post ${i} by ${username}`,
-        creatorHandle: username,
-        externalUrl: `https://www.tiktok.com/@${username}/video/${i}`,
-        videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
-        contentType: "video",
-        views: 1000 * i,
-        likes: 100 * i,
-        comments: 10 * i,
-      }));
+      // Echo the platform asked for rather than hardcoding tiktok: several
+      // tools default the argument silently, and a fixture that always says
+      // "tiktok" cannot tell a honoured platform from an ignored one.
+      const platform = String(args?.platform ?? "tiktok").toLowerCase();
+      // A handle that finds nothing is a real case with its own guidance path
+      // (the competitor-on-the-wrong-network failure), and the generic empty
+      // response cannot exercise it. Any handle starting `missing_` misses.
+      const posts = username.startsWith("missing_")
+        ? []
+        : [1, 2, 3].map((i) => ({
+            platform,
+            caption: `Post ${i} by ${username}`,
+            creatorHandle: username,
+            externalUrl: `https://www.tiktok.com/@${username}/video/${i}`,
+            videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
+            contentType: "video",
+            views: 1000 * i,
+            likes: 100 * i,
+            comments: 10 * i,
+          }));
       return {
         content: [{ type: "text", text: `Found ${posts.length} fixture posts for ${username}.` }],
-        structuredContent: { platform: "tiktok", username, posts },
+        structuredContent: { platform, username, posts },
       };
     }
     case "get_similar_creators": {
