@@ -50,6 +50,13 @@ const NOT_READ_ONLY = [
   // Same billing, same conclusion — this one was missed because it writes
   // nothing of the user's, but the credits alone put it here.
   "growth_brief",
+  // Starts an async analysis job every call (a fresh jobId, spending plan AI
+  // credits) — same conclusion as the generation tools above, for the same
+  // reason connect_social_account is on this list: a retry is not a no-op.
+  "analyze_product",
+  // Each creates or patches a real row in the workspace's own products table.
+  "create_product",
+  "update_product",
   // The exception to the billing rule: free, and still not read-only.
   // Given a postId it saves the review and score onto that scheduled post,
   // overwriting the previous one.
@@ -63,7 +70,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(54);
+    expect(tools).toHaveLength(64);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -87,6 +94,12 @@ describe("tool annotations", () => {
     // Only the account tools stay inside nooticr; everything else hits a platform.
     // The watchlist tools that only touch stored state are closed-world too.
     expect(closed.sort()).toEqual([
+      // Own-account tools: every one of these reads or generates for the
+      // caller's own product, never a third party's — nothing here reaches
+      // outside nooticr. analyze_product is the one exception (see below):
+      // it fetches an excerpt of the product's own website, a real reach
+      // outside nooticr, so it is deliberately absent from this list.
+      "analyze_product_status",
       "check_nooticr_credits",
       // Mints a connect link (nooticr's own oauth_start), never a third-party
       // read or write.
@@ -94,19 +107,25 @@ describe("tool annotations", () => {
       // All three touch nooticr's own stored watch state; the sweep a watch
       // schedules runs later, server-side, never inside the call itself.
       "create_brand_watch",
-      // Own-account tools: every one of these reads or generates for the
-      // caller's own product, never a third party's — nothing here reaches
-      // outside nooticr.
+      "create_product",
       "draft_post",
       "generate_captions",
       "generate_content_plan",
+      "get_brand_playbook",
       "get_content_plan",
+      "get_post_performance",
+      "get_scheduled_posts",
+      "get_video_stats",
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
       // Reads nooticr's own connection records, not a third-party network.
       "list_social_connections",
       "nooticr_login",
+      // Formats what the caller classified into text for a tracker on another
+      // server. It holds no tracker credential and makes the call to nobody:
+      // the filing happens on whichever server the host also has connected.
+      "prepare_handoff",
       "review_post",
       // The show_* family: each draws what the caller already wrote/fetched
       // and reaches nothing.
@@ -114,6 +133,10 @@ describe("tool annotations", () => {
       // Renders drafts the caller already wrote; fetches nothing, and cannot
       // send them either — no connection carries comment-write permission.
       "show_audience_replies",
+      // Renders scores the caller reached by reading a candidate's links —
+      // and it is the caller that opened them, not us. See collab.ts for why
+      // this server never fetches a URL out of a stranger's bio.
+      "show_collab_shortlist",
       // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
       "show_comparison",
@@ -122,6 +145,7 @@ describe("tool annotations", () => {
       "show_variants",
       "stop_brand_watch",
       "unwatch_creator",
+      "update_product",
       "watch_creator",
     ]);
   });
@@ -132,10 +156,13 @@ describe("prompts", () => {
     const { prompts } = await (await connect()).listPrompts();
     expect(prompts.map((p) => p.name).sort()).toEqual([
       "check_my_draft",
+      "monitor_my_brand",
       "niche_briefing",
       "post_teardown",
       "repurpose_everywhere",
+      "set_up_my_product",
       "teardown_creator",
+      "watch_a_competitor",
       "what_to_make_next",
       "why_this_won",
     ]);
@@ -158,6 +185,9 @@ describe("prompts", () => {
       why_this_won: ["urls"],
       what_to_make_next: ["url"],
       repurpose_everywhere: ["url"],
+      set_up_my_product: [],
+      watch_a_competitor: ["competitor"],
+      monitor_my_brand: ["brand"],
     });
   });
 
@@ -188,6 +218,80 @@ describe("prompts", () => {
       r.messages.map((m) => (m.content as { text: string }).text).join("\n");
     expect(textOf(cheap)).toContain("Skip analyze_post");
     expect(textOf(rich)).not.toContain("Skip analyze_post");
+  });
+
+  it("orders the competitor watch cheapest-evidence-first", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({
+      name: "watch_a_competitor",
+      arguments: { competitor: "Acme, acme.com" },
+    });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    // Discovery before the teardown, the teardown before the free watchlist
+    // write, and watching before the paid baseline check that depends on it.
+    expect(text.indexOf("search_creators")).toBeLessThan(text.indexOf("analyze_creator_profile"));
+    expect(text.indexOf("analyze_creator_profile")).toBeLessThan(text.indexOf("watch_creator"));
+    expect(text.indexOf("watch_creator")).toBeLessThan(text.indexOf("track_competitor"));
+    expect(text.indexOf("track_competitor")).toBeLessThan(text.indexOf("catch_up_watchlist"));
+    expect(text).toContain("Acme, acme.com");
+  });
+
+  it("orders brand monitoring cheapest-evidence-first", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({
+      name: "monitor_my_brand",
+      arguments: { brand: "nooticr" },
+    });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    // The cheaper typed-text sweep before the pricier spoken-mention pass,
+    // and classification/filing before the standing watch is even offered.
+    // Anchored on the numbered steps, not a bare substring — the prompt also
+    // names search_spoken_mentions earlier, in the web-search framing.
+    expect(text.indexOf("1. search_mentions")).toBeLessThan(text.indexOf("2. search_spoken_mentions"));
+    expect(text.indexOf("2. search_spoken_mentions")).toBeLessThan(text.indexOf("4. prepare_handoff"));
+    expect(text.indexOf("4. prepare_handoff")).toBeLessThan(text.indexOf("5. create_brand_watch"));
+  });
+
+  it("tells the model to resolve a name to a handle itself before spending anything", async () => {
+    const client = await connect();
+    const competitor = await client.getPrompt({
+      name: "watch_a_competitor",
+      arguments: { competitor: "Acme, acme.com" },
+    });
+    const brand = await client.getPrompt({
+      name: "monitor_my_brand",
+      arguments: { brand: "nooticr" },
+    });
+    const textOf = (r: Awaited<ReturnType<Client["getPrompt"]>>) =>
+      r.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    for (const text of [textOf(competitor), textOf(brand)]) {
+      expect(text).toMatch(/web-search/i);
+      // Says what a wrong guess costs, so the model does not treat a bad
+      // handle and a genuinely quiet account as the same finding.
+      expect(text).toContain("2 credits");
+      expect(text.toLowerCase()).toContain("returns nothing");
+    }
+  });
+
+  it("gates create_brand_watch's recurring charge behind a person actually agreeing", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({
+      name: "monitor_my_brand",
+      arguments: { brand: "nooticr" },
+    });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    expect(text).toContain("two-call quote-then-confirm");
+    expect(text).toContain("confirm: true");
+    expect(text).toMatch(/never happen without the user actually seeing/i);
+  });
+
+  it("is honest that set_up_my_product cannot create a product over MCP", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({ name: "set_up_my_product", arguments: {} });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    expect(text).toContain("there is no tool here that creates a product");
+    expect(text).toContain("https://nooticr.com");
+    expect(text).not.toMatch(/web-search/i);
   });
 });
 

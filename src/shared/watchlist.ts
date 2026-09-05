@@ -18,11 +18,30 @@
  * indefensible. Catching up is a tool, because it fetches, and it says what it
  * costs.
  *
- * WHERE THIS SHOULD LIVE EVENTUALLY: in the nooticr account, not here. The two
- * transports keep it in different places — a file beside the credentials for
- * stdio, KV for the worker — so the same person on ChatGPT and on Claude
- * Desktop today has two watchlists. Both implementations sit behind WatchStore
- * so that when the backend grows an endpoint there is one thing to replace.
+ * WHERE IT LIVES: in the nooticr account. It did not always — the two
+ * transports each kept their own copy (a file beside the credentials for
+ * stdio, KV for the worker), so the same person on ChatGPT and on Claude
+ * Desktop had two lists and a server-side scheduler could read neither.
+ * `BackendWatchStore` below is the swap: the same `WatchStore` interface, over
+ * nooticr-server's workspace-scoped `list_watchlist` / `watch_creator` /
+ * `unwatch_creator` / `get_watchlist_baseline` / `advance_watchlist_baseline`.
+ *
+ * Two things about that are worth knowing before changing anything here.
+ *
+ * The swap is at the store, not at the tool layer, and that was the point.
+ * The backend registers tools with the same names this file already
+ * registers, and only one registration under a name can win — but renaming
+ * either side would break whichever hosts had already learned the old one,
+ * for a tool whose whole promise is "what you called before still works". So
+ * nothing about the surface moved. `watch_creator`, `unwatch_creator`,
+ * `catch_up_watchlist` and `track_competitor` keep their names, arguments and
+ * behaviour; only the bytes moved, and the backend's own twins stay
+ * unregistered here because they would be a second, disconnected list.
+ *
+ * The stores above are still live and still matter. They are the fallback for
+ * an account with no workspace or a backend too old to have the tools, and
+ * they are what the one-time migration reads from. Deleting one because "the
+ * watchlist is in the account now" would strand exactly those users.
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -158,6 +177,259 @@ export class FileWatchStore implements WatchStore {
     all[owner] = kept;
     await this.write(all);
     return true;
+  }
+}
+
+/**
+ * The watchlist, kept in the nooticr account rather than beside the client.
+ *
+ * This is what the docblock at the top of this file called the real fix. The
+ * stores above keep a list per *connection* — a file next to the credentials
+ * on stdio, a KV entry on the Worker — so the same person on Claude Desktop
+ * and on ChatGPT had two, and a server-side scheduler could read neither.
+ *
+ * The swap is deliberately at `WatchStore` rather than at the tool layer.
+ * `watch_creator`, `unwatch_creator`, `catch_up_watchlist` and
+ * `track_competitor` keep their names, their arguments and their behaviour;
+ * only where the bytes live changes. That is the whole reason the collision
+ * with the backend's identically-named tools was not worth solving by
+ * renaming anything: a host that already learned `watch_creator` keeps
+ * working, and it now writes somewhere the other host can see.
+ *
+ * ## Why `put` diffs instead of writing
+ *
+ * `WatchStore.put` takes a whole entry, because a file store can just
+ * overwrite one. The backend splits the same write in two: `watch_creator`
+ * upserts the handle and note, `advance_watchlist_baseline` moves one of the
+ * two markers. Replaying both on every `put` would work and would also reset
+ * `capturedAt` to now each time — so "what is new since you last looked"
+ * would answer "since a moment ago" and report nothing. So a baseline is
+ * pushed only when its post ids actually changed, measured against the
+ * snapshot the caller's own `list()` just returned.
+ *
+ * ## Why it can still fall back
+ *
+ * The backend tools need a workspace, and an account that has only ever used
+ * the MCP surface may not have one; an older server does not have the tools
+ * at all. Both are permanent facts about the session rather than blips, so on
+ * either one this falls back to the local store for the rest of the process
+ * and says so once. Anything else — a timeout, a 500 — is rethrown rather
+ * than quietly redirected: silently writing to a different store than the one
+ * that was read is how a watchlist ends up split in half, which is the exact
+ * problem this class exists to end.
+ */
+export class BackendWatchStore implements WatchStore {
+  /** What the last `list()` returned, so `put` can tell what changed. */
+  private readonly seen = new Map<string, Map<string, WatchEntry>>();
+  /** Owners whose local entries are all in the account now. */
+  private readonly migrated = new Set<string>();
+  /** Owners a migration has been tried for, so a retry knows it is one. */
+  private readonly attempted = new Set<string>();
+  /** Set once the backend has told us it cannot serve this session at all. */
+  private unavailable: string | null = null;
+
+  constructor(
+    private readonly client: () => Promise<NooticrClient> | NooticrClient,
+    private readonly local: WatchStore,
+  ) {}
+
+  /**
+   * True for the two answers that mean "not now, and not later either".
+   *
+   * Matched on the message because that is all a JSON-RPC error carries back
+   * through the proxy. Kept narrow on purpose: a wider match would swallow a
+   * transient failure and silently split the list.
+   */
+  private static isPermanent(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    return (
+      /has no workspace/i.test(msg) ||
+      /method not found/i.test(msg) ||
+      /unknown tool/i.test(msg) ||
+      /-32601/.test(msg)
+    );
+  }
+
+  private async call(tool: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const client = await this.client();
+    const res = await client.callTool(tool, args);
+    return (res.structured ?? {}) as Record<string, unknown>;
+  }
+
+  /** Runs `fn` against the backend, or falls back for good if it cannot. */
+  private async viaBackend<T>(fn: () => Promise<T>, fallback: () => Promise<T>): Promise<T> {
+    if (this.unavailable) return fallback();
+    try {
+      return await fn();
+    } catch (err) {
+      if (!BackendWatchStore.isPermanent(err)) throw err;
+      this.unavailable = err instanceof Error ? err.message : String(err);
+      process.stderr.write(
+        `[nooticr-mcp] watchlist: staying on local storage for this session (${this.unavailable})\n`,
+      );
+      return fallback();
+    }
+  }
+
+  private static toEntry(raw: unknown): WatchEntry | null {
+    const r = (raw ?? {}) as Record<string, unknown>;
+    const platform = String(r.platform ?? "");
+    const handle = String(r.handle ?? "");
+    if (!platform || !handle) return null;
+    const baseline = r.baseline as WatchEntry["baseline"] | null | undefined;
+    const competitor = r.competitorBaseline as WatchEntry["competitorBaseline"] | null | undefined;
+    return {
+      id: String(r.id ?? watchEntryId(platform, handle)),
+      platform,
+      handle,
+      note: r.note ? String(r.note) : undefined,
+      addedAt: String(r.addedAt ?? new Date().toISOString()),
+      ...(baseline ? { baseline } : {}),
+      ...(competitor ? { competitorBaseline: competitor } : {}),
+    };
+  }
+
+  /** Two baselines are the same when they cover the same posts. */
+  private static sameIds(a?: { postIds?: string[] }, b?: { postIds?: string[] }): boolean {
+    const x = a?.postIds ?? null;
+    const y = b?.postIds ?? null;
+    if (!x || !y) return x === y;
+    return x.length === y.length && x.every((id, i) => id === y[i]);
+  }
+
+  /**
+   * Hand the local list over once, and only into an empty backend.
+   *
+   * A non-empty backend already has the user's real list — overwriting it with
+   * a stale per-connection copy would be the migration losing data rather than
+   * moving it. Failure to migrate one entry is not failure to read the list,
+   * so it is reported and stepped over.
+   */
+  private async migrateOnce(owner: string, remote: WatchEntry[]): Promise<WatchEntry[]> {
+    if (this.migrated.has(owner)) return remote;
+    const firstLook = !this.attempted.has(owner);
+    this.attempted.add(owner);
+
+    // On the first look a non-empty account wins outright: it already holds
+    // the real list, and dropping a stale per-connection copy on top would be
+    // the migration losing data rather than moving it.
+    if (firstLook && remote.length) {
+      this.migrated.add(owner);
+      return remote;
+    }
+
+    const mine = await this.local.list(owner);
+    // Anything already up there is not a candidate — which is what makes a
+    // retry safe. After a partial migration the account is non-empty *because
+    // of us*, so the rule above would otherwise strand whatever failed: the
+    // account would have half the list and the rest would never be looked at
+    // again.
+    const present = new Set(remote.map((e) => e.id));
+    const todo = mine.filter((e) => !present.has(e.id));
+    if (!todo.length) {
+      this.migrated.add(owner);
+      return remote;
+    }
+
+    let moved = 0;
+    for (const entry of todo) {
+      try {
+        await this.pushEntry(entry, undefined);
+        moved += 1;
+      } catch (err) {
+        process.stderr.write(
+          `[nooticr-mcp] watchlist: could not migrate ${entry.id}: ${
+            err instanceof Error ? err.message : String(err)
+          }\n`,
+        );
+      }
+    }
+    // Only done when everything landed. Retrying is cheap — `watch_creator`
+    // upserts and the baselines are diffed — so the safe direction is to try
+    // the stragglers again on the next read.
+    if (moved === todo.length) this.migrated.add(owner);
+    process.stderr.write(
+      `[nooticr-mcp] watchlist: moved ${moved} of ${todo.length} creator(s) into your nooticr ` +
+        `account; they are now shared across every host you connect from\n`,
+    );
+    return this.readRemote();
+  }
+
+  private async readRemote(): Promise<WatchEntry[]> {
+    const payload = await this.call("list_watchlist", {});
+    const rows = Array.isArray(payload.entries) ? payload.entries : [];
+    return rows
+      .map((r) => BackendWatchStore.toEntry(r))
+      .filter((e): e is WatchEntry => e !== null)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  /** The upsert plus whichever baselines actually moved. */
+  private async pushEntry(entry: WatchEntry, before: WatchEntry | undefined): Promise<void> {
+    await this.call("watch_creator", {
+      handle: entry.handle,
+      platform: entry.platform,
+      ...(entry.note ? { note: entry.note } : {}),
+    });
+    if (entry.baseline && !BackendWatchStore.sameIds(before?.baseline, entry.baseline)) {
+      await this.call("advance_watchlist_baseline", {
+        handle: entry.handle,
+        platform: entry.platform,
+        kind: "catch_up",
+        postIds: entry.baseline.postIds,
+        ...(entry.baseline.topViews === undefined ? {} : { topViews: entry.baseline.topViews }),
+      });
+    }
+    if (
+      entry.competitorBaseline &&
+      !BackendWatchStore.sameIds(before?.competitorBaseline, entry.competitorBaseline)
+    ) {
+      await this.call("advance_watchlist_baseline", {
+        handle: entry.handle,
+        platform: entry.platform,
+        kind: "competitor",
+        postIds: entry.competitorBaseline.postIds,
+      });
+    }
+  }
+
+  async list(owner: string): Promise<WatchEntry[]> {
+    return this.viaBackend(
+      async () => {
+        const entries = await this.migrateOnce(owner, await this.readRemote());
+        this.seen.set(owner, new Map(entries.map((e) => [e.id, e])));
+        return entries;
+      },
+      () => this.local.list(owner),
+    );
+  }
+
+  async put(owner: string, entry: WatchEntry): Promise<void> {
+    return this.viaBackend(
+      async () => {
+        await this.pushEntry(entry, this.seen.get(owner)?.get(entry.id));
+        let mine = this.seen.get(owner);
+        if (!mine) this.seen.set(owner, (mine = new Map()));
+        mine.set(entry.id, entry);
+      },
+      () => this.local.put(owner, entry),
+    );
+  }
+
+  async remove(owner: string, id: string): Promise<boolean> {
+    return this.viaBackend(
+      async () => {
+        const [platform, ...rest] = id.split(":");
+        const handle = rest.join(":");
+        if (!platform || !handle) return false;
+        const payload = await this.call("unwatch_creator", { handle, platform });
+        this.seen.get(owner)?.delete(id);
+        // `removed` is the backend's own boolean for "a row went away", which
+        // is exactly the contract the local stores return.
+        return payload.removed === true;
+      },
+      () => this.local.remove(owner, id),
+    );
   }
 }
 

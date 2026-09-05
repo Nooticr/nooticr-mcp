@@ -241,7 +241,15 @@ describe("tool surface", () => {
     "list_brand_watches",
     "stop_brand_watch",
     "list_own_apps",
+    "create_product",
+    "update_product",
+    "get_scheduled_posts",
+    "get_post_performance",
+    "get_video_stats",
     "get_content_plan",
+    "get_brand_playbook",
+    "analyze_product",
+    "analyze_product_status",
     "review_post",
     "draft_post",
     "growth_brief",
@@ -289,6 +297,10 @@ describe("tool surface", () => {
     "why_did_this_underperform",
     "what_should_i_make_next",
     "search_spoken_mentions",
+    // Neither fetches: one packages what the model classified for a tracker
+    // on another server, the other draws the shortlist it scored.
+    "prepare_handoff",
+    "show_collab_shortlist",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -356,7 +368,16 @@ describe("tool surface", () => {
       "show_audience_replies",
       // Own-account reads: nooticr's own already-stored data, never billed.
       "list_own_apps",
+      "get_scheduled_posts",
+      "get_post_performance",
+      "get_video_stats",
       "get_content_plan",
+      "get_brand_playbook",
+      // Plain rows, no AI call — same reasoning as the reads above.
+      "create_product",
+      "update_product",
+      // Only polls a job analyze_product already paid to start; free itself.
+      "analyze_product_status",
       // Calls AI but the dashboard's own pre-publish review has never
       // billed for it, so nor does this.
       "review_post",
@@ -364,6 +385,12 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // Formats what the caller classified for a tracker elsewhere. The only
+      // network call in that chain is the one the other server makes.
+      "prepare_handoff",
+      // Draws the shortlist the caller scored; the fetches that produced the
+      // score were the host's own, not ours.
+      "show_collab_shortlist",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;
