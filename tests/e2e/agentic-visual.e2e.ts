@@ -5,12 +5,15 @@
  * (thorough on widget logic, never touches the real MCP pipeline);
  * scripts/mcp-smoke-client.mjs and run-agentic-evals.sh drive a real
  * tools/call round trip (thorough on the pipeline, never renders or clicks
- * anything). This spec does both in one flow: boot a real backend
- * (scripts/fixture-server.mjs by default — see its header for what that
- * does and doesn't stand in for), make a real tools/call through this
- * repo's real built CLI, take the *real* structuredContent that came back,
- * render the real widget with it, and click the actual buttons a user
- * would — proving the whole chain, not just the widget in isolation.
+ * anything). This spec does both, across two structurally different
+ * clicks: boot a real backend (scripts/fixture-server.mjs by default — see
+ * its header for what that does and doesn't stand in for), make a real
+ * tools/call through this repo's real built CLI, take the *real*
+ * structuredContent that came back, render the real widget with it, and
+ * click the actual buttons a user would (pick two posts and press Compare;
+ * press "Open on ...") — proving the whole chain, not just the widget in
+ * isolation. Screenshots of each rendered/clicked state land under
+ * test-results/visual-e2e/ (gitignored) for a human to actually look at.
  *
  * Needs dist/index.js built (this spec builds it itself if missing) and a
  * Chromium install (npx playwright install --with-deps chromium).
@@ -115,38 +118,49 @@ async function fetchRealDiscoverPostsResult(): Promise<unknown> {
   }
 }
 
+/** Renders NOOTICR_UI_TEMPLATE with real structuredContent and installs the
+ * same window.parent.postMessage interception the rest of this suite uses,
+ * so a test can assert on exactly what the widget sends its host. */
+async function renderRealResult(page: Page, structuredContent: unknown): Promise<void> {
+  const { NOOTICR_UI_TEMPLATE } = await import("../../src/shared/ui-template.js");
+  await page.setViewportSize({ width: 390, height: 760 });
+  await page.setContent(NOOTICR_UI_TEMPLATE);
+  await page.evaluate(() => {
+    (window as unknown as { __sent: unknown[] }).__sent = [];
+    const orig = window.parent.postMessage.bind(window.parent);
+    window.parent.postMessage = (m: unknown, o: string) => {
+      (window as unknown as { __sent: unknown[] }).__sent.push(JSON.parse(JSON.stringify(m)));
+      return orig(m as never, o as never);
+    };
+  });
+  await page.evaluate(
+    (d) => window.postMessage({ method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+    structuredContent
+  );
+  await page.waitForTimeout(600);
+}
+
+async function sentMessages(page: Page): Promise<{ method: string; params?: unknown }[]> {
+  return page.evaluate(
+    () => (window as unknown as { __sent: { method: string; params?: unknown }[] }).__sent
+  );
+}
+
 test.describe.serial("real tool result rendered and clicked", () => {
   test("discovered posts render, get picked, and Compare emits the right tools/call", async ({ page }: { page: Page }) => {
     const structuredContent = await fetchRealDiscoverPostsResult();
     const posts = (structuredContent as { posts?: Array<{ externalUrl?: string }> }).posts ?? [];
     expect(posts.length, "fixture-server's discover_social_posts should return at least 2 posts").toBeGreaterThanOrEqual(2);
 
-    const { NOOTICR_UI_TEMPLATE } = await import("../../src/shared/ui-template.js");
-    await page.setViewportSize({ width: 390, height: 760 });
-    await page.setContent(NOOTICR_UI_TEMPLATE);
-
-    // Same interception pattern as ui-template.e2e.ts's synthetic version —
-    // capture what the widget actually posts back to its host.
-    await page.evaluate(() => {
-      (window as unknown as { __sent: unknown[] }).__sent = [];
-      const orig = window.parent.postMessage.bind(window.parent);
-      window.parent.postMessage = (m: unknown, o: string) => {
-        (window as unknown as { __sent: unknown[] }).__sent.push(JSON.parse(JSON.stringify(m)));
-        return orig(m as never, o as never);
-      };
-    });
-
     // This is the real structuredContent from a real tools/call, not a
     // hand-crafted fixture — the one thing ui-template.e2e.ts can't cover.
-    await page.evaluate(
-      (d) => window.postMessage({ method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
-      structuredContent
-    );
-    await page.waitForTimeout(600);
+    await renderRealResult(page, structuredContent);
+    await page.screenshot({ path: "test-results/visual-e2e/01-real-discover-posts-rendered.png" });
 
     await page.locator(".mp-pick").nth(0).click();
     await page.locator(".mp-pick").nth(1).click();
     await expect(page.locator("#pickgo")).toBeEnabled();
+    await page.screenshot({ path: "test-results/visual-e2e/02-real-posts-picked.png" });
 
     await page.evaluate(() => {
       (window as unknown as { __sent: unknown[] }).__sent = [];
@@ -154,14 +168,33 @@ test.describe.serial("real tool result rendered and clicked", () => {
     await page.locator("#pickgo").click();
     await page.waitForTimeout(250);
 
-    const sent = await page.evaluate(
-      () => (window as unknown as { __sent: { method: string; params?: unknown }[] }).__sent
-    );
+    const sent = await sentMessages(page);
     const call = sent.find((m) => m.method === "tools/call");
     expect(call, `expected a tools/call, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
     expect(call!.params).toEqual({
       name: "compare_posts",
       arguments: { urls: [posts[0].externalUrl, posts[1].externalUrl] },
     });
+  });
+
+  // A second, structurally different click against a fresh real tools/call:
+  // proves the "Open on ..." button — a ui/open-link message, not a
+  // tools/call — also carries the real backend's URL through correctly, not
+  // just the Compare flow above.
+  test("an 'Open on...' click asks the host to open the real post URL", async ({ page }: { page: Page }) => {
+    const structuredContent = await fetchRealDiscoverPostsResult();
+    const posts = (structuredContent as { posts?: Array<{ externalUrl?: string }> }).posts ?? [];
+    expect(posts.length).toBeGreaterThanOrEqual(1);
+
+    await renderRealResult(page, structuredContent);
+    await page.screenshot({ path: "test-results/visual-e2e/03-real-posts-rendered-again.png" });
+
+    await page.locator(".mp-open").first().click();
+    await page.waitForTimeout(200);
+
+    const sent = await sentMessages(page);
+    const open = sent.find((m) => m.method === "ui/open-link");
+    expect(open, `expected ui/open-link, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
+    expect(open!.params).toEqual({ url: posts[0].externalUrl });
   });
 });
