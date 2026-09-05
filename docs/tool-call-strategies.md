@@ -46,6 +46,36 @@ what "hand data to the LLM to classify" sounds like it should mean:
   interoperability is the id scheme, not a connector this repo would have to
   build and keep credentialed.
 
+### Worked example: a bug report becomes a fixed bug
+
+The concrete case this is built for: `analyze_comments` (and `search_mentions`,
+`answer_my_audience`, `what_should_i_make_next` the same way) hands the
+calling model a comment and its taxonomy — `analyze_comments`'s description
+names the categories explicitly: *"praise, complaint, bug report, question,
+request, comparison, spam."* When the model labels one `bug report`, that
+label lives only in the model's own output — this server never sees or acts
+on it. What makes it actionable is that the comment carrying that label also
+has a stable id (`comment:<postId>:<commentId>`) and the model holding the
+conversation can see it.
+
+So the actual chain, on a host with both this server and a GitHub (or Jira,
+Linear, …) MCP server connected, is:
+
+1. Call `analyze_comments` (or let one of the audience/demand tools surface it
+   as `wantsReply`/`asking`) → get comments back with stable ids.
+2. The model labels one `bug report` and quotes its id and text into a new
+   GitHub issue via the *other* connected server — no code in this repo runs
+   at this step, the calling model is doing the filing.
+3. A coding agent (this one, or any other) picks up that issue later and
+   fixes the actual bug the comment described — an ordinary GitHub-issue
+   workflow at that point, with no dependency on nooticr-mcp at all.
+
+Nothing about this needs a change here: the taxonomy already names "bug
+report" as a first-class label, and the id scheme is what lets step 2 quote
+something specific rather than a paraphrase. If a future tool's comments
+*don't* carry a stable id, that's the actual gap to fix — everything else in
+this chain already composes.
+
 ## Per-tool pipeline
 
 | Tool | Stage 1 (search/list) | Stage 2 (fan-out) | Stage 3 (local pre-sort) | Addressable ids | Stage 4 hand-off |
