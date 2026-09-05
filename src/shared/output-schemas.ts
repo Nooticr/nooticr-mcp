@@ -823,6 +823,66 @@ export const OUTPUT_SCHEMAS = {
     ),
     count: scalar(),
   }),
+  /**
+   * `own_account_read` in crates/server/src/mcp_tools.rs hoists `appId` and
+   * `appName` onto whatever `copilot_tools::execute_tool` returned, so every
+   * own-account read tool that goes through it (get_scheduled_posts,
+   * get_post_performance, get_video_stats) carries both alongside its own
+   * payload.
+   */
+  get_scheduled_posts: open({
+    posts: listOf(
+      open({
+        id: scalar(),
+        title: scalar(),
+        status: scalar(),
+        scheduledAt: scalar(),
+        influencerId: scalar(),
+        approvalStatus: scalar(),
+      }),
+    ),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  get_post_performance: open({
+    posts: listOf(
+      open({
+        id: scalar(),
+        title: scalar(),
+        platform: scalar(),
+        views: scalar(),
+        likes: scalar(),
+        comments: scalar(),
+        shares: scalar(),
+        postedAt: scalar(),
+      }),
+    ),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  /**
+   * `posts` is not part of the backend's reply — own-account.ts's
+   * get_video_stats handler adds it, aliasing `videos`, purely so
+   * ui-template.ts's shared posts-gallery view picks this up. Declared here
+   * too so a host validating structuredContent does not choke on it.
+   */
+  get_video_stats: open({
+    videos: listOf(
+      open({
+        id: scalar(),
+        title: scalar(),
+        platform: scalar(),
+        views: scalar(),
+        likes: scalar(),
+        comments: scalar(),
+        shares: scalar(),
+      }),
+    ),
+    posts: listOf(open({}).passthrough()),
+    summary: open({ totalViews: scalar(), totalLikes: scalar() }).nullish(),
+    appId: scalar(),
+    appName: scalar(),
+  }),
   get_content_plan: open({
     ok: scalar(),
     plan: open({}).nullish().describe("null when no plan has been generated yet."),

@@ -218,6 +218,24 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({}).strict(),
  },
  {
+ name: "get_scheduled_posts",
+ title: "Get Scheduled Posts",
+ description: "Your own scheduled and draft posts in the content pipeline — title, status, scheduled time, approval status. What is queued to publish, not what already has (see get_post_performance for that). Does not publish or change anything. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), limit: z.number().int().optional().describe("Max rows (default 20, capped at 50).") }).strict(),
+ },
+ {
+ name: "get_post_performance",
+ title: "Get Post Performance",
+ description: "Your own already-published posts with their engagement counters — views, likes, comments, shares, platform, post date. This is the raw performance history, not an interpretation of it; pair with growth_brief for that. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), limit: z.number().int().optional().describe("Max rows (default 15, capped at 50).") }).strict(),
+ },
+ {
+ name: "get_video_stats",
+ title: "Get Video Stats",
+ description: "Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), limit: z.number().int().optional().describe("Max videos (default 20, capped at 50).") }).strict(),
+ },
+ {
  name: "get_content_plan",
  title: "Get Content Plan",
  description: "The saved weekly content plan for your own product, if one has been generated (see generate_content_plan). Read-only and free even when a plan exists. Returns plan: null when none has been made yet. No cost to call.",

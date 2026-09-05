@@ -560,6 +560,13 @@ export function createMcpServer(
   "search_spoken_mentions",
   // Own-account intelligence (own-account.ts). list_own_apps stays
   // view-less like watch_creator — it lists metadata, nothing to draw.
+  // get_scheduled_posts and get_post_performance return a `posts` array
+  // shaped exactly like the read tools above, so the same gallery view
+  // draws them; get_video_stats aliases its `videos` to `posts` for the
+  // same reason (see own-account.ts).
+  "get_scheduled_posts",
+  "get_post_performance",
+  "get_video_stats",
   // get_content_plan gets the same card generate_content_plan does: they
   // return the same `plan` shape, so the generic template already renders it.
   "get_content_plan",
