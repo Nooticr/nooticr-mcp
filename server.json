@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.nooticr/mcp",
   "title": "Nooticr",
-  "description": "Social intelligence for 10 networks: read posts, creators and trends, monitor every comment that names your brand, then create from what you learn.",
-  "version": "1.26.17",
+  "description": "Social intelligence for 10 networks: read posts and trends, monitor brand mentions, then create.",
+  "version": "1.26.19",
   "websiteUrl": "https://mcp.nooticr.com",
   "repository": {
     "url": "https://github.com/Nooticr/nooticr-mcp",
@@ -19,7 +19,7 @@
     {
       "registryType": "npm",
       "identifier": "@nooticr/mcp",
-      "version": "1.26.17",
+      "version": "1.26.19",
       "transport": {
         "type": "stdio"
       }

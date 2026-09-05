@@ -50,8 +50,9 @@ jobs:
         working-directory: cloudflare
         run: npm ci --no-audit --no-fund
 
-      # Four files carry the version and the Worker reports the one in src/,
-      # so a hand bump that misses it ships a server that misreports itself.
+      # Five files carry the version and the Worker reports the one in src/,
+      # so a hand bump that misses one ships a server that misreports itself
+      # or, for server.json, advertises a stale version to the MCP registry.
       - name: The version is the same in every file that carries it
         run: |
           set -euo pipefail
@@ -62,14 +63,19 @@ jobs:
             const m = fs.readFileSync("src/shared/tools.ts", "utf8")
               .match(/export const MCP_SERVER_VERSION = "([^"]+)";/);
             const tools = m && m[1];
-            const bad = [["`.claude-plugin/plugin.json`", plugin], ["`src/shared/tools.ts`", tools]]
-              .filter(([, v]) => v !== pkg);
+            const server = JSON.parse(fs.readFileSync("server.json", "utf8"));
+            const bad = [
+              ["`.claude-plugin/plugin.json`", plugin],
+              ["`src/shared/tools.ts`", tools],
+              ["`server.json`", server.version],
+              ["`server.json` packages[0]", server.packages?.[0]?.version],
+            ].filter(([, v]) => v !== pkg);
             if (bad.length) {
               console.error(`::error title=Version drift::package.json is ${pkg}; ` +
                 bad.map(([f, v]) => `${f} is ${v}`).join("; "));
               process.exit(1);
             }
-            console.log(`version ${pkg} agrees across package.json, plugin.json and tools.ts`);
+            console.log(`version ${pkg} agrees across package.json, plugin.json, tools.ts and server.json`);
           '
 
       - name: Typecheck
@@ -321,12 +327,20 @@ jobs:
               `export const MCP_SERVER_VERSION = \"${v}\";`);
             if (next === src) throw new Error("MCP_SERVER_VERSION not found in " + t);
             fs.writeFileSync(t, next);
+            // The MCP registry entry advertises this version to every client
+            // that resolves com.nooticr/mcp — a stale one here just misreports
+            // to the registry, silently, since nothing else reads this file.
+            const s = "server.json";
+            const server = JSON.parse(fs.readFileSync(s, "utf8"));
+            server.version = v;
+            if (server.packages?.[0]) server.packages[0].version = v;
+            fs.writeFileSync(s, JSON.stringify(server, null, 2) + "\n");
           '
           echo "src changed under a version already on npm — bumped $VERSION -> $NEXT."
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json .claude-plugin/plugin.json src/shared/tools.ts
+          git add package.json package-lock.json .claude-plugin/plugin.json src/shared/tools.ts server.json
           # [skip ci]: this push would otherwise start a run that cancels this
           # one mid-publish — the concurrency group cancels in progress.
           git commit -m "release: $NEXT [skip ci]"
