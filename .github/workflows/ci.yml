@@ -134,7 +134,22 @@ jobs:
           # Tools with nothing to draw. watch_creator and unwatch_creator change
           # stored state and return a list; the catch-up that reads that state
           # does have a view, because it returns posts.
-          NO_APP = {"nooticr_login", "watch_creator", "unwatch_creator"}
+          #
+          # Tier 1 (own-account intelligence, brand monitoring, connection
+          # state): same reasoning. create_brand_watch/stop_brand_watch return
+          # a quote or a confirmation, not a list of anything; list_brand_watches
+          # and list_own_apps are metadata lists, the same shape watch_creator's
+          # own `entries` list already sets precedent for; connect_social_account
+          # returns a link + message, the same shape as nooticr_login;
+          # list_social_connections is a metadata list of connections. None of
+          # the five return the rich, card-shaped content get_content_plan and
+          # generate_content_plan share (posts with hooks/scripts), which is why
+          # those two do have a view.
+          NO_APP = {
+              "nooticr_login", "watch_creator", "unwatch_creator",
+              "create_brand_watch", "stop_brand_watch", "list_brand_watches",
+              "list_own_apps", "list_social_connections", "connect_social_account",
+          }
           MCP_APPS_MIME = "text/html;profile=mcp-app"
           APPS_SDK_MIME = "text/html+skybridge"
 

@@ -26,6 +26,7 @@ import { AuthManager, NooticrAuthError, createHttpTokenProvider, createStdioToke
 import { NooticrClient, NooticrError } from "./nooticr.js";
 import {OAuthManager, type McpSession, SCOPES} from "./oauth.js";
 import { createMcpServer } from "./shared/tools.js";
+import { stdioIdempotencyKey } from "./idempotency.js";
 import { FileWatchStore } from "./shared/watchlist.js";
 import path from "node:path";
 
@@ -44,7 +45,12 @@ function watchStoreForStdio(): FileWatchStore {
 export async function runStdio(): Promise<void> {
   const auth = new AuthManager(getBaseUrl(), getCredentialsFile());
   const server = createMcpServer(
-    () => new NooticrClient(getBaseUrl(), createStdioTokenProvider(auth)),
+    (ctx) =>
+      new NooticrClient(
+        getBaseUrl(),
+        createStdioTokenProvider(auth),
+        stdioIdempotencyKey(ctx)
+      ),
     { watchStore: watchStoreForStdio() }
   );
   const transport = new StdioServerTransport();
