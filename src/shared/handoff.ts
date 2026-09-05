@@ -136,6 +136,16 @@ function scrub(text: string): string {
  * cannot be rejected — they are written so a human still reads the original
  * and no system acts on it.
  *
+ * The boundary is a negative lookbehind rather than a list of allowed
+ * preceding characters. The first version allowed only start-of-string, a
+ * space or an open paren, which left `"@dave` and `work,@dave` live — and a
+ * tracker's mention parser fires on any non-word character before the sigil,
+ * not on the three this happened to name. The lookbehind also excludes `@`,
+ * `@` itself. An email address needs no further guard here: its local part
+ * ends in a word character, so the lookbehind already blocks it — and by the
+ * time this runs `prepareItem` has replaced any address with a redaction
+ * marker anyway.
+ *
  * The separator is a zero-width space, which `scrub` removes. That is not a
  * conflict as long as scrub runs on the way in and this runs on the way out,
  * which `prepareItem` does in that order — stated here because swapping them
@@ -147,8 +157,8 @@ function scrub(text: string): string {
  */
 export function defang(text: string): string {
   return text
-    .replace(/(^|[\s(])@([A-Za-z0-9][A-Za-z0-9._-]{0,38})/g, "$1@\u200B$2")
-    .replace(/(^|[\s(])#(\d{1,7})\b/g, "$1#\u200B$2");
+    .replace(/(?<![\w@])@([A-Za-z0-9][A-Za-z0-9._-]{0,38})/g, "@\u200B$1")
+    .replace(/(?<![\w#])#(\d{1,7})\b/g, "#\u200B$1");
 }
 
 /** Whether defanging would change anything, so the change can be disclosed. */
@@ -158,7 +168,24 @@ export function needsDefang(text: string): boolean {
 
 /** Contact details a public tracker should not be the place someone finds. */
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
-const PHONE_RE = /(?:(?:\+|00)\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)[\s.-]?)?\d{3,4}[\s.-]?\d{3,4}[\s.-]?\d{0,4}/g;
+/**
+ * A number written the way a person writes a phone number.
+ *
+ * The first version matched any loosely-separated run of 7-15 digits, which
+ * caught "order number 1234567" and "build 12345678" — the exact details that
+ * made a bug report actionable, and which the comment below promises to keep.
+ * It also ate the separator *after* the match, so the replacement ran into the
+ * next word ("[redacted: phone number]never arrived").
+ *
+ * So shape is required, not just length: an international prefix, an area code
+ * in parens, or internal separators. A bare undecorated digit run is left
+ * alone — in a bug report it is far more often an order or build number than a
+ * phone number, and this module tells the reader that redaction happened so a
+ * genuine miss can be caught at the source. Under-redacting a bare run is the
+ * cheaper mistake; the alternative silently destroys the report.
+ */
+const PHONE_RE =
+  /(?:(?:\+|00)\d{1,3}[\s.-]?)(?:\(?\d{2,4}\)?[\s.-]?){1,4}\d{2,4}|\(\d{2,4}\)[\s.-]?\d{3,4}[\s.-]?\d{3,4}|\d{3,4}[\s.-]\d{3,4}[\s.-]\d{3,4}/g;
 
 /**
  * Take contact details out before they are published.

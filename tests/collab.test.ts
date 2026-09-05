@@ -58,6 +58,31 @@ describe("what must never be handed to something that fetches", () => {
     }
   });
 
+  it("drops an internal name wearing a trailing dot", () => {
+    // `new URL()` normalises an IPv4 literal but leaves a symbolic hostname's
+    // root-label dot alone, so these arrived as "localhost." — matching none of
+    // the suffix checks and falling through to the public catch-all. Most
+    // resolvers treat a trailing-dot FQDN as the bare name, so this was a live
+    // loopback request handed to the host as a site worth reading.
+    for (const url of [
+      "http://localhost./admin",
+      "http://internal.local./secret",
+      "http://vault.internal./x",
+      "http://printer.local../y",
+    ]) {
+      expect(hosts(url), url).toEqual([]);
+    }
+  });
+
+  it("drops the carrier-grade NAT range, which overlay networks hand out", () => {
+    for (const url of ["http://100.64.0.1/", "http://100.100.0.5/x", "http://100.127.255.254/"]) {
+      expect(hosts(url), url).toEqual([]);
+    }
+    // 100.63 and 100.128 are outside the /10 and stay public.
+    expect(hosts("http://100.63.0.1/")).toEqual(["100.63.0.1"]);
+    expect(hosts("http://100.128.0.1/")).toEqual(["100.128.0.1"]);
+  });
+
   it("drops internal-only names", () => {
     for (const url of ["http://printer.local/", "http://vault.internal/", "http://intranet/"]) {
       expect(hosts(url), url).toEqual([]);

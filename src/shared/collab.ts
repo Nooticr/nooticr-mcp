@@ -125,7 +125,14 @@ const SHORTENERS = new Set([
  * creator's public bio to point at one and every illegitimate reason is bad.
  */
 function isPubliclyRoutable(host: string): boolean {
-  const h = host.toLowerCase();
+  // The trailing dot is the whole reason this line exists. `new URL()`
+  // normalises an IPv4 literal but leaves a symbolic hostname's root-label dot
+  // alone, so `http://localhost./admin` arrives here as "localhost." — which
+  // matches none of the checks below, falls through to the `includes(".")`
+  // catch-all, and is handed to the host as an ordinary website worth reading.
+  // Most resolvers treat a trailing-dot FQDN as the bare name, so that is a
+  // live request to loopback, not a parser curiosity.
+  const h = host.toLowerCase().replace(/\.+$/, "");
   if (!h || h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) {
     return false;
   }
@@ -138,6 +145,9 @@ function isPubliclyRoutable(host: string): boolean {
     if (a === 169 && b === 254) return false; // link-local, and 169.254.169.254
     if (a === 172 && b >= 16 && b <= 31) return false;
     if (a === 192 && b === 168) return false;
+    // Carrier-grade NAT. Overlay networks (Tailscale among them) hand out
+    // addresses in here for services that are reachable only inside them.
+    if (a === 100 && b >= 64 && b <= 127) return false;
     if (a >= 224) return false;
     return true;
   }

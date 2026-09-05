@@ -76,6 +76,15 @@ describe("defanging what a tracker acts on", () => {
     expect(defang("mail me at a@b.com")).toContain("a@b.com");
   });
 
+  it("fires on any non-word character before the sigil, not just a space", () => {
+    // A tracker's mention parser does not care that the character before the
+    // handle was a space. The first version allowed only start-of-string, a
+    // space or an open paren, which left every one of these live.
+    for (const text of ['"@dave please fix"', "great work,@dave", "[#412] again", "(#99)", "-@dave"]) {
+      expect(needsDefang(text), text).toBe(true);
+    }
+  });
+
   it("reports whether it would change anything, so the change can be disclosed", () => {
     expect(needsDefang("plain text")).toBe(false);
     expect(needsDefang("hi @dave")).toBe(true);
@@ -107,6 +116,27 @@ describe("redacting contact details", () => {
     const { text, redacted } = redact("broken since 1.2.3 on iOS 17");
     expect(text).toBe("broken since 1.2.3 on iOS 17");
     expect(redacted).toEqual([]);
+  });
+
+  it("leaves an order or build number alone, which is the detail that made the report actionable", () => {
+    // These are 7 and 8 digits, so a length-only rule redacted them — and then
+    // ate the following space, running the marker into the next word.
+    expect(redact("order number 1234567 never arrived").text).toBe("order number 1234567 never arrived");
+    expect(redact("build 12345678 crashes on launch").text).toBe("build 12345678 crashes on launch");
+    expect(redact("server ip 192.168.1.100 refuses connections").text).toBe(
+      "server ip 192.168.1.100 refuses connections",
+    );
+  });
+
+  it("still takes a number written the way a person writes a phone number", () => {
+    for (const text of ["call me on +44 7700 900123", "ring 555-123-4567 today", "try (0161) 496 0000"]) {
+      expect(redact(text).redacted, text).toContain("phone number");
+    }
+  });
+
+  it("does not swallow the separator after the number it redacted", () => {
+    const { text } = redact("ring 555-123-4567 today");
+    expect(text).toContain("] today");
   });
 
   it("leaves a price alone", () => {
