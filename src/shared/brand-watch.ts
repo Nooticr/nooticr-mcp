@@ -25,7 +25,8 @@ interface MakeClient {
     | NooticrClient;
 }
 
-const CADENCES = ["hourly", "every_6_hours", "every_12_hours", "daily", "weekly"] as const;
+/** Exported so prompts.ts's completion offers exactly what create_brand_watch accepts. */
+export const CADENCES = ["hourly", "every_6_hours", "every_12_hours", "daily", "weekly"] as const;
 type Cadence = (typeof CADENCES)[number];
 
 /**
