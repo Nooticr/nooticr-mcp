@@ -231,61 +231,93 @@ and `apps render --require-render` do) — a script driving `apps session`
 in CI has to check the JSON `ok` field itself, the same thing
 `agentic-visual.e2e.ts`'s own `expect()` calls do.
 
-## Bugs this exercise surfaced
+## Bugs this exercise surfaced — and what happened to each
 
 Testing every reachable view against real tool-call output — not the
 hand-crafted fixtures the pre-existing widget suite uses — found six real
-product bugs, each proven with an actual executed call in
+product issues, each proven with an actual executed call in
 `tests/e2e/agentic-visual-full-app.e2e.ts` (see that file's comments for
-exact line references), not inferred from reading the code:
+exact line references), not inferred from reading the code. Four were
+fixed; two turned out to be intentional design, closed a different way
+after the product owner weighed in.
 
-1. **`compare_posts` never produces a comparison.** Its real evidence plan
-   (`evidence.ts`) only fetches `urls[0]` via `get_social_media` — never
-   sets `.comparison`, never returns `.posts`. The dedicated comparison
-   scoreboard view is unreachable; a real `compare_posts` call — including
-   one triggered by picking two gallery posts and pressing Compare — always
-   renders as an ordinary single-post card for the first URL, silently
-   dropping the rest.
-2. **`analyze_post`/`analyze_post_fast`/`understand_social_post` never
-   produce `.analysis`.** Same root cause as #1: they run through
-   `runEvidence()`, which never sets that key. The `analysisCard` view — an
-   AI verdict, meters, a "More hooks" follow-up row, copyable quote/hashtag
-   chips — is unreachable by any tool call in this repo today.
-3. **The Monitor view's "Analyse these" button sends an argument shape
-   `analyze_comments` rejects.** It posts `{comments, ids}`; the tool's real
-   `inputSchema` is `{url, limit?}.strict()`. A real host executing this
-   call — rather than timing out into the (also broken, sandboxed-iframe)
-   clipboard fallback — gets a schema validation failure every time.
-   Reachable from `search_mentions`, `answer_my_audience`,
-   `show_comment_review` and `show_audience_replies` alike.
-4. **`buy_nooticr_credits`'s pack cards have no click handler at all**,
-   despite `.pack{cursor:pointer}` in the CSS — and even if one existed,
-   the view hardcodes three fixed prices and ignores the real
-   `d.checkoutUrl`/`d.packs` entirely.
-5. **That same `checkoutUrl` arrives mangled before bug 4 would even
-   matter.** `tools.ts`'s `proxyUrls()` only exempts a fixed key list
-   (`RAW_URL_KEYS`, plus a few image-specific keys) from rewriting; any
-   other string value shaped like a URL — `checkoutUrl` included — gets
-   routed through the image proxy regardless of key name, turning a real
-   Stripe Checkout link into `<base>/media/proxy?url=<encoded>`, a URL
-   meant to serve image/video bytes.
-6. **`generate_captions` renders "No transcript available" despite
-   returning real cues.** Its real output (`{ok, cues, transcript, cost,
-   provider}`) has no `available` field; the transcript view's gate treats
-   `transcript !== undefined` as "maybe show it" but then requires
-   `d.available` truthy to actually draw it — so real captions never
-   appear, and `cues[]` is drawn by no view at all.
-7. **The transcript view's own "Copy" button is dead** — it carries
-   `class="btn btn-sm"` with a `data-copy` attribute, but the only two
-   copy-click handlers in the file target `.copy-btn[data-copy]` and
-   `.copyable[data-copy]`; neither matches, so clicking it does nothing.
+**Fixed:**
 
-None of these are fixed by this change — the brief was to test the app,
-and testing it surfaced these; deciding whether/how to fix each (the
-`analyze_comments` argument mismatch and the dead Copy handler look like
-small, low-risk fixes; the `checkoutUrl`/proxy one touches shared
-URL-rewriting logic other tools rely on and deserves more care) is a
-separate decision this doc leaves open rather than presupposes.
+1. **The Monitor view's "Analyse these" button sent an argument shape
+   `analyze_comments` rejects** — `{comments, ids}` against a real
+   `{url, limit?}.strict()` schema, a guaranteed rejection on any real host.
+   Fixed in `ui-template.ts`: it now resolves which post the picks belong
+   to and calls `analyze_comments` on that post's url when they're all the
+   same one, or refuses to send anything (with a clear button message)
+   when they span multiple posts — the tool has no way to act on an
+   arbitrary cross-post selection, so sending nothing is correct, not a
+   remaining gap.
+2. **`buy_nooticr_credits`'s pack cards had no click handler**, and
+   hardcoded three fixed prices regardless of the real `d.checkoutUrl`/
+   `d.packs`. Fixed: each card is now a real `<a href>` to the real
+   checkout URL, built from the real `d.packs` when present, so the
+   existing generic anchor handler opens it via `ui/open-link` — same
+   mechanism every other "Open on ..." link already used.
+3. **That same `checkoutUrl` arrived mangled by the image proxy** —
+   `tools.ts`'s `proxyUrls()` only exempted a fixed key list from
+   rewriting, and `checkoutUrl` wasn't on it, so any URL-shaped string
+   value got routed through `/media/proxy?url=...` regardless of key name.
+   Fixed: `checkoutUrl` added to `RAW_URL_KEYS`; it now passes through raw.
+4. **`generate_captions` rendered "No transcript available" despite
+   returning real cues** — its real output has no `available` field, and
+   the transcript view's gate required one truthy before showing anything.
+   Fixed: a present, non-empty `transcript` is now itself accepted as
+   evidence of availability. (Its Copy button was separately dead too —
+   `class="btn btn-sm"` with a `data-copy` attribute that neither of the
+   file's two copy-click handlers matched; now also carries `.copyable`.)
+
+**Left alone, on purpose — the product owner confirmed the design:**
+
+5. **`compare_posts` only ever fetches `urls[0]`**, never sets
+   `.comparison`, never returns `.posts` — the dedicated comparison
+   scoreboard view was unreachable by any real call.
+6. **`analyze_post`/`analyze_post_fast`/`understand_social_post` never
+   set `.analysis`** — same root cause: both run through `runEvidence()`,
+   which returns evidence and a guidance instruction, never a verdict. The
+   `analysisCard` view (an AI verdict, meters, quotable lines, hashtag
+   chips) was unreachable the same way.
+
+Both looked like bugs from the widget's side — a rich view built for a
+shape nothing ever produces — but the *reason* is this repo's actual,
+documented design: "Nothing here calls a model of ours, so nothing here
+sells you a judgement" (README, "Your own model does the thinking"). The
+Rust backend crate these tools proxy to (`crates/mcp/src/tools.rs` in
+`nooticr-server`) genuinely does have separate, real AI-generation code
+for these same tool names — `text_ai()` calls, real prompts — but that's
+used by `nooticr-server`'s own internal dashboard copilot (a first-party
+surface with no other model in the loop), not by this repo's public MCP
+surface. Confirmed directly with the product owner: **the host LLM (the
+one the person is already talking to) should do all the writing/analysis,
+never a second model on the server.** What *was* genuinely missing wasn't
+server-side generation — it was somewhere for the host LLM's own writing
+to land. So instead of making `compare_posts`/`analyze_post_fast`/etc. call
+real AI generation (which would reverse the documented design and its
+pricing model — these are priced at fetch-cost, not generation-cost), five
+new free, no-request tools close the loop the same way `show_comment_review`
+already did for `analyze_comments`:
+
+- **`show_comparison`** renders the (previously unreachable) comparison
+  scoreboard — the model does the actual comparing across
+  `get_social_media` calls, then calls this with the real posts + its
+  comparison.
+- **`show_analysis`** renders the (previously unreachable) `analysisCard` —
+  same idea, for `analyze_post`/`analyze_post_fast`/`understand_social_post`.
+- **`show_hooks`**, **`show_variants`**, **`show_repurposed_post`** are new
+  view code (this repo had no existing branch for a hooks list, a variants
+  list, or per-surface rewritten copy) for `write_hooks`, `create_variants`
+  and `repurpose_post` respectively.
+
+Every evidence tool's guidance text (`evidence.ts`) now ends with an
+instruction to call the matching `show_*` tool when the model is done
+writing. All five are exercised for real in
+`tests/e2e/agentic-visual-full-app.e2e.ts` — including the two reusing
+existing view branches and the three exercising genuinely new view code,
+none of which had ever rendered in a real browser before those tests.
 
 ## CI
 

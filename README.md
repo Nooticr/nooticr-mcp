@@ -80,7 +80,9 @@ them caps that fan-out with an argument.
 | `understand_social_post` | 3 | The same two fetches, asked for a description of what physically happens on screen rather than why it works. Use when you need the events, not the strategy. |
 | `analyze_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. |
 | `show_comment_review` | free | Draws the classifications your model produced — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
+| `show_analysis` | free | Draws the analysis your model wrote from `analyze_post`/`analyze_post_fast`/`understand_social_post` — hook strength, script structure, quotable lines, suggested hashtags and more, whichever fields you produced. Makes no requests; it only renders what you pass it. |
 | `compare_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
+| `show_comparison` | free | Draws the comparison your model wrote from `compare_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
 
 ### Research a niche or a creator
 
@@ -120,9 +122,12 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `write_hooks` | 2, or free | The source post and its transcript, to write openings against. Give a topic instead of a url and it fetches nothing and costs nothing. |
+| `show_hooks` | free | Draws the hooks your model wrote from `write_hooks` — each one with the device it uses and who it stops. Makes no requests; it only renders what you pass it. |
 | `score_draft` | free | **Your** draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the three fixes worth making and a rewritten opening. Fetches nothing: the text is already yours. The only tool that runs before the content exists. |
 | `repurpose_post` | 2 | The source post and its transcript, to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
+| `show_repurposed_post` | free | Draws the rewritten copy your model produced from `repurpose_post` — one entry per surface. Makes no requests; it only renders what you pass it. |
 | `create_variants` | 2 | The post that worked, with its transcript, to build variants from: hook, the angle that changes, ordered shot beats and a CTA. |
+| `show_variants` | free | Draws the variants your model wrote from `create_variants` — each one's hook, angle, beats and CTA. Makes no requests; it only renders what you pass it. |
 
 ### Account
 
