@@ -488,6 +488,11 @@ npm run build    # tsc
 npm test         # vitest (66 unit tests, mocked fetch — no network)
 ```
 
+Those are unit tests against a stub backend. For agentic end-to-end tests —
+a real model driving this server's real built CLI against a real, disposable
+nooticr-server — see `docs/testing/agentic-e2e-testing.md` and
+`npm run test:agentic-e2e`.
+
 ## License
 
 MIT

@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Checks credit balance before anything else",
+    "query": "How many nooticr credits do I have left?",
+    "runs": 1,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "anthropic",
+    "expectedToolCalls": ["check_nooticr_credits"]
+  },
+  {
+    "title": "Fetches a post's media and stats, not an interpretation of it",
+    "query": "Get me the caption, stats and media URL for this post: https://e2e.nooticr.test/import/tiktok/e2e-stub",
+    "runs": 1,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "anthropic",
+    "expectedToolCalls": ["get_social_media"]
+  },
+  {
+    "title": "Fast read of a post picks analyze_post_fast, not the frame-heavy analyze_post",
+    "query": "Give me a quick read on this post's hook and structure, no need for the actual video frames: https://e2e.nooticr.test/import/tiktok/e2e-stub",
+    "runs": 1,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "anthropic",
+    "expectedToolCalls": ["analyze_post_fast"]
+  },
+  {
+    "title": "Lists workspace apps before asking which one to draft for",
+    "query": "What products do I have in my nooticr workspace?",
+    "runs": 1,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "anthropic",
+    "expectedToolCalls": ["list_own_apps"]
+  },
+  {
+    "title": "Drafts a post for a named product after resolving which app that is",
+    "query": "I have exactly one product in my nooticr workspace. Draft me a post about morning routines for it.",
+    "runs": 1,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "anthropic",
+    "expectedToolCalls": ["list_own_apps", "draft_post"]
+  },
+  {
+    "title": "Checks connected social accounts, not credits or apps",
+    "query": "Which social accounts do I have connected to nooticr right now?",
+    "runs": 1,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "anthropic",
+    "expectedToolCalls": ["list_social_connections"]
+  }
+]
