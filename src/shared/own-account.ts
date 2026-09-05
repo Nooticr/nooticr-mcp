@@ -25,20 +25,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { viewMeta } from "./view-meta.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
     | Promise<NooticrClient>
     | NooticrClient;
 }
-
-/** Same view-per-tool shape jobs.ts uses — kept local to avoid an import
- * cycle back into tools.ts, which is what registers these tools' URIs. */
-const viewMeta = (tool: string) => ({
-  ui: { resourceUri: `ui://nooticr/${tool}` },
-  "ui/resourceUri": `ui://nooticr/${tool}`,
-  "openai/outputTemplate": `ui://nooticr/${tool}.html`,
-});
 
 function toResult(proxy: McpProxyResult) {
   const textBlock = proxy.contentBlocks.find((c) => c.type === "text");

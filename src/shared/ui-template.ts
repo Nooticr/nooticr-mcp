@@ -2102,7 +2102,68 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       // concatenation became the condition and the function returned only the
       // bio — no card, no avatar, no name, no follower count.
       +(sig?'<div style="font-size:12px;color:var(--muted);line-height:1.4">'+esc(sig)+"</div>":"")
+      +vetting(c)
       +"</div>";
+  }
+
+  // ─── Vetting strip ───
+  //
+  // Only show_collab_shortlist sends these fields, so every other creator card
+  // — search_creators, get_similar_creators, who_should_i_work_with — renders
+  // exactly as it did before. The score is the calling model's, never ours,
+  // and the card says so on its face: a number next to a real person's name
+  // that reads as a nooticr rating would be a claim we have not made and
+  // cannot stand behind.
+  function vetting(c){
+    var hasScore=typeof c.score==="number";
+    if(!hasScore&&!c.verdict&&!c.why&&!(c.links&&c.links.length))return "";
+    var out='<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border)">';
+
+    if(hasScore||c.verdict||c.rank){
+      var vColor=c.verdict==="approach"?"var(--green)":c.verdict==="pass"?"var(--muted)":"var(--fg)";
+      out+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
+        +(c.rank?'<span style="font-size:11px;font-weight:700;color:var(--muted)">#'+esc(String(c.rank))+"</span>":"")
+        +(hasScore?'<span style="font-size:17px;font-weight:700;line-height:1">'+esc(String(Math.round(c.score)))
+          +'<span style="font-size:11px;font-weight:600;color:var(--muted)">/100</span></span>':"")
+        +(c.verdict?'<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:'+vColor
+          +';border:1px solid '+vColor+';border-radius:4px;padding:1px 6px">'+esc(String(c.verdict))+"</span>":"")
+        +"</div>";
+      // Whose number this is, stated wherever a number is shown.
+      if(hasScore){
+        out+='<div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Scored by '
+          +esc(String(c.scoredBy||"the assistant"))
+          +(c.unverifiedScore?" · nothing was opened to reach this":"")+"</div>";
+      }
+    }
+
+    if(c.why)out+='<div style="font-size:12.5px;line-height:1.45;margin-bottom:6px">'+esc(String(c.why))+"</div>";
+
+    if(c.checked&&c.checked.length){
+      out+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Read: '
+        +c.checked.slice(0,4).map(function(x){return esc(String(x));}).join(" · ")+"</div>";
+    }
+
+    if(c.concerns&&c.concerns.length){
+      out+=c.concerns.slice(0,3).map(function(x){
+        return '<div style="font-size:11.5px;line-height:1.4;color:var(--fg);margin-bottom:3px">⚠ '+esc(String(x))+"</div>";
+      }).join("");
+    }
+
+    if(c.links&&c.links.length){
+      // Deliberately not anchors. These hosts came out of a bio a stranger
+      // controls and are not on the platform-link allowlist, so a host that
+      // enforces it would block the navigation silently and a host that did
+      // not would follow an arbitrary URL from inside a widget. Shown as text
+      // so a person can see what is there and decide themselves.
+      out+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:7px">'
+        +c.links.slice(0,6).map(function(l){
+          var opaque=!!l.opaque;
+          return '<span title="'+esc(String(l.readable||""))+'" style="font-size:10.5px;padding:1px 6px;border-radius:4px;'
+            +'border:1px '+(opaque?"dashed":"solid")+' var(--border);color:var(--muted)">'
+            +esc(String(l.kind||"link"))+" · "+esc(String(l.host||""))+(opaque?" ?":"")+"</span>";
+        }).join("")+"</div>";
+    }
+    return out+"</div>";
   }
 
   // ─── Expandable Section ───

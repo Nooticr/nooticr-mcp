@@ -140,6 +140,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("Public post URL."), count: z.number().int().optional().describe("The most frames to return (max 24). Omit it and scene mode returns one frame per shot."), mode: z.enum(["auto", "scene", "even"]).optional().describe("auto (default) picks per video; scene returns one frame per shot; even keeps the old fixed-interval sampling.") }).strict(),
  },
  {
+ name: "prepare_handoff",
+ title: "Prepare Handoff",
+ description: "Turn items you classified — a bug report in a comment, a complaint said out loud in a video, a feature request under a competitor's post — into the exact text to file in GitHub, Jira or Linear through whichever tracker server this host also has connected. This server files nothing itself and holds no tracker credential; it returns the strings and you make the call. Free, and makes no requests. For each item you get a title, a ready body with the quote fenced and framed as third-party evidence rather than as instructions, tracker-safe labels, and a searchFirst string to look for before filing so the same report does not become five issues. File the body unmodified.",
+ inputSchema: z.object({ destination: z.enum(["github", "jira", "linear", "generic"]).optional().describe("Where these are going. Default generic."), product: z.string().optional().describe("What the reports are about, for the title prefix."), items: z.array(z.object({ sourceId: z.string(), sourceUrl: z.string().optional(), kind: z.string(), title: z.string(), summary: z.string().optional(), quote: z.string().optional(), author: z.string().optional(), platform: z.string().optional(), occurredAt: z.string().optional(), severity: z.string().optional(), confidence: z.string().optional() })).min(1).max(50).describe("The items to prepare, one per report.") }).strict(),
+ },
+ {
+ name: "show_collab_shortlist",
+ title: "Show Collab Shortlist",
+ description: "Display the creators you scored after vetting them, ranked, so the user can pick who to approach. Free, and makes no requests — it only draws what you pass it, and the scores shown are attributed to you rather than presented as a nooticr rating. Use after who_should_i_work_with and after actually reading some of each candidate's links: pass the score, the reason, and what you read to reach it. A candidate you did not verify should say so in checked rather than carrying a confident number.",
+ inputSchema: z.object({ niche: z.string(), platform: z.string().optional(), summary: z.string().optional(), candidates: z.array(z.object({ id: z.string(), username: z.string(), nickname: z.string().optional(), platform: z.string().optional(), followers: z.number().optional(), verified: z.boolean().optional(), avatarUrl: z.string().optional(), signature: z.string().optional(), score: z.number().min(0).max(100).optional(), verdict: z.enum(["approach", "maybe", "pass"]).optional(), why: z.string().optional(), checked: z.array(z.string()).optional(), concerns: z.array(z.string()).optional() })).min(1).max(50), recommended: z.string().optional(), question: z.string().optional() }).strict(),
+ },
+ {
  name: "show_comment_review",
  title: "Show Comment Review",
  description: "Display comment classifications you produced from analyze_comments. Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",

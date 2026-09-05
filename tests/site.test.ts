@@ -273,6 +273,10 @@ describe("tool surface", () => {
     "why_did_this_underperform",
     "what_should_i_make_next",
     "search_spoken_mentions",
+    // Neither fetches: one packages what the model classified for a tracker
+    // on another server, the other draws the shortlist it scored.
+    "prepare_handoff",
+    "show_collab_shortlist",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -343,6 +347,12 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // Formats what the caller classified for a tracker elsewhere. The only
+      // network call in that chain is the one the other server makes.
+      "prepare_handoff",
+      // Draws the shortlist the caller scored; the fetches that produced the
+      // score were the host's own, not ours.
+      "show_collab_shortlist",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

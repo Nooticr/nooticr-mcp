@@ -1554,3 +1554,107 @@ test.describe("brand monitoring", () => {
     });
   });
 });
+
+
+/**
+ * The vetting strip on a creator card.
+ *
+ * `show_collab_shortlist` is the only caller that sends a score, so the two
+ * things worth proving in a real browser are that the strip appears when it
+ * does and stays completely absent when it does not — a stray "Scored by the
+ * assistant" line under a plain `search_creators` result would be attributing
+ * a judgement nobody made.
+ */
+test.describe("collab shortlist", () => {
+  const SHORTLIST = {
+    shortlist: true,
+    niche: "cold plunge",
+    question: "Which of these should we approach?",
+    creators: [
+      {
+        id: "creator:tiktok:dana",
+        username: "dana",
+        nickname: "Dana Reyes",
+        platform: "tiktok",
+        followers: 48200,
+        signature: "recovery nerd · github.com/dana/plunge",
+        rank: 1,
+        score: 84,
+        scoredBy: "the assistant",
+        verdict: "approach",
+        why: "Ships an open-source timer for plunge protocols; the code is maintained.",
+        checked: ["github.com/dana/plunge", "their pinned video"],
+        concerns: ["Posts twice a month, so a campaign would move slowly."],
+        unverifiedScore: false,
+        links: [
+          { url: "https://github.com/dana/plunge", host: "github.com", kind: "code", readable: "Public repositories.", opaque: false },
+          { url: "https://bit.ly/3xYz", host: "bit.ly", kind: "shortener", readable: "Destination unknown.", opaque: true },
+        ],
+      },
+      {
+        id: "creator:tiktok:kai",
+        username: "kai",
+        nickname: "Kai",
+        platform: "tiktok",
+        followers: 910000,
+        rank: 2,
+        score: 41,
+        scoredBy: "the assistant",
+        verdict: "pass",
+        why: "Big, but the niche is general wellness rather than cold exposure.",
+        checked: [],
+        unverifiedScore: true,
+        links: [],
+      },
+    ],
+  };
+
+  // Read #app, not body: setContent leaves the template's own inline script in
+  // the document, so body.textContent contains the template's source strings
+  // and a negative assertion against it would always pass.
+  test("shows the score, and says whose it is", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    const body = await page.textContent("#app");
+    expect(body).toContain("84");
+    // The attribution has to travel with the number, everywhere it appears.
+    expect(body).toContain("Scored by the assistant");
+    expect(body).toContain("approach");
+  });
+
+  test("marks a score reached without opening anything", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    expect(await page.textContent("#app")).toContain("nothing was opened to reach this");
+  });
+
+  test("names what was actually read, and what gave the model pause", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    const body = await page.textContent("#app");
+    expect(body).toContain("github.com/dana/plunge");
+    expect(body).toContain("a campaign would move slowly");
+  });
+
+  test("shows a bio link as text rather than something to click", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    const body = await page.textContent("#app");
+    expect(body).toContain("code · github.com");
+    // These hosts came out of a field a stranger controls and are not on the
+    // platform-link allowlist, so nothing here may be an anchor.
+    const hrefs = await page.$$eval("a[href]", (as) => as.map((a) => a.getAttribute("href")));
+    expect(hrefs.some((h) => (h ?? "").includes("github.com/dana"))).toBe(false);
+    expect(hrefs.some((h) => (h ?? "").includes("bit.ly"))).toBe(false);
+  });
+
+  test("leaves an ordinary creator list exactly as it was", async ({ page }) => {
+    await renderTemplate(page, {
+      creators: [
+        { username: "dana", nickname: "Dana Reyes", platform: "tiktok", followers: 48200, signature: "recovery nerd" },
+      ],
+    });
+    const body = await page.textContent("#app");
+    expect(body).toContain("Dana Reyes");
+    expect(body).toContain("recovery nerd");
+    // No score was sent, so nothing about scoring may appear.
+    expect(body).not.toContain("Scored by");
+    expect(body).not.toContain("/100");
+  });
+});

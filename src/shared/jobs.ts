@@ -76,6 +76,8 @@ import {
   type Standing,
 } from "./performance.js";
 import { normaliseHandle, watchEntryId, watchlistOwner, type WatchStore } from "./watchlist.js";
+import { viewMeta } from "./view-meta.js";
+import { extractLinks, COLLAB_RUBRIC, vettingGuidance } from "./collab.js";
 
 type Row = Record<string, unknown>;
 
@@ -694,13 +696,6 @@ interface MakeClient {
     | NooticrClient;
 }
 
-/** A view for every one of these, at the URIs both hosts read. */
-const viewMeta = (tool: string) => ({
-  ui: { resourceUri: `ui://nooticr/${tool}` },
-  "ui/resourceUri": `ui://nooticr/${tool}`,
-  "openai/outputTemplate": `ui://nooticr/${tool}.html`,
-});
-
 const metricArg = z
   .enum(METRICS)
   .optional()
@@ -1145,6 +1140,13 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           username,
           followers: numberOf(raw.followers ?? raw.followerCount),
           foundBy: source,
+          // What the host should go and read. Pulled out of the bio here
+          // rather than left for the model to spot inside prose — see
+          // collab.ts for why they are typed and why we do not open them.
+          links: extractLinks(
+            String(raw.signature ?? raw.bio ?? ""),
+            typeof raw.externalUrl === "string" ? raw.externalUrl : undefined,
+          ),
         });
       };
 
@@ -1181,11 +1183,21 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           numberOf(b.followers) - numberOf(a.followers),
       );
 
+      const withLinks = creators.filter(
+        (c) => Array.isArray(c.links) && (c.links as unknown[]).length > 0,
+      ).length;
+
       return evidence(
-        collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
+        [
+          collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
+          "",
+          vettingGuidance(creators.length, withLinks),
+        ].join("\n"),
         {
           mode: "evidence",
           tool: "who_should_i_work_with",
+          rubric: COLLAB_RUBRIC,
+          withLinks,
           evidenceFrom: args.seed ? ["search_creators", "get_similar_creators"] : ["search_creators"],
           niche: args.niche,
           platform,

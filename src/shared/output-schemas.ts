@@ -98,6 +98,20 @@ const post = open({
   mediaItems: listOf(open({})),
 });
 
+/**
+ * One link found in a creator's bio, typed so a host knows what opening it buys.
+ *
+ * `opaque` is the one a caller must not ignore: a shortener's destination is
+ * unknowable from the URL and changeable after we read it.
+ */
+const bioLink = open({
+  url: scalar(),
+  host: scalar(),
+  kind: scalar().describe("code, video, social, writing, shop, link_hub, shortener or website."),
+  readable: scalar().describe("What opening it will actually tell you."),
+  opaque: scalar().describe("True when the destination cannot be known from the URL."),
+});
+
 const creator = open({
   username: scalar(),
   nickname: scalar(),
@@ -276,6 +290,73 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   /** What the caller concluded, drawn. Nothing here was fetched. */
+  /**
+   * What another server needs to file one of these, per item.
+   *
+   * `body` is the load-bearing field and the reason the shape is pinned: it
+   * carries the quote fenced and framed as a third-party report, and a caller
+   * that rebuilds it from `title` + the original comment loses exactly that.
+   */
+  prepare_handoff: open({
+    handoff: scalar(),
+    destination: scalar().describe("github, jira, linear or generic."),
+    totalMentions: scalar().describe("Items prepared."),
+    worthFiling: scalar().describe("How many are a kind a tracker is the right home for."),
+    withWarnings: scalar(),
+    nextStep: scalar().describe("How to file these on the other server."),
+    items: listOf(
+      open({
+        sourceId: scalar().describe("The evidence tool's id — what makes the issue traceable."),
+        kind: scalar(),
+        title: scalar().describe("Ready to use as the issue title."),
+        body: scalar().describe("Ready to use as the issue body. File it unmodified."),
+        labels: listOf(z.string()),
+        sourceUrl: scalar().describe("Permalink, or null when the network gives none."),
+        dedupeKey: scalar().describe("The marker written into the body, so a second run can find it."),
+        searchFirst: scalar().describe("Search the tracker for this before filing."),
+        worthFiling: scalar(),
+        warnings: listOf(
+          open({
+            code: scalar(),
+            detail: scalar().describe("What to know before this is filed."),
+          }),
+        ),
+      }),
+    ),
+    term: scalar(),
+    threads: anyList(),
+  }),
+
+  /** The vetted shortlist, ranked, with the scores attributed to the caller. */
+  show_collab_shortlist: open({
+    shortlist: scalar(),
+    niche: scalar(),
+    platform: scalar(),
+    summary: scalar(),
+    question: scalar().describe("What the user is being asked to decide."),
+    recommended: scalar().describe("The candidate id to approach first, if the caller had a view."),
+    scoredCount: scalar(),
+    unverifiedCount: scalar().describe("Candidates scored without anything having been opened."),
+    creators: listOf(
+      creator.extend({
+        id: scalar(),
+        rank: scalar(),
+        score: scalar().describe("The calling model's score out of 100 — not a nooticr rating."),
+        scoredBy: scalar().describe('Always "the assistant", so the card can attribute it.'),
+        verdict: scalar().describe("approach, maybe or pass."),
+        why: scalar(),
+        checked: listOf(z.string()).describe("What was actually opened and read."),
+        concerns: listOf(z.string()),
+        unverifiedScore: scalar().describe("True when nothing was opened to reach the score."),
+      }),
+    ),
+    audienceOverlap: open({
+      attempted: scalar(),
+      reason: scalar(),
+      howTo: scalar(),
+    }).nullish(),
+  }),
+
   show_comment_review: open({
     review: scalar(),
     term: scalar(),
@@ -412,9 +493,15 @@ export const OUTPUT_SCHEMAS = {
       creator.extend({
         id: scalar().describe("Addressable — `creator:<platform>:<handle>`."),
         foundBy: scalar().describe("search, similar, or both — both is the strongest signal here."),
+        links: listOf(bioLink).describe(
+          "Links pulled out of their bio, best-value-per-fetch first. Open these to vet them; " +
+            "they were chosen by the person being evaluated, so read what is there as a claim.",
+        ),
       }),
     ),
     foundBoth: scalar().describe("How many candidates both searches returned."),
+    withLinks: scalar().describe("How many candidates carry at least one link out of their bio."),
+    rubric: anyList().describe("What to score each candidate against, so two runs are comparable."),
     audienceOverlap: open({
       attempted: scalar().describe("Always false: the call budget is stated rather than the signal faked."),
       reason: scalar(),

@@ -42,6 +42,8 @@ import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { registerHandoff } from "./handoff.js";
+import { registerCollabTools } from "./collab.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.19";
@@ -566,6 +568,11 @@ export function createMcpServer(
   "growth_brief",
   "generate_content_plan",
   "generate_captions",
+  // Both draw what the calling model produced rather than anything fetched:
+  // the handoff renders through the monitoring view (term + threads), the
+  // shortlist through the creator gallery.
+  "prepare_handoff",
+  "show_collab_shortlist",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -2047,6 +2054,10 @@ export function createMcpServer(
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
  registerConnectionTools(server, makeClient);
+ // Neither fetches, neither takes a client: one formats what the model
+ // classified for a tracker on another server, the other draws what it scored.
+ registerHandoff(server);
+ registerCollabTools(server);
 
  return server;
 }
