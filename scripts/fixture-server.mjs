@@ -185,6 +185,61 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { platform: "tiktok", creators },
       };
     }
+    case "get_user_posts": {
+      const username = String(args?.username ?? "fixture_user");
+      const posts = [1, 2, 3].map((i) => ({
+        platform: "tiktok",
+        caption: `Post ${i} by ${username}`,
+        creatorHandle: username,
+        externalUrl: `https://www.tiktok.com/@${username}/video/${i}`,
+        videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
+        contentType: "video",
+        views: 1000 * i,
+        likes: 100 * i,
+        comments: 10 * i,
+      }));
+      return {
+        content: [{ type: "text", text: `Found ${posts.length} fixture posts for ${username}.` }],
+        structuredContent: { platform: "tiktok", username, posts },
+      };
+    }
+    case "get_similar_creators": {
+      const creators = [1, 2].map((i) => ({
+        platform: "tiktok",
+        username: `fixture_similar_${i}`,
+        nickname: `Fixture Similar ${i}`,
+        followers: 20000 * i,
+        signature: `Fixture lookalike bio ${i}.`,
+      }));
+      return {
+        content: [{ type: "text", text: `Found ${creators.length} similar fixture creators.` }],
+        structuredContent: { platform: "tiktok", creators },
+      };
+    }
+    case "get_post_frames": {
+      // A real 1x1 PNG — same fixture pixel used elsewhere in this repo's
+      // own Playwright suite (tests/e2e/ui-template.e2e.ts) — so
+      // framesToBlocks() (evidence.ts) gets a real, valid image to wrap.
+      const PIXEL =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+      const frames = [0, 0.5, 1].map((atFraction, i) => ({
+        data: PIXEL,
+        mimeType: "image/png",
+        atSeconds: i * 2,
+        atFraction,
+      }));
+      return {
+        content: [{ type: "text", text: `Sampled ${frames.length} fixture frames.` }],
+        structuredContent: {
+          frames,
+          selection: "even",
+          scenesDetected: frames.length,
+          truncated: false,
+          scanComplete: true,
+          coverageNote: "Fixture frames, evenly sampled across the full (fixture) duration.",
+        },
+      };
+    }
     case "get_post_transcript": {
       // Real shape (see ui-template.ts's transcript-view gate): `available`
       // must be truthy or the view renders "No transcript available."
@@ -331,6 +386,161 @@ function handleMcpCall(name, args, workspaceId) {
           cost: 1,
           transcript: "Fixture caption transcript.",
           cues: [{ text: "Fixture caption transcript.", start_sec: 0, end_sec: 3 }],
+        },
+      };
+    }
+    case "draft_post": {
+      const topic = String(args?.topic ?? "a fixture topic");
+      return {
+        content: [{ type: "text", text: `Drafted a fixture post about ${topic}.` }],
+        structuredContent: {
+          ok: true,
+          provider: "mock",
+          draft: {
+            title: `A fixture draft about ${topic}`,
+            caption: `Fixture caption for a post about ${topic} (mock provider, not real content).`,
+            hashtags: ["fixture", "test"],
+          },
+        },
+      };
+    }
+    case "growth_brief": {
+      return {
+        content: [{ type: "text", text: "Generated a fixture growth brief." }],
+        structuredContent: {
+          ok: true,
+          brief: {
+            headline: "Fixture headline: this is mock data, not a real brief.",
+            wins: [{ text: "Fixture win 1" }],
+            risks: [{ text: "Fixture risk 1" }],
+            actions: [{ text: "Fixture action 1" }],
+          },
+        },
+      };
+    }
+    case "generate_content_plan": {
+      return {
+        content: [{ type: "text", text: "Generated a fixture content plan." }],
+        structuredContent: {
+          ok: true,
+          plan: {
+            weekStart: new Date().toISOString().slice(0, 10),
+            plan: [],
+          },
+        },
+      };
+    }
+    case "get_content_plan": {
+      return {
+        content: [{ type: "text", text: "No content plan generated yet (fixture)." }],
+        structuredContent: { ok: true, plan: null },
+      };
+    }
+    case "review_post": {
+      return {
+        content: [{ type: "text", text: "Reviewed the fixture draft." }],
+        structuredContent: {
+          review: {
+            degraded: false,
+            scoreA: { hookStrength: 6 },
+            aestheticAdvice: "Fixture aesthetic advice.",
+            storytellingAdvice: "Fixture storytelling advice.",
+            improvedHooks: ["Fixture improved hook."],
+            improvedCaptions: ["Fixture improved caption."],
+          },
+        },
+      };
+    }
+    case "create_brand_watch": {
+      const platforms = args.platforms ?? ["tiktok", "reddit", "youtube"];
+      const cadence = args.cadence ?? "daily";
+      const runsPerDay = { hourly: 24, every_6_hours: 4, every_12_hours: 2, daily: 1, weekly: 1 / 7 }[cadence] ?? 1;
+      const costPerRun = platforms.reduce((sum, p) => sum + (p === "xiaohongshu" ? 5 : 2), 0);
+      if (args.confirm === true) {
+        if (args.confirmationToken !== "fixture-confirm-token") {
+          return {
+            content: [{ type: "text", text: "That confirmation token didn't match — nothing was created." }],
+            structuredContent: { rejected: true, message: "Confirmation token mismatch; nothing was created." },
+          };
+        }
+        return {
+          content: [{ type: "text", text: `Created a brand watch for "${args.term}".` }],
+          structuredContent: {
+            created: true,
+            watchId: "watch-fixture-1",
+            term: args.term,
+            platforms,
+            cadence,
+            costPerRun,
+            creditsPerDay: Math.round(costPerRun * runsPerDay * 100) / 100,
+            budgetPerRun: args.budgetCredits ?? costPerRun,
+            deliverTo: args.deliverTo ?? "fixture-user@example.com",
+            firstRun: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            message: `Watching for "${args.term}" on ${platforms.join(", ")}, ${cadence}.`,
+          },
+        };
+      }
+      return {
+        content: [{ type: "text", text: `Quote: watching "${args.term}" costs ${costPerRun} credits per run, ${cadence}.` }],
+        structuredContent: {
+          requiresConfirmation: true,
+          confirmationToken: "fixture-confirm-token",
+          expiresInSeconds: 300,
+          quote: {
+            term: args.term,
+            platforms,
+            cadence,
+            cadenceMinutes: cadence === "hourly" ? 60 : cadence === "every_6_hours" ? 360 : cadence === "every_12_hours" ? 720 : cadence === "weekly" ? 10080 : 1440,
+            costPerRun,
+            runsPerDay,
+            creditsPerDay: Math.round(costPerRun * runsPerDay * 100) / 100,
+            budgetPerRun: args.budgetCredits ?? costPerRun,
+            deliverTo: args.deliverTo ?? "fixture-user@example.com",
+            summary: `${costPerRun} credits per run on ${platforms.join(", ")}, ${cadence}.`,
+            balance: 500,
+            runsAffordableAtCurrentBalance: Math.floor(500 / costPerRun),
+          },
+          instructions: "Call again with confirm: true and this confirmationToken to actually create the watch.",
+        },
+      };
+    }
+    case "list_brand_watches": {
+      return {
+        content: [{ type: "text", text: "1 active brand watch." }],
+        structuredContent: {
+          watches: [
+            {
+              watchId: "watch-fixture-1",
+              term: "fixture-brand",
+              platforms: ["reddit", "tiktok"],
+              cadence: "daily",
+              costPerRun: 4,
+              budgetPerRun: 4,
+              creditsSpent: 12,
+              runs: 3,
+              deliverTo: "fixture-user@example.com",
+              enabled: true,
+              stoppedBecause: null,
+              nextRun: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              lastRun: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
+            },
+          ],
+          activeCount: 1,
+          creditsPerDayAcrossAllWatches: 4,
+        },
+      };
+    }
+    case "stop_brand_watch": {
+      return {
+        content: [{ type: "text", text: `Stopped the brand watch for "${args.term ?? args.watchId}".` }],
+        structuredContent: {
+          stopped: true,
+          watchId: args.watchId ?? "watch-fixture-1",
+          term: args.term ?? "fixture-brand",
+          creditsSpent: 12,
+          runs: 3,
+          stoppedBecause: "user requested",
+          message: `Stopped watching "${args.term ?? args.watchId}".`,
         },
       };
     }

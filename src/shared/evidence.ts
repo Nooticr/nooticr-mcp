@@ -111,13 +111,17 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         : { url: url(a), count: Number(a.frames) },
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
     frames: true,
-    guidance: () =>
-      [
+    guidance: (a) => {
+      const focus = String(a.focus ?? "").trim();
+      return [
         "Frames from this post, chosen by scene change rather than by the clock,",
         "plus its transcript.",
         "",
         "Describe what physically happens on screen, in order — the events, not",
         "the strategy. Anchor each observation to a frame.",
+        ...(focus
+          ? ["", `Focus for this pass, as asked: ${focus}. Still describe events in order, but weight what you cover toward this.`]
+          : []),
         "",
         "The payload says exactly what these frames cover: `selection`,",
         "`scenesDetected`, `truncated`, `scanComplete` and `coverageNote`. Where",
@@ -129,7 +133,8 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "When you are done, call show_analysis with the url and your analysis —",
         "it draws what you found so it is visible, not only said in chat.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   analyze_post_fast: {
@@ -233,38 +238,53 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
-    guidance: (a) =>
-      [
-        a.url ? "The source post, its transcript and its stats." : "No source post given.",
+    guidance: (a) => {
+      const count = Number(a.count ?? 10) || 10;
+      const topic = String(a.topic ?? "").trim();
+      const tone = String(a.tone ?? "").trim();
+      return [
+        a.url
+          ? "The source post, its transcript and its stats."
+          : topic
+            ? `No source post — the topic given is: ${topic}.`
+            : "No source post and no topic given — say that a subject is needed before you can write grounded hooks.",
         "",
-        "Write alternative opening lines grounded in this material. For each,",
+        `Write ${count} alternative opening line${count === 1 ? "" : "s"} grounded in this material` +
+          (topic && !a.url ? ` (the topic above, since there is no post)` : "") +
+          ". For each,",
         "name the device it uses and who it stops. A hook that could open any",
         "video in the niche is not grounded in this one.",
+        ...(tone ? ["", `Write them in this tone: ${tone}.`] : []),
         "",
         "When you are done, call show_hooks with the url (or topic) and the",
         "hooks you wrote — it draws them, each with its device and who it",
         "stops, so they are visible, not only said in chat.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   create_variants: {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
-    guidance: () =>
-      [
+    guidance: (a) => {
+      const count = Number(a.count ?? 3) || 3;
+      const angle = String(a.angle ?? "").trim();
+      return [
         "The post that worked, its transcript and its stats.",
         "",
-        "Propose variants worth filming next: for each, the hook, the one angle",
-        "that changes, the shot beats in order, and the call to action. Keep",
+        `Propose ${count} variant${count === 1 ? "" : "s"} worth filming next: for each, the hook, ` +
+          "the one angle that changes, the shot beats in order, and the call to action. Keep",
         "whatever made the original work and say what that was.",
+        ...(angle ? ["", `Steer the variants toward: ${angle}.`] : []),
         "",
         "When you are done, call show_variants with the sourceUrl and the",
         "variants you wrote — it draws each one's hook, angle, beats and CTA",
         "so they are visible, not only said in chat.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   repurpose_post: {
@@ -426,9 +446,10 @@ export function costSentence(tool: string): string {
 export function fetchBillingNote(tool: string): string {
   const calls = planCalls(tool);
   if (calls.length === 0) return "";
+  const total = planCost(tool);
   return (
     `Billed as the fetches that produced it: ${calls.join(" and ")}, ` +
-    `${planCost(tool)} credits in total, at the data price. Retrying this exact call does ` +
+    `${total} credit${total === 1 ? "" : "s"} in total, at the data price. Retrying this exact call does ` +
     "not charge again: the idempotency key is namespaced per tool, so a retry replays the " +
     "same debits."
   );
