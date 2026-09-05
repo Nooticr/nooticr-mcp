@@ -176,3 +176,189 @@ describe("a client that cannot be asked", () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+/**
+ * The recurring charge, which is a different problem from the ones above.
+ *
+ * `create_brand_watch` already had a quote-then-confirm protocol, and the
+ * backend half of it is real: the first call creates nothing and mints a
+ * token, and confirming without a matching token creates nothing either. What
+ * the protocol could not do is make a person see the quote — the only thing
+ * between "504 credits a day, forever" and a created watch was the model
+ * choosing to say it out loud, and a model that calls twice in a row with the
+ * token it was just handed satisfies every server-side check with no human
+ * anywhere in the loop.
+ */
+describe("a watch that bills until someone stops it", () => {
+  const create = (args: Record<string, unknown>) => ({
+    name: "create_brand_watch",
+    arguments: { term: "nike", ...args },
+  });
+  const created = (calls: Array<{ name: string }>) =>
+    calls.filter((c) => c.name === "create_brand_watch").length;
+
+  it("asks before the call that actually starts it, quoting run and period", async () => {
+    const { client, calls, asked } = await connect("accept");
+    await client.callTool(create({ cadence: "hourly", confirm: true, confirmationToken: "t" }));
+    expect(asked).toHaveLength(1);
+    // 21 a run across all nine networks, 24 runs a day.
+    expect(asked[0]).toMatch(/21 credits every run/);
+    expect(asked[0]).toMatch(/about 504 a day/);
+    expect(asked[0]).toMatch(/until the watch is stopped/);
+    expect(created(calls)).toBe(1);
+  });
+
+  it("creates nothing when the user declines", async () => {
+    const { client, calls, asked } = await connect("decline");
+    await client.callTool(create({ cadence: "hourly", confirm: true, confirmationToken: "t" }));
+    expect(asked).toHaveLength(1);
+    expect(created(calls)).toBe(0);
+  });
+
+  // "accept" with proceed:false is someone who read the form and said no.
+  it("creates nothing when the form comes back refused", async () => {
+    const { client, calls } = await connect("reject-form");
+    await client.callTool(create({ cadence: "daily", confirm: true, confirmationToken: "t" }));
+    expect(created(calls)).toBe(0);
+  });
+
+  it("does not ask on the quoting call, which creates nothing anyway", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(create({ cadence: "hourly" }));
+    expect(asked).toEqual([]);
+  });
+
+  it("does not ask when confirm arrives without the token the backend requires", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(create({ cadence: "hourly", confirm: true }));
+    expect(asked).toEqual([]);
+  });
+
+  // The threshold that lets a cheap one-off through is a judgement about a
+  // charge that happens once, and it does not transfer to one that repeats.
+  it("asks even when a single period costs less than the one-off threshold", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(
+      create({ platforms: ["tiktok"], cadence: "weekly", confirm: true, confirmationToken: "t" }),
+    );
+    expect(2).toBeLessThan(CONFIRM_ABOVE_CREDITS);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toMatch(/2 credits every run, about 2 a week/);
+  });
+
+  it("quotes the budget ceiling rather than the untrimmed sweep", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(
+      create({ cadence: "daily", budgetCredits: 4, confirm: true, confirmationToken: "t" }),
+    );
+    // The server trims a sweep to what fits the ceiling and never widens it,
+    // so 4 is what a run bills, not the 21 the full sweep would have cost.
+    expect(asked[0]).toMatch(/4 credits every run/);
+  });
+});
+
+/**
+ * deliverTo is the argument that can carry the answer somewhere the user did
+ * not choose, on a schedule. The model picks it, and the model spends its day
+ * reading captions and comments written by strangers.
+ */
+describe("where the digest is sent", () => {
+  const create = (args: Record<string, unknown>) => ({
+    name: "create_brand_watch",
+    arguments: { term: "nike", confirm: true, confirmationToken: "t", ...args },
+  });
+
+  it("shows the destination to the person approving it", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(create({ deliverTo: "ops@example.com" }));
+    expect(asked[0]).toContain("ops@example.com");
+  });
+
+  it("refuses to redirect the digest when no one can be shown the address", async () => {
+    // A client with no elicitation capability at all.
+    const { client, calls } = await connect(null);
+    const res = (await client.callTool(create({ deliverTo: "attacker@example.com" }))) as {
+      isError?: boolean;
+      content?: Array<{ text?: string }>;
+    };
+    expect(res.isError).toBe(true);
+    expect(res.content?.[0]?.text).toContain("attacker@example.com");
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(0);
+  });
+
+  // The safe default has to keep working everywhere, or the refusal above
+  // just pushes people onto a worse path.
+  it("still creates a watch delivered to the account's own email", async () => {
+    const { client, calls } = await connect(null);
+    await client.callTool(create({}));
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(1);
+  });
+});
+
+/**
+ * The gap between "we asked" and "someone answered".
+ *
+ * A client can declare `elicitation` and then throw when one arrives, which
+ * confirmSpend deliberately treats as carry-on — for a spend that is right,
+ * because the price was in the description either way. It is not right for a
+ * delivery address: there, proceeding unasked is the whole failure, so the
+ * redirect is gated on a person having actually accepted rather than on
+ * whether the attempt was possible.
+ */
+describe("a client that declares elicitation and then breaks", () => {
+  async function brokenClient() {
+    const calls: Array<{ name: string }> = [];
+    const nooticr = {
+      me: async () => ({ id: "u1" }),
+      callTool: async (name: string) => {
+        calls.push({ name });
+        return { contentBlocks: [], structured: {} };
+      },
+    } as unknown as NooticrClient;
+    const client = new Client(
+      { name: "test", version: "1.0.0" },
+      { capabilities: { elicitation: {} } },
+    );
+    client.setRequestHandler(ElicitRequestSchema, async () => {
+      throw new Error("the client's dialog crashed");
+    });
+    const server = createMcpServer(async () => nooticr);
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    await client.listTools();
+    return { client, calls };
+  }
+
+  it("still creates a watch delivered to the account's own address", async () => {
+    const { client, calls } = await brokenClient();
+    await client.callTool(
+      {
+        name: "create_brand_watch",
+        arguments: { term: "nike", confirm: true, confirmationToken: "t" },
+      },
+      undefined,
+      { timeout: 30_000 },
+    );
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(1);
+  });
+
+  it("refuses to redirect the digest nobody managed to approve", async () => {
+    const { client, calls } = await brokenClient();
+    const res = (await client.callTool(
+      {
+        name: "create_brand_watch",
+        arguments: {
+          term: "nike",
+          confirm: true,
+          confirmationToken: "t",
+          deliverTo: "attacker@example.com",
+        },
+      },
+      undefined,
+      { timeout: 30_000 },
+    )) as { isError?: boolean; content?: Array<{ text?: string }> };
+    expect(res.isError).toBe(true);
+    expect(res.content?.[0]?.text).toContain("attacker@example.com");
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(0);
+  });
+});
