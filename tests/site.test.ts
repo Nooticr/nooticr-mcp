@@ -49,7 +49,18 @@ const SERVER_PRICING: Record<string, number> = {
 };
 
 /** Tools that fetch nothing at all, so they cost nothing and show no price. */
-const FREE_TOOLS = ["score_draft", "show_comment_review", "show_audience_replies", "watch_creator", "unwatch_creator"];
+const FREE_TOOLS = [
+  "score_draft",
+  "show_comment_review",
+  "show_comparison",
+  "show_analysis",
+  "show_hooks",
+  "show_variants",
+  "show_repurposed_post",
+  "show_audience_replies",
+  "watch_creator",
+  "unwatch_creator",
+];
 
 describe("landing page", () => {
   const html = landingPage(URL, API);
@@ -271,6 +282,11 @@ describe("tool surface", () => {
     "buy_nooticr_credits",
     "nooticr_login",
     "show_comment_review",
+    "show_comparison",
+    "show_analysis",
+    "show_hooks",
+    "show_variants",
+    "show_repurposed_post",
     "get_post_frames",
     // The job tools (jobs.ts): compositions of the calls above, named after
     // the question rather than the endpoint.
@@ -343,6 +359,11 @@ describe("tool surface", () => {
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
       "show_comment_review",
+      "show_comparison",
+      "show_analysis",
+      "show_hooks",
+      "show_variants",
+      "show_repurposed_post",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
       // Own-account reads: nooticr's own already-stored data, never billed.

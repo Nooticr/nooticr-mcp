@@ -1345,7 +1345,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           platform,
           metric,
           metricValue: value,
-          post: { ...post, postId: postIdOf(post, 0) },
+          // standing lives on the post too, not only as a sibling field —
+          // postCard's standingBadge reads p.standing, and nesting it here is
+          // what makes the ratio-vs-baseline verdict this tool computes
+          // actually show up on the card instead of only in the chat text.
+          post: { ...post, postId: postIdOf(post, 0), standing: where },
           baseline,
           standing: where,
           window,

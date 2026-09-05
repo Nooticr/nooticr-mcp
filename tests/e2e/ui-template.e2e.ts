@@ -1299,7 +1299,41 @@ test.describe("brand monitoring", () => {
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
   });
 
-  test("hands the host the ids the tool issued, not the text it rendered", async ({ page }) => {
+  // analyze_comments's real inputSchema is {url, limit?}.strict() — one
+  // post, not an arbitrary list of texts/ids — so "Analyse these" resolves
+  // which post(s) the picks belong to and calls analyze_comments on that
+  // post's url when they all belong to one; a real host executing the old
+  // {comments, ids} shape got a schema rejection every time.
+  test("picking comments from one post calls analyze_comments on that post's url", async ({ page }) => {
+    await page.setContent(NOOTICR_UI_TEMPLATE);
+    await page.evaluate((d) => {
+      const w = window as unknown as Record<string, unknown>;
+      w.__called = [];
+      w.openai = {
+        toolOutput: d,
+        callTool: async (name: string, args: unknown) => {
+          (w.__called as unknown[]).push({ name, args });
+          return { content: [] };
+        },
+      };
+      window.dispatchEvent(new CustomEvent("openai:set_globals",
+        { detail: { globals: { toolOutput: d } } }));
+    }, MENTIONS);
+    await page.waitForTimeout(600);
+    // Both from the same first reddit thread.
+    await page.locator('.mention[data-mention-id="reddit:a:0"] .mention-pick').click();
+    await page.locator('.mention[data-mention-id="reddit:a:1"] .mention-pick').click();
+    await page.locator("#pickgo").click();
+    await page.waitForTimeout(400);
+    const called = await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
+    expect(called).toHaveLength(1);
+    expect(called[0].name).toBe("analyze_comments");
+    expect(called[0].args).toEqual({ url: "https://reddit.example/p/29", limit: 20 });
+    await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
+  });
+
+  test("picking comments from different posts refuses to send a broken call", async ({ page }) => {
     await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
@@ -1321,15 +1355,8 @@ test.describe("brand monitoring", () => {
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
-    // Addressable is the point: another tool has to be able to act on exactly
-    // these comments, which only the tool's own ids allow.
-    expect(called).toHaveLength(1);
-    expect(called[0].name).toBe("analyze_comments");
-    expect(called[0].args.ids).toEqual(["reddit:a:0", "tiktok:c:0"]);
-    expect(called[0].args.comments).toEqual([
-      "nike keeps missing, and nike knows it", "wearing nike today",
-    ]);
-    await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
+    expect(called, "should not have sent analyze_comments a call it will reject").toHaveLength(0);
+    await expect(page.locator("#pickgo")).toContainText(/one post/i);
   });
 
   test("pages from the offset the tool handed back, and only unfiltered", async ({ page }) => {
@@ -1420,10 +1447,10 @@ test.describe("brand monitoring", () => {
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { args: Record<string, unknown> }[]);
-    expect(called[0].args.ids).toHaveLength(7);
-    // And the text of a collapsed comment comes from the result, not the DOM.
-    expect(called[0].args.comments).toHaveLength(7);
-    expect((called[0].args.comments as string[])[6]).toBe("support nike 6");
+    // All seven are one post's comments (BURST is a single thread), so the
+    // real analyze_comments({url, limit?}.strict()) call succeeds — even
+    // though only 4 rows were ever rendered before "select all".
+    expect(called[0].args).toEqual({ url: "https://weibo.example/p/1", limit: 20 });
     // Clicking again clears all seven.
     await page.locator("[data-group-all]").click();
     await expect(page.locator("#pickbar")).toBeHidden();
@@ -1656,5 +1683,62 @@ test.describe("collab shortlist", () => {
     // No score was sent, so nothing about scoring may appear.
     expect(body).not.toContain("Scored by");
     expect(body).not.toContain("/100");
+/**
+ * track_competitor and why_did_this_underperform both compute a post's ratio
+ * to the creator's own baseline (see performance.ts's standing()) and attach
+ * it to the post as `standing`. Before standingBadge() existed, postCard
+ * rendered the same view/like/comment pills any gallery gets and the
+ * computed comparison never reached the screen — only the chat text carried
+ * it. These pin that the badge actually shows, with the right colour per
+ * verdict, and that ordinary posts with no `standing` are unaffected.
+ */
+test.describe("competitor standing badge", () => {
+  const post = (standing: Record<string, unknown> | undefined) => ({
+    platform: "tiktok",
+    caption: "Post",
+    creatorHandle: "fixture_user",
+    externalUrl: "https://www.tiktok.com/@fixture_user/video/1",
+    videoUrl: "https://mcp.nooticr.com/media/x.mp4",
+    contentType: "video",
+    views: 3000, likes: 300, comments: 30,
+    ...(standing ? { standing } : {}),
+  });
+
+  test("a gallery card shows the ratio and verdict when the post carries standing", async ({ page }) => {
+    await renderTemplate(page, {
+      posts: [
+        post({ value: 3000, median: 2000, ratio: 1.5, percentile: 67, verdict: "breakout" }),
+        post({ value: 2000, median: 2000, ratio: 1, percentile: 33, verdict: "typical" }),
+        post({ value: 1000, median: 2000, ratio: 0.5, percentile: 0, verdict: "below_baseline" }),
+      ],
+    });
+    const cards = page.locator(".card");
+    await expect(cards).toHaveCount(3);
+    await expect(cards.nth(0)).toContainText("1.5× median");
+    await expect(cards.nth(0)).toContainText("Breakout");
+    await expect(cards.nth(1)).toContainText("1× median");
+    await expect(cards.nth(1)).toContainText("Typical");
+    await expect(cards.nth(2)).toContainText("0.5× median");
+    await expect(cards.nth(2)).toContainText("Below baseline");
+  });
+
+  test("a single-post view (why_did_this_underperform) shows the badge too", async ({ page }) => {
+    await renderTemplate(page, {
+      post: post({ value: 100, median: 2000, ratio: 0.05, percentile: 0, verdict: "flop" }),
+    });
+    await expect(page.locator(".card")).toContainText("0.05× median");
+    await expect(page.locator(".card")).toContainText("Underperformed");
+  });
+
+  test("an ordinary post gallery with no standing shows no badge", async ({ page }) => {
+    await renderTemplate(page, { posts: [post(undefined)] });
+    await expect(page.locator(".card")).not.toContainText("median");
+  });
+
+  test("no_baseline (ratio null) is treated as no badge, not a crash", async ({ page }) => {
+    await renderTemplate(page, {
+      post: post({ value: 100, median: null, ratio: null, percentile: null, verdict: "no_baseline" }),
+    });
+    await expect(page.locator(".card")).not.toContainText("median");
   });
 });

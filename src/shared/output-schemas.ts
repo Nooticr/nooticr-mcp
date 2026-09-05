@@ -371,6 +371,66 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
+  // The five below close the loop the evidence-only tools open: nooticr
+  // fetches material and prices at the fetch, "your own model does the
+  // thinking" (README) — but until these existed, the thinking had nowhere
+  // to land except chat text. Free, and make no requests, same as
+  // show_comment_review: they only draw what they're handed.
+  show_comparison: open({
+    posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_posts returned."),
+    comparison: open({
+      winner: scalar().describe("1-indexed position of the post that won, matching the posts array."),
+      winnerReason: scalar(),
+      differences: listOf(open({ factor: scalar(), detail: scalar() })),
+      lessons: listOf(z.string()),
+      nextTest: scalar(),
+    }).nullish(),
+    mcpCredits,
+  }),
+  show_analysis: open({
+    url: scalar(),
+    post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
+    analysis: open({}).passthrough().nullish().describe(
+      "Your own analysis, any of the fields analyze_post's guidance asked for — summary, " +
+        "hookStrength, scriptStructure, whyItWorks, suggestedHook, keyQuotes, suggestedHashtags, " +
+        "variationIdeas, viralTriggers, targetAudience and more all render if present; every field " +
+        "is optional, and none is required to have used all of them."
+    ),
+    mcpCredits,
+  }),
+  show_hooks: open({
+    url: scalar().describe("The post the hooks were grounded in, if any."),
+    topic: scalar().describe("The topic the hooks were grounded in, if given instead of a url."),
+    hooks: listOf(
+      open({
+        hook: scalar().describe("Under 15 words, speakable aloud."),
+        mechanism: scalar().describe("e.g. accusation, number, mistake, before/after, receipt, question."),
+        why: scalar().describe("Who it stops, and why."),
+      })
+    ),
+    mcpCredits,
+  }),
+  show_variants: open({
+    sourceUrl: scalar(),
+    post: post.nullish(),
+    variants: listOf(
+      open({
+        title: scalar().describe("A short label for this variant."),
+        hook: scalar(),
+        angle: scalar().describe("What changes versus the original."),
+        beats: listOf(z.string()).describe("Shot or talking beats, in order."),
+        cta: scalar(),
+        whyItCouldWork: scalar(),
+      })
+    ),
+    mcpCredits,
+  }),
+  show_repurposed_post: open({
+    sourceUrl: scalar(),
+    versions: listOf(open({ surface: scalar().describe("e.g. 'X thread', 'LinkedIn post'."), content: scalar() })),
+    mcpCredits,
+  }),
+
   /**
    * The five job tools, and the one view that draws what a model concluded
    * from the first of them.

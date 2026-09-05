@@ -127,6 +127,9 @@ describe("tool annotations", () => {
       // the filing happens on whichever server the host also has connected.
       "prepare_handoff",
       "review_post",
+      // The show_* family: each draws what the caller already wrote/fetched
+      // and reaches nothing.
+      "show_analysis",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
       // send them either — no connection carries comment-write permission.
       "show_audience_replies",
@@ -136,6 +139,10 @@ describe("tool annotations", () => {
       "show_collab_shortlist",
       // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
+      "show_comparison",
+      "show_hooks",
+      "show_repurposed_post",
+      "show_variants",
       "stop_brand_watch",
       "unwatch_creator",
       "update_product",

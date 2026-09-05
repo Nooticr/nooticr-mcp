@@ -158,6 +158,36 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("The post the comments came from."), summary: z.string().optional(), title: z.string().optional(), comments: z.array(z.object({ id: z.string(), text: z.string(), author: z.string().optional(), likes: z.number().optional(), sentiment: z.string().optional(), category: z.string().optional(), note: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
  },
  {
+ name: "show_comparison",
+ title: "Show Comparison",
+ description: "Display a comparison you wrote after compare_posts fetched the first post and you fetched the rest yourself. Free, and makes no requests — it only draws what you pass it: each post with a BEST badge on the winner, what differed, shared strengths and the next experiment worth running. Call this after you have done the comparing, not instead of it.",
+ inputSchema: z.object({ posts: z.array(z.record(z.unknown())).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
+ },
+ {
+ name: "show_analysis",
+ title: "Show Analysis",
+ description: "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post handed you the material. Free, and makes no requests — it only draws what you pass it: hook strength, script structure, quotable lines, hashtags, target audience, viral triggers and more, whichever of these you actually produced. Call this after you have done the analysing, not instead of it.",
+ inputSchema: z.object({ url: z.string(), post: z.record(z.unknown()).optional(), analysis: z.record(z.unknown()) }).strict(),
+ },
+ {
+ name: "show_hooks",
+ title: "Show Hooks",
+ description: "Display the alternative opening hooks you wrote after write_hooks handed you a post's material (or just a topic). Free, and makes no requests — it only draws what you pass it: each hook with the device it uses and who it stops. Call this after you have written the hooks, not instead of writing them.",
+ inputSchema: z.object({ url: z.string().optional(), topic: z.string().optional(), hooks: z.array(z.object({ hook: z.string(), mechanism: z.string().optional(), why: z.string().optional() })).min(1) }).strict(),
+ },
+ {
+ name: "show_variants",
+ title: "Show Variants",
+ description: "Display the post variants you wrote after create_variants handed you the original post's material. Free, and makes no requests — it only draws what you pass it: each variant's hook, the angle that changes, its shot beats and its call to action. Call this after you have written the variants, not instead of writing them.",
+ inputSchema: z.object({ sourceUrl: z.string(), post: z.record(z.unknown()).optional(), variants: z.array(z.object({ title: z.string(), hook: z.string(), angle: z.string().optional(), beats: z.array(z.string()).optional(), cta: z.string().optional(), whyItCouldWork: z.string().optional() })).min(1) }).strict(),
+ },
+ {
+ name: "show_repurposed_post",
+ title: "Show Repurposed Post",
+ description: "Display the rewritten copy you produced after repurpose_post handed you the source post's material. Free, and makes no requests — it only draws what you pass it: one entry per surface you rewrote it for. Call this after you have done the rewriting, not instead of it.",
+ inputSchema: z.object({ sourceUrl: z.string(), versions: z.array(z.object({ surface: z.string(), content: z.string() })).min(1) }).strict(),
+ },
+ {
  name: "check_nooticr_credits",
  title: "Check Nooticr Credits",
  description: "Check your MCP credit balance, billing URL and pack size. New users get 20 free credits. No cost — call anytime to see remaining credits before running other tools. Use before a run of paid calls to confirm the balance covers it.",

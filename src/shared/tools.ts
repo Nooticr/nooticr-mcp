@@ -210,6 +210,12 @@ const RAW_URL_KEYS = new Set([
  "videoFallbackUrl",
  "thumbnailFallbackUrl",
  "musicFallbackUrl",
+ // Not a media asset — a Stripe Checkout link buy_nooticr_credits returns.
+ // Without this it fell through to the generic string branch below (which
+ // proxies *any* https:// string regardless of key name) and got rewritten
+ // into a /media/proxy?url=... link, a URL meant to serve image/video
+ // bytes, not redirect to a payment page.
+ "checkoutUrl",
 ]);
 
 /**
@@ -544,6 +550,14 @@ export function createMcpServer(
   "catch_up_watchlist",
   "search_mentions",
   "show_comment_review",
+  // Close the loop the evidence-only tools open: your own analysis/hooks/
+  // variants/repurposing/comparison, drawn — same shape as
+  // show_comment_review, free and no requests.
+  "show_comparison",
+  "show_analysis",
+  "show_hooks",
+  "show_variants",
+  "show_repurposed_post",
   "get_post_frames",
   // The job tools (jobs.ts). Each draws through the same generic template:
   // the three that return posts render as a gallery, and the two shaped like
@@ -1461,6 +1475,272 @@ export function createMcpServer(
       },
      ],
      // Nothing was fetched, so nothing was charged.
+     mcpCredits: { cost: 0 },
+    },
+   };
+  }
+ );
+
+ // The five tools below close the loop the evidence-only tools open:
+ // compare_posts/analyze_post(_fast)/understand_social_post/write_hooks/
+ // create_variants/repurpose_post fetch material and price at the fetch —
+ // "your own model does the thinking" (README) — but until these existed,
+ // the thinking had nowhere to land except chat text; the widget stayed on
+ // the plain post card it started on. Same shape as show_comment_review in
+ // every way that matters: free, no requests, draws only what it is
+ // handed. Each one's structuredContent is built to match an existing view
+ // ui-template.ts already renders (show_comparison → the comparison
+ // scoreboard, show_analysis → analysisCard) or a new one added alongside
+ // it (show_hooks, show_variants, show_repurposed_post).
+ server.registerTool(
+  "show_comparison",
+  {
+   title: "Show Comparison",
+   description:
+    "Display a comparison you wrote after compare_posts fetched the first post and you fetched " +
+    "the rest yourself (get_social_media, 1 credit each). Free, and makes no requests — it only " +
+    "draws what you pass it: each post with a BEST badge on the winner, what differed, shared " +
+    "strengths and the next experiment worth running. Call this after you have done the " +
+    "comparing, not instead of it.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_comparison") },
+    "ui/resourceUri": uiResource("show_comparison"),
+    "openai/outputTemplate": appsSdkResource("show_comparison"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_comparison,
+   inputSchema: z
+    .object({
+     posts: z
+      .array(z.record(z.unknown()))
+      .min(2)
+      .max(5)
+      .describe(
+       "The 2-5 posts compared, in the order you compared them — the same shape get_social_media " +
+        "returned for each (platform, title/caption, creatorHandle, externalUrl, views, likes, ...)."
+      ),
+     winner: z.number().int().describe("1-indexed position of the post that won, matching `posts`."),
+     winnerReason: z.string().optional(),
+     differences: z
+      .array(z.object({ factor: z.string(), detail: z.string() }))
+      .optional()
+      .describe("What actually differed — hook, format, length, caption, hashtags."),
+     lessons: z.array(z.string()).optional().describe("What the posts share worth keeping."),
+     nextTest: z.string().optional().describe("The one experiment worth running next."),
+    })
+    .strict(),
+  },
+  async (args: {
+   posts: Array<Record<string, unknown>>;
+   winner: number;
+   winnerReason?: string;
+   differences?: Array<{ factor: string; detail: string }>;
+   lessons?: string[];
+   nextTest?: string;
+  }) => {
+   return {
+    content: [
+     {
+      type: "text" as const,
+      text: `Showing a comparison of ${args.posts.length} posts.${args.winnerReason ? ` ${args.winnerReason}` : ""}`,
+     },
+    ],
+    structuredContent: {
+     posts: args.posts,
+     comparison: {
+      winner: args.winner,
+      winnerReason: args.winnerReason ?? null,
+      differences: args.differences ?? [],
+      lessons: args.lessons ?? [],
+      nextTest: args.nextTest ?? null,
+     },
+     mcpCredits: { cost: 0 },
+    },
+   };
+  }
+ );
+
+ server.registerTool(
+  "show_analysis",
+  {
+   title: "Show Analysis",
+   description:
+    "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post " +
+    "handed you the material. Free, and makes no requests — it only draws what you pass it: hook " +
+    "strength, script structure, quotable lines, hashtags, target audience, viral triggers and " +
+    "more, whichever of these you actually produced. Call this after you have done the analysing, " +
+    "not instead of it.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_analysis") },
+    "ui/resourceUri": uiResource("show_analysis"),
+    "openai/outputTemplate": appsSdkResource("show_analysis"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_analysis,
+   inputSchema: z
+    .object({
+     url: z.string().describe("The post you analyzed."),
+     post: z
+      .record(z.unknown())
+      .optional()
+      .describe("The post object analyze_post/analyze_post_fast/understand_social_post handed you, unchanged."),
+     analysis: z
+      .record(z.unknown())
+      .describe(
+       "Your own analysis. Any of: summary, hookStrength (1-10), commentBaitLevel (1-10), " +
+        "scriptStructure {hook,buildUp,payoff,cta}, whyItWorks, suggestedHook, keyQuotes[], " +
+        "suggestedHashtags[], targetAudience, viralTriggers[], negativeSignals[], variationIdeas[], " +
+        "emotionalArc, overlayText(s), niche, callToAction, transcript — every field is optional, " +
+        "and none is required to have used all of them."
+      ),
+    })
+    .strict(),
+  },
+  async (args: { url: string; post?: Record<string, unknown>; analysis: Record<string, unknown> }) => {
+   return {
+    content: [{ type: "text" as const, text: `Showing your analysis of ${args.url}.` }],
+    structuredContent: {
+     url: args.url,
+     post: args.post ?? { platform: platformFromUrl(args.url), externalUrl: args.url },
+     analysis: args.analysis,
+     mcpCredits: { cost: 0 },
+    },
+   };
+  }
+ );
+
+ server.registerTool(
+  "show_hooks",
+  {
+   title: "Show Hooks",
+   description:
+    "Display the alternative opening hooks you wrote after write_hooks handed you a post's " +
+    "material (or just a topic). Free, and makes no requests — it only draws what you pass it: " +
+    "each hook with the device it uses and who it stops. Call this after you have written the " +
+    "hooks, not instead of writing them.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_hooks") },
+    "ui/resourceUri": uiResource("show_hooks"),
+    "openai/outputTemplate": appsSdkResource("show_hooks"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_hooks,
+   inputSchema: z
+    .object({
+     url: z.string().optional().describe("The post the hooks were grounded in, if any."),
+     topic: z.string().optional().describe("The topic the hooks were grounded in, if given instead of a url."),
+     hooks: z
+      .array(
+       z.object({
+        hook: z.string().describe("Under 15 words, speakable aloud."),
+        mechanism: z.string().optional().describe("e.g. accusation, number, mistake, before/after, receipt, question."),
+        why: z.string().optional().describe("Who it stops, and why."),
+       })
+      )
+      .min(1),
+    })
+    .strict(),
+  },
+  async (args: { url?: string; topic?: string; hooks: Array<{ hook: string; mechanism?: string; why?: string }> }) => {
+   return {
+    content: [{ type: "text" as const, text: `Showing ${args.hooks.length} hooks.` }],
+    structuredContent: {
+     url: args.url ?? null,
+     topic: args.topic ?? null,
+     hooks: args.hooks,
+     mcpCredits: { cost: 0 },
+    },
+   };
+  }
+ );
+
+ server.registerTool(
+  "show_variants",
+  {
+   title: "Show Variants",
+   description:
+    "Display the post variants you wrote after create_variants handed you the original post's " +
+    "material. Free, and makes no requests — it only draws what you pass it: each variant's hook, " +
+    "the angle that changes, its shot beats and its call to action. Call this after you have " +
+    "written the variants, not instead of writing them.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_variants") },
+    "ui/resourceUri": uiResource("show_variants"),
+    "openai/outputTemplate": appsSdkResource("show_variants"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_variants,
+   inputSchema: z
+    .object({
+     sourceUrl: z.string().describe("The post these variants riff on."),
+     post: z.record(z.unknown()).optional().describe("The post object create_variants handed you, unchanged."),
+     variants: z
+      .array(
+       z.object({
+        title: z.string().describe("A short label for this variant."),
+        hook: z.string(),
+        angle: z.string().optional().describe("What changes versus the original."),
+        beats: z.array(z.string()).optional().describe("Shot or talking beats, in order."),
+        cta: z.string().optional(),
+        whyItCouldWork: z.string().optional(),
+       })
+      )
+      .min(1),
+    })
+    .strict(),
+  },
+  async (args: {
+   sourceUrl: string;
+   post?: Record<string, unknown>;
+   variants: Array<{ title: string; hook: string; angle?: string; beats?: string[]; cta?: string; whyItCouldWork?: string }>;
+  }) => {
+   return {
+    content: [{ type: "text" as const, text: `Showing ${args.variants.length} variants of ${args.sourceUrl}.` }],
+    structuredContent: {
+     sourceUrl: args.sourceUrl,
+     post: args.post ?? { platform: platformFromUrl(args.sourceUrl), externalUrl: args.sourceUrl },
+     variants: args.variants,
+     mcpCredits: { cost: 0 },
+    },
+   };
+  }
+ );
+
+ server.registerTool(
+  "show_repurposed_post",
+  {
+   title: "Show Repurposed Post",
+   description:
+    "Display the rewritten copy you produced after repurpose_post handed you the source post's " +
+    "material. Free, and makes no requests — it only draws what you pass it: one entry per " +
+    "surface you rewrote it for. Call this after you have done the rewriting, not instead of it.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_repurposed_post") },
+    "ui/resourceUri": uiResource("show_repurposed_post"),
+    "openai/outputTemplate": appsSdkResource("show_repurposed_post"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_repurposed_post,
+   inputSchema: z
+    .object({
+     sourceUrl: z.string().describe("The post this copy was repurposed from."),
+     versions: z
+      .array(
+       z.object({
+        surface: z.string().describe("e.g. 'X thread', 'LinkedIn post', 'YouTube description'."),
+        content: z.string(),
+       })
+      )
+      .min(1),
+    })
+    .strict(),
+  },
+  async (args: { sourceUrl: string; versions: Array<{ surface: string; content: string }> }) => {
+   return {
+    content: [{ type: "text" as const, text: `Showing ${args.versions.length} repurposed version(s) of ${args.sourceUrl}.` }],
+    structuredContent: {
+     sourceUrl: args.sourceUrl,
+     versions: args.versions,
      mcpCredits: { cost: 0 },
     },
    };

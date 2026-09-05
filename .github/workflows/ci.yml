@@ -89,6 +89,17 @@ jobs:
       - name: Build the npm package
         run: npm run build
 
+      # Spawns the real built dist/index.js over stdio and round-trips real
+      # tools/list + tools/call requests against scripts/fixture-server.mjs,
+      # a pure-Node stand-in for nooticr-server's /auth/dev-login, /graphql
+      # and /mcp endpoints. Needs no Rust/Postgres toolchain and no secret,
+      # so it runs here on every push — see docs/testing/agentic-e2e-testing.md
+      # for what it does and doesn't prove (this repo's own MCP-protocol
+      # wiring, not nooticr-server's actual behavior; that needs the real
+      # backend — see nooticr-server/.github/workflows/agentic-e2e.yml).
+      - name: Agentic E2E smoke (fixture backend)
+        run: npm run test:e2e-smoke:fixture
+
       # The host contract, checked with the official inspector rather than a
       # bespoke client. Every UI bug this server has shipped was a metadata or
       # mime mistake that this step would have caught: a resourceUri pointing
