@@ -3,17 +3,21 @@
   "name": "com.nooticr/mcp",
   "title": "Nooticr",
   "description": "Social intelligence for 10 networks: read posts and trends, monitor brand mentions, then create.",
-  "version": "1.26.19",
+  "version": "1.26.20",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
       "mimeType": "image/png",
-      "sizes": ["512x512"]
+      "sizes": [
+        "512x512"
+      ]
     },
     {
       "src": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/nooticr-icon.svg",
       "mimeType": "image/svg+xml",
-      "sizes": ["any"]
+      "sizes": [
+        "any"
+      ]
     }
   ],
   "websiteUrl": "https://mcp.nooticr.com",
@@ -31,7 +35,7 @@
     {
       "registryType": "npm",
       "identifier": "@nooticr/mcp",
-      "version": "1.26.19",
+      "version": "1.26.20",
       "transport": {
         "type": "stdio"
       }
