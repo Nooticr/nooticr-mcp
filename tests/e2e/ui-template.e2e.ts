@@ -1683,6 +1683,9 @@ test.describe("collab shortlist", () => {
     // No score was sent, so nothing about scoring may appear.
     expect(body).not.toContain("Scored by");
     expect(body).not.toContain("/100");
+  });
+});
+
 /**
  * track_competitor and why_did_this_underperform both compute a post's ratio
  * to the creator's own baseline (see performance.ts's standing()) and attach
