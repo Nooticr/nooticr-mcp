@@ -73,8 +73,12 @@ async function gateRecurringCharge(
   args: CreateArgs,
 ): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: true } | null> {
   const sweep = searchMentionsCost(args.platforms);
-  // budgetCredits is a per-run ceiling the server trims to, never widens, so
-  // the smaller of the two is what a run actually bills.
+  // An upper bound on the run, deliberately, rather than the exact figure.
+  // The server does not bill the budget: `plan_run` drops whole platforms
+  // until the rest fit under it, so a ceiling of 9 against 2-credit networks
+  // actually bills 8. Quoting the ceiling can therefore overstate by less
+  // than one network and can never understate, which is the only direction a
+  // spend dialog is allowed to be wrong in.
   const perRun = Math.min(sweep, args.budgetCredits ?? Number.POSITIVE_INFINITY);
   const rate = CADENCE_RATE[args.cadence ?? "daily"];
   const perPeriod = perRun * rate.runs;
@@ -189,6 +193,12 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
           budgetCredits: z
             .number()
             .int()
+            // The bounds the server already enforces at creation, mirrored so
+            // a nonsense ceiling is refused before it reaches the confirmation
+            // dialog: an unbounded 0 quoted "0 credits every run" for a watch
+            // the backend would then reject for not affording one network.
+            .min(2)
+            .max(1000)
             .optional()
             .describe(
               "Hard per-run credit ceiling (min 2, max 1000). Defaults to the full sweep's cost.",
