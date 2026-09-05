@@ -1,0 +1,4 @@
+{
+  "_comment": "Shape of the real .mcpjam/llms.json that scripts/run-agentic-evals.sh generates from $ANTHROPIC_API_KEY (gitignored — never commit a real key). Copy this file to llms.json and fill in a key yourself only if you want to run mcpjam directly instead of through the script.",
+  "anthropic": "sk-ant-..."
+}
