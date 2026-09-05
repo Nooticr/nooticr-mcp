@@ -1203,7 +1203,14 @@ test.describe("brand monitoring", () => {
   });
 
   test("says when a comment was written the way a person would", async ({ page }) => {
-    const now = new Date();
+    // A fixed, safely-mid-day "now" — real wall-clock time flaked here
+    // whenever CI happened to run within 2 hours of local midnight, tipping
+    // "2 hours ago" from "today" into "yesterday" through no fault of the
+    // formatter itself. See friendlyTime in ui-template.ts: it compares
+    // calendar dates correctly; the bug was this test's fixture assuming it
+    // would never run near a day boundary.
+    const now = new Date("2024-01-15T12:00:00.000Z");
+    await page.clock.install({ time: now });
     const at = (msAgo: number) => new Date(now.getTime() - msAgo).toISOString();
     await renderTemplate(page, {
       term: "nike",
