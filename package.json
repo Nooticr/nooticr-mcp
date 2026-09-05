@@ -26,6 +26,8 @@
     "test": "vitest run",
     "prepare": "npm run build",
     "test:e2e": "playwright test",
+    "test:e2e-smoke": "bash scripts/run-mechanical-e2e-smoke.sh",
+    "test:e2e-smoke:fixture": "NOOTICR_E2E_BACKEND=fixture bash scripts/run-mechanical-e2e-smoke.sh",
     "test:agentic-e2e": "bash scripts/run-agentic-evals.sh"
   },
   "keywords": [

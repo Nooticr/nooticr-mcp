@@ -488,10 +488,13 @@ npm run build    # tsc
 npm test         # vitest (66 unit tests, mocked fetch — no network)
 ```
 
-Those are unit tests against a stub backend. For agentic end-to-end tests —
-a real model driving this server's real built CLI against a real, disposable
-nooticr-server — see `docs/testing/agentic-e2e-testing.md` and
-`npm run test:agentic-e2e`.
+Those are unit tests against a stub backend. For real MCP-protocol
+end-to-end tests — no Rust, no Postgres, no API key —
+`npm run test:e2e-smoke:fixture` spawns this repo's real built CLI and
+drives it over stdio against a pure-Node stand-in for nooticr-server. See
+`docs/testing/agentic-e2e-testing.md` for that plus the two tiers above it
+(`npm run test:e2e-smoke` against a real nooticr-server, and
+`npm run test:agentic-e2e`, a real model driving it).
 
 ## License
 

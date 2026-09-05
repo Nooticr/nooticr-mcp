@@ -84,49 +84,95 @@ richest assertion vocabulary of anything surveyed: call sequencing, OTel
 traces, weighted LLM-judge rubrics) are both real, working alternatives if
 this needs to grow past "was the right tool called."
 
-## Running it
+## Three tiers, from "needs nothing" to "needs everything"
+
+Getting a real model in the loop turned out to have a dependency chain
+underneath it worth pulling apart, because each layer is independently
+useful and independently blocked by something different:
+
+| Tier | Script | Needs | Proves |
+|---|---|---|---|
+| **Fixture smoke** | `npm run test:e2e-smoke:fixture` | Just Node | This repo's real built CLI actually speaks MCP correctly — connects over stdio, `tools/list`, `tools/call` round-trips a real JSON-RPC response — against `scripts/fixture-server.mjs`, a pure-Node stand-in for the three endpoints (`/auth/dev-login`, `/graphql`, `/mcp`) the harness and `NooticrClient` actually touch. |
+| **Real smoke** | `npm run test:e2e-smoke` | Rust + Postgres + FFmpeg/ONNX toolchain (no LLM key) | The same protocol round-trip against **real** `nooticr-server` behavior — real workspace-authz, real dev-login, real `NOOTICR_E2E_MODE` fixture-URL handling. |
+| **Agentic evals** | `npm run test:agentic-e2e` | Real smoke's requirements + `ANTHROPIC_API_KEY` | Does a real model call the *right* tool — the layer neither smoke tier can check, since both drive fixed, scripted tool calls. |
+
+The fixture tier exists because building `nooticr-server` needs a real
+Rust/Postgres/FFmpeg/ONNX toolchain that isn't available everywhere — this
+doc was written in an environment where it genuinely isn't: `ort-sys`
+(the ONNX Runtime binding `crates/media` depends on for YAMNet audio
+classification) fetches a prebuilt binary from `cdn.pyke.io` at build time,
+and that host was outside the sandbox's network egress allowlist, so
+`cargo build -p nooticr-server` fails there no matter what — a network
+policy limit, not a bug in either repo (confirmed by installing this
+repo's exact CI recipe, `.github/actions/rust-env`'s apt packages, by hand:
+every FFmpeg header resolved fine; only the ONNX download was blocked).
+Without the fixture tier, that meant **no way to prove this harness's own
+scripts were mechanically correct** — real bugs in `scripts/e2e-server-lib.sh`
+or `scripts/mcp-smoke-client.mjs` would have been indistinguishable from
+"couldn't test it here." `scripts/fixture-server.mjs`'s header spells out
+exactly what it does and doesn't stand in for; the short version is it
+proves the wiring, not `nooticr-server`'s actual behavior — run the real
+tier (or agentic evals) before trusting a change to either repo's
+backend-facing logic.
+
+All three share `scripts/e2e-server-lib.sh` (one boot/login/provision
+implementation, `NOOTICR_E2E_BACKEND=real|fixture` switches which backend it
+boots) so they can't drift on how a server gets stood up and logged into.
 
 ```bash
-# One-time: clone nooticr-server as a sibling of this repo (or point
-# NOOTICR_SERVER_DIR elsewhere), and have Postgres reachable — see that
-# repo's AGENTS.md for the two ways to start it (docker compose vs.
-# pg_ctlcluster). This script does not manage Postgres itself.
-export DATABASE_URL=postgres://nooticr:nooticr@localhost:5432/nooticr
-export ANTHROPIC_API_KEY=sk-ant-...
+# Fastest — needs nothing but Node. Verified working end to end while
+# writing this doc, in an environment that could not build nooticr-server:
+npm run test:e2e-smoke:fixture
 
+# Real backend, no LLM — needs Rust/Postgres reachable (see nooticr-server's
+# AGENTS.md), no API key:
+export DATABASE_URL=postgres://nooticr:nooticr@localhost:5432/nooticr
+npm run test:e2e-smoke
+
+# Real backend + a real model:
+export ANTHROPIC_API_KEY=sk-ant-...
 npm run test:agentic-e2e
 ```
 
-The script (`scripts/run-agentic-evals.sh`):
-1. Skips cleanly (exit 0, clear message) if `ANTHROPIC_API_KEY` is unset —
-   this is what makes it safe to land in CI before that secret exists.
-2. `npm run build` — the eval runs the real built `dist/index.js`, not
-   source.
-3. Boots `nooticr-server` (`$NOOTICR_SERVER_DIR`, default `../nooticr-server`)
+What `scripts/e2e-server-lib.sh` actually does, in "real" mode (the fixture
+mirrors the same sequence against its own in-memory state):
+1. Boots `nooticr-server` (`$NOOTICR_SERVER_DIR`, default `../nooticr-server`)
    with `ALLOW_DEV_LOGIN=1 NOOTICR_E2E_MODE=1 APP_URL=http://localhost:5173`,
    waits for `/health`.
-4. `POST /auth/dev-login`, then a `createWorkspace` + `createApp` GraphQL
+2. `POST /auth/dev-login`, then a `createWorkspace` + `createApp` GraphQL
    mutation (same flow AGENTS.md documents as "the GraphQL auth scope
    gotcha"), then re-logs-in scoped to that workspace — so
    workspace-scoped tools (`list_own_apps`, `draft_post`, ...) have
    something real to read.
-5. Generates `.mcpjam/environment.generated.json` and `.mcpjam/llms.json`
-   with the live base URL / token / key, and runs
-   `npx @mcpjam/cli evals run` against `.mcpjam/tests.json`.
-6. Tears the server down (`trap ... EXIT`) and exits with MCPJam's own exit
-   code, so this can gate CI once it's proven itself.
+3. Exports `NOOTICR_BASE_URL`/`NOOTICR_ACCESS_TOKEN` for whichever caller
+   sourced it — `scripts/mcp-smoke-client.mjs` (smoke tiers) or
+   `scripts/run-agentic-evals.sh`, which additionally generates
+   `.mcpjam/environment.generated.json` + `.mcpjam/llms.json` from those and
+   runs `npx @mcpjam/cli evals run` against `.mcpjam/tests.json`.
+4. Tears the server down (`trap ... EXIT`) and exits with the underlying
+   tool's exit code, so any of the three can gate CI once proven.
+
+`run-agentic-evals.sh` additionally skips cleanly (exit 0, clear message,
+pointing at `test:e2e-smoke`) if `ANTHROPIC_API_KEY` is unset — what makes
+it safe to land in CI before that secret exists.
 
 ## CI
 
-Lives in **`nooticr-server`**, not here — `nooticr-mcp`'s own CI runs on
-plain hosted `ubuntu-latest` deliberately (see the comment at the top of
-`.github/workflows/ci.yml`: it used to depend on a self-hosted box scoped
-to `nooticr-server` and that stalled every run), and building
-`nooticr-server` needs its FFmpeg/Rust toolchain (`.github/actions/rust-env`)
-and a Postgres service container that already exist there. So
-`nooticr-server/.github/workflows/agentic-e2e.yml` checks out both repos,
-boots the server the same way `test` does, checks out `nooticr-mcp` at
-a chosen ref, and runs this script.
+The **fixture tier needs none of nooticr-server's toolchain** (see the table
+above), so it runs directly in *this* repo's own `.github/workflows/ci.yml`,
+as an always-on step (`npm run test:e2e-smoke:fixture`, plain Node, no new
+job or service dependencies) right after the package build, on every push —
+no secret, no cross-repo checkout, nothing to provision first.
+
+The real-backend and agentic tiers live in **`nooticr-server`**, not here —
+`nooticr-mcp`'s own CI runs on plain hosted `ubuntu-latest` deliberately (see
+the comment at the top of `.github/workflows/ci.yml`: it used to depend on a
+self-hosted box scoped to `nooticr-server` and that stalled every run), and
+building `nooticr-server` needs its FFmpeg/Rust toolchain
+(`.github/actions/rust-env`) and a Postgres service container that already
+exist there. So `nooticr-server/.github/workflows/agentic-e2e.yml` checks
+out both repos, boots the server the same way `test` does, checks out
+`nooticr-mcp` at a chosen ref, and runs `test:agentic-e2e`.
 
 That workflow is **`workflow_dispatch`-only** for now, on purpose: every run
 calls a real model once per test case, which costs real tokens, and there's
