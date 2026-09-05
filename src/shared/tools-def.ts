@@ -40,8 +40,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "search_creators",
  title: "Search Creators",
- description: "Search creators by niche/keyword on TikTok, Instagram, Xiaohongshu, YouTube or Douyin — username, nickname, follower count, signature, verified status. Use to find influencers to vet or analyze. (20 free credits for new users). Use when you know the niche but not the names; use get_similar_creators when you already have one creator that works. Consumes 2 nooticr credits.",
- inputSchema: z.object({ keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."), platform: z.enum(["tiktok", "instagram", "xiaohongshu", "youtube", "douyin"]).optional().describe("Which platform (default tiktok)."), count: z.number().int().optional().describe("Max creators (default 8).") }).strict(),
+ description: "Find people by what they make. Search creators by craft, niche or keyword — designers, developers, photographers, illustrators, writers, founders — username, nickname, follower count, signature, verified status. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. (20 free credits for new users). Use when you know the kind of person but not their names; use get_similar_creators when you already have one who works. Consumes 2 nooticr credits.",
+ inputSchema: z.object({ keyword: z.string().describe("Niche/keyword, e.g. 'fitness' or a creator name."), platform: z.enum(["tiktok", "instagram", "xiaohongshu"]).optional().describe("Which platform (default tiktok)."), count: z.number().int().optional().describe("Max creators (default 8).") }).strict(),
  },
  {
  name: "get_similar_creators",
@@ -364,8 +364,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "who_should_i_work_with",
  title: "Who Should I Work With",
- description: "A collaboration shortlist for a niche. Searches creators by keyword and, when you name a creator who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist instead of faking it. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",
- inputSchema: z.object({ niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."), platform: z.enum(["tiktok", "instagram", "xiaohongshu", "youtube", "douyin"]).optional().describe("Which platform (default tiktok)."), seed: z.string().optional().describe("A creator who already fits \u2014 their lookalikes are added. Costs 2 more credits."), count: z.number().int().optional().describe("Candidates from the keyword search (default 8, max 20).") }).strict(),
+ description: "A shortlist of people to work with \u2014 collaborators, or anyone to hire or commission: designers, developers, photographers, editors. Searches creators by craft or keyword and, when you name someone who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. Every candidate carries the links pulled out of their bio, so vetting is reading the work. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist instead of faking it. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",
+ inputSchema: z.object({ niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."), platform: z.enum(["tiktok", "instagram", "xiaohongshu"]).optional().describe("Which platform (default tiktok)."), seed: z.string().optional().describe("A creator who already fits \u2014 their lookalikes are added. Costs 2 more credits."), count: z.number().int().optional().describe("Candidates from the keyword search (default 8, max 20).") }).strict(),
  },
  {
  name: "why_did_this_underperform",
