@@ -70,7 +70,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(59);
+    expect(tools).toHaveLength(64);
   });
 
   it("marks read-only exactly where it is true", async () => {
