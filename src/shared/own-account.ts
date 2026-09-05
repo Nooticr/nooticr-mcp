@@ -92,7 +92,15 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
-          appId: z.number().int().describe("Your product's id. Omit only with a single-app workspace."),
+          // Optional because the backend resolves it: with one product it
+          // picks that one, and with several it answers with the choices.
+          // Declared required, this `.strict()` schema rejected the very
+          // omission the sentence below invites before the call was made.
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
         })
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.get_content_plan,
@@ -121,7 +129,11 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "warning — treat those scores as generic placeholders, never as real feedback. Free — " +
         "nothing is billed for this, same as the dashboard's own pre-publish review.",
       _meta: viewMeta("review_post"),
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      // Not read-only: given a postId the backend saves the review and score
+      // onto that scheduled post (`save_ai_review`), overwriting whatever was
+      // there. Free, which is not the same thing — a host that auto-approves
+      // read-only tools would let this rewrite pipeline data unattended.
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           postId: z.number().int().optional().describe("A post already in your pipeline. Alternative to appId + draft fields."),
@@ -163,7 +175,11 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
-          appId: z.number().int().describe("Your product's id."),
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
           topic: z.string().describe("What the post should be about."),
           contentType: z.string().optional().describe("e.g. video, image, carousel (default video)."),
           slideCount: z.number().int().optional().describe("For carousel/slideshow drafts."),
@@ -171,7 +187,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.draft_post,
     },
-    async (args: { appId: number; topic: string; contentType?: string; slideCount?: number }, extra) => {
+    async (args: { appId?: number; topic: string; contentType?: string; slideCount?: number }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });
       try {
         return toResult(await client.callTool("draft_post", args));
@@ -189,18 +205,27 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "A plain-language growth brief for your own product: the single most important insight, " +
         "2-4 wins, 2-4 risks and 3-6 concrete next actions — grounded in your real post history " +
         "plus whatever analytics (GA4, Search Console, PostHog) and fleet analysis you have " +
-        "synced. Read-only. Billed like the dashboard's own Growth Brief button: your workspace's " +
-        "plan AI credits, not your personal MCP credits.",
+        "synced. It changes nothing of yours, but it is not free: billed like the dashboard's own " +
+        "Growth Brief button, from your workspace's plan AI credits rather than your personal " +
+        "MCP credits.",
       _meta: viewMeta("growth_brief"),
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      // Spending the workspace's plan AI credits (`CREDIT_GROWTH_BRIEF`) is
+      // what puts this outside read-only, by the same rule that already
+      // covers draft_post and generate_content_plan. It writes no content of
+      // the user's, which is why the description says so in those words.
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
-          appId: z.number().int().describe("Your product's id."),
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
         })
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.growth_brief,
     },
-    async (args: { appId: number }, extra) => {
+    async (args: { appId?: number }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });
       try {
         return toResult(await client.callTool("growth_brief", args));
@@ -224,7 +249,11 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
-          appId: z.number().int().describe("Your product's id."),
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
           weekStart: z.string().optional().describe("ISO date. Defaults to next Monday."),
           influencerIds: z
             .array(z.number().int())
@@ -235,7 +264,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       outputSchema: OUTPUT_SCHEMAS.generate_content_plan,
     },
     async (
-      args: { appId: number; weekStart?: string; influencerIds?: number[] },
+      args: { appId?: number; weekStart?: string; influencerIds?: number[] },
       extra,
     ) => {
       const client = await makeClient({ ...extra, arguments: args });
@@ -262,7 +291,11 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
-          appId: z.number().int().describe("Your product's id."),
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
           durationSec: z.number().optional().describe("Video length in seconds (default 8, max 180)."),
           title: z.string().optional(),
           caption: z.string().optional(),
@@ -274,7 +307,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
     },
     async (
       args: {
-        appId: number;
+        appId?: number;
         durationSec?: number;
         title?: string;
         caption?: string;

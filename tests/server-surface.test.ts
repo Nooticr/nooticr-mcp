@@ -44,10 +44,16 @@ const NOT_READ_ONLY = [
   "create_brand_watch",
   "stop_brand_watch",
   // Own-account generation: each spends the workspace's plan AI credits.
-  // review_post reads/scores only and is never billed, so it stays out.
   "draft_post",
   "generate_captions",
   "generate_content_plan",
+  // Same billing, same conclusion — this one was missed because it writes
+  // nothing of the user's, but the credits alone put it here.
+  "growth_brief",
+  // The exception to the billing rule: free, and still not read-only.
+  // Given a postId it saves the review and score onto that scheduled post,
+  // overwriting the previous one.
+  "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
 ];

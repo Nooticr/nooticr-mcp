@@ -459,8 +459,18 @@ export function createMcpServer(
   const client = await rawMakeClient(ctx);
   const call = client.callTool.bind(client);
   client.callTool = async (name: string, args: Record<string, unknown>) => {
-   // stderr only — stdout carries the stdio JSON-RPC channel, and writing a
-   // log line there would corrupt every message after it.
+   // Never stdout: it carries the stdio JSON-RPC channel, and a log line
+   // there corrupts every message after it. That rules out console.log.
+   //
+   // The two branches deliberately use different calls, because the same
+   // line has to read correctly in both runtimes this module is bundled
+   // into. In the Worker (observability is on, see wrangler.jsonc) each
+   // lands in Workers Logs at the level of the call that made it:
+   // process.stderr.write arrives as `info`, console.error as `error`. A
+   // failed call logged at `info` is invisible to the severity filter you
+   // reach for when something is broken in production, so the failure
+   // branch uses console.error — which is stderr in Node too, so stdio
+   // stays intact either way.
    const startedAt = Date.now();
    try {
     const result = await call(name, args);
@@ -469,9 +479,9 @@ export function createMcpServer(
     );
     return result;
    } catch (err) {
-    process.stderr.write(
+    console.error(
      `[nooticr-mcp] tool=${name} ok=false durationMs=${Date.now() - startedAt} ` +
-      `error=${JSON.stringify(err instanceof Error ? err.message : String(err))}\n`
+      `error=${JSON.stringify(err instanceof Error ? err.message : String(err))}`
     );
     if (isAuthFailure(err)) pendingAfterLogin = { name, args };
     throw err;

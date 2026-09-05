@@ -713,12 +713,27 @@ export const OUTPUT_SCHEMAS = {
     degraded: scalar().describe("Hoisted from review.degraded so it's never missed."),
     warning: scalar().describe("Present when degraded — treat the scores as placeholders."),
   }),
+  /**
+   * Everything the draft carries is nested under `draft`.
+   *
+   * The backend answers `{ ok, draft: {...}, provider }` (`draft_post` in
+   * crates/server/src/ai/extra_handlers.rs). Declaring title/caption/hashtags
+   * at the top level named fields that never arrive — and `script`, which the
+   * generator has no notion of at all; a slideshow's per-slide copy comes
+   * back as `slides`. Nothing failed, because every field here is nullish and
+   * the object is passthrough, so the real draft rode through undeclared
+   * while a caller reading the declared keys got undefined for all of them.
+   */
   draft_post: open({
     ok: scalar(),
-    title: scalar(),
-    caption: scalar(),
-    hashtags: listOf(z.string()),
-    script: scalar(),
+    draft: open({
+      title: scalar(),
+      caption: scalar(),
+      hashtags: listOf(z.string()),
+      slides: listOf(
+        open({ role: scalar(), overlayText: scalar(), slideCaption: scalar() }),
+      ).describe("Present for slideshow drafts."),
+    }).nullish(),
     provider: scalar(),
   }),
   growth_brief: open({
@@ -732,29 +747,64 @@ export const OUTPUT_SCHEMAS = {
       .passthrough()
       .nullish(),
   }),
+  /**
+   * `plan` is the whole ContentPlan OBJECT, not the per-influencer array.
+   *
+   * The backend answers `{ ok, plan: { weekStart, grounding, plan: [...] },
+   * grounding, provider }` — see `struct ContentPlan` in
+   * crates/server/src/ai/growth.rs, where the array is nested one level down.
+   * Declaring the array at the top level made every real call fail output
+   * validation with `-32602 Expected array, received object at plan`, and it
+   * failed *after* the backend had already reserved the credits for the
+   * generation: the user paid for a plan and got a protocol error, while the
+   * plan itself sat saved server-side for the free `get_content_plan` to
+   * find. `get_content_plan` declared the same payload correctly, which is
+   * why only this half broke.
+   */
   generate_content_plan: open({
     ok: scalar(),
-    plan: listOf(
-      open({
-        influencerId: scalar(),
-        influencerName: scalar(),
-        posts: listOf(
-          open({
-            day: scalar(),
-            hook: scalar(),
-            caption: scalar(),
-            hashtags: listOf(z.string()),
-            contentType: scalar(),
-            script: scalar(),
-            rationale: scalar(),
-          }),
-        ),
-      }),
-    ),
+    plan: open({
+      weekStart: scalar(),
+      grounding: open({}).nullish().describe("The hooks, hashtags and slots the plan was built from."),
+      plan: listOf(
+        open({
+          influencerId: scalar(),
+          influencerName: scalar(),
+          posts: listOf(
+            open({
+              day: scalar(),
+              formatId: scalar(),
+              formatTitle: scalar(),
+              hook: scalar(),
+              caption: scalar(),
+              hashtags: listOf(z.string()),
+              contentType: scalar(),
+              script: scalar(),
+              rationale: scalar(),
+            }),
+          ),
+        }),
+      ),
+    }).nullish(),
+    grounding: open({}).nullish().describe("The post-history digest the plan was grounded in."),
+    provider: scalar(),
   }),
+  /**
+   * The cues come back as `cues`, timed in `start_sec`/`end_sec`.
+   *
+   * This declared `captions: [{ text, start, end }]` — a field the backend
+   * has never sent (see `generate_captions` in
+   * crates/server/src/ai/handlers.rs). Nothing hard-failed, because an
+   * absent nullish list validates and the real keys passed through
+   * undeclared, so the cost was quieter: a host reading the declared
+   * `captions` got undefined, and the transcript and cost were invisible to
+   * anything working from the schema.
+   */
   generate_captions: open({
     ok: scalar(),
-    captions: listOf(open({ text: scalar(), start: scalar(), end: scalar() })),
+    cues: listOf(open({ text: scalar(), start_sec: scalar(), end_sec: scalar() })),
+    transcript: scalar().describe("The transcript the cues were cut from."),
+    cost: scalar().describe("Credits charged for the generation."),
     provider: scalar().describe("\"mock\" when no AI provider is configured — the cues are placeholders."),
   }),
 
