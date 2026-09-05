@@ -552,6 +552,10 @@ export function createMcpServer(
   "who_should_i_work_with",
   "why_did_this_underperform",
   "what_should_i_make_next",
+  // Shaped like search_mentions (term + a grouped list) but of transcript
+  // hits rather than comments, so it gets its own view rather than the
+  // monitoring one.
+  "search_spoken_mentions",
   // Own-account intelligence (own-account.ts). list_own_apps stays
   // view-less like watch_creator — it lists metadata, nothing to draw.
   // get_content_plan gets the same card generate_content_plan does: they

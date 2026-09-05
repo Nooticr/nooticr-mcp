@@ -60,7 +60,13 @@ import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
 import { ownIt } from "./evidence.js";
-import { confirmSpend, costOf, declinedResult } from "./spend.js";
+import {
+  confirmSpend,
+  costOf,
+  declinedResult,
+  MAX_SPOKEN_HANDLE_CALLS,
+  MAX_SPOKEN_TRANSCRIPTS,
+} from "./spend.js";
 import {
   distributionOf,
   excluding,
@@ -562,6 +568,119 @@ function nextGuidance(a: {
     );
   }
   lines.push(ownIt);
+  return lines.join("\n");
+}
+
+/** Regex metacharacters in a search term, escaped so the term is matched literally. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** One occurrence of the term inside a transcript, with enough around it to read tone from. */
+export interface TranscriptExcerpt {
+  text: string;
+  /** Character offset of the match inside the full transcript. */
+  position: number;
+  /** 1-based — which occurrence this is, of possibly more than are shown. */
+  occurrence: number;
+}
+
+/**
+ * Where a term is actually said, case-insensitively and on whole words —
+ * "nike" must not fire inside "nikeisha". `\b` only means anything next to a
+ * word character, so a term that starts or ends on punctuation (an ampersand,
+ * a period) skips the boundary check on that side rather than failing to
+ * match at all.
+ *
+ * Every occurrence is counted; only the first `maxExcerpts` carry the
+ * surrounding text, because a transcript that says a name forty times does
+ * not need forty near-identical quotes to make the point.
+ */
+export function matchExcerpts(
+  transcript: string,
+  term: string,
+  maxExcerpts = 3,
+  contextChars = 180,
+): { excerpts: TranscriptExcerpt[]; matchCount: number } {
+  const text = String(transcript ?? "");
+  const needle = String(term ?? "").trim();
+  if (!text || !needle) return { excerpts: [], matchCount: 0 };
+  const startsWord = /^\w/.test(needle);
+  const endsWord = /\w$/.test(needle);
+  const pattern = new RegExp(
+    `${startsWord ? "\\b" : ""}${escapeRegExp(needle)}${endsWord ? "\\b" : ""}`,
+    "gi",
+  );
+  const excerpts: TranscriptExcerpt[] = [];
+  let matchCount = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) {
+    matchCount++;
+    if (excerpts.length < maxExcerpts) {
+      const start = Math.max(0, match.index - contextChars);
+      const end = Math.min(text.length, match.index + match[0].length + contextChars);
+      let excerpt = text.slice(start, end).trim();
+      if (start > 0) excerpt = `…${excerpt}`;
+      if (end < text.length) excerpt = `${excerpt}…`;
+      excerpts.push({ text: excerpt, position: match.index, occurrence: matchCount });
+    }
+    // The pattern carries no empty-match risk (`needle` is checked non-empty
+    // above), but a stalled lastIndex on a zero-width match would loop
+    // forever, so this guards it regardless.
+    if (match[0].length === 0) pattern.lastIndex++;
+  }
+  return { excerpts, matchCount };
+}
+
+function spokenMentionGuidance(a: {
+  term: string;
+  platforms: string[];
+  considered: number;
+  transcribed: number;
+  transcriptsAvailable: number;
+  matched: number;
+  maxTranscripts: number;
+  ceilingReached: boolean;
+  failed: number;
+}): string {
+  const networks = a.platforms.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" and ");
+  const lines = [
+    `${a.matched} of ${a.transcribed} transcribed post${a.transcribed === 1 ? "" : "s"} on ${networks} ` +
+      `actually say "${a.term}" out loud. ${a.considered} candidate${a.considered === 1 ? "" : "s"} ` +
+      `were found before the transcript ceiling was applied; ${a.transcriptsAvailable} of the ` +
+      `${a.transcribed} checked carried a caption track at all.`,
+    "",
+  ];
+  if (a.ceilingReached) {
+    lines.push(
+      `Only the ${a.maxTranscripts} most-viewed candidates were transcribed — ` +
+        `${a.considered - a.maxTranscripts} more were found and never checked, not because they ` +
+        "don't matter but because the ceiling stopped here. Raise `maxTranscripts` to look " +
+        "further, at 1 credit each.",
+      "",
+    );
+  }
+  lines.push(
+    "Read each excerpt for tone — praise, a complaint, a comparison, a passing mention — and " +
+      "quote the line rather than paraphrasing it: it is exactly what was said, not a summary of " +
+      "it. `matchCount` is how many times the term comes up in that transcript; only the first " +
+      "few occurrences carry an excerpt, and the rest are still counted toward it.",
+    "",
+    "This covers TikTok and YouTube only, and even there only the videos that carry a caption " +
+      "track. A silent or captionless video is invisible to this tool no matter how directly it " +
+      "names the term, and no other network was attempted at all, because none of them expose a " +
+      "caption track this cheaply — search_mentions is the tool for what people wrote there. Say " +
+      "plainly that coverage is partial rather than treating an empty result as proof nobody said " +
+      "it on camera.",
+  );
+  if (a.failed) {
+    lines.push(
+      "",
+      `${a.failed} candidate${a.failed === 1 ? "" : "s"} could not be narrowed or transcribed and ` +
+        "are listed under `unavailable`, with why.",
+    );
+  }
+  lines.push("", ownIt);
   return lines.join("\n");
 }
 
@@ -1580,6 +1699,394 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           mcpCredits: { cost: 0 },
         },
       };
+    },
+  );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 7. search_spoken_mentions
+  //
+  // search_mentions reads captions, post bodies and comments — text a brand
+  // can be named in without anyone ever saying it out loud, and it stays
+  // silent about the rant that says the name three times on camera and never
+  // once in writing. This closes that gap the way every tool here does:
+  // existing calls, composed. Narrow to candidates with discover_social_posts
+  // / get_user_posts, transcribe the survivors with get_post_transcript
+  // (which reads a platform's own caption track, not our own speech
+  // recognition — see its docstring in tools.ts), and search the words.
+  // TikTok and YouTube only, because those are the only two networks that
+  // call answers for; asking about anything else would bill for a fetch that
+  // cannot succeed.
+  //
+  // The one thing this fan-out has to hold that the others do not: there is
+  // no cheap first call that reveals how many candidates are worth
+  // transcribing, the way a watchlist length or an already-fetched post list
+  // does elsewhere in this file. A wide niche can return far more candidates
+  // than are worth reading to find three hits, so `maxTranscripts` is a hard,
+  // server-clamped ceiling (see MAX_SPOKEN_TRANSCRIPTS in spend.ts) rather
+  // than a suggestion, and the whole worst case — narrowing plus the ceiling
+  // — is confirmed before a single call is made, the same way search_mentions
+  // confirms a worst case from its own arguments alone.
+  // ───────────────────────────────────────────────────────────────────────────
+  const SPOKEN_TRANSCRIBE_BUDGET_MS = 12_000;
+  server.registerTool(
+    "search_spoken_mentions",
+    {
+      title: "Search Spoken Mentions",
+      _meta: viewMeta("search_spoken_mentions"),
+      description:
+        "Brand mentions people SAY but never type. search_mentions reads captions, post bodies " +
+        "and comments — text — so a video that names a brand only out loud is invisible to it. " +
+        "This reads the words actually spoken, from the platform's own caption track (not our own " +
+        "speech recognition — see get_post_transcript), and searches them for a term. Narrows to " +
+        "candidate posts first (a niche/keyword sweep, named creator handles, and/or your " +
+        "watchlist), transcribes only the most-viewed survivors up to a hard ceiling you set, and " +
+        "returns the matched line with surrounding context so tone can be judged. TikTok and " +
+        "YouTube only — the only two networks whose posts carry a caption track this cheaply — " +
+        "and even there a video with no captions is invisible to this tool; coverage is real but " +
+        "partial, and the result says how many candidates were found, transcribed and matched so " +
+        "the gap is never silent. Costs 2 nooticr credits per platform a niche is searched on, 2 " +
+        "per creator handle checked (including ones added by useWatchlist), and 1 per transcript " +
+        "actually fetched — never more than `maxTranscripts` transcripts, whatever the candidate " +
+        "count. Above 6 credits worst-case it asks first, like search_mentions. Use when a term " +
+        "might be spoken on camera but not written anywhere; search_mentions is for what people " +
+        "typed.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      outputSchema: OUTPUT_SCHEMAS.search_spoken_mentions,
+      inputSchema: z
+        .object({
+          term: z
+            .string()
+            .describe(
+              "Brand, product or person to listen for, e.g. 'nooticr'. Matched case-insensitively " +
+                "on whole words, so 'nike' will not match inside 'nikeisha'.",
+            ),
+          platforms: z
+            .array(z.enum(["tiktok", "youtube"]))
+            .optional()
+            .describe(
+              "Which networks to check (default: both). These are the only two whose posts carry " +
+                "a caption track this tool can read.",
+            ),
+          niche: z
+            .string()
+            .optional()
+            .describe(
+              "Niche or keyword for a candidate sweep, e.g. 'skincare'. Provide this, usernames, " +
+                "useWatchlist, or any combination — at least one is required.",
+            ),
+          usernames: z
+            .array(z.string())
+            .optional()
+            .describe(
+              "Specific creator handles to check, with or without @. Checked on every platform in " +
+                "`platforms`.",
+            ),
+          useWatchlist: z
+            .boolean()
+            .optional()
+            .describe(
+              "Also check your watchlisted creators who are on tiktok or youtube. Looking the " +
+                "list up is free; each creator it adds is still priced like any other handle.",
+            ),
+          candidateLimit: z
+            .number()
+            .int()
+            .optional()
+            .describe(
+              "Posts pulled per narrowing call, before the transcript ceiling is applied (default " +
+                "15, max 25). Finds more candidates at the same narrowing cost — does not raise " +
+                "transcript spend on its own.",
+            ),
+          maxTranscripts: z
+            .number()
+            .int()
+            .optional()
+            .describe(
+              "Hard ceiling on transcripts fetched, at 1 credit each (default 8, max " +
+                `${MAX_SPOKEN_TRANSCRIPTS}). The most-viewed candidates are read first, so lowering ` +
+                "this trades completeness for cost rather than dropping posts at random.",
+            ),
+        })
+        .strict(),
+    },
+    async (
+      args: {
+        term: string;
+        platforms?: string[];
+        niche?: string;
+        usernames?: string[];
+        useWatchlist?: boolean;
+        candidateLimit?: number;
+        maxTranscripts?: number;
+      },
+      extra,
+    ) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const term = String(args.term ?? "").trim();
+      if (!term) {
+        return {
+          content: [{ type: "text" as const, text: "search_spoken_mentions needs a term to listen for." }],
+          isError: true as const,
+        };
+      }
+      const platforms = [
+        ...new Set(
+          (args.platforms && args.platforms.length ? args.platforms : ["tiktok", "youtube"]).map((p) =>
+            String(p).toLowerCase(),
+          ),
+        ),
+      ].filter((p) => p === "tiktok" || p === "youtube");
+      const explicitHandles = [...new Set((args.usernames ?? []).map(normaliseHandle).filter(Boolean))];
+
+      // A watchlist handle already knows its own platform, so it is checked
+      // once there rather than once per requested platform — the same
+      // precision track_competitor already applies when it reads this store.
+      let watchlistUnits: Array<{ handle: string; platform: string }> = [];
+      let watchlistTotal = 0;
+      if (args.useWatchlist) {
+        try {
+          const owner = await watchlistOwner(client);
+          const entries = await store.list(owner);
+          const inScope = entries.filter((e) => (platforms as string[]).includes(e.platform));
+          watchlistTotal = inScope.length;
+          watchlistUnits = inScope.map((e) => ({ handle: e.handle, platform: e.platform }));
+        } catch {
+          // A watchlist that will not answer costs nothing added from it —
+          // same as an empty one, not a reason to fail the whole call.
+        }
+      }
+
+      const handleUnits: Array<{ handle: string; platform: string }> = [
+        ...explicitHandles.flatMap((handle) => platforms.map((platform) => ({ handle, platform }))),
+        ...watchlistUnits,
+      ].slice(0, MAX_SPOKEN_HANDLE_CALLS);
+
+      if (!args.niche && !handleUnits.length) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                "search_spoken_mentions needs a niche/keyword, one or more creator handles, or " +
+                "useWatchlist — nothing was fetched, so nothing was charged.",
+            },
+          ],
+          isError: true as const,
+        };
+      }
+
+      const candidateLimit = clamp(args.candidateLimit, 15, 1, 25);
+      const maxTranscripts = clamp(args.maxTranscripts, 8, 1, MAX_SPOKEN_TRANSCRIPTS);
+
+      // The full worst case, from arguments alone: every narrowing call runs,
+      // and the ceiling's worth of transcripts is fetched. Confirmed before
+      // any call is made — actual spend is very often less, and the guidance
+      // says so, but nobody is ever asked to approve a number smaller than
+      // what could actually happen.
+      const worstCase = costOf([
+        ...Array(args.niche ? platforms.length : 0).fill("discover_social_posts"),
+        ...Array(handleUnits.length).fill("get_user_posts"),
+        ...Array(maxTranscripts).fill("get_post_transcript"),
+      ]);
+      const decision = await confirmSpend(server.server, {
+        credits: worstCase,
+        summary:
+          `Search for spoken mentions of "${term}" on ${platforms.join(" and ")}` +
+          (args.niche ? `, sweeping "${args.niche}"` : "") +
+          (handleUnits.length
+            ? ` and checking ${handleUnits.length} creator${handleUnits.length === 1 ? "" : "s"}`
+            : "") +
+          `, transcribing up to ${maxTranscripts} of the results.`,
+        cheaper: 'Lower "maxTranscripts", or narrow "platforms"/"usernames", to spend less.',
+      });
+      if (!decision.proceed) {
+        return declinedResult(
+          worstCase,
+          "That spoken-mention search",
+          'Lower "maxTranscripts", or narrow "platforms"/"usernames", to spend less.',
+        );
+      }
+
+      const spend = new Spend();
+      const candidatesByKey = new Map<string, Row>();
+      const narrowingFailures: Row[] = [];
+      const addCandidate = (raw: Row, source: string) => {
+        const url = String(raw.externalUrl ?? raw.url ?? "");
+        const key =
+          url || `${String(raw.platform ?? "")}:${String(raw.title ?? raw.caption ?? "")}:${candidatesByKey.size}`;
+        if (candidatesByKey.has(key)) return;
+        candidatesByKey.set(key, { ...raw, foundVia: source });
+      };
+
+      if (args.niche) {
+        for (const platform of platforms) {
+          try {
+            const res = await client.callTool("discover_social_posts", {
+              niche: args.niche,
+              platform,
+              limit: candidateLimit,
+            });
+            const structured = structuredOf(res);
+            spend.record("discover_social_posts", structured);
+            for (const p of rowsOf(structured.posts)) addCandidate(p, "niche_search");
+          } catch (err) {
+            spend.attempted("discover_social_posts");
+            narrowingFailures.push({ via: "discover_social_posts", platform, reason: reason(err) });
+          }
+        }
+      }
+      for (const { handle, platform } of handleUnits) {
+        try {
+          const res = await client.callTool("get_user_posts", { username: handle, platform, limit: candidateLimit });
+          const structured = structuredOf(res);
+          spend.record("get_user_posts", structured);
+          for (const p of rowsOf(structured.posts)) addCandidate(p, `handle:${handle}`);
+        } catch (err) {
+          spend.attempted("get_user_posts");
+          narrowingFailures.push({ via: "get_user_posts", handle, platform, reason: reason(err) });
+        }
+      }
+
+      // Most-viewed first: the ceiling should spend its transcripts on the
+      // candidates most likely to matter, not on whichever a platform
+      // happened to return first.
+      const candidates = [...candidatesByKey.values()].sort((a, b) => numberOf(b.views) - numberOf(a.views));
+      const considered = candidates.length;
+      const toCheck = candidates.slice(0, maxTranscripts);
+      const ceilingReached = considered > toCheck.length;
+
+      const baseFields = {
+        mode: "evidence" as const,
+        tool: "search_spoken_mentions",
+        term,
+        platforms,
+        niche: args.niche ?? null,
+        usernames: explicitHandles,
+        watchlistChecked: watchlistTotal,
+        maxTranscripts,
+      };
+
+      if (!toCheck.length) {
+        return evidence(
+          `No candidate posts were found on ${platforms.join(" and ")}` +
+            (args.niche ? ` for "${args.niche}"` : "") +
+            `. ${spend.credits} credit${spend.credits === 1 ? "" : "s"} were spent narrowing and ` +
+            "none of it reached a transcript.",
+          {
+            ...baseFields,
+            candidatesConsidered: 0,
+            transcribed: 0,
+            transcriptsAvailable: 0,
+            matched: 0,
+            ceilingReached: false,
+            hits: [],
+            posts: [],
+            unavailable: narrowingFailures,
+            creditsCharged: spend.credits,
+            mcpCredits: spend.payload,
+          },
+        );
+      }
+
+      const hits: Row[] = [];
+      const unavailable: Row[] = [...narrowingFailures];
+      let transcribed = 0;
+      let transcriptsAvailable = 0;
+
+      for (const [index, post] of toCheck.entries()) {
+        const url = String(post.externalUrl ?? post.url ?? "");
+        const id = postIdOf(post, index);
+        if (!url) {
+          unavailable.push({ postId: id, reason: "the post carries no permalink to fetch a transcript from" });
+          continue;
+        }
+        transcribed++;
+        try {
+          // A speech-to-text fallback can come back "transcribing: true,
+          // retryAfterMs" — the job is accepted and running, not a caption-track
+          // miss — and treating it as one would silently misreport every post
+          // whose answer just hadn't finished yet. Poll it out under a bounded
+          // budget so one slow job can't hang the whole search; the first
+          // callTool above already spent this post's credit, and every retry
+          // below re-reads the same cached job rather than spending again.
+          let structured = structuredOf(await client.callTool("get_post_transcript", { url }));
+          spend.record("get_post_transcript", structured);
+          const pollStartedAt = Date.now();
+          while (structured.transcribing && Date.now() - pollStartedAt < SPOKEN_TRANSCRIBE_BUDGET_MS) {
+            const waitMs = Math.min(Number(structured.retryAfterMs) || 1000, 5000);
+            await new Promise((r) => setTimeout(r, waitMs));
+            structured = structuredOf(await client.callTool("get_post_transcript", { url }));
+          }
+          if (structured.transcribing) {
+            unavailable.push({
+              postId: id,
+              url,
+              reason: "still listening to this post's audio — try again shortly",
+            });
+            continue;
+          }
+          if (!structured.available) {
+            unavailable.push({ postId: id, url, reason: String(structured.reason ?? "no caption track") });
+            continue;
+          }
+          transcriptsAvailable++;
+          const { excerpts, matchCount } = matchExcerpts(String(structured.transcript ?? ""), term);
+          if (matchCount > 0) {
+            hits.push({
+              post: { ...post, postId: id, postedAt: postDate(post) },
+              postId: id,
+              matchCount,
+              excerpts,
+              wordCount: numberOf(structured.wordCount),
+              language: structured.language ?? null,
+              autoGenerated: !!structured.autoGenerated,
+            });
+          }
+        } catch (err) {
+          spend.attempted("get_post_transcript");
+          unavailable.push({ postId: id, url, reason: reason(err) });
+        }
+      }
+
+      // Loudest match first, then reach — the same ordering principle as the
+      // rest of this file: what the sweep found, ranked by how much it says.
+      hits.sort(
+        (a, b) =>
+          numberOf(b.matchCount) - numberOf(a.matchCount) ||
+          numberOf((b.post as Row)?.views) - numberOf((a.post as Row)?.views),
+      );
+
+      return evidence(
+        spokenMentionGuidance({
+          term,
+          platforms,
+          considered,
+          transcribed,
+          transcriptsAvailable,
+          matched: hits.length,
+          maxTranscripts,
+          ceilingReached,
+          failed: unavailable.length,
+        }),
+        {
+          ...baseFields,
+          evidenceFrom: [
+            ...(args.niche ? ["discover_social_posts"] : []),
+            ...(handleUnits.length ? ["get_user_posts"] : []),
+            "get_post_transcript",
+          ],
+          candidatesConsidered: considered,
+          transcribed,
+          transcriptsAvailable,
+          matched: hits.length,
+          ceilingReached,
+          hits,
+          posts: hits.map((h) => h.post as Row),
+          unavailable,
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        },
+      );
     },
   );
 }

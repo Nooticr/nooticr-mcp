@@ -52,9 +52,27 @@ export const XIAOHONGSHU_CREDITS = 5;
 export const CREDITS_PER_CREATOR = 2;
 
 /**
+ * The hard ceilings `search_spoken_mentions` cannot cross, whatever it is
+ * asked for.
+ *
+ * Every other fan-out in this file prices something whose size is already
+ * known once a cheap first call returns — the watchlist length, the post
+ * count of a feed already fetched. A transcript search cannot do that: there
+ * is no way to know how many of a niche's candidates actually say the term
+ * without transcribing them, so the candidate count can never be the number
+ * that sets the price. Left uncapped, a wide niche sweep could spend a hundred
+ * credits transcribing to find three hits. These are the caps that make that
+ * impossible regardless of what `maxTranscripts` or the handle list ask for —
+ * clamp server-side, never trust the argument alone.
+ */
+export const MAX_SPOKEN_TRANSCRIPTS = 20;
+/** get_user_posts calls a spoken-mention search will make, across explicit handles and the watchlist combined. */
+export const MAX_SPOKEN_HANDLE_CALLS = 8;
+
+/**
  * What each backend call costs, so a tool that fans out can price itself.
  *
- * The five job tools in jobs.ts are compositions: `answer_my_audience` is one
+ * The job tools in jobs.ts are compositions: `answer_my_audience` is one
  * `get_user_posts` plus a `get_post_comments` per post it opens, and nothing
  * else. Billing is therefore the sum of what it actually called, which is only
  * knowable if the per-call prices are written down somewhere. Mirrors
