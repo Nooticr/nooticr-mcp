@@ -171,6 +171,34 @@ describe("moving an existing list into the account", () => {
     expect(moved.baseline?.postIds).toEqual(["p1", "p2"]);
   });
 
+  it("retries next time when one entry could not be moved", async () => {
+    // Marking the owner done up front meant a partial failure stranded the
+    // rest for good: the flag said "handled", the account had half the list,
+    // and the entries left behind were never looked at again.
+    const local = new MemoryWatchStore();
+    await local.put("u1", entry());
+    await local.put("u1", entry({ id: "youtube:kai", platform: "youtube", handle: "kai" }));
+
+    const b = fakeBackend();
+    const real = b.client.callTool.bind(b.client);
+    let failNext = true;
+    b.client.callTool = async (tool: string, args: Record<string, unknown>) => {
+      if (failNext && tool === "watch_creator" && args.handle === "kai") {
+        failNext = false;
+        throw new Error("upstream hiccup");
+      }
+      return real(tool, args);
+    };
+
+    const store = storeOver(b, local);
+    expect((await store.list("u1")).map((e) => e.id)).toEqual(["tiktok:dana"]);
+    // Second look: the one that failed is retried rather than abandoned.
+    expect((await store.list("u1")).map((e) => e.id).sort()).toEqual([
+      "tiktok:dana",
+      "youtube:kai",
+    ]);
+  });
+
   it("never overwrites a backend that already has a list", async () => {
     // The account's list is the real one. A stale per-connection copy landing
     // on top of it would be the migration losing data rather than moving it.

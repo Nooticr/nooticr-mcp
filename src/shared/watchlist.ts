@@ -221,8 +221,10 @@ export class FileWatchStore implements WatchStore {
 export class BackendWatchStore implements WatchStore {
   /** What the last `list()` returned, so `put` can tell what changed. */
   private readonly seen = new Map<string, Map<string, WatchEntry>>();
-  /** Owners whose local entries have already been offered to the backend. */
+  /** Owners whose local entries are all in the account now. */
   private readonly migrated = new Set<string>();
+  /** Owners a migration has been tried for, so a retry knows it is one. */
+  private readonly attempted = new Set<string>();
   /** Set once the backend has told us it cannot serve this session at all. */
   private unavailable: string | null = null;
 
@@ -305,13 +307,35 @@ export class BackendWatchStore implements WatchStore {
    */
   private async migrateOnce(owner: string, remote: WatchEntry[]): Promise<WatchEntry[]> {
     if (this.migrated.has(owner)) return remote;
-    this.migrated.add(owner);
-    if (remote.length) return remote;
+    const firstLook = !this.attempted.has(owner);
+    this.attempted.add(owner);
+
+    // On the first look a non-empty account wins outright: it already holds
+    // the real list, and dropping a stale per-connection copy on top would be
+    // the migration losing data rather than moving it.
+    if (firstLook && remote.length) {
+      this.migrated.add(owner);
+      return remote;
+    }
+
     const mine = await this.local.list(owner);
-    if (!mine.length) return remote;
-    for (const entry of mine) {
+    // Anything already up there is not a candidate — which is what makes a
+    // retry safe. After a partial migration the account is non-empty *because
+    // of us*, so the rule above would otherwise strand whatever failed: the
+    // account would have half the list and the rest would never be looked at
+    // again.
+    const present = new Set(remote.map((e) => e.id));
+    const todo = mine.filter((e) => !present.has(e.id));
+    if (!todo.length) {
+      this.migrated.add(owner);
+      return remote;
+    }
+
+    let moved = 0;
+    for (const entry of todo) {
       try {
         await this.pushEntry(entry, undefined);
+        moved += 1;
       } catch (err) {
         process.stderr.write(
           `[nooticr-mcp] watchlist: could not migrate ${entry.id}: ${
@@ -320,9 +344,13 @@ export class BackendWatchStore implements WatchStore {
         );
       }
     }
+    // Only done when everything landed. Retrying is cheap — `watch_creator`
+    // upserts and the baselines are diffed — so the safe direction is to try
+    // the stragglers again on the next read.
+    if (moved === todo.length) this.migrated.add(owner);
     process.stderr.write(
-      `[nooticr-mcp] watchlist: moved ${mine.length} creator(s) into your nooticr account; ` +
-        `they are now shared across every host you connect from\n`,
+      `[nooticr-mcp] watchlist: moved ${moved} of ${todo.length} creator(s) into your nooticr ` +
+        `account; they are now shared across every host you connect from\n`,
     );
     return this.readRemote();
   }
