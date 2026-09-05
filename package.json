@@ -25,7 +25,9 @@
     "login": "node dist/index.js login",
     "test": "vitest run",
     "prepare": "npm run build",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "contract:host": "sh scripts/host-contract.sh",
+    "verify": "npm run build && npx tsc --noEmit && (cd cloudflare && npx tsc --noEmit) && npx vitest run && npm run contract:host && npm run conformance:mcpjam && npx playwright test"
   },
   "keywords": [
     "mcp",

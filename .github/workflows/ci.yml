@@ -101,112 +101,13 @@ jobs:
       # covered: its interactive UI is A2UI, a declarative JSON payload rather
       # than HTML, and Gemini 3 has no remote MCP yet — there is nothing here
       # for it to read.
+      # The check itself lives in scripts/host-contract.{sh,py} so it can be
+      # run before pushing rather than only here. It used to be inlined in this
+      # file, which meant the only way to run it locally was to hand-transcribe
+      # the YAML — done three times in one afternoon, three slightly different
+      # ways, which is exactly what this check exists to prevent.
       - name: Host contract (MCP Inspector CLI)
-        run: |
-          set -euo pipefail
-          INSPECT="npx -y @modelcontextprotocol/inspector@2 --cli node dist/index.js"
-
-          echo "::group::tools/list --app-info"
-          $INSPECT --method tools/list --app-info | tee app-info.ndjson
-          echo "::endgroup::"
-
-          echo "::group::tools/list (full descriptors)"
-          $INSPECT --method tools/list > tools.json
-          echo "::endgroup::"
-
-          echo "::group::resources/list"
-          $INSPECT --method resources/list > resources.json
-          echo "::endgroup::"
-
-          # Portability problems are reported by the inspector itself.
-          $INSPECT --method tools/list --strict > /dev/null
-
-          # Each family must read back on the mime its host requires.
-          $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts > claude-res.json
-          $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts.html > gpt-res.json
-
-          python3 - <<'CHECK'
-          import json, sys
-
-          fail = []
-          # Tools that legitimately have no view. Anything else losing its app
-          # is a regression, not a choice.
-          # Tools with nothing to draw. watch_creator and unwatch_creator change
-          # stored state and return a list; the catch-up that reads that state
-          # does have a view, because it returns posts.
-          #
-          # Tier 1 (own-account intelligence, brand monitoring, connection
-          # state): same reasoning. create_brand_watch/stop_brand_watch return
-          # a quote or a confirmation, not a list of anything; list_brand_watches
-          # and list_own_apps are metadata lists, the same shape watch_creator's
-          # own `entries` list already sets precedent for; connect_social_account
-          # returns a link + message, the same shape as nooticr_login;
-          # list_social_connections is a metadata list of connections. None of
-          # the five return the rich, card-shaped content get_content_plan and
-          # generate_content_plan share (posts with hooks/scripts), which is why
-          # those two do have a view.
-          NO_APP = {
-              "nooticr_login", "watch_creator", "unwatch_creator",
-              "create_brand_watch", "stop_brand_watch", "list_brand_watches",
-              "list_own_apps", "list_social_connections", "connect_social_account",
-          }
-          MCP_APPS_MIME = "text/html;profile=mcp-app"
-          APPS_SDK_MIME = "text/html+skybridge"
-
-          rows = [json.loads(l) for l in open("app-info.ndjson") if l.strip()]
-          if not rows:
-              fail.append("app-info returned nothing at all")
-          for r in rows:
-              name = r.get("toolName")
-              if name in NO_APP:
-                  if r.get("hasApp"):
-                      fail.append(f"{name} gained a view unexpectedly")
-                  continue
-              if not r.get("hasApp"):
-                  fail.append(f"{name} has no app UI")
-                  continue
-              if not r.get("resourceUri"):
-                  fail.append(f"{name} declares an app with no resourceUri")
-              if r.get("resourceMimeType") != MCP_APPS_MIME:
-                  fail.append(f"{name} serves {r.get('resourceMimeType')}, not {MCP_APPS_MIME}")
-
-          # The ChatGPT half: every view must also point at its skybridge twin.
-          tools = json.load(open("tools.json")).get("tools", [])
-          for t in tools:
-              meta = t.get("_meta") or {}
-              claude = meta.get("ui/resourceUri")
-              if t["name"] in NO_APP or not claude:
-                  continue
-              want = f"{claude}.html"
-              if meta.get("openai/outputTemplate") != want:
-                  fail.append(
-                      f"{t['name']} outputTemplate is {meta.get('openai/outputTemplate')!r}, want {want!r}")
-
-          res = json.load(open("resources.json")).get("resources", [])
-          uris = {r["uri"] for r in res}
-          mimes = {r.get("mimeType") for r in res}
-          for want in (MCP_APPS_MIME, APPS_SDK_MIME):
-              if want not in mimes:
-                  fail.append(f"resources/list advertises no {want}")
-          # Connectors created before per-tool URIs still ask for these.
-          for legacy in ("ui://nooticr/view", "ui://nooticr/view.html"):
-              if legacy not in uris:
-                  fail.append(f"{legacy} is not listed; stale connectors will 404")
-
-          for path, want in (("claude-res.json", MCP_APPS_MIME), ("gpt-res.json", APPS_SDK_MIME)):
-              got = json.load(open(path))["contents"][0]
-              if got.get("mimeType") != want:
-                  fail.append(f"{path} came back {got.get('mimeType')}, want {want}")
-              if "<!DOCTYPE html>" not in str(got.get("text", "")):
-                  fail.append(f"{path} carries no template")
-
-          if fail:
-              print("::error title=Host contract broken::" + "; ".join(fail))
-              for f in fail:
-                  print(f"  - {f}")
-              sys.exit(1)
-          print(f"OK: {len(rows)} tools, {len(res)} resources, both host contracts intact")
-          CHECK
+        run: npm run contract:host
 
       # Per-host verdicts from a third-party host catalog, which is the one
       # thing the official inspector does not give: it validates the MCP Apps

@@ -69,20 +69,38 @@ per tool.
 
 ## Before you consider a change finished
 
+`npm run verify` runs all of the below, in this order, and stops at the first
+failure. Run that rather than picking steps by hand — the steps that get
+skipped when they are a list are the ones that catch a half-finished tool
+registration. The individual commands are worth knowing for when you want to
+re-run just one:
+
 1. `npx tsc --noEmit` (repo root) — CI's `Typecheck` step; `cloudflare/` has
    its own `tsconfig` and needs the same check run from that directory.
 2. `npx vitest run` — CI's `Unit tests` step. `tests/server-surface.test.ts`
    and `tests/site.test.ts` are the ones most likely to catch a
    half-finished tool registration (see above).
-3. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
+3. `npm run contract:host` — the host contract: every tool outside the
+   `NO_APP` set in `scripts/host-contract.py` must declare a view at
+   `text/html;profile=mcp-app` with a `.html` twin that actually resolves.
+   CI runs this same script, so a local pass is the real thing rather than an
+   approximation of it. Needs a `npm run build` first: it checks `dist/`, so a
+   stale build checks a stale surface.
+4. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
    if you touched anything UI-shaped — a resource mime type, `_meta`, or the
-   dual-mime template. It's the same check CI's `MCP Apps conformance` job
-   runs, so a local pass here is a real signal, not a guess.
-4. `npx playwright test` needs a Chromium install
-   (`npx playwright install --with-deps chromium`) this repo doesn't ship —
-   if that's unavailable in your environment, say so rather than claiming
-   the e2e suite passed.
-5. Never hand-bump `package.json`'s version — the `version` job in CI owns
+   dual-mime template. Same check CI's `MCP Apps conformance` job runs.
+5. `npx playwright test` — browser E2E for the view template. CI installs its
+   own browser; `playwright.config.ts` also falls back to a preinstalled
+   Chromium (`PLAYWRIGHT_CHROMIUM_EXECUTABLE`, else `/opt/pw-browsers/chromium`)
+   for sandboxes that block `cdn.playwright.dev`, so the suite usually runs
+   even where `npx playwright install` 403s. If it genuinely cannot launch a
+   browser, say so rather than claiming the e2e suite passed.
+6. Never hand-bump `package.json`'s version — the `version` job in CI owns
    that (it also updates `.claude-plugin/plugin.json` and
    `MCP_SERVER_VERSION` together, see its comments for why the three drifted
    before this existed). Land your change and let CI decide the version.
+
+A note on what these check that the unit tests do not: steps 3 and 4 drive the
+**built** server over stdio as a host would. `tools/list` returning a tool the
+template cannot draw, a `.html` twin that 404s, a resource on the wrong mime —
+none of that is visible to vitest, and all of it is visible to a user.
