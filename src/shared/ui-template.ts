@@ -2016,6 +2016,32 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +"</div>";
   }
 
+  /**
+   * The one line a competitor sweep or an underperformance check actually
+   * exists to produce — ratio to the creator's own median, and the verdict
+   * that ratio earns. track_competitor and why_did_this_underperform attach
+   * "standing" to every post they score (see performance.ts), and until this
+   * existed postCard rendered the same view/like/comment pills any gallery
+   * gets, so the computed comparison a person paid for never reached the
+   * screen — only the chat text carried it. Renders nothing when "standing"
+   * is absent, which is every other tool's posts.
+   */
+  function standingBadge(p){
+    var st=p.standing;
+    if(!st||typeof st!=="object"||st.ratio===null||st.ratio===undefined)return "";
+    var ratio=Number(st.ratio),verdict=String(st.verdict||"");
+    var sc=verdict==="breakout"||verdict==="above_baseline"?"var(--green)"
+      :verdict==="below_baseline"||verdict==="flop"?"var(--red)"
+      :verdict==="no_baseline"?"var(--muted)":"var(--amber)";
+    var label={breakout:"Breakout",above_baseline:"Above baseline",typical:"Typical",
+      below_baseline:"Below baseline",flop:"Underperformed",no_baseline:"No baseline"}[verdict]||"";
+    return '<div style="padding:7px 12px;display:flex;align-items:center;gap:7px;'
+      +'font-size:12.5px;border-top:1px solid var(--border)">'
+      +'<span style="font-weight:700;color:'+sc+'">'+ratio+"× median</span>"
+      +(label?'<span style="color:var(--muted)">'+esc(label)+"</span>":"")
+      +"</div>";
+  }
+
   function postCard(p,wide,pickable,hideActions){
     var platform=p.platform||"unknown",color=pColor(platform),brandSvg=pSvg(platform);
     var tcolor=pColorText(platform);
@@ -2071,6 +2097,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       // The player already carries the handle, caption and stats as overlay
       // chrome, so the card body underneath is just the outbound link.
       return '<div class="'+cls+' card-media '+lastPlayerAr+'">'+mediaHtml
+        +standingBadge(p)
         +"</div>"
         // Only on the single-post view — a gallery of these would be noise.
         +(wide&&!hideActions?postAiActions(p):"");
@@ -2091,7 +2118,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +ctTag+handleHtml+"</div>"
       +'<div class="title">'+esc(title.length>160?title.slice(0,160)+"…":title)+"</div>"
       +'<div class="stats">'+statsHtml+"</div>"
-      +linkHtml+"</div></div>";
+      +linkHtml+"</div>"+standingBadge(p)+"</div>";
   }
 
   // ─── Creator Card ───
