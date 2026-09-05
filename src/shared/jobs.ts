@@ -59,7 +59,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
-import { ownIt } from "./evidence.js";
+import { handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
 import {
   confirmSpend,
   costOf,
@@ -408,6 +408,7 @@ function audienceGuidance(a: {
 
 function competitorGuidance(a: {
   handle: string;
+  platform: string;
   metric: Metric;
   shipped: number;
   baseline: Distribution | null;
@@ -416,8 +417,12 @@ function competitorGuidance(a: {
   lastChecked?: string;
 }): string {
   const lines = [
-    `${a.shipped} recent post${a.shipped === 1 ? "" : "s"} by @${a.handle}, each scored against ` +
-      `that account's own median ${a.metric} rather than against anyone else's numbers.`,
+    // The network is named here, not just in the structured payload, because
+    // the platform argument defaults silently: without this line an answer
+    // about the wrong network is indistinguishable from the right one.
+    `${a.shipped} recent post${a.shipped === 1 ? "" : "s"} by @${a.handle} on ${a.platform}, each ` +
+      `scored against that account's own median ${a.metric} rather than against anyone else's ` +
+      "numbers.",
     "",
     a.baseline
       ? `Their median is ${Math.round(a.baseline.median).toLocaleString("en-US")} ${a.metric}, ` +
@@ -743,7 +748,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       inputSchema: z
         .object({
           username: z.string().describe("Your handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           limit: z
             .number()
             .int()
@@ -960,8 +965,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       outputSchema: OUTPUT_SCHEMAS.track_competitor,
       inputSchema: z
         .object({
-          username: z.string().describe("Creator handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          username: z
+            .string()
+            .describe(
+              "Creator handle, with or without @. This is a handle, not a brand name — if you " +
+                "only have a company name, find the handle first (search_creators on TikTok, " +
+                "Instagram or Xiaohongshu; a web search anywhere else).",
+            ),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           limit: z.number().int().optional().describe("Posts in the window (default 12, max 30). One fetch either way."),
           metric: metricArg,
           since: z
@@ -980,6 +991,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
     ) => {
       const client = await makeClient({ ...extra, arguments: args });
       const handle = normaliseHandle(args.username);
+      // Whether the network was chosen or merely fallen back to. An empty
+      // result means something different in each case, and the caller cannot
+      // tell them apart unless we say which happened.
+      const platformDefaulted = !args.platform;
       const platform = (args.platform || "tiktok").toLowerCase();
       const cap = clamp(args.limit, 12, 1, 30);
       const metric: Metric = args.metric ?? "views";
@@ -993,6 +1008,25 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         feed = rowsOf(structured.posts);
       } catch (err) {
         return failed("track_competitor could not list the posts", err);
+      }
+
+      // Nothing came back. Previously this fell through to the scoring path and
+      // produced a baseline-less report about zero posts, which reads as "this
+      // competitor has been quiet" — a claim the tool has no evidence for.
+      if (feed.length === 0) {
+        return evidence(handleMissGuidance({ handle, platform, defaulted: platformDefaulted }), {
+          mode: "evidence",
+          tool: "track_competitor",
+          evidenceFrom: ["get_user_posts"],
+          username: handle,
+          platform,
+          platformDefaulted,
+          found: false,
+          posts: [],
+          unavailable: [],
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        });
       }
 
       const windowed = applySince(feed, args.since);
@@ -1047,6 +1081,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       return evidence(
         competitorGuidance({
           handle,
+          platform,
           metric,
           shipped: scoredPosts.length,
           baseline,
@@ -1388,7 +1423,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       inputSchema: z
         .object({
           username: z.string().describe("Your handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           niche: z
             .string()
             .optional()
