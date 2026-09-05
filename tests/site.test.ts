@@ -561,7 +561,13 @@ describe("documentation", () => {
   it("states plainly what the server cannot do", () => {
     // The questions an admin actually asks, and the answers we must not soften.
     expect(html).toMatch(/cannot|never/i);
-    expect(html).toContain("Connect to any social account");
+    // This used to pin "Connect to any social account", listed as something
+    // the server could not do. connect_social_account made that false, and a
+    // test pinning a false assurance is worse than no test: the honest
+    // answer to the same question is that the linking happens on the
+    // platform's consent screen and the token never comes back here.
+    expect(html).toContain("Hold your social credentials");
+    expect(html).toMatch(/never reaches the assistant/);
     expect(html).toMatch(/Post, comment, like, follow or message/);
     expect(html).toMatch(/private messages/i);
     expect(html).toMatch(/readOnlyHint/);
