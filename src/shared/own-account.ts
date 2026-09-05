@@ -9,18 +9,36 @@
  * (crates/server/src/mcp_tools.rs) — this file is what makes that subset
  * reachable from Claude/ChatGPT, which is the whole gap.
  *
- * Billing is not uniform across these ten tools, and that is deliberate,
+ * Billing is not uniform across these tools, and that is deliberate,
  * not a bug to paper over:
- *  - list_own_apps, get_scheduled_posts, get_post_performance,
- *    get_video_stats and get_content_plan are free reads — nooticr's own
- *    already-stored data, never an upstream call.
+ *  - list_own_apps, create_product, update_product, get_scheduled_posts,
+ *    get_post_performance, get_video_stats, get_content_plan and
+ *    get_brand_playbook are free — nooticr's own already-stored data (or,
+ *    for the two writes, a plain row with no AI call), never an upstream
+ *    call.
  *  - review_post calls AI but the dashboard's own pre-publish review has
  *    never billed for it, so neither does this.
- *  - draft_post, growth_brief, generate_content_plan and generate_captions
- *    spend the workspace's plan AI credits — a different balance from the
- *    personal MCP credits every other tool in this file spends, and one
- *    check_nooticr_credits does not report on. Their descriptions say so
- *    explicitly rather than implying "free" by omitting a credit count.
+ *  - draft_post, growth_brief, generate_content_plan, generate_captions and
+ *    analyze_product spend the workspace's plan AI credits — a different
+ *    balance from the personal MCP credits every other tool in this file
+ *    spends, and one check_nooticr_credits does not report on. Their
+ *    descriptions say so explicitly rather than implying "free" by omitting
+ *    a credit count. analyze_product_status, which only polls the job
+ *    analyze_product started, is free — the cost was already charged.
+ *
+ * create_product/update_product also break this file's other convention:
+ * every product-editing field on them (website_url, product_type, ...) is
+ * snake_case, not camelCase. That is not a style slip — nooticr-server's
+ * create_product_tool/update_product_tool (crates/server/src/mcp_tools.rs)
+ * read those keys by exact name rather than through the camelCase-aliasing
+ * path appId gets, so a camelCase websiteUrl sent here would silently be
+ * dropped rather than land in the row. appId itself still works in either
+ * case, same as every other tool below.
+ *
+ * analyze_product is a real outbound fetch, not just a nooticr-internal
+ * read: it fetches an excerpt of the product's own website (whatever domain
+ * website_url names), which is why it is the one tool in this file marked
+ * openWorldHint: true rather than closed.
  *
  * get_scheduled_posts, get_post_performance and get_video_stats are the
  * measurement half of the same gap `growth_brief` only half-closed:
@@ -81,6 +99,107 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         return toResult(await client.callTool("list_own_apps", {}));
       } catch (err) {
         return failed("list_own_apps failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "create_product",
+    {
+      title: "Create Product",
+      description:
+        "Create a new product (\"app\") in your own workspace — the row every other own-account " +
+        "tool needs before it has anything to work with; a fresh workspace has none. Takes no " +
+        "workspace argument: it always creates in the workspace of the session calling it, never " +
+        "one you could name. Subject to your plan's product limit — the error names the limit if " +
+        "you hit it. Does not generate a brand playbook by itself; call analyze_product afterwards " +
+        "for that. name and slug are required; description, website_url, niche, product_type and " +
+        "the store-listing fields below are optional. Free — no AI call, just a row.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      // These field names are snake_case, unlike appId elsewhere in this file.
+      // The backend reads them by exact key (crates/server/src/mcp_tools.rs's
+      // create_product_tool) rather than through the camelCase-aliasing path
+      // resolve_app_target gives appId/app_id, so a camelCase websiteUrl here
+      // would silently vanish rather than land in the row.
+      inputSchema: z
+        .object({
+          name: z.string().describe("Product name."),
+          slug: z.string().describe("URL-safe slug, unique within your workspace."),
+          description: z.string().optional(),
+          website_url: z
+            .string()
+            .optional()
+            .describe(
+              "The product's own site. analyze_product later fetches an excerpt of this page as " +
+                "part of its analysis.",
+            ),
+          niche: z.string().optional(),
+          product_type: z.string().optional().describe("e.g. \"app\", \"saas\", \"physical\"."),
+          icon_url: z.string().optional(),
+          primary_cta_label: z
+            .string()
+            .optional()
+            .describe("Call-to-action button text, e.g. \"Get the app\"."),
+          primary_cta_url: z.string().optional().describe("Where the call-to-action button links."),
+          external_listing_id: z
+            .string()
+            .optional()
+            .describe("App Store / Play Store listing id, if this product has one."),
+          ios_bundle_id: z.string().optional(),
+          android_package: z.string().optional(),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.create_product,
+    },
+    async (args, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("create_product", args as Record<string, unknown>));
+      } catch (err) {
+        return failed("create_product failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "update_product",
+    {
+      title: "Update Product",
+      description:
+        "Patch your own product's fields — omitted arguments leave their column unchanged. Takes " +
+        "appId (optional when your workspace has only one product); every other field is " +
+        "snake_case, the same names create_product takes and for the same reason — the backend " +
+        "reads them by exact key. Free — no AI call, just a row.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
+          name: z.string().optional(),
+          slug: z.string().optional(),
+          description: z.string().optional(),
+          website_url: z.string().optional(),
+          niche: z.string().optional(),
+          product_type: z.string().optional(),
+          icon_url: z.string().optional(),
+          primary_cta_label: z.string().optional(),
+          primary_cta_url: z.string().optional(),
+          external_listing_id: z.string().optional(),
+          ios_bundle_id: z.string().optional(),
+          android_package: z.string().optional(),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.update_product,
+    },
+    async (args: { appId?: number } & Record<string, unknown>, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("update_product", args as Record<string, unknown>));
+      } catch (err) {
+        return failed("update_product failed", err);
       }
     },
   );
@@ -225,6 +344,106 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         return toResult(await client.callTool("get_content_plan", args));
       } catch (err) {
         return failed("get_content_plan failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_brand_playbook",
+    {
+      title: "Get Brand Playbook",
+      description:
+        "Your own product's brand playbook — name, description and the playbook text — if one has " +
+        "been configured, in the dashboard or by a previous analyze_product run. Read-only: never " +
+        "creates or edits a playbook itself. Returns available: false when none exists yet. Takes " +
+        "appId (optional when your workspace has only one product). No cost to call.",
+      _meta: viewMeta("get_brand_playbook"),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.get_brand_playbook,
+    },
+    async (args: { appId?: number }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("get_brand_playbook", args));
+      } catch (err) {
+        return failed("get_brand_playbook failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "analyze_product",
+    {
+      title: "Analyze Product",
+      description:
+        "Start an AI analysis of your own product: fetches an excerpt of the product's own website " +
+        "(website_url, if one is set on the product — a real outbound fetch to whatever domain " +
+        "was configured, not only nooticr's own stored data), reads its recent posts and fleet " +
+        "performance, and writes the result as the product's brand playbook — the same job the " +
+        "dashboard's \"Analyze\" button starts, and the one get_brand_playbook reads from " +
+        "afterwards. Takes appId (optional when your workspace has only one product). Runs in the " +
+        "background: returns a jobId immediately rather than the finished analysis — poll it with " +
+        "analyze_product_status. Billed like the dashboard's own analyze job: 10 of your " +
+        "workspace's plan AI credits (first analysis free per workspace), a different balance from " +
+        "your personal MCP credits and not tracked by check_nooticr_credits.",
+      // Not view-less for lack of trying: the immediate reply is only a
+      // jobId and state: "pending", nothing to draw yet. analyze_product_status,
+      // which returns the finished playbook, is where the view belongs — see
+      // scripts/host-contract.py's NO_APP entry for this tool.
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-app workspace."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.analyze_product,
+    },
+    async (args: { appId?: number }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("analyze_product", args));
+      } catch (err) {
+        return failed("analyze_product failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "analyze_product_status",
+    {
+      title: "Analyze Product Status",
+      description:
+        "Poll a job started by analyze_product. Takes jobId. Returns state (pending, thinking, " +
+        "done, error) and, once done, the generated analysis/brand playbook. Free to poll — the " +
+        "cost was already charged when analyze_product started the job.",
+      _meta: viewMeta("analyze_product_status"),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          jobId: z.string().describe("The jobId analyze_product returned."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.analyze_product_status,
+    },
+    async (args: { jobId: string }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("analyze_product_status", args));
+      } catch (err) {
+        return failed("analyze_product_status failed", err);
       }
     },
   );

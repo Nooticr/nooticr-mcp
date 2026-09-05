@@ -570,6 +570,13 @@ export function createMcpServer(
   // get_content_plan gets the same card generate_content_plan does: they
   // return the same `plan` shape, so the generic template already renders it.
   "get_content_plan",
+  // The playbook text and a finished analysis are exactly the kind of prose
+  // get_content_plan already proved the generic fallback (a formatted JSON
+  // block) is an acceptable view for — see scripts/host-contract.py for why
+  // create_product/update_product/analyze_product, which return only
+  // metadata or a bare job-start ack, do not get one.
+  "get_brand_playbook",
+  "analyze_product_status",
   "review_post",
   "draft_post",
   "growth_brief",

@@ -23,6 +23,37 @@
  * stdio, KV for the worker — so the same person on ChatGPT and on Claude
  * Desktop today has two watchlists. Both implementations sit behind WatchStore
  * so that when the backend grows an endpoint there is one thing to replace.
+ *
+ * That endpoint now exists: nooticr-server has grown workspace-scoped,
+ * shared-across-hosts equivalents (`list_watchlist`, `watch_creator`,
+ * `unwatch_creator`, `get_watchlist_baseline`, `advance_watchlist_baseline` in
+ * crates/server/src/mcp_tools.rs) with the same two-baseline shape this file
+ * already keeps per entry (`baseline` for catch-up, `competitorBaseline` for
+ * `track_competitor` — see WatchEntry above). It is deliberately not wired in
+ * here yet. Two problems make that a separate, careful piece of work rather
+ * than a drop-in swap of WatchStore's implementation:
+ *
+ *  1. Name collision. The backend's `watch_creator`/`unwatch_creator` are two
+ *     more tools with the names this file already registers below, and only
+ *     one registration under a given name can win. Renaming either side to
+ *     dodge the collision breaks whichever hosts already learned the old
+ *     name — including mid-session for anyone with these tools already
+ *     listed — for a tool whose whole point is "the thing you called before
+ *     still works".
+ *  2. A second, disconnected watchlist is worse than one. The backend's
+ *     tools read/write a *workspace's* Postgres row; this file's WatchStore
+ *     reads/writes a per-*account* file or KV entry, keyed by `me()`'s id.
+ *     Exposing `list_watchlist` et al. under new names right now would show
+ *     every user a second watchlist that catch_up_watchlist/track_competitor
+ *     never touch and vice versa — indistinguishable from a bug rather than
+ *     a feature, and confusing in exactly the way this docblock exists to
+ *     prevent. It would also assume every MCP caller has a workspace, which
+ *     is not true of every account that has only ever used the MCP surface.
+ *
+ * The real fix is switching WatchStore's implementation to the backend
+ * endpoints, migrating existing per-account entries once on first use. That
+ * is real design and migration work, not a registration exercise, so it
+ * stays out of scope here rather than being rushed in alongside it.
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

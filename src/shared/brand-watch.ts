@@ -17,7 +17,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
-import { confirmSpend, declinedResult, searchMentionsCost } from "./spend.js";
+import { BACKEND_CALL_CREDITS, confirmSpend, declinedResult, searchMentionsCost } from "./spend.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -44,14 +44,36 @@ const CADENCE_RATE: Record<Cadence, { runs: number; per: string }> = {
   weekly: { runs: 1, per: "week" },
 };
 
+/** Mirrors `crate::brand_watch::WatchKind` (nooticr-server, brand_watch.rs). */
+const KINDS = ["mentions", "competitor"] as const;
+type WatchKind = (typeof KINDS)[number];
+
 interface CreateArgs {
-  term: string;
+  kind?: WatchKind;
+  /** Required for `kind: "mentions"` (the default); ignored for `"competitor"`. */
+  term?: string;
   platforms?: string[];
+  /** Required for `kind: "competitor"`; ignored for `"mentions"`. */
+  handle?: string;
+  /** Required for `kind: "competitor"`; ignored for `"mentions"`. */
+  platform?: string;
   cadence?: Cadence;
   budgetCredits?: number;
   deliverTo?: string;
   confirm?: boolean;
   confirmationToken?: string;
+}
+
+/**
+ * What one run of a competitor watch bills: one flat `get_user_posts` call,
+ * whatever the platform. Mirrors `COMPETITOR_SWEEP_TOOL`'s cost
+ * (`crate::brand_watch::full_sweep_cost`/`plan_run` in nooticr-server), and
+ * the same number `BACKEND_CALL_CREDITS.get_user_posts` already carries for
+ * the job tools' own fan-out pricing — one constant, not two copies that can
+ * drift apart.
+ */
+function competitorWatchCost(): number {
+  return BACKEND_CALL_CREDITS.get_user_posts;
 }
 
 /**
@@ -73,7 +95,15 @@ async function gateRecurringCharge(
   server: McpServer,
   args: CreateArgs,
 ): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: true } | null> {
-  const sweep = searchMentionsCost(args.platforms);
+  const kind: WatchKind = args.kind ?? "mentions";
+  // A competitor watch bills a flat get_user_posts call, not a search_mentions
+  // sweep — quoting searchMentionsCost here would price a $2 watch as if it
+  // swept nine networks. budgetCredits still applies (plan_run keeps a
+  // platform only if it fits under the ceiling), but the schema's own min(2)
+  // means a competitor watch's single 2-credit call always fits, so there is
+  // nothing to trim in practice — unlike a mentions sweep, which frequently
+  // does.
+  const sweep = kind === "competitor" ? competitorWatchCost() : searchMentionsCost(args.platforms);
   // An upper bound on the run, deliberately, rather than the exact figure.
   // The server does not bill the budget: `plan_run` drops whole platforms
   // until the rest fit under it, so a ceiling of 9 against 2-credit networks
@@ -84,13 +114,19 @@ async function gateRecurringCharge(
   const rate = CADENCE_RATE[args.cadence ?? "daily"];
   const perPeriod = perRun * rate.runs;
   const where = args.deliverTo ? ` Its digest goes to ${args.deliverTo}.` : "";
+  const label =
+    kind === "competitor" ? `@${args.handle} on ${args.platform ?? "?"}` : `"${args.term}"`;
+  const what =
+    kind === "competitor"
+      ? `email what beats their own median, ${(args.cadence ?? "daily").replace(/_/g, " ")}`
+      : `email what is new, ${(args.cadence ?? "daily").replace(/_/g, " ")}`;
 
   const decision = await confirmSpend(server.server, {
     credits: perPeriod,
     // Not a number worth weighing against a dialog — a standing charge. See
     // the `always` option's own note.
     always: true,
-    summary: `Watch "${args.term}" and email what is new, ${(args.cadence ?? "daily").replace(/_/g, " ")}.${where}`,
+    summary: `Watch ${label} and ${what}.${where}`,
     prompt: {
       cost:
         `That is ${perRun} credits every run, about ${perPeriod} a ${rate.per}, ` +
@@ -103,13 +139,16 @@ async function gateRecurringCharge(
     // Said plainly, because the first model to meet this read "cancelled" as
     // a server fault and reported the feature broken — one retry away from
     // treating a person's "no" as an obstacle to route around.
+    const oneOff =
+      kind === "competitor"
+        ? `A one-off get_user_posts call costs ${perRun} credits and repeats never.`
+        : `A one-off search_mentions sweep costs ${perRun} credits and repeats never.`;
     return declinedResult(
       perPeriod,
       `That watch`,
       `Nothing was created, and nothing is wrong: the person paying declined the recurring ` +
         `charge, or could not be shown it. Calling again with the same token will reach the ` +
-        `same answer — ask them directly instead. A one-off search_mentions sweep costs ` +
-        `${perRun} credits and repeats never.`,
+        `same answer — ask them directly instead. ${oneOff}`,
     );
   }
 
@@ -166,30 +205,67 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
     {
       title: "Create Brand Watch",
       description:
-        "Run a brand-mentions sweep on a schedule and email the user what is new, instead of them " +
-        "remembering to ask. Two calls by design, because this starts a charge that recurs while " +
-        "nobody is watching: call it once with no confirmation to get back the cost per run, the " +
-        "cadence and what those multiply out to per day, put those numbers to the user in your " +
+        "Run a sweep on a schedule and email the user what is new, instead of them remembering to " +
+        "ask. Two kinds, chosen with kind: kind: \"mentions\" (the default — omit kind entirely for " +
+        "this one) runs a brand-mentions sweep for term across platforms; kind: \"competitor\" runs " +
+        "a get_user_posts sweep for one creator (handle + platform) and reports only the posts that " +
+        "beat that creator's own recent median — a raw view count would just measure follower size, " +
+        "so a run only mails what is unusually good for them. term/platforms belong to a mentions " +
+        "watch; handle/platform belong to a competitor watch — pass the pair that matches kind and " +
+        "leave the other pair out. Two calls by design, because this starts a charge that recurs " +
+        "while nobody is watching: call it once with no confirmation to get back the cost per run, " +
+        "the cadence and what those multiply out to per day, put those numbers to the user in your " +
         "reply, and only then call it again with confirm: true and the confirmationToken you were " +
         "handed. The first call creates nothing. A call with confirm: true and no matching token " +
         "creates nothing either — if the user cannot be asked, or does not answer, leave it " +
         "uncreated rather than starting a recurring charge nobody agreed to. Where the client " +
         "supports it, the confirming call also puts the recurring cost to the user directly and " +
         "creates nothing if they decline, so relaying the quote is not the only thing standing " +
-        "between them and a standing charge. Each run bills exactly " +
-        "what the same sweep costs when a person asks for it: 2 credits per network, 5 for " +
-        "Xiaohongshu. budgetCredits is a hard per-run ceiling enforced on the server, not a " +
-        "suggestion — a sweep that would cost more is trimmed to the networks that fit, never " +
-        "widened. A run that turns up nothing new sends no mail. cadence is hourly, every_6_hours, " +
-        "every_12_hours, daily or weekly, and defaults to daily. No cost to call.",
+        "between them and a standing charge. Each run bills exactly what the same call costs when a " +
+        "person asks for it themselves: for a mentions watch, 2 credits per network swept, 5 for " +
+        "Xiaohongshu; for a competitor watch, a flat 2 credits (one get_user_posts call), whatever " +
+        "the platform. budgetCredits is a hard per-run ceiling enforced on the server, not a " +
+        "suggestion — a mentions sweep that would cost more is trimmed to the networks that fit, " +
+        "never widened. A run that turns up nothing new — or, for a competitor watch, nothing above " +
+        "median — sends no mail. cadence is hourly, every_6_hours, every_12_hours, daily or weekly, " +
+        "and defaults to daily. No cost to call.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
-          term: z.string().describe("What to watch for — a brand name or phrase (max 120 chars)."),
+          kind: z
+            .enum(KINDS)
+            .optional()
+            .describe(
+              "\"mentions\" (default) or \"competitor\". Selects which of the two argument pairs " +
+                "below applies.",
+            ),
+          term: z
+            .string()
+            .optional()
+            .describe(
+              "Required for kind: \"mentions\" (the default) — what to watch for, a brand name or " +
+                "phrase (max 120 chars). Not used for a competitor watch.",
+            ),
           platforms: z
             .array(z.string())
             .optional()
-            .describe("Networks to sweep. Omit for every searchable network."),
+            .describe(
+              "kind: \"mentions\" only — networks to sweep. Omit for every searchable network.",
+            ),
+          handle: z
+            .string()
+            .optional()
+            .describe(
+              "Required for kind: \"competitor\" — the creator's handle, with or without @ (max " +
+                "120 chars). Not used for a mentions watch.",
+            ),
+          platform: z
+            .string()
+            .optional()
+            .describe(
+              "Required for kind: \"competitor\" — the single network that creator posts on, e.g. " +
+                "\"tiktok\". Not used for a mentions watch.",
+            ),
           cadence: z.enum(CADENCES).optional().describe("How often to run. Defaults to daily."),
           budgetCredits: z
             .number()

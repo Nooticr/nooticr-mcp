@@ -258,6 +258,68 @@ describe("a watch that bills until someone stops it", () => {
 });
 
 /**
+ * A competitor watch is not a mentions sweep, and must not be quoted like
+ * one. It runs a single flat-priced get_user_posts call per run — 2 credits,
+ * regardless of platform or of how many networks a mentions watch would have
+ * searched — so gateRecurringCharge has to price it off that call, not off
+ * searchMentionsCost, or the dialog would show a number nobody is actually
+ * being charged.
+ */
+describe("a competitor watch, priced differently from a mentions watch", () => {
+  const competitor = (args: Record<string, unknown> = {}) => ({
+    name: "create_brand_watch",
+    arguments: {
+      kind: "competitor",
+      handle: "rival",
+      platform: "tiktok",
+      cadence: "daily",
+      confirm: true,
+      confirmationToken: "t",
+      ...args,
+    },
+  });
+
+  it("quotes the flat get_user_posts price, not a nine-network sweep", async () => {
+    const { client, calls, asked } = await connect("accept");
+    await client.callTool(competitor());
+    expect(asked).toHaveLength(1);
+    // Not 21 — a competitor watch never runs search_mentions at all.
+    expect(asked[0]).toMatch(/2 credits every run, about 2 a day/);
+    expect(asked[0]).not.toContain("21");
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(1);
+  });
+
+  it("still asks even though 2 credits a run is under the one-off threshold", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(competitor({ cadence: "weekly" }));
+    expect(2).toBeLessThan(CONFIRM_ABOVE_CREDITS);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toMatch(/2 credits every run, about 2 a week/);
+  });
+
+  it("names the creator, not a search term, in the summary", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool(competitor());
+    expect(asked[0]).toContain("@rival");
+    expect(asked[0].toLowerCase()).toContain("median");
+  });
+
+  it("creates nothing when the user declines, same as a mentions watch", async () => {
+    const { client, calls } = await connect("decline");
+    await client.callTool(competitor());
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(0);
+  });
+
+  it("a high budgetCredits ceiling does not inflate the flat price", async () => {
+    const { client, asked } = await connect("accept");
+    // get_user_posts is flat-priced — a generous ceiling must not be read as
+    // a per-network multiplier the way it would for a mentions watch.
+    await client.callTool(competitor({ budgetCredits: 1000 }));
+    expect(asked[0]).toMatch(/2 credits every run/);
+  });
+});
+
+/**
  * deliverTo is the argument that can carry the answer somewhere the user did
  * not choose, on a schedule. The model picks it, and the model spends its day
  * reading captions and comments written by strangers.

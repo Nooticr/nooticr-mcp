@@ -749,8 +749,9 @@ export const OUTPUT_SCHEMAS = {
     confirmationToken: scalar().describe("Pass this back with confirm: true to actually create the watch."),
     expiresInSeconds: scalar(),
     quote: open({
-      term: scalar(),
-      platforms: listOf(z.string()),
+      kind: scalar().describe("\"mentions\" or \"competitor\"."),
+      term: scalar().describe("The search term (mentions) or the creator handle (competitor)."),
+      platforms: listOf(z.string()).describe("Networks swept (mentions), or the creator's single platform (competitor)."),
       cadence: scalar(),
       cadenceMinutes: scalar(),
       costPerRun: scalar(),
@@ -766,8 +767,11 @@ export const OUTPUT_SCHEMAS = {
     rejected: scalar().describe("Set when confirm was true but the token didn't check out — nothing was created."),
     alreadyWatching: scalar().describe("Set when this term already has an enabled watch — creating another would double-charge."),
     watchId: scalar(),
+    kind: scalar().describe("\"mentions\" or \"competitor\"."),
     term: scalar(),
     platforms: listOf(z.string()),
+    competitorHandle: scalar().describe("Set only for a competitor watch."),
+    competitorPlatform: scalar().describe("Set only for a competitor watch."),
     cadence: scalar(),
     costPerRun: scalar(),
     creditsPerDay: scalar(),
@@ -780,8 +784,11 @@ export const OUTPUT_SCHEMAS = {
     watches: listOf(
       open({
         watchId: scalar(),
+        kind: scalar().describe("\"mentions\" or \"competitor\"."),
         term: scalar(),
         platforms: listOf(z.string()),
+        competitorHandle: scalar().describe("Set only for a competitor watch."),
+        competitorPlatform: scalar().describe("Set only for a competitor watch."),
         cadence: scalar(),
         costPerRun: scalar(),
         budgetPerRun: scalar(),
@@ -822,6 +829,39 @@ export const OUTPUT_SCHEMAS = {
       }),
     ),
     count: scalar(),
+  }),
+  /** Same shape for both: product_summary() in mcp_tools.rs (create/update share it). */
+  create_product: open({
+    appId: scalar(),
+    name: scalar(),
+    slug: scalar(),
+    description: scalar(),
+    iconUrl: scalar(),
+    productType: scalar(),
+    websiteUrl: scalar(),
+    primaryCtaLabel: scalar(),
+    primaryCtaUrl: scalar(),
+    niche: scalar(),
+    externalListingId: scalar(),
+    iosBundleId: scalar(),
+    androidPackage: scalar(),
+    createdAt: scalar(),
+  }),
+  update_product: open({
+    appId: scalar(),
+    name: scalar(),
+    slug: scalar(),
+    description: scalar(),
+    iconUrl: scalar(),
+    productType: scalar(),
+    websiteUrl: scalar(),
+    primaryCtaLabel: scalar(),
+    primaryCtaUrl: scalar(),
+    niche: scalar(),
+    externalListingId: scalar(),
+    iosBundleId: scalar(),
+    androidPackage: scalar(),
+    createdAt: scalar(),
   }),
   /**
    * `own_account_read` in crates/server/src/mcp_tools.rs hoists `appId` and
@@ -886,6 +926,32 @@ export const OUTPUT_SCHEMAS = {
   get_content_plan: open({
     ok: scalar(),
     plan: open({}).nullish().describe("null when no plan has been generated yet."),
+  }),
+  /** own_account_read hoists appId/appName onto copilot_tools' get_brand_playbook reply too. */
+  get_brand_playbook: open({
+    available: scalar().describe("false when no playbook has been configured yet."),
+    name: scalar(),
+    brand_playbook: scalar().describe("The playbook text itself, or null when unavailable."),
+    description: scalar(),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  /** The immediate reply to starting the job — poll analyze_product_status for the result. */
+  analyze_product: open({
+    ok: scalar(),
+    jobId: scalar(),
+    state: scalar().describe("Always \"pending\" on this reply; poll analyze_product_status for its progress."),
+  }),
+  analyze_product_status: open({
+    ok: scalar(),
+    jobId: scalar(),
+    state: scalar().describe("pending, thinking, done or error."),
+    progressChars: scalar(),
+    contentPreview: scalar(),
+    analysis: open({}).nullish().describe("The generated brand playbook, once state is done."),
+    provider: scalar(),
+    error: scalar(),
+    elapsedMs: scalar(),
   }),
   review_post: open({
     review: open({

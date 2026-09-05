@@ -50,6 +50,13 @@ const NOT_READ_ONLY = [
   // Same billing, same conclusion — this one was missed because it writes
   // nothing of the user's, but the credits alone put it here.
   "growth_brief",
+  // Starts an async analysis job every call (a fresh jobId, spending plan AI
+  // credits) — same conclusion as the generation tools above, for the same
+  // reason connect_social_account is on this list: a retry is not a no-op.
+  "analyze_product",
+  // Each creates or patches a real row in the workspace's own products table.
+  "create_product",
+  "update_product",
   // The exception to the billing rule: free, and still not read-only.
   // Given a postId it saves the review and score onto that scheduled post,
   // overwriting the previous one.
@@ -63,7 +70,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(54);
+    expect(tools).toHaveLength(59);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -87,6 +94,12 @@ describe("tool annotations", () => {
     // Only the account tools stay inside nooticr; everything else hits a platform.
     // The watchlist tools that only touch stored state are closed-world too.
     expect(closed.sort()).toEqual([
+      // Own-account tools: every one of these reads or generates for the
+      // caller's own product, never a third party's — nothing here reaches
+      // outside nooticr. analyze_product is the one exception (see below):
+      // it fetches an excerpt of the product's own website, a real reach
+      // outside nooticr, so it is deliberately absent from this list.
+      "analyze_product_status",
       "check_nooticr_credits",
       // Mints a connect link (nooticr's own oauth_start), never a third-party
       // read or write.
@@ -94,12 +107,11 @@ describe("tool annotations", () => {
       // All three touch nooticr's own stored watch state; the sweep a watch
       // schedules runs later, server-side, never inside the call itself.
       "create_brand_watch",
-      // Own-account tools: every one of these reads or generates for the
-      // caller's own product, never a third party's — nothing here reaches
-      // outside nooticr.
+      "create_product",
       "draft_post",
       "generate_captions",
       "generate_content_plan",
+      "get_brand_playbook",
       "get_content_plan",
       "get_post_performance",
       "get_scheduled_posts",
@@ -126,6 +138,7 @@ describe("tool annotations", () => {
       "show_comment_review",
       "stop_brand_watch",
       "unwatch_creator",
+      "update_product",
       "watch_creator",
     ]);
   });

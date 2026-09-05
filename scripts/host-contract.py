@@ -39,6 +39,18 @@ import sys
 # None of the five return the rich, card-shaped content get_content_plan and
 # generate_content_plan share (posts with hooks/scripts), which is why those two
 # do have a view.
+#
+# create_product/update_product are the same shape as list_own_apps above, one
+# row of metadata rather than many — nothing a card adds over the list. Their
+# argument names are unusually snake_case (see own-account.ts's module doc),
+# which is an input-schema fact and has nothing to do with the view decision.
+#
+# analyze_product's *immediate* reply is only a jobId and state: "pending" —
+# there is nothing to draw until the job finishes, which is what
+# analyze_product_status polls for. That tool does get a view (added to
+# TOOL_NAMES in tools.ts): its reply, once state is "done", carries the
+# generated playbook prose, the same kind of content get_content_plan already
+# established the generic fallback view is an acceptable way to show.
 NO_APP = {
     "nooticr_login",
     "watch_creator",
@@ -49,6 +61,9 @@ NO_APP = {
     "list_own_apps",
     "list_social_connections",
     "connect_social_account",
+    "create_product",
+    "update_product",
+    "analyze_product",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"

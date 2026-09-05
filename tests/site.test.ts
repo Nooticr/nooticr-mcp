@@ -230,10 +230,15 @@ describe("tool surface", () => {
     "list_brand_watches",
     "stop_brand_watch",
     "list_own_apps",
+    "create_product",
+    "update_product",
     "get_scheduled_posts",
     "get_post_performance",
     "get_video_stats",
     "get_content_plan",
+    "get_brand_playbook",
+    "analyze_product",
+    "analyze_product_status",
     "review_post",
     "draft_post",
     "growth_brief",
@@ -346,6 +351,12 @@ describe("tool surface", () => {
       "get_post_performance",
       "get_video_stats",
       "get_content_plan",
+      "get_brand_playbook",
+      // Plain rows, no AI call — same reasoning as the reads above.
+      "create_product",
+      "update_product",
+      // Only polls a job analyze_product already paid to start; free itself.
+      "analyze_product_status",
       // Calls AI but the dashboard's own pre-publish review has never
       // billed for it, so nor does this.
       "review_post",

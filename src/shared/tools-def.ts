@@ -196,8 +196,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "create_brand_watch",
  title: "Create Brand Watch",
- description: "Run a brand-mentions sweep on a schedule and email what is new, instead of remembering to ask. Two calls by design: call it once with no confirmation to get back the cost per run and what it multiplies out to per day, then call it again with confirm: true and the confirmationToken to actually start it. The first call creates nothing and spends nothing. Bills 2 credits per network per run (5 for Xiaohongshu), trimmed to fit budgetCredits. A run that finds nothing new sends no mail. No cost to call.",
- inputSchema: z.object({ term: z.string().describe("What to watch for (max 120 chars)."), platforms: z.array(z.string()).optional().describe("Networks to sweep (default: every searchable network)."), cadence: z.enum(["hourly", "every_6_hours", "every_12_hours", "daily", "weekly"]).optional().describe("How often to run (default daily)."), budgetCredits: z.number().int().optional().describe("Hard per-run credit ceiling (default the full sweep's cost)."), deliverTo: z.string().optional().describe("Digest email (default the account's own)."), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted cost."), confirmationToken: z.string().optional().describe("The token the first call returned.") }).strict(),
+ description: "Run a sweep on a schedule and email what is new, instead of remembering to ask. kind: \"mentions\" (default) sweeps term across platforms; kind: \"competitor\" sweeps one creator's own posts (handle + platform) and reports only what beats their own recent median. Two calls by design: call it once with no confirmation to get back the cost per run and what it multiplies out to per day, then call it again with confirm: true and the confirmationToken to actually start it. The first call creates nothing and spends nothing. Bills 2 credits per network per run (5 for Xiaohongshu) for a mentions watch, or a flat 2 credits for a competitor watch, trimmed to fit budgetCredits. A run that finds nothing new (or, for a competitor watch, nothing above median) sends no mail. No cost to call.",
+ inputSchema: z.object({ kind: z.enum(["mentions", "competitor"]).optional().describe("\"mentions\" (default) or \"competitor\"."), term: z.string().optional().describe("kind: mentions only — what to watch for (max 120 chars)."), platforms: z.array(z.string()).optional().describe("kind: mentions only — networks to sweep (default: every searchable network)."), handle: z.string().optional().describe("kind: competitor only — the creator's handle."), platform: z.string().optional().describe("kind: competitor only — the platform that creator posts on."), cadence: z.enum(["hourly", "every_6_hours", "every_12_hours", "daily", "weekly"]).optional().describe("How often to run (default daily)."), budgetCredits: z.number().int().optional().describe("Hard per-run credit ceiling (default the full sweep's cost)."), deliverTo: z.string().optional().describe("Digest email (default the account's own)."), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted cost."), confirmationToken: z.string().optional().describe("The token the first call returned.") }).strict(),
  },
  {
  name: "list_brand_watches",
@@ -216,6 +216,36 @@ export const TOOL_DEFINITIONS = [
  title: "List Own Apps",
  description: "List every product (\"app\") in your own workspace — id, name, niche and product type. Call this first when your workspace has more than one product and another own-account tool asks for appId. Reads only your own workspace. No cost to call.",
  inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "create_product",
+ title: "Create Product",
+ description: "Create a new product (\"app\") in your own workspace — the row every other own-account tool needs before it has anything to work with. Takes no workspace argument: it always creates in the calling session's own workspace. Subject to your plan's product limit. Does not generate a brand playbook by itself; call analyze_product afterwards for that. name and slug are required; description, website_url, niche, product_type and the store-listing fields are optional and snake_case. Free — no AI call, just a row.",
+ inputSchema: z.object({ name: z.string().describe("Product name."), slug: z.string().describe("URL-safe slug, unique within your workspace."), description: z.string().optional(), website_url: z.string().optional().describe("The product's own site; analyze_product later fetches an excerpt of it."), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
+ },
+ {
+ name: "update_product",
+ title: "Update Product",
+ description: "Patch your own product's fields — omitted arguments leave their column unchanged. Takes appId (optional with a single-app workspace); every other field is snake_case, same as create_product. Free — no AI call, just a row.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), name: z.string().optional(), slug: z.string().optional(), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
+ },
+ {
+ name: "get_brand_playbook",
+ title: "Get Brand Playbook",
+ description: "Your own product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by analyze_product. Read-only. Returns available: false when none exists yet. Takes appId (optional with a single-app workspace). No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace.") }).strict(),
+ },
+ {
+ name: "analyze_product",
+ title: "Analyze Product",
+ description: "Start an AI analysis of your own product: fetches an excerpt of the product's own website (website_url, if set — a real outbound fetch), reads its recent posts and fleet performance, and writes the result as the product's brand playbook. Takes appId (optional with a single-app workspace). Runs in the background; returns a jobId immediately, poll it with analyze_product_status. Billed like the dashboard's own analyze job: 10 of your workspace's plan AI credits (first analysis free per workspace), not your personal MCP credits.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace.") }).strict(),
+ },
+ {
+ name: "analyze_product_status",
+ title: "Analyze Product Status",
+ description: "Poll a job started by analyze_product. Takes jobId. Returns state (pending, thinking, done, error) and, once done, the generated analysis/brand playbook. Free to poll — the cost was already charged when analyze_product started the job.",
+ inputSchema: z.object({ jobId: z.string().describe("The jobId analyze_product returned.") }).strict(),
  },
  {
  name: "get_scheduled_posts",

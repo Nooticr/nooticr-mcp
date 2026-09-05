@@ -97,7 +97,7 @@ them caps that fan-out with an argument.
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
-| `create_brand_watch` | free to call | Schedule a recurring `search_mentions` sweep and get emailed only what is new. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling `search_mentions` yourself. |
+| `create_brand_watch` | free to call | Schedule a recurring sweep and get emailed only what is new. `kind: "mentions"` (default) is a recurring `search_mentions` sweep for `term`/`platforms`; `kind: "competitor"` is a recurring `get_user_posts` check on one creator (`handle`/`platform`), mailing only what beats their own recent median. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling the matching tool yourself — 2 credits per network (5 for Xiaohongshu) for mentions, a flat 2 credits for competitor. |
 | `list_brand_watches` | free | Every watch you have scheduled: term, networks, cadence, cost per run, credits spent so far, runs made, and when the next one is due. |
 | `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
@@ -141,15 +141,20 @@ Everything above reads someone else's content. These read and generate for **you
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `list_own_apps` | free | Every product in your workspace — call this first when you have more than one and another tool below asks for `appId`. |
+| `create_product` | free | Create a new product in your workspace — `name`/`slug` required, plus optional `description`, `website_url`, `niche`, `product_type` and store-listing fields (snake_case — see note below). Takes no workspace id; always creates in your own. Does not generate a brand playbook — call `analyze_product` for that. |
+| `update_product` | free | Patch a product's fields — omitted arguments leave their column unchanged. Same snake_case field names as `create_product`. |
 | `get_scheduled_posts` | free | Your own scheduled and draft posts in the content pipeline — title, status, scheduled time, approval status. What is queued to publish. |
 | `get_post_performance` | free | Your own already-published posts with their engagement counters — views, likes, comments, shares, platform, post date. The raw performance history, not an interpretation of it; pair with `growth_brief` for that. |
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
+| `get_brand_playbook` | free | Your product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by `analyze_product`. Read-only; `available: false` when none exists. |
 | `review_post` | free | Score a draft before you publish it — hook strength, an A/B hook comparison, aesthetic and storytelling notes, rewritten hooks/captions. Never billed, same as the dashboard's own pre-publish review. |
 | `draft_post` | plan AI credits | A ready-to-use draft (title, caption, hashtags, per-slide script) for a topic, grounded in your product's name. Returns text only — saves nothing. |
 | `growth_brief` | plan AI credits | A plain-language brief — the one insight that matters, wins, risks, next actions — grounded in your real post history and synced analytics. |
 | `generate_content_plan` | plan AI credits | A one-week, day-by-day content plan for your creators, grounded in what already worked. Saved — fetch it later with `get_content_plan`. |
 | `generate_captions` | plan AI credits | Timed on-screen caption cues for a video — a transcript plus start/end-timed lines. Returns cue data only. |
+| `analyze_product` | plan AI credits | Start an AI analysis of your product: fetches an excerpt of its own website (a real outbound fetch, not just nooticr's own data), reads its posts and fleet performance, and writes the result as its brand playbook. Runs in the background — returns a `jobId`, poll it with `analyze_product_status`. 10 plan AI credits, first analysis free per workspace. |
+| `analyze_product_status` | free | Poll a job `analyze_product` started. Returns `state` (pending/thinking/done/error) and, once done, the analysis. Free — the cost was already charged when the job started. |
 | `list_social_connections` | free | The social accounts you've connected and what each is allowed to do — read, publish, manage comments. Also lists which platforms can be connected at all. |
 | `connect_social_account` | free | A link to open to connect one account. You approve at the provider; nothing connects until you do, and no credential ever passes through this tool. |
 
