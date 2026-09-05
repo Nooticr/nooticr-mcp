@@ -50,7 +50,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-36 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+48 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Six of them — the ones under **Answer a question you actually have** — are not
