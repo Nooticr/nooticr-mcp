@@ -1,0 +1,120 @@
+{
+  "comments": {
+    "listIsCeiling": true,
+    "note": "xiaohongshu has no comment endpoint upstream",
+    "platforms": [
+      "tiktok",
+      "instagram",
+      "youtube",
+      "douyin",
+      "twitter",
+      "bilibili",
+      "linkedin",
+      "reddit",
+      "weibo"
+    ],
+    "source": "social_import.rs::fetch_post_comments"
+  },
+  "creatorSearch": {
+    "listIsCeiling": true,
+    "platforms": [
+      "tiktok",
+      "instagram",
+      "xiaohongshu"
+    ],
+    "source": "social_import.rs::search_creators"
+  },
+  "discovery": {
+    "listIsCeiling": true,
+    "platforms": [
+      "youtube",
+      "tiktok",
+      "instagram",
+      "douyin",
+      "xiaohongshu",
+      "twitter",
+      "bilibili",
+      "reddit",
+      "weibo"
+    ],
+    "source": "social_import.rs::DISCOVERABLE_PLATFORMS"
+  },
+  "mentions": {
+    "commentsUnavailable": [
+      "xiaohongshu"
+    ],
+    "listIsCeiling": true,
+    "note": "swept platforms whose comments cannot be read match post text only",
+    "platforms": [
+      "youtube",
+      "tiktok",
+      "instagram",
+      "douyin",
+      "xiaohongshu",
+      "twitter",
+      "bilibili",
+      "reddit",
+      "weibo"
+    ],
+    "source": "social_import.rs::search_mentions_across (via DISCOVERABLE_PLATFORMS)"
+  },
+  "postDetail": {
+    "listIsCeiling": true,
+    "note": "an ungated oEmbed tail returns a title and thumbnail for other hosts, not a post",
+    "platforms": [
+      "tiktok",
+      "instagram",
+      "youtube",
+      "douyin",
+      "xiaohongshu",
+      "twitter",
+      "bilibili",
+      "linkedin",
+      "reddit",
+      "weibo"
+    ],
+    "source": "social_import.rs::import_social_post -> tikhub_post_detail"
+  },
+  "similarCreators": {
+    "listIsCeiling": true,
+    "platforms": [
+      "tiktok",
+      "instagram"
+    ],
+    "source": "social_import.rs::similar_creators"
+  },
+  "sounds": {
+    "listIsCeiling": true,
+    "platforms": [
+      "tiktok",
+      "instagram"
+    ],
+    "source": "social_import.rs::discover_sounds"
+  },
+  "transcript": {
+    "listIsCeiling": false,
+    "note": "every other platform falls through to speech-to-text",
+    "platforms": [
+      "tiktok",
+      "douyin",
+      "youtube"
+    ],
+    "source": "social_import.rs::fetch_post_transcript"
+  },
+  "userPosts": {
+    "listIsCeiling": true,
+    "platforms": [
+      "tiktok",
+      "instagram",
+      "youtube",
+      "douyin",
+      "xiaohongshu",
+      "twitter",
+      "bilibili",
+      "linkedin",
+      "reddit",
+      "weibo"
+    ],
+    "source": "social_import.rs::discover_user_posts"
+  }
+}
