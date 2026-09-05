@@ -37,7 +37,12 @@ import {
   SEARCH_PLATFORMS,
 } from "./spend.js";
 import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/interfaces.js";
-import { MemoryWatchStore, registerWatchlist, type WatchStore } from "./watchlist.js";
+import {
+  BackendWatchStore,
+  MemoryWatchStore,
+  registerWatchlist,
+  type WatchStore,
+} from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
@@ -437,10 +442,25 @@ async function runEvidence(
 
 export function createMcpServer(
  rawMakeClient: (ctx: MakeClientContext) => Promise<NooticrClient> | NooticrClient,
- // Where the watchlist is kept. Defaults to memory, which is right for a test
- // and wrong for a session — each transport passes the store that outlives it.
  opts?: {
+  /**
+   * Use exactly this store for the watchlist, and do not reach the account.
+   *
+   * What a test wants: it asserts on the store it handed in, so anything
+   * wrapped around that store would be measuring something else. A transport
+   * wants `localWatchStore` instead.
+   */
   watchStore?: WatchStore;
+  /**
+   * The per-connection store to keep *behind* the account-backed watchlist.
+   *
+   * The list itself lives in nooticr now, so one person sees one list from
+   * every host. This is the fallback for the two cases where that cannot
+   * work — an account with no workspace, an older backend without the tools —
+   * and the source the one-time migration reads from. Each transport passes
+   * the store that outlives it: a file for stdio, KV for the Worker.
+   */
+  localWatchStore?: WatchStore;
   /**
    * Where in-flight task handles live. Memory is right for stdio and wrong
    * for a Durable Object that restarts on every deploy — see tasks.ts.
@@ -2342,7 +2362,23 @@ export function createMcpServer(
  // One store for both. track_competitor keeps its "since I last looked" marker
  // on the same watchlist entries, in its own field — two stores would mean a
  // creator you watch and a creator you track were different people.
- const watchStore = opts?.watchStore ?? new MemoryWatchStore();
+ //
+ // The watchlist lives in the nooticr account now, so the same person sees one
+ // list from Claude Desktop and from ChatGPT rather than one per connection.
+ // Whatever store the transport passed in stays underneath as the fallback and
+ // as the source for the one-time migration: an account with no workspace, or
+ // an older backend without the tools, keeps working exactly as before. Tests
+ // pass their own store and get it unwrapped, because wrapping an in-memory
+ // store in a backend call is not what any of them are testing.
+ // `watchStore` means "use exactly this"; `localWatchStore` means "keep this
+ // underneath the account-backed one". They are separate options because the
+ // two callers want genuinely different things and inferring it from which
+ // one was passed got it backwards once already — every real transport passes
+ // a store, so keying off "was one passed" gave production the local store and
+ // the tests the account-backed one, the exact opposite of the intent.
+ const watchStore: WatchStore =
+  opts?.watchStore ??
+  new BackendWatchStore(() => makeClient({}), opts?.localWatchStore ?? new MemoryWatchStore());
  registerWatchlist(server, makeClient, watchStore);
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);

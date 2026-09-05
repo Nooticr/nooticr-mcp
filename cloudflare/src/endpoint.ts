@@ -168,7 +168,7 @@ export class McpEndpoint {
     {
       // KV rather than this Durable Object's SQLite: the watchlist belongs to
       // the account and has to outlive any one session, and a DO is per-session.
-      watchStore: new KvWatchStore(this.env.STORE),
+      localWatchStore: new KvWatchStore(this.env.STORE),
       // SQLite rather than KV: a task *is* per-session, and a poll must never
       // read back a status older than the one just written. The default
       // in-memory store was rebuilt on every DO restart, so a task created
