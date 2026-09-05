@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-37 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+49 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Seven of them — the ones under **Answer a question you actually have** — are not
@@ -97,6 +97,9 @@ them caps that fan-out with an argument.
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
+| `create_brand_watch` | free to call | Schedule a recurring `search_mentions` sweep and get emailed only what is new. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling `search_mentions` yourself. |
+| `list_brand_watches` | free | Every watch you have scheduled: term, networks, cadence, cost per run, credits spent so far, runs made, and when the next one is due. |
+| `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
 | `analyze_creator_profile` | 2 | A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms, who the audience is. One `get_user_posts` call. |
 
@@ -128,6 +131,22 @@ them caps that fan-out with an argument.
 | `check_nooticr_credits` | free | Balance and billing URL. |
 | `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
+
+### Your own product
+
+Everything above reads someone else's content. These read and generate for **your own** — a different product, a different balance (your workspace's plan AI credits, not the personal MCP credits above), billed exactly like the matching dashboard button.
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `list_own_apps` | free | Every product in your workspace — call this first when you have more than one and another tool below asks for `appId`. |
+| `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
+| `review_post` | free | Score a draft before you publish it — hook strength, an A/B hook comparison, aesthetic and storytelling notes, rewritten hooks/captions. Never billed, same as the dashboard's own pre-publish review. |
+| `draft_post` | plan AI credits | A ready-to-use draft (title, caption, hashtags, per-slide script) for a topic, grounded in your product's name. Returns text only — saves nothing. |
+| `growth_brief` | plan AI credits | A plain-language brief — the one insight that matters, wins, risks, next actions — grounded in your real post history and synced analytics. |
+| `generate_content_plan` | plan AI credits | A one-week, day-by-day content plan for your creators, grounded in what already worked. Saved — fetch it later with `get_content_plan`. |
+| `generate_captions` | plan AI credits | Timed on-screen caption cues for a video — a transcript plus start/end-timed lines. Returns cue data only. |
+| `list_social_connections` | free | The social accounts you've connected and what each is allowed to do — read, publish, manage comments. Also lists which platforms can be connected at all. |
+| `connect_social_account` | free | A link to open to connect one account. You approve at the provider; nothing connects until you do, and no credential ever passes through this tool. |
 
 ### How billing works
 

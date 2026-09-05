@@ -184,3 +184,67 @@ describe("check_nooticr_credits free-tool aliases", () => {
     expect(credits.safeParse(drifted).success).toBe(true);
   });
 });
+
+/**
+ * Where the data actually is, pinned against the backend that sends it.
+ *
+ * The guards above ask whether a payload *parses*. That is not the same
+ * question as whether the schema describes the right shape, and the gap
+ * between the two is where these three shipped broken:
+ *
+ *  - generate_content_plan declared `plan` as the per-influencer array. The
+ *    backend sends the whole ContentPlan object and nests that array one
+ *    level down, so every real call failed output validation outright —
+ *    after the generation had already been billed.
+ *  - draft_post and generate_captions each declared fields the backend has
+ *    never sent (`title`/`script` at the top level; `captions`). Those
+ *    parsed fine, because everything here is nullish and passthrough, and
+ *    were simply always undefined to a caller reading them.
+ *
+ * So these assert on the values, not on `success`: a schema that moves the
+ * data somewhere the backend does not put it fails here even when it parses.
+ * Payloads are transcribed from the handlers named beside each one.
+ */
+describe("declared shapes match what the backend sends", () => {
+  // crates/server/src/ai/growth.rs — `content_plan`, returning `struct ContentPlan`.
+  it("generate_content_plan finds the influencer array nested under plan", () => {
+    const parsed = OUTPUT_SCHEMAS.generate_content_plan.parse({
+      ok: true,
+      plan: {
+        weekStart: "2026-09-07",
+        grounding: { topHooks: ["a"] },
+        plan: [{ influencerId: 3, influencerName: "Zoe", posts: [{ day: "2026-09-07", hook: "h" }] }],
+      },
+      grounding: { totalPosts: 12 },
+      provider: "gemini",
+    }) as { plan?: { plan?: Array<{ influencerName?: unknown }> } };
+    expect(parsed.plan?.plan?.[0]?.influencerName).toBe("Zoe");
+  });
+
+  // These two cannot be pinned by parsing a payload, and that is the point.
+  // `open()` is passthrough, so a payload keeps every key it arrived with
+  // whatever the schema declares — reading `parsed.draft.title` succeeds even
+  // against a schema that declares `title` at the top level and has never
+  // heard of `draft`. The mis-declaration is invisible to a value assertion,
+  // so these assert on the declaration itself.
+
+  // crates/server/src/ai/extra_handlers.rs — `draft_post` answers
+  // `{ ok, draft: {...}, provider }`.
+  it("draft_post declares the copy under draft, not at the top level", () => {
+    const keys = keysOf(OUTPUT_SCHEMAS.draft_post as z.ZodTypeAny);
+    expect(keys).toContain("draft");
+    // `script` was never a field the generator emits at all — a slideshow's
+    // per-slide copy comes back inside `draft.slides`.
+    expect(keys).not.toContain("script");
+    expect(keys).not.toContain("title");
+  });
+
+  // crates/server/src/ai/handlers.rs — `generate_captions` answers
+  // `{ ok, provider, cost, transcript, cues: [{ text, start_sec, end_sec }] }`.
+  it("generate_captions declares cues, not captions", () => {
+    const keys = keysOf(OUTPUT_SCHEMAS.generate_captions as z.ZodTypeAny);
+    expect(keys).toContain("cues");
+    expect(keys).toContain("transcript");
+    expect(keys).not.toContain("captions");
+  });
+});

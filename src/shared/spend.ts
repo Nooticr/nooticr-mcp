@@ -132,6 +132,17 @@ export interface SpendDecision {
   proceed: boolean;
   /** Set when the user said no, for the message the caller returns. */
   declined?: "decline" | "cancel";
+  /**
+   * A person actually accepted the dialog.
+   *
+   * Three different situations return `proceed: true`, and for a spend they
+   * are rightly the same answer: the amount was under the threshold, the
+   * client cannot be asked, or it declared elicitation and then broke. A
+   * caller gating something that is not merely a spend — where a digest gets
+   * emailed, say — needs to tell "someone said yes" apart from "nobody was
+   * asked", because for that question proceeding unasked is the failure.
+   */
+  approved?: boolean;
 }
 
 /** A client that never declared elicitation must not be sent one. */
@@ -150,12 +161,35 @@ function canAsk(server: Server): boolean {
  */
 export async function confirmSpend(
   server: Server,
-  opts: { credits: number; summary: string; cheaper?: string },
+  opts: {
+    credits: number;
+    summary: string;
+    cheaper?: string;
+    /**
+     * Ask even when `credits` is under the threshold.
+     *
+     * CONFIRM_ABOVE_CREDITS weighs a number against the attention a dialog
+     * costs, which is a judgement about a charge that happens once. It does
+     * not transfer to one that repeats: what is being agreed to there is the
+     * standing arrangement, not the size of the first run, and a weekly
+     * two-credit sweep still bills forever.
+     */
+    always?: boolean;
+    /**
+     * Wording for a charge the default sentence would describe wrongly.
+     *
+     * "This costs 504 nooticr credits" is false of a watch that costs 21 a
+     * run and 504 a day until stopped — it names a total that is never
+     * reached and then stops being true an hour later.
+     */
+    prompt?: { cost: string; title: string; action: string };
+  },
 ): Promise<SpendDecision> {
-  if (opts.credits <= CONFIRM_ABOVE_CREDITS) return { proceed: true };
+  if (!opts.always && opts.credits <= CONFIRM_ABOVE_CREDITS) return { proceed: true };
   if (!canAsk(server)) return { proceed: true };
 
-  const lines = [`${opts.summary} This costs ${opts.credits} nooticr credits.`];
+  const cost = opts.prompt?.cost ?? `This costs ${opts.credits} nooticr credits.`;
+  const lines = [`${opts.summary} ${cost}`];
   if (opts.cheaper) lines.push(opts.cheaper);
 
   let result: { action: string };
@@ -168,8 +202,8 @@ export async function confirmSpend(
         properties: {
           proceed: {
             type: "boolean",
-            title: `Spend ${opts.credits} credits`,
-            description: "Run the search now.",
+            title: opts.prompt?.title ?? `Spend ${opts.credits} credits`,
+            description: opts.prompt?.action ?? "Run the search now.",
           },
         },
         required: ["proceed"],
@@ -180,7 +214,7 @@ export async function confirmSpend(
     const accepted =
       result.action === "accept" &&
       (result as { content?: { proceed?: unknown } }).content?.proceed !== false;
-    if (accepted) return { proceed: true };
+    if (accepted) return { proceed: true, approved: true };
     return { proceed: false, declined: result.action === "decline" ? "decline" : "cancel" };
   } catch {
     return { proceed: true };

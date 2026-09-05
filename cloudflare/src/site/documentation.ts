@@ -140,13 +140,13 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<li>Returns structured data and rendered cards to the assistant</li>` +
         `</ul></div>` +
         `<div class="nope"><h4>What it cannot do</h4><ul>` +
-        `<li><strong>Connect to any social account.</strong> It holds no social credentials and has no such capability</li>` +
+        `<li><strong>Hold your social credentials.</strong> An account can be linked, but only by sending you to the platform's own consent screen — the token it issues is held by Nooticr and never reaches the assistant</li>` +
         `<li><strong>Post, comment, like, follow or message</strong> anywhere, on anyone's behalf</li>` +
         `<li>Read private messages, drafts, or non-public profile data</li>` +
         `<li>Access anything on the user's device or network</li>` +
         `<li>Reach other systems in your environment — it only calls out to the services listed below</li>` +
         `</ul></div></div>` +
-        `<div class="callout good"><p><strong>Every tool is read-only with respect to your organisation's data.</strong> The only state it writes is the user's own Nooticr credit ledger. The MCP tool annotations declare this: all 24 tools carry <code>destructiveHint: false</code>, and all but the two account actions carry <code>readOnlyHint: true</code>.</p></div>` +
+        `<div class="callout good"><p><strong>Nothing it writes leaves Nooticr.</strong> Of the 48 tools, 35 carry <code>readOnlyHint: true</code>. The 13 that do not write only inside the user's own Nooticr account — the credit ledger, a watchlist, a scheduled brand-monitoring watch, a generated content plan, a pre-publish review saved onto the user's own draft — or send the user to a platform's consent screen to link an account. Two, <code>unwatch_creator</code> and <code>stop_brand_watch</code>, carry <code>destructiveHint: true</code>: both stop something the user themselves started. None of them writes to your organisation's systems, and none can post, comment, like, follow or message anywhere.</p></div>` +
 
         `<h3 id="admins-access">Access and revocation</h3>` +
         `<p>Authentication is OAuth 2.1 with PKCE (S256) and dynamic client registration. No API key is ever pasted into a chat window. Tokens are scoped and expiring.</p>` +

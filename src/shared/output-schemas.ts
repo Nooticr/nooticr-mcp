@@ -655,6 +655,227 @@ export const OUTPUT_SCHEMAS = {
     resumed: scalar().describe("The tool that was re-run after signing in — its result is this payload."),
     message: scalar(),
   }),
+
+  create_brand_watch: open({
+    created: scalar(),
+    requiresConfirmation: scalar().describe("true on the first call — nothing was created or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to actually create the watch."),
+    expiresInSeconds: scalar(),
+    quote: open({
+      term: scalar(),
+      platforms: listOf(z.string()),
+      cadence: scalar(),
+      cadenceMinutes: scalar(),
+      costPerRun: scalar(),
+      runsPerDay: scalar(),
+      creditsPerDay: scalar(),
+      budgetPerRun: scalar(),
+      deliverTo: scalar(),
+      summary: scalar(),
+      balance: scalar(),
+      runsAffordableAtCurrentBalance: scalar(),
+    }).nullish(),
+    instructions: scalar(),
+    rejected: scalar().describe("Set when confirm was true but the token didn't check out — nothing was created."),
+    alreadyWatching: scalar().describe("Set when this term already has an enabled watch — creating another would double-charge."),
+    watchId: scalar(),
+    term: scalar(),
+    platforms: listOf(z.string()),
+    cadence: scalar(),
+    costPerRun: scalar(),
+    creditsPerDay: scalar(),
+    budgetPerRun: scalar(),
+    deliverTo: scalar(),
+    firstRun: scalar(),
+    message: scalar(),
+  }),
+  list_brand_watches: open({
+    watches: listOf(
+      open({
+        watchId: scalar(),
+        term: scalar(),
+        platforms: listOf(z.string()),
+        cadence: scalar(),
+        costPerRun: scalar(),
+        budgetPerRun: scalar(),
+        creditsSpent: scalar(),
+        runs: scalar(),
+        deliverTo: scalar(),
+        enabled: scalar(),
+        stoppedBecause: scalar(),
+        nextRun: scalar(),
+        lastRun: scalar(),
+      }),
+    ),
+    activeCount: scalar(),
+    creditsPerDayAcrossAllWatches: scalar().describe("What every enabled watch together will cost per day if nothing changes."),
+    cost: scalar(),
+  }),
+  stop_brand_watch: open({
+    stopped: scalar(),
+    alreadyStopped: scalar(),
+    watchId: scalar(),
+    term: scalar(),
+    creditsSpent: scalar(),
+    runs: scalar(),
+    stoppedBecause: scalar(),
+    message: scalar(),
+    cost: scalar(),
+  }),
+
+  list_own_apps: open({
+    apps: listOf(
+      open({
+        appId: scalar(),
+        name: scalar(),
+        description: scalar(),
+        niche: scalar(),
+        productType: scalar(),
+        createdAt: scalar(),
+      }),
+    ),
+    count: scalar(),
+  }),
+  get_content_plan: open({
+    ok: scalar(),
+    plan: open({}).nullish().describe("null when no plan has been generated yet."),
+  }),
+  review_post: open({
+    review: open({
+      degraded: scalar(),
+      degradedReason: scalar(),
+      scoreA: open({}).nullish(),
+      scoreB: open({}).nullish().describe("Only present when titleB was given."),
+      aestheticAdvice: scalar(),
+      storytellingAdvice: scalar(),
+      improvedHooks: listOf(z.string()),
+      improvedCaptions: listOf(z.string()),
+    })
+      .passthrough()
+      .nullish(),
+    degraded: scalar().describe("Hoisted from review.degraded so it's never missed."),
+    warning: scalar().describe("Present when degraded — treat the scores as placeholders."),
+  }),
+  /**
+   * Everything the draft carries is nested under `draft`.
+   *
+   * The backend answers `{ ok, draft: {...}, provider }` (`draft_post` in
+   * crates/server/src/ai/extra_handlers.rs). Declaring title/caption/hashtags
+   * at the top level named fields that never arrive — and `script`, which the
+   * generator has no notion of at all; a slideshow's per-slide copy comes
+   * back as `slides`. Nothing failed, because every field here is nullish and
+   * the object is passthrough, so the real draft rode through undeclared
+   * while a caller reading the declared keys got undefined for all of them.
+   */
+  draft_post: open({
+    ok: scalar(),
+    draft: open({
+      title: scalar(),
+      caption: scalar(),
+      hashtags: listOf(z.string()),
+      slides: listOf(
+        open({ role: scalar(), overlayText: scalar(), slideCaption: scalar() }),
+      ).describe("Present for slideshow drafts."),
+    }).nullish(),
+    provider: scalar(),
+  }),
+  growth_brief: open({
+    ok: scalar(),
+    brief: open({
+      headline: scalar(),
+      wins: listOf(open({}).passthrough()),
+      risks: listOf(open({}).passthrough()),
+      actions: listOf(open({}).passthrough()),
+    })
+      .passthrough()
+      .nullish(),
+  }),
+  /**
+   * `plan` is the whole ContentPlan OBJECT, not the per-influencer array.
+   *
+   * The backend answers `{ ok, plan: { weekStart, grounding, plan: [...] },
+   * grounding, provider }` — see `struct ContentPlan` in
+   * crates/server/src/ai/growth.rs, where the array is nested one level down.
+   * Declaring the array at the top level made every real call fail output
+   * validation with `-32602 Expected array, received object at plan`, and it
+   * failed *after* the backend had already reserved the credits for the
+   * generation: the user paid for a plan and got a protocol error, while the
+   * plan itself sat saved server-side for the free `get_content_plan` to
+   * find. `get_content_plan` declared the same payload correctly, which is
+   * why only this half broke.
+   */
+  generate_content_plan: open({
+    ok: scalar(),
+    plan: open({
+      weekStart: scalar(),
+      grounding: open({}).nullish().describe("The hooks, hashtags and slots the plan was built from."),
+      plan: listOf(
+        open({
+          influencerId: scalar(),
+          influencerName: scalar(),
+          posts: listOf(
+            open({
+              day: scalar(),
+              formatId: scalar(),
+              formatTitle: scalar(),
+              hook: scalar(),
+              caption: scalar(),
+              hashtags: listOf(z.string()),
+              contentType: scalar(),
+              script: scalar(),
+              rationale: scalar(),
+            }),
+          ),
+        }),
+      ),
+    }).nullish(),
+    grounding: open({}).nullish().describe("The post-history digest the plan was grounded in."),
+    provider: scalar(),
+  }),
+  /**
+   * The cues come back as `cues`, timed in `start_sec`/`end_sec`.
+   *
+   * This declared `captions: [{ text, start, end }]` — a field the backend
+   * has never sent (see `generate_captions` in
+   * crates/server/src/ai/handlers.rs). Nothing hard-failed, because an
+   * absent nullish list validates and the real keys passed through
+   * undeclared, so the cost was quieter: a host reading the declared
+   * `captions` got undefined, and the transcript and cost were invisible to
+   * anything working from the schema.
+   */
+  generate_captions: open({
+    ok: scalar(),
+    cues: listOf(open({ text: scalar(), start_sec: scalar(), end_sec: scalar() })),
+    transcript: scalar().describe("The transcript the cues were cut from."),
+    cost: scalar().describe("Credits charged for the generation."),
+    provider: scalar().describe("\"mock\" when no AI provider is configured — the cues are placeholders."),
+  }),
+
+  list_social_connections: open({
+    connections: listOf(
+      open({
+        influencerId: scalar(),
+        influencerName: scalar(),
+        platform: scalar(),
+        accountName: scalar(),
+        status: scalar(),
+        canReadAccount: scalar().describe("\"yes\", \"no\" or \"unknown\" — unknown means try it, not a refusal."),
+        canPublishPost: scalar(),
+        canManageComments: scalar(),
+        scopeRecorded: scalar(),
+      }),
+    ),
+    connectedCount: scalar(),
+    connectable: listOf(z.string()).describe("Platforms that can be linked to an account — smaller than what nooticr reads."),
+    note: scalar(),
+  }),
+  connect_social_account: open({
+    platform: scalar(),
+    appId: scalar(),
+    influencerId: scalar(),
+    connectUrl: scalar().describe("Open this in a browser to approve the connection."),
+    message: scalar(),
+  }),
 } as const;
 
 export type OutputSchemaName = keyof typeof OUTPUT_SCHEMAS;

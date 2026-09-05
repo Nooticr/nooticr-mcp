@@ -226,6 +226,18 @@ describe("tool surface", () => {
     "watch_creator",
     "unwatch_creator",
     "catch_up_watchlist",
+    "create_brand_watch",
+    "list_brand_watches",
+    "stop_brand_watch",
+    "list_own_apps",
+    "get_content_plan",
+    "review_post",
+    "draft_post",
+    "growth_brief",
+    "generate_content_plan",
+    "generate_captions",
+    "list_social_connections",
+    "connect_social_account",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -321,6 +333,16 @@ describe("tool surface", () => {
       "show_comment_review",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
+      // Own-account reads: nooticr's own already-stored data, never billed.
+      "list_own_apps",
+      "get_content_plan",
+      // Calls AI but the dashboard's own pre-publish review has never
+      // billed for it, so nor does this.
+      "review_post",
+      // Reads/mints nooticr's own connection records and OAuth links —
+      // no upstream fetch either way.
+      "list_social_connections",
+      "connect_social_account",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;
@@ -540,7 +562,13 @@ describe("documentation", () => {
   it("states plainly what the server cannot do", () => {
     // The questions an admin actually asks, and the answers we must not soften.
     expect(html).toMatch(/cannot|never/i);
-    expect(html).toContain("Connect to any social account");
+    // This used to pin "Connect to any social account", listed as something
+    // the server could not do. connect_social_account made that false, and a
+    // test pinning a false assurance is worse than no test: the honest
+    // answer to the same question is that the linking happens on the
+    // platform's consent screen and the token never comes back here.
+    expect(html).toContain("Hold your social credentials");
+    expect(html).toMatch(/never reaches the assistant/);
     expect(html).toMatch(/Post, comment, like, follow or message/);
     expect(html).toMatch(/private messages/i);
     expect(html).toMatch(/readOnlyHint/);
