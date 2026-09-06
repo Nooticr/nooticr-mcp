@@ -1745,3 +1745,120 @@ test.describe("competitor standing badge", () => {
     await expect(page.locator(".card")).not.toContainText("median");
   });
 });
+
+/**
+ * A brand sweep returns the post each comment was left under, carrying
+ * thumbnailUrl, videoUrl and mediaItems — and the monitor view drew none of
+ * them. Monitoring TikTok looked exactly like monitoring a forum: a title, a
+ * link, and comments over a blank header, with the video the conversation was
+ * about nowhere on screen.
+ */
+test.describe("brand sweep shows the post, not just its comments", () => {
+  const thread = (post: Record<string, unknown>, n = 1) => ({
+    post,
+    postIsAboutTerm: true,
+    mentionCount: n,
+    mentions: Array.from({ length: n }, (_, i) => ({
+      id: "m" + i,
+      text: "nooticr is the one I kept",
+      username: "someone" + i,
+      likes: 3,
+      replies: 0,
+      postedAt: "2026-09-01T10:00:00Z",
+      hits: 1,
+    })),
+  });
+  const sweep = (threads: unknown[]) => ({
+    term: "nooticr",
+    totalMentions: threads.length,
+    totalThreads: threads.length,
+    threads,
+    byPlatform: {},
+    unavailable: [],
+    hasMore: false,
+  });
+  // Inline so the assertion never depends on a network fetch.
+  const PIXEL =
+    "data:image/gif;base64,R0lGODlhAQABAPAAAP8AAAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+
+  test("a video post gets a poster with a play affordance", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "tiktok",
+          title: "Six apps I actually kept",
+          externalUrl: "https://tiktok.com/@a/video/1",
+          contentType: "video",
+          thumbnailUrl: PIXEL,
+          videoUrl: "https://example.com/v.mp4",
+        }),
+      ]),
+    );
+    const poster = page.locator(".mgroup-media");
+    await expect(poster).toHaveCount(1);
+    await expect(poster).toHaveClass(/is-playable/);
+    await expect(page.locator(".mgroup-media-img")).toHaveCount(1);
+    // Full-bleed band rather than a collapsed inline button — the bug the
+    // first attempt shipped, because the rule lived in the generated CSS
+    // blob that `npm run build` regenerates rather than in input.css.
+    const box = await poster.boundingBox();
+    expect(box!.height).toBeGreaterThan(100);
+  });
+
+  test("clicking the poster swaps in the real player", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "tiktok",
+          title: "Six apps I actually kept",
+          externalUrl: "https://tiktok.com/@a/video/1",
+          contentType: "video",
+          thumbnailUrl: PIXEL,
+          videoUrl: "https://example.com/v.mp4",
+        }),
+      ]),
+    );
+    await page.locator(".mgroup-media").click();
+    await expect(page.locator(".mgroup-stage")).toHaveCount(1);
+    await expect(page.locator(".mgroup-stage video")).toHaveCount(1);
+    // The comments the sweep is for must survive the swap.
+    await expect(page.locator(".mention")).toHaveCount(1);
+  });
+
+  test("a still image post shows the poster without offering to play it", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "instagram",
+          title: "A photo",
+          externalUrl: "https://instagram.com/p/1",
+          contentType: "image",
+          thumbnailUrl: PIXEL,
+        }),
+      ]),
+    );
+    await expect(page.locator(".mgroup-media")).toHaveCount(1);
+    await expect(page.locator(".mgroup-media")).not.toHaveClass(/is-playable/);
+    await expect(page.locator(".mgroup-media-play")).toHaveCount(0);
+  });
+
+  test("a text post draws no media rather than an empty band", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "reddit",
+          title: "What are you using for monitoring?",
+          externalUrl: "https://reddit.com/r/x/1",
+          contentType: "post",
+        }),
+      ]),
+    );
+    await expect(page.locator(".mgroup")).toHaveCount(1);
+    await expect(page.locator(".mgroup-media")).toHaveCount(0);
+    await expect(page.locator(".mention")).toHaveCount(1);
+  });
+});
