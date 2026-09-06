@@ -377,13 +377,13 @@ export const TOOL_DEFINITIONS = [
  name: "create_product",
  title: "Create Product",
  description: "Create a product in your own workspace \u2014 the row every other own-account tool needs before it has anything to work with; a fresh workspace has none. Takes no workspace argument: it always creates in the workspace of the session calling it, never one you could name. name and slug are required; every other field is optional and all of them are snake_case, read by exact key \u2014 a camelCase websiteUrl is not an alias, it is a field that lands nowhere. Subject to your plan's product limit; the error names the limit if you hit it. Does not generate a brand playbook. Free \u2014 no AI call, just a row.",
- inputSchema: z.object({ name: z.string().describe("Product name."), slug: z.string().describe("URL-safe slug, unique within your workspace."), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional() }).strict(),
+ inputSchema: z.object({ name: z.string().describe("Product name."), slug: z.string().describe("URL-safe slug, unique within your workspace."), description: z.string().optional(), website_url: z.string().optional().describe("The product's own site; analyze_product later fetches an excerpt of it."), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
  },
  {
  name: "update_product",
  title: "Update Product",
  description: "Patch your own product's fields \u2014 omitted arguments leave their column unchanged, so this cannot blank a field by not mentioning it. Takes appId, optional when your workspace has exactly one product; every other field is snake_case, the same names create_product takes and read the same way. The result lists which fields were actually written, so a name you spelled wrong shows up as a field that did not change rather than as a silent no-op. Free \u2014 no AI call, just a row.",
- inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-product workspace."), name: z.string().optional(), slug: z.string().optional(), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional() }).strict(),
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-product workspace."), name: z.string().optional(), slug: z.string().optional(), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
  },
 ] as const;
 

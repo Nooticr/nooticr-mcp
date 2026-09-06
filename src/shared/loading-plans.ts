@@ -32,7 +32,10 @@ import {
   BACKEND_CALL_CREDITS,
   CREDITS_PER_CREATOR,
   CREDITS_PER_NETWORK,
+  MAX_SPOKEN_HANDLE_CALLS,
+  MAX_SPOKEN_TRANSCRIPTS,
   SEARCH_PLATFORMS,
+  SPOKEN_PLATFORMS,
   XIAOHONGSHU_CREDITS,
 } from "./spend.js";
 
@@ -66,6 +69,35 @@ export interface LoadingPerUnit {
   perPlatform?: boolean;
   /** Only runs when this argument is present (a niche sweep, a seed creator). */
   onlyWith?: string;
+  /**
+   * The values of `arg` the tool keeps, when it drops the rest.
+   *
+   * `search_spoken_mentions` accepts a `platforms` array and then filters it
+   * to the two networks that publish a caption track. Counting the argument
+   * as given quotes a sweep of Instagram that never runs.
+   */
+  only?: readonly string[];
+  /**
+   * Multiply the count by the size of a second argument.
+   *
+   * A named handle is checked once per platform, so two handles across two
+   * networks is four calls rather than two. Spelled out rather than reusing
+   * `only`/`defaultCount` above, because those describe `arg` — filtering a
+   * list of handles by a list of networks would count every call as zero.
+   */
+  per?: { arg: string; only?: readonly string[]; defaultCount: number };
+  /** The clamp the tool applies to a numeric argument, mirrored so the wait cannot over-quote. */
+  min?: number;
+  max?: number;
+  /**
+   * An argument whose presence makes the count unknowable from here.
+   *
+   * `useWatchlist` adds however many creators the watchlist holds, and a
+   * sandboxed view cannot read it. The answer is the ceiling the tool clamps
+   * to, drawn as a ceiling — "up to" — rather than a precise number that
+   * would be wrong for every watchlist but one.
+   */
+  ceilingWith?: string;
 }
 
 export interface LoadingPlan {
@@ -243,6 +275,10 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     ],
     note: "Priced per network. Omitting platforms means all of them.",
   },
+  // The one plan whose arithmetic is not a single argument read straight off:
+  // it mirrors the worst case jobs.ts computes before it asks to spend, line
+  // for line, because the two numbers are shown to the same person minutes
+  // apart and any gap between them reads as one of them lying.
   search_spoken_mentions: {
     label: "Listening for mentions",
     kind: "list",
@@ -255,15 +291,20 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
         detail: "per network, when a niche is given",
         credits: BACKEND_CALL_CREDITS.discover_social_posts,
         arg: "platforms",
-        defaultCount: 2,
+        only: SPOKEN_PLATFORMS,
+        defaultCount: SPOKEN_PLATFORMS.length,
         onlyWith: "niche",
       },
       {
         via: "get_user_posts",
         label: "Checking a creator",
+        detail: "once per network asked for",
         credits: BACKEND_CALL_CREDITS.get_user_posts,
         arg: "usernames",
+        per: { arg: "platforms", only: SPOKEN_PLATFORMS, defaultCount: SPOKEN_PLATFORMS.length },
         defaultCount: 0,
+        max: MAX_SPOKEN_HANDLE_CALLS,
+        ceilingWith: "useWatchlist",
       },
       {
         via: "get_post_transcript",
@@ -272,6 +313,8 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
         credits: BACKEND_CALL_CREDITS.get_post_transcript,
         arg: "maxTranscripts",
         defaultCount: 8,
+        min: 1,
+        max: MAX_SPOKEN_TRANSCRIPTS,
       },
     ],
     note: "The ceiling is the price. Only the survivors are transcribed.",

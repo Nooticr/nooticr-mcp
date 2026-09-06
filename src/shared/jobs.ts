@@ -66,6 +66,7 @@ import {
   declinedResult,
   MAX_SPOKEN_HANDLE_CALLS,
   MAX_SPOKEN_TRANSCRIPTS,
+  SPOKEN_PLATFORMS,
 } from "./spend.js";
 import {
   distributionOf,
@@ -625,9 +626,10 @@ export function formatTimecode(ms: number): string {
 /**
  * The cue a character offset falls in — the line the term was said in.
  *
- * The cues arrive in order, so this walks back from the end for the last one
- * that starts at or before the match. A match landing in the gap before the
- * first cue has no answer, which is the honest one.
+ * The cues are sorted by offset, so this keeps the last one that starts at or
+ * before the match and stops at the first that starts after it. A match
+ * landing in the gap before the first cue has no answer, which is the honest
+ * one.
  */
 function cueAt(cues: TranscriptCue[], position: number): TranscriptCue | null {
   let found: TranscriptCue | null = null;
@@ -1886,7 +1888,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "on whole words, so 'nike' will not match inside 'nikeisha'.",
             ),
           platforms: z
-            .array(z.enum(["tiktok", "youtube"]))
+            .array(z.enum(SPOKEN_PLATFORMS))
             .optional()
             .describe(
               "Which networks to check (default: both). These are the only two whose posts carry " +
@@ -1956,11 +1958,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       }
       const platforms = [
         ...new Set(
-          (args.platforms && args.platforms.length ? args.platforms : ["tiktok", "youtube"]).map((p) =>
+          (args.platforms && args.platforms.length ? args.platforms : SPOKEN_PLATFORMS).map((p) =>
             String(p).toLowerCase(),
           ),
         ),
-      ].filter((p) => p === "tiktok" || p === "youtube");
+      ].filter((p) => (SPOKEN_PLATFORMS as readonly string[]).includes(p));
       const explicitHandles = [...new Set((args.usernames ?? []).map(normaliseHandle).filter(Boolean))];
 
       // A watchlist handle already knows its own platform, so it is checked

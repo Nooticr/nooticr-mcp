@@ -730,6 +730,41 @@ describe("the declared tools and the shipped tools agree", () => {
     return NETWORKS.filter((n) => said.includes(n)).sort();
   };
 
+  /**
+   * Names, not prose: the two descriptions are worded independently, but an
+   * argument either exists or it does not.
+   *
+   * This is the check whose absence let six of create_product's fields
+   * disappear from the declaration in one rewrite — icon_url, both
+   * primary_cta_* fields, external_listing_id, ios_bundle_id and
+   * android_package are all still on the shipped tool. Nothing failed,
+   * because nothing had ever compared the two schemas.
+   */
+  it("declares every argument the shipped tool accepts", async () => {
+    const live = Object.fromEntries(
+      (await shipped()).map((t) => [
+        t.name,
+        Object.keys((t.inputSchema as { properties?: Record<string, unknown> })?.properties ?? {})
+          .sort()
+          .join(", "),
+      ]),
+    );
+    const declared = (await import("../src/shared/tools-def.js")).TOOL_DEFINITIONS as ReadonlyArray<{
+      name: string;
+      inputSchema: { shape: Record<string, unknown> };
+    }>;
+    const drifted: string[] = [];
+    for (const def of declared) {
+      const shippedArgs = live[def.name];
+      if (shippedArgs === undefined) continue; // covered by the declared/registered test
+      const declaredArgs = Object.keys(def.inputSchema.shape).sort().join(", ");
+      if (declaredArgs !== shippedArgs) {
+        drifted.push(`${def.name}: shipped [${shippedArgs}] vs declared [${declaredArgs}]`);
+      }
+    }
+    expect(drifted, "an argument was added or removed in only one of the two").toEqual([]);
+  });
+
   it("claims the same networks in both", async () => {
     const live = Object.fromEntries((await shipped()).map((t) => [t.name, t.description ?? ""]));
     const drifted: string[] = [];

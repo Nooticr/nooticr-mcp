@@ -21,7 +21,12 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer, uiTemplateFor } from "../src/shared/tools.js";
 import { LOADING_PLANS, loadingPlansJson } from "../src/shared/loading-plans.js";
 import { planCost } from "../src/shared/evidence.js";
-import { SEARCH_PLATFORMS, searchMentionsCost } from "../src/shared/spend.js";
+import {
+  MAX_SPOKEN_HANDLE_CALLS,
+  MAX_SPOKEN_TRANSCRIPTS,
+  SEARCH_PLATFORMS,
+  searchMentionsCost,
+} from "../src/shared/spend.js";
 
 async function shippedTools() {
   const client = new Client({ name: "test", version: "1.0.0" });
@@ -33,7 +38,18 @@ async function shippedTools() {
   return (await client.listTools()).tools.map((t) => t.name);
 }
 
-/** The view's own arithmetic, run the way the browser runs it. */
+/**
+ * The view's own arithmetic, restated — and restated is the word.
+ *
+ * The evaluator itself is JavaScript inside a template literal and cannot be
+ * imported, so this is a second implementation of it and would stay green
+ * through any divergence. It earns its place by checking the *data* against
+ * the constants the tools bill against, which is what it can do quickly and
+ * for every tool; the evaluator is checked where it actually runs, in
+ * tests/e2e/ui-views.e2e.ts, and every case added here that exercises a new
+ * branch (only, per, min/max, ceilingWith) needs its twin there or the branch
+ * is only ever tested in the copy.
+ */
 function creditsFor(tool: string, args: Record<string, unknown> = {}): number {
   const plan = LOADING_PLANS[tool];
   if (!plan) return -1;
@@ -53,12 +69,25 @@ function creditsFor(tool: string, args: Record<string, unknown> = {}): number {
       continue;
     }
     const v = unit.arg ? args[unit.arg] : undefined;
-    const n = Array.isArray(v) ? v.length || unit.defaultCount
+    let n = Array.isArray(v) ? listCount(v, unit.only, unit.defaultCount)
       : typeof v === "number" ? Math.max(0, Math.floor(v))
       : unit.defaultCount;
+    if (unit.per) n *= listCount(args[unit.per.arg], unit.per.only, unit.per.defaultCount);
+    if (unit.ceilingWith && args[unit.ceilingWith]) n = unit.max ?? n;
+    if (unit.min !== undefined && n > 0 && n < unit.min) n = unit.min;
+    if (unit.max !== undefined && n > unit.max) n = unit.max;
     total += unit.credits * n;
   }
   return total;
+}
+
+/** Distinct values of an array argument the tool keeps, or its default. */
+function listCount(v: unknown, only: readonly string[] | undefined, fallback: number): number {
+  if (!Array.isArray(v) || !v.length) return fallback;
+  const kept = new Set(
+    v.map((x) => String(x).toLowerCase()).filter((x) => !only || only.includes(x)),
+  );
+  return kept.size;
 }
 
 describe("loading plans", () => {
@@ -102,6 +131,39 @@ describe("loading plans", () => {
     // A seed creator is the second call who_should_i_work_with only sometimes makes.
     expect(creditsFor("who_should_i_work_with")).toBe(2);
     expect(creditsFor("who_should_i_work_with", { seed: "@a" })).toBe(4);
+  });
+
+  it("prices a spoken sweep at the worst case the tool actually clamps to", () => {
+    // Every number here is one jobs.ts computes for confirmSpend before it
+    // spends anything. The two are shown to the same person minutes apart, so
+    // a gap between them reads as one of them lying.
+    //
+    // Both networks swept (2 each) + the default 8 transcripts at 1.
+    expect(creditsFor("search_spoken_mentions", { term: "n", niche: "skincare" })).toBe(12);
+    // A network the tool filters out is a network it never sweeps: the enum
+    // keeps tiktok and youtube and drops the rest, so this is one sweep.
+    expect(
+      creditsFor("search_spoken_mentions", {
+        term: "n",
+        niche: "skincare",
+        platforms: ["instagram", "reddit", "tiktok"],
+      }),
+    ).toBe(10);
+    // maxTranscripts is clamped server-side; quoting the argument as typed
+    // promised 200 credits for a call that can spend 20.
+    expect(
+      creditsFor("search_spoken_mentions", { term: "n", niche: "s", maxTranscripts: 200 }),
+    ).toBe(4 + MAX_SPOKEN_TRANSCRIPTS);
+    // A named handle is checked once per network, not once.
+    expect(
+      creditsFor("search_spoken_mentions", { term: "n", usernames: ["@a", "@b"] }),
+    ).toBe(2 * 2 * 2 + 8);
+    // The watchlist's length is not knowable from a sandboxed view, so the
+    // answer is the ceiling the tool clamps to rather than the zero this
+    // priced it at before.
+    expect(
+      creditsFor("search_spoken_mentions", { term: "n", useWatchlist: true }),
+    ).toBe(MAX_SPOKEN_HANDLE_CALLS * 2 + 8);
   });
 
   it("says free rather than nothing for the tools that fetch nothing", async () => {

@@ -124,15 +124,53 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     XHS_CREDITS=PLAN_DATA.xiaohongshu||5;
   }
 
-  /** How many units an argument asks for, or what the tool does without it. */
+  /** How many distinct values of an array argument the tool will actually keep. */
+  function listCount(v,only,fallback){
+    if(!Array.isArray(v)||!v.length)return fallback;
+    var seen={},n=0;
+    for(var i=0;i<v.length;i++){
+      var k=String(v[i]).toLowerCase();
+      if(only&&only.indexOf(k)<0)continue;
+      if(seen[k])continue;
+      seen[k]=1;n++;
+    }
+    return n;
+  }
+
+  /**
+   * How many units an argument asks for, or what the tool does without it.
+   *
+   * Every branch here mirrors something the tool does to the same argument
+   * before it spends: the list it filters requested platforms through, the
+   * per-platform fan-out a named handle gets, the clamp a numeric ceiling is
+   * put through. A wait that counts the argument as typed instead quotes
+   * calls that never run - a maxTranscripts of 200 drawing 200 lines for a
+   * call the server clamps to 20 - and a price on a loading screen is a
+   * promise. The atMost flag is the one thing this cannot pin down: a
+   * watchlist adds however many creators it holds, and a sandboxed view
+   * cannot read it, so
+   * the answer is the ceiling drawn as a ceiling.
+   */
   function unitCount(unit,args){
     var a=args&&typeof args==="object"?args:{};
-    if(unit.onlyWith&&!a[unit.onlyWith])return 0;
-    if(!unit.arg)return unit.defaultCount;
-    var v=a[unit.arg];
-    if(Array.isArray(v))return v.length||unit.defaultCount;
-    if(typeof v==="number"&&isFinite(v))return Math.max(0,Math.floor(v));
-    return unit.defaultCount;
+    if(unit.onlyWith&&!a[unit.onlyWith])return {n:0,atMost:false};
+    var atMost=false,n;
+    if(!unit.arg){
+      n=unit.defaultCount;
+    }else{
+      var v=a[unit.arg];
+      if(Array.isArray(v))n=listCount(v,unit.only,unit.defaultCount);
+      else if(typeof v==="number"&&isFinite(v))n=Math.max(0,Math.floor(v));
+      else n=unit.defaultCount;
+    }
+    if(unit.per)n*=listCount(a[unit.per.arg],unit.per.only,unit.per.defaultCount);
+    if(unit.ceilingWith&&a[unit.ceilingWith]){
+      n=typeof unit.max==="number"?unit.max:n;
+      atMost=true;
+    }
+    if(typeof unit.min==="number"&&n>0&&n<unit.min)n=unit.min;
+    if(typeof unit.max==="number"&&n>unit.max)n=unit.max;
+    return {n:n,atMost:atMost};
   }
 
   /** The named platforms, or every one of them when none were named. */
@@ -178,10 +216,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         });
         return;
       }
-      var n=unitCount(unit,args);
+      var u=unitCount(unit,args),n=u.n;
       if(n<=0)return;
       lines.push({
-        label:unit.label+(n>1?" ×"+n:""),
+        label:unit.label+(u.atMost?" ×"+n+" at most":(n>1?" ×"+n:"")),
         detail:unit.detail||"",
         credits:unit.credits*n
       });
@@ -1570,7 +1608,12 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var u=String(url||"");
     if(!u||plat!=="youtube"||typeof startMs!=="number")return u;
     var secs=Math.max(0,Math.floor(startMs/1000));
-    return u+(u.indexOf("?")>=0?"&":"?")+"t="+secs+"s";
+    // Before the fragment, not after it: everything past a # is the
+    // fragment, so a t= appended there is part of that string and never
+    // reaches the query the player reads.
+    var hash=u.indexOf("#"),frag=hash>=0?u.slice(hash):"";
+    if(hash>=0)u=u.slice(0,hash);
+    return u+(u.indexOf("?")>=0?"&":"?")+"t="+secs+"s"+frag;
   }
 
   /**

@@ -417,6 +417,57 @@ test("a free tool says free rather than nothing", async ({ page }) => {
   expect(errs).toEqual([]);
 });
 
+test("a spoken sweep prices what the tool clamps to, not what was typed", async ({ page }) => {
+  const errs = await boot(page);
+  // The vitest suite pins these same numbers against the plan data; this is
+  // the copy that runs, and the divergence between the two is the whole
+  // reason both exist. 2 networks swept at 2, plus the default 8 transcripts.
+  await loading(page, "search_spoken_mentions", { term: "nooticr", niche: "skincare" });
+  expect(await page.locator(".load-sub").textContent()).toContain("12 credits committed");
+  expect(errs).toEqual([]);
+});
+
+test("a network the spoken sweep cannot reach is not a line on its bill", async ({ page }) => {
+  const errs = await boot(page);
+  // Only tiktok and youtube publish a caption track this reads; the tool
+  // filters the rest out before it spends, so pricing three sweeps here
+  // quoted two that never run.
+  await loading(page, "search_spoken_mentions", {
+    term: "nooticr", niche: "skincare", platforms: ["instagram", "reddit", "tiktok"],
+  });
+  expect(await page.locator(".load-sub").textContent()).toContain("10 credits committed");
+  const sweeps = page.locator(".led-row", { hasText: "Sweeping for candidates" });
+  expect(await sweeps.count()).toBe(1);
+  expect(await sweeps.locator(".led-cost").textContent()).toBe("2");
+  expect(errs).toEqual([]);
+});
+
+test("a transcript ceiling above the server's own is drawn at the server's", async ({ page }) => {
+  const errs = await boot(page);
+  // jobs.ts clamps maxTranscripts to MAX_SPOKEN_TRANSCRIPTS (20). Counting
+  // the argument as typed drew a 200-credit line for a 20-credit call.
+  await loading(page, "search_spoken_mentions", { term: "n", niche: "s", maxTranscripts: 200 });
+  expect(await page.locator(".load-sub").textContent()).toContain("24 credits committed");
+  const reads = page.locator(".led-row", { hasText: "Transcribing a candidate" });
+  expect(await reads.locator(".led-label").textContent()).toContain("×20");
+  expect(errs).toEqual([]);
+});
+
+test("a named handle is checked once per network, and the watchlist is a ceiling", async ({ page }) => {
+  const errs = await boot(page);
+  // Two handles across both networks is four calls, not two.
+  await loading(page, "search_spoken_mentions", { term: "n", usernames: ["@a", "@b"] });
+  expect(await page.locator(".load-sub").textContent()).toContain("16 credits committed");
+
+  // A watchlist a sandboxed view cannot read is drawn as the ceiling it is
+  // clamped to, and says so — it used to be priced at nothing at all.
+  await loading(page, "search_spoken_mentions", { term: "n", useWatchlist: true });
+  expect(await page.locator(".load-sub").textContent()).toContain("24 credits committed");
+  const checks = page.locator(".led-row", { hasText: "Checking a creator" });
+  expect(await checks.locator(".led-label").textContent()).toContain("at most");
+  expect(errs).toEqual([]);
+});
+
 test("no ledger row claims to be finished", async ({ page }) => {
   const errs = await boot(page);
   await loading(page, "search_mentions", { term: "nooticr" });
