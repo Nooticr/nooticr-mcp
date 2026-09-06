@@ -49,7 +49,18 @@ const SERVER_PRICING: Record<string, number> = {
 };
 
 /** Tools that fetch nothing at all, so they cost nothing and show no price. */
-const FREE_TOOLS = ["score_draft", "show_comment_review", "show_audience_replies", "watch_creator", "unwatch_creator"];
+const FREE_TOOLS = [
+  "score_draft",
+  "show_comment_review",
+  "show_comparison",
+  "show_analysis",
+  "show_hooks",
+  "show_variants",
+  "show_repurposed_post",
+  "show_audience_replies",
+  "watch_creator",
+  "unwatch_creator",
+];
 
 describe("landing page", () => {
   const html = landingPage(URL, API);
@@ -230,7 +241,15 @@ describe("tool surface", () => {
     "list_brand_watches",
     "stop_brand_watch",
     "list_own_apps",
+    "create_product",
+    "update_product",
+    "get_scheduled_posts",
+    "get_post_performance",
+    "get_video_stats",
     "get_content_plan",
+    "get_brand_playbook",
+    "analyze_product",
+    "analyze_product_status",
     "review_post",
     "draft_post",
     "growth_brief",
@@ -263,6 +282,11 @@ describe("tool surface", () => {
     "buy_nooticr_credits",
     "nooticr_login",
     "show_comment_review",
+    "show_comparison",
+    "show_analysis",
+    "show_hooks",
+    "show_variants",
+    "show_repurposed_post",
     "get_post_frames",
     // The job tools (jobs.ts): compositions of the calls above, named after
     // the question rather than the endpoint.
@@ -273,11 +297,10 @@ describe("tool surface", () => {
     "why_did_this_underperform",
     "what_should_i_make_next",
     "search_spoken_mentions",
-    // Own account (own-account.ts): the connection pair and the product pair.
-    "list_social_connections",
-    "connect_social_account",
-    "create_product",
-    "update_product",
+    // Neither fetches: one packages what the model classified for a tracker
+    // on another server, the other draws the shortlist it scored.
+    "prepare_handoff",
+    "show_collab_shortlist",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -336,11 +359,25 @@ describe("tool surface", () => {
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
       "show_comment_review",
+      "show_comparison",
+      "show_analysis",
+      "show_hooks",
+      "show_variants",
+      "show_repurposed_post",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
       // Own-account reads: nooticr's own already-stored data, never billed.
       "list_own_apps",
+      "get_scheduled_posts",
+      "get_post_performance",
+      "get_video_stats",
       "get_content_plan",
+      "get_brand_playbook",
+      // Plain rows, no AI call — same reasoning as the reads above.
+      "create_product",
+      "update_product",
+      // Only polls a job analyze_product already paid to start; free itself.
+      "analyze_product_status",
       // Calls AI but the dashboard's own pre-publish review has never
       // billed for it, so nor does this.
       "review_post",
@@ -348,10 +385,12 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
-      // A row in the caller's own workspace: no fetch and no AI, which is why
-      // the server dispatches these ahead of the billing path too.
-      "create_product",
-      "update_product",
+      // Formats what the caller classified for a tracker elsewhere. The only
+      // network call in that chain is the one the other server makes.
+      "prepare_handoff",
+      // Draws the shortlist the caller scored; the fetches that produced the
+      // score were the host's own, not ours.
+      "show_collab_shortlist",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

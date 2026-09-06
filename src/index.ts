@@ -51,7 +51,7 @@ export async function runStdio(): Promise<void> {
         createStdioTokenProvider(auth),
         stdioIdempotencyKey(ctx)
       ),
-    { watchStore: watchStoreForStdio() }
+    { localWatchStore: watchStoreForStdio() }
   );
   const transport = new StdioServerTransport();
   await server.connect(transport);

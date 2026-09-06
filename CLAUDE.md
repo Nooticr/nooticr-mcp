@@ -67,22 +67,205 @@ post caption or comment thread can plant it. When adding a tool that returns
 fetched content, extend the shared framing rather than inventing new wording
 per tool.
 
+## Testing a tool or UI change: real client, real reasoning, real render
+
+`tests/*.test.ts` and `npm run conformance:mcpjam` check protocol and
+schema shape. Neither one boots this server, calls a tool for real, and
+looks at what a host would actually see — which is exactly the failure
+mode that matters most here: a guidance string that silently drops an
+argument, a widget that never reads a field a tool computed, a button that
+sends an argument shape the target tool rejects. `docs/testing/agentic-e2e-testing.md`
+covers the automated CI tiers (fixture smoke, real-backend smoke, agentic
+evals). This section is the manual discipline to follow on top of those
+whenever you touch a tool's guidance text, a `show_*` view, or anything in
+`ui-template.ts` — the method that found and fixed every bug in that doc's
+"Bugs this exercise surfaced" section, plus later passes that caught
+`understand_social_post`'s `focus` argument, `create_variants`' `count`/
+`angle`, and `write_hooks`' `topic`/`count`/`tone` all being accepted by
+the zod schema and silently dropped by the guidance builder, and
+`track_competitor`/`why_did_this_underperform` computing a real
+ratio-to-baseline verdict per post that `postCard()` never rendered.
+
+**The rule, stated plainly: never mock the reasoning step.** A tool whose
+job is to hand guidance to a host LLM has to actually be driven by
+something composing genuine content from that guidance — a hardcoded
+"analysis: test test test" proves the plumbing works and nothing about
+whether the guidance text is good or the view renders what a real answer
+looks like. Before calling a paired `show_*` tool, write an actual
+analysis, an actual set of hooks, an actual drafted reply — as if you were
+the model that just got handed this tool's result.
+
+### Reproducing it
+
+1. Build once: `npm run build:ui && tsc` (or plain `npm run build`) —
+   regenerates `src/shared/ui-template.ts`'s inlined Tailwind CSS as a side
+   effect; see the git-checkout warning below before touching that file.
+2. Start the fixture backend on a scratch port and log in:
+   ```bash
+   node scripts/fixture-server.mjs 8091 &
+   WS=$(curl -s -X POST http://localhost:8091/graphql -H 'content-type: application/json' \
+     -d '{"query":"mutation createWorkspace { createWorkspace }"}' | jq -r .data.createWorkspace.id)
+   APP=$(curl -s -X POST http://localhost:8091/graphql -H 'content-type: application/json' \
+     -d "{\"query\":\"mutation createApp { createApp }\",\"variables\":{\"workspaceId\":\"$WS\",\"name\":\"test\"}}" \
+     | jq -r .data.createApp.id)
+   TOKEN=$(curl -s -X POST http://localhost:8091/auth/dev-login -H 'content-type: application/json' \
+     -d "{\"workspace_id\":\"$WS\"}" | jq -r .token)
+   ```
+   If the tool you're testing has no case in `scripts/fixture-server.mjs`'s
+   `handleMcpCall()` switch yet, add one — don't test against the generic
+   `default:` case, which returns empty `structuredContent` and proves
+   nothing.
+3. Connect a real MCP client to the real built CLI — not a stub, not an
+   in-process call — and call the tool for real:
+   ```js
+   import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+   import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+   const transport = new StdioClientTransport({
+     command: "node", args: ["dist/index.js"],
+     env: { ...process.env, NOOTICR_BASE_URL: BASE_URL, NOOTICR_ACCESS_TOKEN: TOKEN, NOOTICR_TRANSPORT: "stdio" },
+   });
+   const client = new Client({ name: "verify", version: "0.0.0" }, { capabilities: {} });
+   await client.connect(transport);
+   const result = await client.callTool({ name: "analyze_post", arguments: { url: "..." } });
+   ```
+   Read the actual guidance text back. If the tool takes an optional
+   argument (`focus`, `angle`, `tone`, `count`, ...), call it *with* that
+   argument and confirm the guidance text actually changed — a documented
+   zod field the guidance builder never reads is exactly the bug class
+   this step exists to catch. A client with no `elicitation` capability
+   declared (as above) is also the right way to confirm a confirm-gated
+   tool (`create_brand_watch`, `catch_up_watchlist`) degrades gracefully
+   instead of hanging.
+4. Genuinely reason over what came back — see the rule above — and, where
+   the guidance says to, call the paired `show_*` tool with real content.
+5. Render the real result in a real browser and look at it:
+   ```js
+   import { chromium } from "playwright";
+   import { NOOTICR_UI_TEMPLATE } from "./dist/shared/ui-template.js"; // compiled output, not the .ts source
+   const page = await (await chromium.launch()).newPage({ viewport: { width: 900, height: 1400 } });
+   await page.setContent(NOOTICR_UI_TEMPLATE, { waitUntil: "load" });
+   await page.evaluate((sc) => window.postMessage(
+     { method: "ui/notifications/tool-result", params: { structuredContent: sc } }, "*"
+   ), result.structuredContent);
+   await page.waitForTimeout(700);
+   await page.screenshot({ path: "out.png", fullPage: true });
+   ```
+   A sandbox with no system Chromium needs
+   `executablePath: "/opt/pw-browsers/chromium"` on `chromium.launch()` in a
+   throwaway script like the one above — that part is sandbox-only, so don't
+   commit it. `playwright.config.ts` no longer needs the same treatment: it
+   falls back to `PLAYWRIGHT_CHROMIUM_EXECUTABLE`, else that path, and only
+   when the file actually exists, so `npx playwright test` runs in such a
+   sandbox unedited. That fallback is committed and deliberate — it is not
+   leftover debris to revert.
+6. Don't leave what you found verified only by a throwaway script: add or
+   extend a real test in `tests/e2e/ui-template.e2e.ts` (a synthetic-payload
+   render + click assertion — fast, no fixture server needed) or
+   `tests/e2e/agentic-visual-full-app.e2e.ts` (the real
+   fixture-server → real CLI → real render path) so the next change can't
+   silently regress it. Then run `npx playwright test` — the *whole* suite,
+   not a filtered run: `postCard()` and the media player are shared by
+   nearly every view, so a change there needs everything re-checked, not
+   just the view you touched.
+7. Clean up before you're done: kill the fixture server, delete any
+   scratch scripts, `rm -rf dist test-results`, and confirm
+   `git status --short` shows only the files you actually meant to change.
+   (`playwright.config.ts` needs no reverting — see step 5.)
+
+**Never `git checkout -- src/shared/ui-template.ts`** to discard the
+Tailwind-CSS-regeneration diff `npm run build` leaves behind. It's a
+whole-file revert and will just as happily discard real, uncommitted logic
+changes in the same file — this has happened, more than once, to whoever
+wrote this section. If you need to drop only the regenerated CSS line, do
+it by line, never by reverting the file.
+
 ## Before you consider a change finished
+
+`npm run verify` runs all of the below, in this order, and stops at the first
+failure. Run that rather than picking steps by hand — the steps that get
+skipped when they are a list are the ones that catch a half-finished tool
+registration. The individual commands are worth knowing for when you want to
+re-run just one:
 
 1. `npx tsc --noEmit` (repo root) — CI's `Typecheck` step; `cloudflare/` has
    its own `tsconfig` and needs the same check run from that directory.
 2. `npx vitest run` — CI's `Unit tests` step. `tests/server-surface.test.ts`
    and `tests/site.test.ts` are the ones most likely to catch a
    half-finished tool registration (see above).
-3. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
+3. `npm run contract:host` — the host contract: every tool outside the
+   `NO_APP` set in `scripts/host-contract.py` must declare a view at
+   `text/html;profile=mcp-app` with a `.html` twin that actually resolves.
+   CI runs this same script, so a local pass is the real thing rather than an
+   approximation of it. Needs a `npm run build` first: it checks `dist/`, so a
+   stale build checks a stale surface.
+4. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
    if you touched anything UI-shaped — a resource mime type, `_meta`, or the
-   dual-mime template. It's the same check CI's `MCP Apps conformance` job
-   runs, so a local pass here is a real signal, not a guess.
-4. `npx playwright test` needs a Chromium install
-   (`npx playwright install --with-deps chromium`) this repo doesn't ship —
-   if that's unavailable in your environment, say so rather than claiming
-   the e2e suite passed.
-5. Never hand-bump `package.json`'s version — the `version` job in CI owns
+   dual-mime template. Same check CI's `MCP Apps conformance` job runs.
+5. `npx playwright test` — browser E2E for the view template. CI installs its
+   own browser; `playwright.config.ts` also falls back to a preinstalled
+   Chromium (`PLAYWRIGHT_CHROMIUM_EXECUTABLE`, else `/opt/pw-browsers/chromium`)
+   for sandboxes that block `cdn.playwright.dev`, so the suite usually runs
+   even where `npx playwright install` 403s. If it genuinely cannot launch a
+   browser, say so rather than claiming the e2e suite passed.
+6. Never hand-bump `package.json`'s version — the `version` job in CI owns
    that (it also updates `.claude-plugin/plugin.json` and
    `MCP_SERVER_VERSION` together, see its comments for why the three drifted
    before this existed). Land your change and let CI decide the version.
+
+A note on what these check that the unit tests do not: steps 3 and 4 drive the
+**built** server over stdio as a host would. `tools/list` returning a tool the
+template cannot draw, a `.html` twin that 404s, a resource on the wrong mime —
+none of that is visible to vitest, and all of it is visible to a user.
+
+## Finding the bugs no single test can see
+
+Six defects in one sitting turned out to be one shape: a contract between two
+artifacts, with no test spanning them. `search_creators` advertised YouTube its
+own enum rejected. `get_post_comments` served Reddit and Weibo and named
+neither. `get_post_transcript` claimed a TikTok/YouTube ceiling it does not
+have. X posts lost their video between the search path and the detail path. The
+brand-sweep view drew comments over a blank header while the thread carried a
+thumbnail and a video the whole time. Nothing crashed in any of them; each side
+was locally correct and the suite was green.
+
+Four checks exist for that class. They are deliberately not in `npm run verify`
+— two of them run the suite many times over — so use `npm run verify:deep`
+before anything that changes a contract, and the individual ones while working.
+
+**Contract** — `npm run contract:manifest`. `vendor/platform-capabilities.json`
+is generated by nooticr-server from the constants beside its dispatchers; this
+compares the vendored copy against it and names the drift in both directions
+(the server gained a platform nothing here mentions; this repo still claims one
+the server dropped). Exits 2, never 0, when it cannot reach the upstream: a
+check that passes because it could not look is worse than no check.
+
+**Metamorphic** — in nooticr-server, `the_envelope_never_changes_the_post`. Not
+an expected value, a relation: for the same item, every envelope the upstream
+wraps it in must map to the same post. That is why it finds what no fixture
+does — nobody writes a fixture for "a tweet, but nested one level deeper", and
+that is exactly where X lost its video. It caught that bug without naming
+Twitter or `media`. Adding a platform is one line; adding an envelope shape is
+one line and covers every platform.
+
+**Mutation** — `npm run test:mutation`. Every guard here was hand-checked once
+by reintroducing the bug and confirming the failure, then never again. This
+runs that check on every mutation, every time, and a SURVIVING mutation is the
+finding. It refuses to trust a catcher that does not pass on a clean tree
+first: a mistyped command fails under mutation too, which reads as "caught" for
+everything and turns the harness into a green light. That happened on its first
+run here, from a `--silent` flag that swallowed its filename argument.
+
+**LLM propose/verify** — `npm run test:invariants`, prompt at
+`node scripts/invariant-guard.mjs --print-prompt`. This repo states its
+invariants in prose ("Advertising a platform that cannot work just spends a
+paid call to fail"), which a model can read and propose as executable checks.
+The model is never trusted. Each candidate must pass on the clean tree AND fail
+on the mutant it supplies; anything else is discarded, and the rejection reason
+is printed. Both failure modes are worth acting on: "fails on clean tree" is a
+broken check or a real finding, and "mutant survives" is a genuine coverage gap
+— the first run found that nothing catches a paid tool dropping its price from
+its description.
+
+The proposing step is a seam, not a dependency: candidates are JSON, so any
+model or a human can write `invariants/candidates.json`. Only
+`invariants/earned.json` means anything, and only the verifier writes it.

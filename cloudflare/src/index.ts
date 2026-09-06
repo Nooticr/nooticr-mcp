@@ -58,6 +58,17 @@ export default {
         "access-control-allow-origin": "*",
       });
     }
+    // ChatGPT Apps directory domain-verification challenge. OpenAI generates
+    // this token during app submission (their dashboard, not us) and pings
+    // this exact path expecting it back as plain text — set it once via
+    // `wrangler secret put OPENAI_APPS_VERIFICATION_TOKEN` after starting
+    // that submission. 404 rather than an empty 200 while unset, so an
+    // unconfigured deploy cannot look like it is claiming a domain it isn't.
+    if (path === "/.well-known/openai-apps-challenge" && method === "GET") {
+      return env.OPENAI_APPS_VERIFICATION_TOKEN
+        ? textResponse(200, env.OPENAI_APPS_VERIFICATION_TOKEN)
+        : textResponse(404, "not configured");
+    }
     if (path === "/register" && method === "POST") {
       return handleRegister(request, env);
     }
@@ -151,6 +162,11 @@ function jsonResponse(status: number, body: unknown, extra: Record<string, strin
 function htmlResponse(status: number, html: string, extra: Record<string, string> = {}): Response {
   const headers: Record<string, string> = { "content-type": "text/html; charset=utf-8", "Cache-Control": "no-store", ...extra };
   return new Response(html, { status, headers });
+}
+
+function textResponse(status: number, text: string, extra: Record<string, string> = {}): Response {
+  const headers: Record<string, string> = { "content-type": "text/plain; charset=utf-8", "Cache-Control": "no-store", ...extra };
+  return new Response(text, { status, headers });
 }
 
 function htmlPage(title: string, body: string): string {

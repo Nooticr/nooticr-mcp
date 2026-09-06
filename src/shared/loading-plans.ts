@@ -350,6 +350,38 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   show_comment_review: { label: "Drawing the labels", kind: "list", n: 6, steps: [], free: true },
   show_audience_replies: { label: "Laying out the drafts", kind: "list", n: 5, steps: [], free: true },
 
+  // ─── Draws what the caller already produced: no fetch, no price ───
+  // The show_* family renders the model's own output. A wait here is brief
+  // and free, but it still says which, because "nothing is happening" and
+  // "this is free and instant" look identical on a blank screen.
+  show_analysis: { label: "Drawing the reading", kind: "text", n: 1, steps: [], free: true },
+  show_comparison: { label: "Drawing the comparison", kind: "strip", n: 2, steps: [], free: true },
+  show_hooks: { label: "Laying out the hooks", kind: "list", n: 5, steps: [], free: true },
+  show_variants: { label: "Laying out the variants", kind: "list", n: 4, steps: [], free: true },
+  show_repurposed_post: { label: "Laying out the rewrites", kind: "text", n: 1, steps: [], free: true },
+  show_collab_shortlist: { label: "Drawing the shortlist", kind: "list", n: 5, steps: [], free: true },
+  prepare_handoff: { label: "Packaging the handoff", kind: "list", n: 4, steps: [], free: true },
+
+  // ─── Own-account reads: nooticr's own stored rows ───
+  get_scheduled_posts: { label: "Reading your pipeline", kind: "list", n: 5, steps: [], free: true },
+  get_post_performance: { label: "Reading your numbers", kind: "list", n: 5, steps: [], free: true },
+  get_video_stats: { label: "Reading the last sync", kind: "strip", n: 3, steps: [], free: true },
+  get_brand_playbook: { label: "Reading the playbook", kind: "text", n: 1, steps: [], free: true },
+
+  // ─── The product analysis: the one own-account tool that spends ───
+  // The only outbound fetch in this family — it reads an excerpt of the
+  // product's own site — and it is billed against the workspace's plan AI
+  // credits, not the personal MCP balance.
+  analyze_product: { label: "Starting the analysis", kind: "text", n: 1, steps: [], planAi: true },
+  // Free to poll: the spend already happened when the job was started.
+  analyze_product_status: {
+    label: "Checking the analysis",
+    kind: "text",
+    n: 1,
+    steps: [],
+    free: true,
+  },
+
   // ─── Scheduled monitoring (brand-watch.ts) ───
   // Managing a schedule is not using it: the sweeps a watch makes are billed
   // as search_mentions when the worker runs them, later and elsewhere.

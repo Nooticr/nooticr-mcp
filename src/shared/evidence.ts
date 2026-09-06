@@ -52,6 +52,76 @@ export interface EvidencePlan {
 
 const url = (a: Record<string, unknown>) => String(a.url ?? "");
 
+/**
+ * Platforms whose accounts can be found by NAME. This is the backend's
+ * search_creators enum, not a preference — no other network has a keyword
+ * search behind it, so on the rest a handle has to arrive from outside.
+ */
+export const NAME_SEARCHABLE = ["tiktok", "instagram", "xiaohongshu"] as const;
+
+/**
+ * The `platform` argument description every tool sharing the silent tiktok
+ * default should use.
+ *
+ * Saying "default tiktok" was technically true and operationally useless: it
+ * reads as a harmless convenience rather than as the thing that will answer a
+ * question about X with TikTok data. The default cannot simply be removed —
+ * hosts already call these without it — so the description has to carry the
+ * warning instead.
+ */
+export const PLATFORM_ARG =
+  "Platform. Defaults to tiktok, so SET IT whenever the user named a network — otherwise a " +
+  "question about X, LinkedIn or Reddit is silently answered with TikTok data, and an empty " +
+  "result looks like the account does not exist. Accepts what get_user_posts does: tiktok, " +
+  "instagram, youtube, douyin, xiaohongshu, twitter, bilibili, linkedin, reddit, weibo.";
+
+/**
+ * What to say when a handle lookup comes back empty.
+ *
+ * Written because of a real session: someone asked what a competitor was doing
+ * on X, the tool searched TikTok (the silent default), found nothing, offered
+ * to guess another TikTok handle, and gave up. Every part of that was the
+ * surface's fault. It never said which network it had searched, so the wrong
+ * one looked like an absent account; and an empty result carried no next step,
+ * so the only move left was to apologise.
+ *
+ * The fix is to be specific about what happened and to hand back the one step
+ * that actually works. We cannot search X, LinkedIn or Reddit by name — but the
+ * model calling us can search the open web, and `get_user_posts` will happily
+ * fetch any of them once it has the handle. So ask for that rather than
+ * substituting a network the user did not ask about.
+ */
+export function handleMissGuidance(a: {
+  handle: string;
+  platform: string;
+  defaulted: boolean;
+}): string {
+  const searchable = (NAME_SEARCHABLE as readonly string[]).includes(a.platform);
+  const lines = [
+    `No posts for @${a.handle} on ${a.platform}.`,
+    "",
+    a.defaulted
+      ? `Note that ${a.platform} was the default here — it was not asked for. If the user named a ` +
+        "different network, call this again with `platform` set to it before concluding anything: " +
+        "an empty result on the wrong network says nothing about the account they meant."
+      : `That is the network that was searched, so the account either does not exist there, is ` +
+        "private, or uses a different handle.",
+    "",
+    searchable
+      ? `${a.platform} can be searched by name: call search_creators with the brand or person as ` +
+        "the keyword to find the right handle, then come back."
+      : `${a.platform} cannot be searched by name here — there is no keyword index behind it, so ` +
+        "guessing handles will not converge. Find the account yourself with a web search, or ask " +
+        "the user for the handle or profile URL, then call this again with that. Do NOT quietly " +
+        "switch to a network you can search instead: answering about TikTok when the question " +
+        "was about X is worse than saying you need the handle.",
+    "",
+    "Say plainly that nothing was found and which network was checked. Do not present an empty " +
+      "result as evidence the competitor is inactive.",
+  ];
+  return lines.filter((l, i, all) => !(l === "" && all[i - 1] === "")).join("\n");
+}
+
 /** Closing line every guidance block shares. */
 export const ownIt =
   "Reason over this yourself rather than asking for an interpretation of it — " +
@@ -92,6 +162,11 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "frame per shot is still one frame: it shows what was on screen, never",
         "what moved while it was there, so do not describe motion you have not",
         "seen across two frames.",
+        "",
+        "When you are done, call show_analysis with the url and your analysis —",
+        "it draws what you found (hook strength, script structure, quotable",
+        "lines, suggested hashtags, target audience and whichever other fields",
+        "you produced) so it is visible, not only said in chat.",
         ownIt,
       ].join("\n"),
   },
@@ -106,13 +181,17 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         : { url: url(a), count: Number(a.frames) },
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
     frames: true,
-    guidance: () =>
-      [
+    guidance: (a) => {
+      const focus = String(a.focus ?? "").trim();
+      return [
         "Frames from this post, chosen by scene change rather than by the clock,",
         "plus its transcript.",
         "",
         "Describe what physically happens on screen, in order — the events, not",
         "the strategy. Anchor each observation to a frame.",
+        ...(focus
+          ? ["", `Focus for this pass, as asked: ${focus}. Still describe events in order, but weight what you cover toward this.`]
+          : []),
         "",
         "The payload says exactly what these frames cover: `selection`,",
         "`scenesDetected`, `truncated`, `scanComplete` and `coverageNote`. Where",
@@ -120,8 +199,12 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "rather than inferring it. A frame per shot shows what was on screen and",
         "not what moved during it, so describe stills unless two frames actually",
         "show the change.",
+        "",
+        "When you are done, call show_analysis with the url and your analysis —",
+        "it draws what you found so it is visible, not only said in chat.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   analyze_post_fast: {
@@ -138,6 +221,9 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "seen the visuals; if a judgement needs them, call analyze_post",
         "yourself and look at the frames — do not ask anyone else to fetch",
         "them for you.",
+        "",
+        "When you are done, call show_analysis with the url and your analysis —",
+        "it draws what you found so it is visible, not only said in chat.",
         ownIt,
       ].join("\n"),
   },
@@ -152,6 +238,11 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "get_post_transcript where you need the words, then compare them yourself:",
         "which performed better, what actually differed, and the single test",
         "worth running next. Ground every difference in a number or a quote.",
+        "",
+        "When you are done, call show_comparison with all the posts (same shape",
+        "get_social_media returned for each) and your comparison — it draws a",
+        "scoreboard with the winner marked, so the comparison is visible, not",
+        "only said in chat.",
         ownIt,
       ].join("\n"),
   },
@@ -217,30 +308,53 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
-    guidance: (a) =>
-      [
-        a.url ? "The source post, its transcript and its stats." : "No source post given.",
+    guidance: (a) => {
+      const count = Number(a.count ?? 10) || 10;
+      const topic = String(a.topic ?? "").trim();
+      const tone = String(a.tone ?? "").trim();
+      return [
+        a.url
+          ? "The source post, its transcript and its stats."
+          : topic
+            ? `No source post — the topic given is: ${topic}.`
+            : "No source post and no topic given — say that a subject is needed before you can write grounded hooks.",
         "",
-        "Write alternative opening lines grounded in this material. For each,",
+        `Write ${count} alternative opening line${count === 1 ? "" : "s"} grounded in this material` +
+          (topic && !a.url ? ` (the topic above, since there is no post)` : "") +
+          ". For each,",
         "name the device it uses and who it stops. A hook that could open any",
         "video in the niche is not grounded in this one.",
+        ...(tone ? ["", `Write them in this tone: ${tone}.`] : []),
+        "",
+        "When you are done, call show_hooks with the url (or topic) and the",
+        "hooks you wrote — it draws them, each with its device and who it",
+        "stops, so they are visible, not only said in chat.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   create_variants: {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
-    guidance: () =>
-      [
+    guidance: (a) => {
+      const count = Number(a.count ?? 3) || 3;
+      const angle = String(a.angle ?? "").trim();
+      return [
         "The post that worked, its transcript and its stats.",
         "",
-        "Propose variants worth filming next: for each, the hook, the one angle",
-        "that changes, the shot beats in order, and the call to action. Keep",
+        `Propose ${count} variant${count === 1 ? "" : "s"} worth filming next: for each, the hook, ` +
+          "the one angle that changes, the shot beats in order, and the call to action. Keep",
         "whatever made the original work and say what that was.",
+        ...(angle ? ["", `Steer the variants toward: ${angle}.`] : []),
+        "",
+        "When you are done, call show_variants with the sourceUrl and the",
+        "variants you wrote — it draws each one's hook, angle, beats and CTA",
+        "so they are visible, not only said in chat.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   repurpose_post: {
@@ -255,6 +369,10 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         `Rewrite it for ${targets.length ? targets.join(", ") : "the surfaces you are asked for"}.`,
         "Each surface has its own length, register and conventions — a copy of",
         "the same paragraph with different line breaks is not a repurposing.",
+        "",
+        "When you are done, call show_repurposed_post with the sourceUrl and",
+        "one entry per surface you rewrote it for — it draws each version so",
+        "they are visible, not only said in chat.",
         ownIt,
       ].join("\n");
     },
@@ -398,9 +516,10 @@ export function costSentence(tool: string): string {
 export function fetchBillingNote(tool: string): string {
   const calls = planCalls(tool);
   if (calls.length === 0) return "";
+  const total = planCost(tool);
   return (
     `Billed as the fetches that produced it: ${calls.join(" and ")}, ` +
-    `${planCost(tool)} credits in total, at the data price. Retrying this exact call does ` +
+    `${total} credit${total === 1 ? "" : "s"} in total, at the data price. Retrying this exact call does ` +
     "not charge again: the idempotency key is namespaced per tool, so a retry replays the " +
     "same debits."
   );

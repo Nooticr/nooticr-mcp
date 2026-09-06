@@ -50,17 +50,19 @@ const NOT_READ_ONLY = [
   // Same billing, same conclusion — this one was missed because it writes
   // nothing of the user's, but the credits alone put it here.
   "growth_brief",
+  // Starts an async analysis job every call (a fresh jobId, spending plan AI
+  // credits) — same conclusion as the generation tools above, for the same
+  // reason connect_social_account is on this list: a retry is not a no-op.
+  "analyze_product",
+  // Each creates or patches a real row in the workspace's own products table.
+  "create_product",
+  "update_product",
   // The exception to the billing rule: free, and still not read-only.
   // Given a postId it saves the review and score onto that scheduled post,
   // overwriting the previous one.
   "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
-  // Row writes in the caller's own workspace. Free is not the same as
-  // read-only, and a host that auto-approves on readOnlyHint would let these
-  // create and patch products unattended.
-  "create_product",
-  "update_product",
 ];
 
 describe("tool annotations", () => {
@@ -68,7 +70,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(51);
+    expect(tools).toHaveLength(64);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -93,6 +95,12 @@ describe("tool annotations", () => {
     // The watchlist tools that only touch stored state are closed-world too.
     // Sorted, because the actual is.
     expect(closed.sort()).toEqual([
+      // Own-account tools: every one of these reads or generates for the
+      // caller's own product, never a third party's — nothing here reaches
+      // outside nooticr. analyze_product is the one exception (see below):
+      // it fetches an excerpt of the product's own website, a real reach
+      // outside nooticr, so it is deliberately absent from this list.
+      "analyze_product_status",
       "check_nooticr_credits",
       "connect_social_account",
       "create_brand_watch",
@@ -100,15 +108,37 @@ describe("tool annotations", () => {
       "draft_post",
       "generate_captions",
       "generate_content_plan",
+      "get_brand_playbook",
       "get_content_plan",
+      "get_post_performance",
+      "get_scheduled_posts",
+      "get_video_stats",
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
       "list_social_connections",
       "nooticr_login",
+      // Formats what the caller classified into text for a tracker on another
+      // server. It holds no tracker credential and makes the call to nobody:
+      // the filing happens on whichever server the host also has connected.
+      "prepare_handoff",
       "review_post",
+      // The show_* family: each draws what the caller already wrote/fetched
+      // and reaches nothing.
+      "show_analysis",
+      // Renders drafts the caller already wrote; fetches nothing, and cannot
+      // send them either — no connection carries comment-write permission.
       "show_audience_replies",
+      // Renders scores the caller reached by reading a candidate's links —
+      // and it is the caller that opened them, not us. See collab.ts for why
+      // this server never fetches a URL out of a stranger's bio.
+      "show_collab_shortlist",
+      // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
+      "show_comparison",
+      "show_hooks",
+      "show_repurposed_post",
+      "show_variants",
       "stop_brand_watch",
       "unwatch_creator",
       "update_product",
@@ -122,10 +152,13 @@ describe("prompts", () => {
     const { prompts } = await (await connect()).listPrompts();
     expect(prompts.map((p) => p.name).sort()).toEqual([
       "check_my_draft",
+      "monitor_my_brand",
       "niche_briefing",
       "post_teardown",
       "repurpose_everywhere",
+      "set_up_my_product",
       "teardown_creator",
+      "watch_a_competitor",
       "what_to_make_next",
       "why_this_won",
     ]);
@@ -148,6 +181,9 @@ describe("prompts", () => {
       why_this_won: ["urls"],
       what_to_make_next: ["url"],
       repurpose_everywhere: ["url"],
+      set_up_my_product: [],
+      watch_a_competitor: ["competitor"],
+      monitor_my_brand: ["brand"],
     });
   });
 
@@ -178,6 +214,80 @@ describe("prompts", () => {
       r.messages.map((m) => (m.content as { text: string }).text).join("\n");
     expect(textOf(cheap)).toContain("Skip analyze_post");
     expect(textOf(rich)).not.toContain("Skip analyze_post");
+  });
+
+  it("orders the competitor watch cheapest-evidence-first", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({
+      name: "watch_a_competitor",
+      arguments: { competitor: "Acme, acme.com" },
+    });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    // Discovery before the teardown, the teardown before the free watchlist
+    // write, and watching before the paid baseline check that depends on it.
+    expect(text.indexOf("search_creators")).toBeLessThan(text.indexOf("analyze_creator_profile"));
+    expect(text.indexOf("analyze_creator_profile")).toBeLessThan(text.indexOf("watch_creator"));
+    expect(text.indexOf("watch_creator")).toBeLessThan(text.indexOf("track_competitor"));
+    expect(text.indexOf("track_competitor")).toBeLessThan(text.indexOf("catch_up_watchlist"));
+    expect(text).toContain("Acme, acme.com");
+  });
+
+  it("orders brand monitoring cheapest-evidence-first", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({
+      name: "monitor_my_brand",
+      arguments: { brand: "nooticr" },
+    });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    // The cheaper typed-text sweep before the pricier spoken-mention pass,
+    // and classification/filing before the standing watch is even offered.
+    // Anchored on the numbered steps, not a bare substring — the prompt also
+    // names search_spoken_mentions earlier, in the web-search framing.
+    expect(text.indexOf("1. search_mentions")).toBeLessThan(text.indexOf("2. search_spoken_mentions"));
+    expect(text.indexOf("2. search_spoken_mentions")).toBeLessThan(text.indexOf("4. prepare_handoff"));
+    expect(text.indexOf("4. prepare_handoff")).toBeLessThan(text.indexOf("5. create_brand_watch"));
+  });
+
+  it("tells the model to resolve a name to a handle itself before spending anything", async () => {
+    const client = await connect();
+    const competitor = await client.getPrompt({
+      name: "watch_a_competitor",
+      arguments: { competitor: "Acme, acme.com" },
+    });
+    const brand = await client.getPrompt({
+      name: "monitor_my_brand",
+      arguments: { brand: "nooticr" },
+    });
+    const textOf = (r: Awaited<ReturnType<Client["getPrompt"]>>) =>
+      r.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    for (const text of [textOf(competitor), textOf(brand)]) {
+      expect(text).toMatch(/web-search/i);
+      // Says what a wrong guess costs, so the model does not treat a bad
+      // handle and a genuinely quiet account as the same finding.
+      expect(text).toContain("2 credits");
+      expect(text.toLowerCase()).toContain("returns nothing");
+    }
+  });
+
+  it("gates create_brand_watch's recurring charge behind a person actually agreeing", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({
+      name: "monitor_my_brand",
+      arguments: { brand: "nooticr" },
+    });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    expect(text).toContain("two-call quote-then-confirm");
+    expect(text).toContain("confirm: true");
+    expect(text).toMatch(/never happen without the user actually seeing/i);
+  });
+
+  it("is honest that set_up_my_product cannot create a product over MCP", async () => {
+    const client = await connect();
+    const got = await client.getPrompt({ name: "set_up_my_product", arguments: {} });
+    const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
+    expect(text).toContain("there is no tool here that creates a product");
+    expect(text).toContain("https://nooticr.com");
+    expect(text).not.toMatch(/web-search/i);
   });
 });
 
@@ -300,5 +410,116 @@ describe("media CSP allowlist", () => {
       .filter(([, cdn]) => !domains.includes(cdn))
       .map(([p]) => p);
     expect(missing, "platforms whose media the view cannot load").toEqual([]);
+  });
+});
+
+/**
+ * A tool's prose and its schema have to agree about which networks it serves.
+ *
+ * They did not: search_creators advertised "TikTok, Instagram, Xiaohongshu,
+ * YouTube or Douyin" while its enum accepted only the first three, so a model
+ * that trusted the sentence and passed platform:"youtube" got a validation
+ * error. nooticr-server keeps the canonical list next to the implementation
+ * (CREATOR_SEARCH_PLATFORMS) and asserts its own enum against it — but that
+ * assertion covers the enum only, in the other repo, so the description here
+ * drifted unguarded. This is that missing half.
+ *
+ * The convention it enforces: name the networks a tool searches, and put the
+ * ones it cannot behind "Not searchable here:" so the negative claim is
+ * legible to a reader and to this test alike.
+ */
+describe("tool descriptions do not advertise platforms the schema rejects", () => {
+  const PLATFORM_WORDS = [
+    "tiktok",
+    "instagram",
+    "xiaohongshu",
+    "youtube",
+    "douyin",
+    "twitter",
+    "reddit",
+    "linkedin",
+    "weibo",
+    "bilibili",
+  ];
+
+  it("every platform a description names is either accepted or explicitly excluded", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+
+    const offenders: string[] = [];
+    for (const tool of tools) {
+      const enumValues = (
+        tool.inputSchema as { properties?: { platform?: { enum?: string[] } } }
+      )?.properties?.platform?.enum;
+      // Only tools that constrain a platform can contradict themselves.
+      if (!Array.isArray(enumValues)) continue;
+
+      const description = (tool.description ?? "").toLowerCase();
+      // Everything after the marker is a stated limitation, not a claim.
+      const [claimed] = description.split("not searchable here:");
+      const accepted = new Set(enumValues.map((v) => v.toLowerCase()));
+
+      for (const word of PLATFORM_WORDS) {
+        // Word-boundary match so "twitter" is not found inside a URL fragment.
+        if (!new RegExp(`\\b${word}\\b`).test(claimed)) continue;
+        if (!accepted.has(word)) {
+          offenders.push(`${tool.name}: describes ${word}, schema accepts ${[...accepted].join("/")}`);
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("search_creators serves exactly what nooticr-server says it can", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const tool = tools.find((t) => t.name === "search_creators");
+    const enumValues = (
+      tool?.inputSchema as { properties?: { platform?: { enum?: string[] } } }
+    )?.properties?.platform?.enum;
+    // Mirrors CREATOR_SEARCH_PLATFORMS in nooticr-server's social_import.rs.
+    // YouTube 400s upstream; Douyin returns user objects with every field null.
+    expect(enumValues).toEqual(["tiktok", "instagram", "xiaohongshu"]);
+  });
+});
+
+/**
+ * A billable tool has to say what it costs, in the description a host reads.
+ *
+ * The landing page's prices were already checked; these were not. The gap was
+ * found by scripts/invariant-guard.mjs, which proposed "every tool that spends
+ * credits says so" and then rejected its own candidate because the mutant
+ * survived — stripping the price sentence from search_creators broke nothing.
+ * A host that cannot see a price cannot quote before it charges, which is the
+ * one thing this server promises.
+ */
+describe("every tool declares what it costs, where a host will read it", () => {
+  /**
+   * The three ways this server states a price, all of which count:
+   *   "Consumes 2 nooticr credits" / "Costs 2 nooticr credits"  — MCP credits
+   *   "No cost to call" / "there is no cost"                     — free
+   *   "plan AI credits"                                          — the other
+   *                                                                wallet, for
+   *                                                                own-product
+   *                                                                AI tools
+   * A tool matching none of them has left a host unable to quote before it
+   * charges, which is the one thing this server promises.
+   */
+  const DECLARES_A_PRICE = [
+    /\d+\s+nooticr\s+credit/i,
+    /no cost to call/i,
+    /there is no cost/i,
+    /\bfree\b/i,
+    /plan ai credits/i,
+  ];
+
+  it("leaves no tool silent about its price", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const silent = tools
+      .filter((t) => !DECLARES_A_PRICE.some((re) => re.test(t.description ?? "")))
+      .map((t) => t.name);
+    expect(silent, "tools whose description names no price at all").toEqual([]);
   });
 });

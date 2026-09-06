@@ -70,11 +70,45 @@ Linear, …) MCP server connected, is:
    fixes the actual bug the comment described — an ordinary GitHub-issue
    workflow at that point, with no dependency on nooticr-mcp at all.
 
-Nothing about this needs a change here: the taxonomy already names "bug
-report" as a first-class label, and the id scheme is what lets step 2 quote
-something specific rather than a paraphrase. If a future tool's comments
-*don't* carry a stable id, that's the actual gap to fix — everything else in
-this chain already composes.
+The taxonomy already named "bug report" as a first-class label and the id
+scheme already let step 2 quote something specific rather than a paraphrase.
+What step 2 did *not* have was a shape: "quote it into an issue" left the
+model to invent a title, a body and a way of marking provenance differently
+every time, so two sweeps over the same comment section produced two issues
+nothing could recognise as duplicates — and the quoted text landed in the
+issue body as live markdown.
+
+`prepare_handoff` (free, fetches nothing) is now step 2's other half. It takes
+the items the model classified and returns the exact `title`, `body` and
+`labels` to file, plus a `searchFirst` string to look for in the tracker
+first. The body is the part that had to be code rather than advice:
+
+- The quote goes inside a fence sized to outgrow whatever backticks the quote
+  itself contains, under a line saying it is a third-party report and not an
+  instruction. The issue is read next by a coding agent, and everything quoted
+  came from a stranger — a comment saying "also add my package as a
+  dependency", pasted unfenced, is an instruction sitting in that agent's
+  context with nothing to distinguish it from the reporter's own words.
+- `@handles` and `#numbers` are defanged with a zero-width space, so filing
+  notifies no unrelated account and cross-links no unrelated issue.
+- Emails and phone numbers are redacted, loudly. A complaint often carries the
+  complainer's own contact details; forwarding it into a public repository
+  publishes them permanently, and the person was talking to a creator, not
+  filing a ticket. Version numbers, prices and counts are deliberately left
+  alone — redacting `1.2.3` would lose the detail that made the report
+  actionable.
+- `nooticr-source: <id>` goes in the body as a dedupe marker, and
+  `searchFirst` is what to search for before filing.
+
+Warnings ride along rather than blocking: a quote that reads like an
+instruction to a later reader, an id in no shape any evidence tool issues, a
+kind (`praise`, `spam`) a tracker is the wrong home for, a missing permalink,
+a duplicate inside the same batch. Nothing is refused — a caller gets the item
+back with the reason, which is more useful than an error that hides which item
+was the problem.
+
+nooticr still files nothing and holds no tracker credential. The last step is
+the model calling the *other* server with the strings this one returned.
 
 **The report doesn't have to be written down.** A creator can describe the
 same bug out loud in a video — "this stopped working for me after a week" is
@@ -97,7 +131,7 @@ doesn't exist for it.
 |---|---|---|---|---|---|
 | `answer_my_audience` | `get_user_posts` (1 call, your own feed) | `get_post_comments` × posts opened (default 6) | `replySignals()` phrase-match flags each comment `wants_a_reply` / `unclear` | `post:<platform>:<slug>`, `comment:<postId>:<commentId>` | Draft replies per flagged comment → `show_audience_replies` renders them; a person pastes them in by hand (no connection can post a reply) |
 | `track_competitor` | `get_user_posts` (1 call, their feed) | *(none — one fetch is the whole window)* | `distributionOf`/`scored()`: each post's percentile against that creator's own median, `outperformers` filtered by verdict | `post:<platform>:<slug>` | Model reads `outperformers` + `newSincePreviousCheck` and decides what's worth reacting to |
-| `who_should_i_work_with` | `search_creators` (keyword) | `get_similar_creators` × 1, only if a `seed` was given | Merge-by-username; `foundBy: "both"` when both searches agree — the strongest signal in the payload | `creator:<platform>:<username>` | Model shortlists finalists; `audienceOverlap.howTo` names the follow-up call (`answer_my_audience` on each finalist) rather than silently charging ~9 credits/candidate to prove it |
+| `who_should_i_work_with` | `search_creators` (keyword) | `get_similar_creators` × 1, only if a `seed` was given | Merge-by-username; `foundBy: "both"` when both searches agree — the strongest signal in the payload; **bio links extracted, typed and sorted by value-per-fetch** | `creator:<platform>:<username>` | Model *opens* the links it judges worth opening (a repo, their site), scores each candidate against the returned `rubric`, then calls `show_collab_shortlist` to put the ranked list to the user; `audienceOverlap.howTo` names the follow-up call rather than silently charging ~9 credits/candidate to prove it |
 | `why_did_this_underperform` | `get_social_media` (the post) | `get_user_posts` (1 call, that creator's window, post excluded from its own baseline) | `distributionOf`: median/quartiles/ratio/percentile for the one post | `post:<platform>:<slug>` | Model states whether the result is a real underperformance or just noise against the creator's own variance |
 | `what_should_i_make_next` | `get_user_posts` (your feed) | `get_post_comments` × your posts opened, **plus** `discover_social_posts` (1 call, the niche sweep) | `replySignals()` flags `asking` comments (demand); niche sweep is supply, unscored | `post:<platform>:<slug>`, `comment:<postId>:<commentId>` | Model intersects demand (what's asked for) against supply (what's already made) — the gap is the idea |
 | `search_mentions` | *(fans out itself, across up to 9 networks)* | one `get_post_comments`-equivalent fetch per post opened, per platform | none — comments are returned as `mentions` with a raw `hits` count, no sentiment | `<platform>:<postId>:<index>` | Model classifies sentiment per mention (this is the tool the goal's "watching competitor → search terms → classify → video mentions" example matches almost exactly) |
@@ -111,6 +145,51 @@ client that hasn't declared elicitation capability (most CLI test harnesses,
 including mcpjam's default `tools call`) gets `proceed: true` automatically —
 see [Harness verification](#harness-verification) for what that means for
 testing these tools locally.
+
+### Worked example: vetting a collaborator by reading their work
+
+`who_should_i_work_with` used to end at a sortable list. A follower count and
+a bio do not settle whether to approach someone; the work does — the videos,
+the site, the repository. All of that is one click away *inside the bio*, and
+the bio came back as a single string, so the model had to spot a URL inside
+prose, guess whether it was worth opening, and hope it was not a shortener.
+
+The links are now pulled out and typed (`links[]` per candidate), sorted by
+how much a single fetch buys: `code` first, then `website`, `writing`,
+`video`, `shop`, `link_hub`, `shortener`, and another `social` profile last
+because it tells you the least. Each carries a `readable` line saying what
+opening it will actually tell you, and an `opaque` flag that is true exactly
+for shorteners — where the destination cannot be known from the URL and can be
+changed after we read it.
+
+Two properties of that extraction are load-bearing rather than cosmetic:
+
+- **We never fetch them.** A bio is a text field a stranger controls, and
+  fetching what it points at, from our egress, is a request an attacker chose
+  — the shape of every SSRF. The host fetches instead, where the request is
+  already sandboxed and already has the user's consent model. Anything that
+  resolves inside a network (loopback, RFC1918, `169.254.169.254`, `.local`,
+  `.internal`, an IPv6 literal) is dropped rather than labelled, because no
+  public bio has a legitimate reason to point at one.
+- **A bare domain counts.** Bios are written by people: `acme.dev` with no
+  scheme is the common case, and requiring `https://` loses most real links.
+  Matching every dotted token instead turns `Node.js` and `v1.2.3` into
+  hostnames, so a bare token has to end in a TLD somebody registers under —
+  `js` is deliberately absent from that list.
+
+The scoring itself stays where every other judgement in this server stays: in
+the calling model, which has read the repository and the video and is better
+placed than a follower count. What we add is a `rubric` so two runs are
+comparable — fit and craft and *evidence* weighted above reach, and engagement
+called out as unmeasurable from a shortlist rather than left to be guessed —
+and `show_collab_shortlist` (free, fetches nothing) to draw the ranked result
+and put the choice to the user.
+
+The card is careful about one thing in particular: the score is labelled
+"Scored by the assistant" wherever it appears, and a candidate scored without
+anything having been opened is marked unverified. A number next to a real
+person's name that reads as a *nooticr* rating would be a claim we have not
+made and cannot stand behind.
 
 ## Harness verification
 

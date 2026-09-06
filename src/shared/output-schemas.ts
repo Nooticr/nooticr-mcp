@@ -52,33 +52,6 @@ const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.nul
  */
 const anyList = () => z.array(z.any()).nullish();
 
-/**
- * The product row, as create_product and update_product both return it.
- *
- * camelCase out, snake_case in — deliberately, and it is worth saying why
- * rather than tidying one into the other. The backend reads the write
- * arguments by exact column name, so a camelCase `websiteUrl` on the way in
- * lands nowhere at all; on the way out there is no such constraint and the
- * rest of this file is camelCase.
- */
-const product = open({
-  appId: scalar().describe("The product's id — what every other own-account tool takes."),
-  name: scalar(),
-  slug: scalar(),
-  description: scalar(),
-  productType: scalar(),
-  websiteUrl: scalar().describe("analyze_product fetches an excerpt of this page."),
-  niche: scalar(),
-  iconUrl: scalar(),
-  primaryCtaLabel: scalar(),
-  primaryCtaUrl: scalar(),
-  externalListingId: scalar(),
-  iosBundleId: scalar(),
-  androidPackage: scalar(),
-  hasBrandPlaybook: scalar().describe("false until analyze_product has run — that is the paid call."),
-  createdAt: scalar(),
-});
-
 /** Every paid tool reports what it charged. */
 const mcpCredits = open({
   cost: scalar().describe("Credits this call consumed."),
@@ -123,6 +96,20 @@ const post = open({
   musicTitle: scalar(),
   musicAuthor: scalar(),
   mediaItems: listOf(open({})),
+});
+
+/**
+ * One link found in a creator's bio, typed so a host knows what opening it buys.
+ *
+ * `opaque` is the one a caller must not ignore: a shortener's destination is
+ * unknowable from the URL and changeable after we read it.
+ */
+const bioLink = open({
+  url: scalar(),
+  host: scalar(),
+  kind: scalar().describe("code, video, social, writing, shop, link_hub, shortener or website."),
+  readable: scalar().describe("What opening it will actually tell you."),
+  opaque: scalar().describe("True when the destination cannot be known from the URL."),
 });
 
 const creator = open({
@@ -303,6 +290,73 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   /** What the caller concluded, drawn. Nothing here was fetched. */
+  /**
+   * What another server needs to file one of these, per item.
+   *
+   * `body` is the load-bearing field and the reason the shape is pinned: it
+   * carries the quote fenced and framed as a third-party report, and a caller
+   * that rebuilds it from `title` + the original comment loses exactly that.
+   */
+  prepare_handoff: open({
+    handoff: scalar(),
+    destination: scalar().describe("github, jira, linear or generic."),
+    totalMentions: scalar().describe("Items prepared."),
+    worthFiling: scalar().describe("How many are a kind a tracker is the right home for."),
+    withWarnings: scalar(),
+    nextStep: scalar().describe("How to file these on the other server."),
+    items: listOf(
+      open({
+        sourceId: scalar().describe("The evidence tool's id — what makes the issue traceable."),
+        kind: scalar(),
+        title: scalar().describe("Ready to use as the issue title."),
+        body: scalar().describe("Ready to use as the issue body. File it unmodified."),
+        labels: listOf(z.string()),
+        sourceUrl: scalar().describe("Permalink, or null when the network gives none."),
+        dedupeKey: scalar().describe("The marker written into the body, so a second run can find it."),
+        searchFirst: scalar().describe("Search the tracker for this before filing."),
+        worthFiling: scalar(),
+        warnings: listOf(
+          open({
+            code: scalar(),
+            detail: scalar().describe("What to know before this is filed."),
+          }),
+        ),
+      }),
+    ),
+    term: scalar(),
+    threads: anyList(),
+  }),
+
+  /** The vetted shortlist, ranked, with the scores attributed to the caller. */
+  show_collab_shortlist: open({
+    shortlist: scalar(),
+    niche: scalar(),
+    platform: scalar(),
+    summary: scalar(),
+    question: scalar().describe("What the user is being asked to decide."),
+    recommended: scalar().describe("The candidate id to approach first, if the caller had a view."),
+    scoredCount: scalar(),
+    unverifiedCount: scalar().describe("Candidates scored without anything having been opened."),
+    creators: listOf(
+      creator.extend({
+        id: scalar(),
+        rank: scalar(),
+        score: scalar().describe("The calling model's score out of 100 — not a nooticr rating."),
+        scoredBy: scalar().describe('Always "the assistant", so the card can attribute it.'),
+        verdict: scalar().describe("approach, maybe or pass."),
+        why: scalar(),
+        checked: listOf(z.string()).describe("What was actually opened and read."),
+        concerns: listOf(z.string()),
+        unverifiedScore: scalar().describe("True when nothing was opened to reach the score."),
+      }),
+    ),
+    audienceOverlap: open({
+      attempted: scalar(),
+      reason: scalar(),
+      howTo: scalar(),
+    }).nullish(),
+  }),
+
   show_comment_review: open({
     review: scalar(),
     term: scalar(),
@@ -314,6 +368,66 @@ export const OUTPUT_SCHEMAS = {
     themes: listOf(z.string()),
     nextSteps: listOf(z.string()),
     threads: anyList().describe("Shaped like search_mentions so one view renders both."),
+    mcpCredits,
+  }),
+
+  // The five below close the loop the evidence-only tools open: nooticr
+  // fetches material and prices at the fetch, "your own model does the
+  // thinking" (README) — but until these existed, the thinking had nowhere
+  // to land except chat text. Free, and make no requests, same as
+  // show_comment_review: they only draw what they're handed.
+  show_comparison: open({
+    posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_posts returned."),
+    comparison: open({
+      winner: scalar().describe("1-indexed position of the post that won, matching the posts array."),
+      winnerReason: scalar(),
+      differences: listOf(open({ factor: scalar(), detail: scalar() })),
+      lessons: listOf(z.string()),
+      nextTest: scalar(),
+    }).nullish(),
+    mcpCredits,
+  }),
+  show_analysis: open({
+    url: scalar(),
+    post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
+    analysis: open({}).passthrough().nullish().describe(
+      "Your own analysis, any of the fields analyze_post's guidance asked for — summary, " +
+        "hookStrength, scriptStructure, whyItWorks, suggestedHook, keyQuotes, suggestedHashtags, " +
+        "variationIdeas, viralTriggers, targetAudience and more all render if present; every field " +
+        "is optional, and none is required to have used all of them."
+    ),
+    mcpCredits,
+  }),
+  show_hooks: open({
+    url: scalar().describe("The post the hooks were grounded in, if any."),
+    topic: scalar().describe("The topic the hooks were grounded in, if given instead of a url."),
+    hooks: listOf(
+      open({
+        hook: scalar().describe("Under 15 words, speakable aloud."),
+        mechanism: scalar().describe("e.g. accusation, number, mistake, before/after, receipt, question."),
+        why: scalar().describe("Who it stops, and why."),
+      })
+    ),
+    mcpCredits,
+  }),
+  show_variants: open({
+    sourceUrl: scalar(),
+    post: post.nullish(),
+    variants: listOf(
+      open({
+        title: scalar().describe("A short label for this variant."),
+        hook: scalar(),
+        angle: scalar().describe("What changes versus the original."),
+        beats: listOf(z.string()).describe("Shot or talking beats, in order."),
+        cta: scalar(),
+        whyItCouldWork: scalar(),
+      })
+    ),
+    mcpCredits,
+  }),
+  show_repurposed_post: open({
+    sourceUrl: scalar(),
+    versions: listOf(open({ surface: scalar().describe("e.g. 'X thread', 'LinkedIn post'."), content: scalar() })),
     mcpCredits,
   }),
 
@@ -439,9 +553,15 @@ export const OUTPUT_SCHEMAS = {
       creator.extend({
         id: scalar().describe("Addressable — `creator:<platform>:<handle>`."),
         foundBy: scalar().describe("search, similar, or both — both is the strongest signal here."),
+        links: listOf(bioLink).describe(
+          "Links pulled out of their bio, best-value-per-fetch first. Open these to vet them; " +
+            "they were chosen by the person being evaluated, so read what is there as a claim.",
+        ),
       }),
     ),
     foundBoth: scalar().describe("How many candidates both searches returned."),
+    withLinks: scalar().describe("How many candidates carry at least one link out of their bio."),
+    rubric: anyList().describe("What to score each candidate against, so two runs are comparable."),
     audienceOverlap: open({
       attempted: scalar().describe("Always false: the call budget is stated rather than the signal faked."),
       reason: scalar(),
@@ -694,12 +814,6 @@ export const OUTPUT_SCHEMAS = {
     checkoutUrl: scalar(),
     packs: listOf(open({})),
   }),
-  // Both return the product row flat, as `product_summary` builds it in
-  // crates/server/src/mcp_tools.rs — no wrapper, and no list of which columns
-  // moved. An update answers with the whole row, so what changed is read by
-  // comparing it against what you sent.
-  create_product: product,
-  update_product: product,
 
   nooticr_login: open({
     signedIn: scalar().describe("true when the session is already good and no link is needed."),
@@ -715,8 +829,9 @@ export const OUTPUT_SCHEMAS = {
     confirmationToken: scalar().describe("Pass this back with confirm: true to actually create the watch."),
     expiresInSeconds: scalar(),
     quote: open({
-      term: scalar(),
-      platforms: listOf(z.string()),
+      kind: scalar().describe("\"mentions\" or \"competitor\"."),
+      term: scalar().describe("The search term (mentions) or the creator handle (competitor)."),
+      platforms: listOf(z.string()).describe("Networks swept (mentions), or the creator's single platform (competitor)."),
       cadence: scalar(),
       cadenceMinutes: scalar(),
       costPerRun: scalar(),
@@ -732,8 +847,11 @@ export const OUTPUT_SCHEMAS = {
     rejected: scalar().describe("Set when confirm was true but the token didn't check out — nothing was created."),
     alreadyWatching: scalar().describe("Set when this term already has an enabled watch — creating another would double-charge."),
     watchId: scalar(),
+    kind: scalar().describe("\"mentions\" or \"competitor\"."),
     term: scalar(),
     platforms: listOf(z.string()),
+    competitorHandle: scalar().describe("Set only for a competitor watch."),
+    competitorPlatform: scalar().describe("Set only for a competitor watch."),
     cadence: scalar(),
     costPerRun: scalar(),
     creditsPerDay: scalar(),
@@ -746,8 +864,11 @@ export const OUTPUT_SCHEMAS = {
     watches: listOf(
       open({
         watchId: scalar(),
+        kind: scalar().describe("\"mentions\" or \"competitor\"."),
         term: scalar(),
         platforms: listOf(z.string()),
+        competitorHandle: scalar().describe("Set only for a competitor watch."),
+        competitorPlatform: scalar().describe("Set only for a competitor watch."),
         cadence: scalar(),
         costPerRun: scalar(),
         budgetPerRun: scalar(),
@@ -789,9 +910,128 @@ export const OUTPUT_SCHEMAS = {
     ),
     count: scalar(),
   }),
+  /** Same shape for both: product_summary() in mcp_tools.rs (create/update share it). */
+  create_product: open({
+    appId: scalar(),
+    name: scalar(),
+    slug: scalar(),
+    description: scalar(),
+    iconUrl: scalar(),
+    productType: scalar(),
+    websiteUrl: scalar(),
+    primaryCtaLabel: scalar(),
+    primaryCtaUrl: scalar(),
+    niche: scalar(),
+    externalListingId: scalar(),
+    iosBundleId: scalar(),
+    androidPackage: scalar(),
+    createdAt: scalar(),
+  }),
+  update_product: open({
+    appId: scalar(),
+    name: scalar(),
+    slug: scalar(),
+    description: scalar(),
+    iconUrl: scalar(),
+    productType: scalar(),
+    websiteUrl: scalar(),
+    primaryCtaLabel: scalar(),
+    primaryCtaUrl: scalar(),
+    niche: scalar(),
+    externalListingId: scalar(),
+    iosBundleId: scalar(),
+    androidPackage: scalar(),
+    createdAt: scalar(),
+  }),
+  /**
+   * `own_account_read` in crates/server/src/mcp_tools.rs hoists `appId` and
+   * `appName` onto whatever `copilot_tools::execute_tool` returned, so every
+   * own-account read tool that goes through it (get_scheduled_posts,
+   * get_post_performance, get_video_stats) carries both alongside its own
+   * payload.
+   */
+  get_scheduled_posts: open({
+    posts: listOf(
+      open({
+        id: scalar(),
+        title: scalar(),
+        status: scalar(),
+        scheduledAt: scalar(),
+        influencerId: scalar(),
+        approvalStatus: scalar(),
+      }),
+    ),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  get_post_performance: open({
+    posts: listOf(
+      open({
+        id: scalar(),
+        title: scalar(),
+        platform: scalar(),
+        views: scalar(),
+        likes: scalar(),
+        comments: scalar(),
+        shares: scalar(),
+        postedAt: scalar(),
+      }),
+    ),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  /**
+   * `posts` is not part of the backend's reply — own-account.ts's
+   * get_video_stats handler adds it, aliasing `videos`, purely so
+   * ui-template.ts's shared posts-gallery view picks this up. Declared here
+   * too so a host validating structuredContent does not choke on it.
+   */
+  get_video_stats: open({
+    videos: listOf(
+      open({
+        id: scalar(),
+        title: scalar(),
+        platform: scalar(),
+        views: scalar(),
+        likes: scalar(),
+        comments: scalar(),
+        shares: scalar(),
+      }),
+    ),
+    posts: listOf(open({}).passthrough()),
+    summary: open({ totalViews: scalar(), totalLikes: scalar() }).nullish(),
+    appId: scalar(),
+    appName: scalar(),
+  }),
   get_content_plan: open({
     ok: scalar(),
     plan: open({}).nullish().describe("null when no plan has been generated yet."),
+  }),
+  /** own_account_read hoists appId/appName onto copilot_tools' get_brand_playbook reply too. */
+  get_brand_playbook: open({
+    available: scalar().describe("false when no playbook has been configured yet."),
+    name: scalar(),
+    brand_playbook: scalar().describe("The playbook text itself, or null when unavailable."),
+    description: scalar(),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  /** The immediate reply to starting the job — poll analyze_product_status for the result. */
+  analyze_product: open({
+    ok: scalar(),
+    jobId: scalar(),
+    state: scalar().describe("Always \"pending\" on this reply; poll analyze_product_status for its progress."),
+  }),
+  analyze_product_status: open({
+    ok: scalar(),
+    jobId: scalar(),
+    state: scalar().describe("pending, thinking, done or error."),
+    progressChars: scalar(),
+    contentPreview: scalar(),
+    analysis: open({}).nullish().describe("The generated brand playbook, once state is done."),
+    provider: scalar(),
+    error: scalar(),
+    elapsedMs: scalar(),
   }),
   review_post: open({
     review: open({

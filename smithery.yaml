@@ -1,0 +1,24 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      nooticrAccessToken:
+        type: string
+        description: >-
+          A nooticr access token (from `npx @nooticr/mcp login`, run once on
+          your own machine). Optional — omit it and the server prompts for
+          the same browser sign-in the first time a tool is called.
+      nooticrBaseUrl:
+        type: string
+        description: Override the nooticr API base URL. Leave unset for production.
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@nooticr/mcp'],
+      env: {
+        ...(config.nooticrAccessToken ? { NOOTICR_ACCESS_TOKEN: config.nooticrAccessToken } : {}),
+        ...(config.nooticrBaseUrl ? { NOOTICR_BASE_URL: config.nooticrBaseUrl } : {}),
+      },
+    })

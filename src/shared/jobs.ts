@@ -59,7 +59,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
-import { ownIt } from "./evidence.js";
+import { handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
 import {
   confirmSpend,
   costOf,
@@ -76,6 +76,8 @@ import {
   type Standing,
 } from "./performance.js";
 import { normaliseHandle, watchEntryId, watchlistOwner, type WatchStore } from "./watchlist.js";
+import { viewMeta } from "./view-meta.js";
+import { extractLinks, COLLAB_RUBRIC, vettingGuidance } from "./collab.js";
 
 type Row = Record<string, unknown>;
 
@@ -406,6 +408,7 @@ function audienceGuidance(a: {
 
 function competitorGuidance(a: {
   handle: string;
+  platform: string;
   metric: Metric;
   shipped: number;
   baseline: Distribution | null;
@@ -414,8 +417,12 @@ function competitorGuidance(a: {
   lastChecked?: string;
 }): string {
   const lines = [
-    `${a.shipped} recent post${a.shipped === 1 ? "" : "s"} by @${a.handle}, each scored against ` +
-      `that account's own median ${a.metric} rather than against anyone else's numbers.`,
+    // The network is named here, not just in the structured payload, because
+    // the platform argument defaults silently: without this line an answer
+    // about the wrong network is indistinguishable from the right one.
+    `${a.shipped} recent post${a.shipped === 1 ? "" : "s"} by @${a.handle} on ${a.platform}, each ` +
+      `scored against that account's own median ${a.metric} rather than against anyone else's ` +
+      "numbers.",
     "",
     a.baseline
       ? `Their median is ${Math.round(a.baseline.median).toLocaleString("en-US")} ${a.metric}, ` +
@@ -756,13 +763,6 @@ interface MakeClient {
     | NooticrClient;
 }
 
-/** A view for every one of these, at the URIs both hosts read. */
-const viewMeta = (tool: string) => ({
-  ui: { resourceUri: `ui://nooticr/${tool}` },
-  "ui/resourceUri": `ui://nooticr/${tool}`,
-  "openai/outputTemplate": `ui://nooticr/${tool}.html`,
-});
-
 const metricArg = z
   .enum(METRICS)
   .optional()
@@ -810,7 +810,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       inputSchema: z
         .object({
           username: z.string().describe("Your handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           limit: z
             .number()
             .int()
@@ -1027,8 +1027,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       outputSchema: OUTPUT_SCHEMAS.track_competitor,
       inputSchema: z
         .object({
-          username: z.string().describe("Creator handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          username: z
+            .string()
+            .describe(
+              "Creator handle, with or without @. This is a handle, not a brand name — if you " +
+                "only have a company name, find the handle first (search_creators on TikTok, " +
+                "Instagram or Xiaohongshu; a web search anywhere else).",
+            ),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           limit: z.number().int().optional().describe("Posts in the window (default 12, max 30). One fetch either way."),
           metric: metricArg,
           since: z
@@ -1047,6 +1053,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
     ) => {
       const client = await makeClient({ ...extra, arguments: args });
       const handle = normaliseHandle(args.username);
+      // Whether the network was chosen or merely fallen back to. An empty
+      // result means something different in each case, and the caller cannot
+      // tell them apart unless we say which happened.
+      const platformDefaulted = !args.platform;
       const platform = (args.platform || "tiktok").toLowerCase();
       const cap = clamp(args.limit, 12, 1, 30);
       const metric: Metric = args.metric ?? "views";
@@ -1060,6 +1070,25 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         feed = rowsOf(structured.posts);
       } catch (err) {
         return failed("track_competitor could not list the posts", err);
+      }
+
+      // Nothing came back. Previously this fell through to the scoring path and
+      // produced a baseline-less report about zero posts, which reads as "this
+      // competitor has been quiet" — a claim the tool has no evidence for.
+      if (feed.length === 0) {
+        return evidence(handleMissGuidance({ handle, platform, defaulted: platformDefaulted }), {
+          mode: "evidence",
+          tool: "track_competitor",
+          evidenceFrom: ["get_user_posts"],
+          username: handle,
+          platform,
+          platformDefaulted,
+          found: false,
+          posts: [],
+          unavailable: [],
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        });
       }
 
       const windowed = applySince(feed, args.since);
@@ -1114,6 +1143,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       return evidence(
         competitorGuidance({
           handle,
+          platform,
           metric,
           shipped: scoredPosts.length,
           baseline,
@@ -1157,9 +1187,17 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       title: "Who Should I Work With",
       _meta: viewMeta("who_should_i_work_with"),
       description:
-        "A collaboration shortlist for a niche. Searches creators by keyword and, when you name a " +
-        "creator who already fits, adds their lookalikes — then merges the two, marks which " +
-        "search found each one, and gives every candidate an id. It does NOT measure audience " +
+        "A shortlist of people to work with — collaborators, or anyone you are looking to hire or " +
+        "commission: designers, developers, photographers, editors. Searches creators by craft or " +
+        "keyword and, when you name someone who already fits, adds their lookalikes — then merges the " +
+        "two, marks which search found each one, and gives every candidate an id. Every candidate also " +
+        "carries the links pulled out of their bio, typed and sorted, so vetting is reading the work " +
+        "rather than re-reading a follower count; those links are never fetched here, because they come " +
+        "from a field the person being evaluated controls. " +
+        "Searches tiktok, instagram, xiaohongshu. " +
+        "Not searchable here: youtube, douyin, twitter, reddit, linkedin — if the ask names one of those, " +
+        "say it cannot be searched rather than quietly substituting a network that can. " +
+        "It does NOT measure audience " +
         "overlap: proving the same people comment under two accounts costs roughly nine credits " +
         "per candidate, so the result says so and tells you how to check a finalist yourself. " +
         "Consumes 2 nooticr credits, or 4 with a seed creator. Use to build a list to vet; " +
@@ -1170,7 +1208,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         .object({
           niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."),
           platform: z
-            .enum(["tiktok", "instagram", "xiaohongshu", "youtube", "douyin"])
+            // youtube 400s upstream and douyin returns user objects with every
+            // field null (nooticr-server's CREATOR_SEARCH_PLATFORMS says so next
+            // to the implementation). This tool runs the same keyword search, so
+            // advertising them here only spends a paid call to fail.
+            .enum(["tiktok", "instagram", "xiaohongshu"])
             .optional()
             .describe("Which platform (default tiktok). Lookalikes exist on tiktok and instagram only."),
           seed: z
@@ -1207,6 +1249,13 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           username,
           followers: numberOf(raw.followers ?? raw.followerCount),
           foundBy: source,
+          // What the host should go and read. Pulled out of the bio here
+          // rather than left for the model to spot inside prose — see
+          // collab.ts for why they are typed and why we do not open them.
+          links: extractLinks(
+            String(raw.signature ?? raw.bio ?? ""),
+            typeof raw.externalUrl === "string" ? raw.externalUrl : undefined,
+          ),
         });
       };
 
@@ -1243,11 +1292,21 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           numberOf(b.followers) - numberOf(a.followers),
       );
 
+      const withLinks = creators.filter(
+        (c) => Array.isArray(c.links) && (c.links as unknown[]).length > 0,
+      ).length;
+
       return evidence(
-        collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
+        [
+          collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
+          "",
+          vettingGuidance(creators.length, withLinks),
+        ].join("\n"),
         {
           mode: "evidence",
           tool: "who_should_i_work_with",
+          rubric: COLLAB_RUBRIC,
+          withLinks,
           evidenceFrom: args.seed ? ["search_creators", "get_similar_creators"] : ["search_creators"],
           niche: args.niche,
           platform,
@@ -1395,7 +1454,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           platform,
           metric,
           metricValue: value,
-          post: { ...post, postId: postIdOf(post, 0) },
+          // standing lives on the post too, not only as a sibling field —
+          // postCard's standingBadge reads p.standing, and nesting it here is
+          // what makes the ratio-vs-baseline verdict this tool computes
+          // actually show up on the card instead of only in the chat text.
+          post: { ...post, postId: postIdOf(post, 0), standing: where },
           baseline,
           standing: where,
           window,
@@ -1434,7 +1497,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       inputSchema: z
         .object({
           username: z.string().describe("Your handle, with or without @."),
-          platform: z.string().optional().describe("Platform (default tiktok)."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
           niche: z
             .string()
             .optional()

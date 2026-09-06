@@ -15,6 +15,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import { PROMPT_PLATFORMS } from "../src/shared/prompts.js";
+import { CADENCES } from "../src/shared/brand-watch.js";
+import { HANDOFF_DESTINATIONS } from "../src/shared/handoff.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
 
 async function connect() {
@@ -55,6 +57,24 @@ describe("platform", () => {
 
   it("ignores the case the caller typed", async () => {
     expect(await complete("niche_briefing", "platform", "RED")).toEqual(["reddit"]);
+  });
+
+  it("also completes on the new competitor-watching prompt", async () => {
+    expect(await complete("watch_a_competitor", "platform", "you")).toEqual(["youtube"]);
+  });
+});
+
+describe("brand-watch and handoff arguments", () => {
+  it("offers the cadences create_brand_watch actually accepts", async () => {
+    expect((await complete("monitor_my_brand", "cadence", "")).sort()).toEqual([...CADENCES].sort());
+    expect(await complete("monitor_my_brand", "cadence", "every_6")).toEqual(["every_6_hours"]);
+  });
+
+  it("offers the destinations prepare_handoff actually accepts", async () => {
+    expect((await complete("monitor_my_brand", "destination", "")).sort()).toEqual(
+      [...HANDOFF_DESTINATIONS].sort(),
+    );
+    expect(await complete("monitor_my_brand", "destination", "lin")).toEqual(["linear"]);
   });
 });
 

@@ -1304,7 +1304,41 @@ test.describe("brand monitoring", () => {
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
   });
 
-  test("hands the host the ids the tool issued, not the text it rendered", async ({ page }) => {
+  // analyze_comments's real inputSchema is {url, limit?}.strict() — one
+  // post, not an arbitrary list of texts/ids — so "Analyse these" resolves
+  // which post(s) the picks belong to and calls analyze_comments on that
+  // post's url when they all belong to one; a real host executing the old
+  // {comments, ids} shape got a schema rejection every time.
+  test("picking comments from one post calls analyze_comments on that post's url", async ({ page }) => {
+    await page.setContent(NOOTICR_UI_TEMPLATE);
+    await page.evaluate((d) => {
+      const w = window as unknown as Record<string, unknown>;
+      w.__called = [];
+      w.openai = {
+        toolOutput: d,
+        callTool: async (name: string, args: unknown) => {
+          (w.__called as unknown[]).push({ name, args });
+          return { content: [] };
+        },
+      };
+      window.dispatchEvent(new CustomEvent("openai:set_globals",
+        { detail: { globals: { toolOutput: d } } }));
+    }, MENTIONS);
+    await page.waitForTimeout(600);
+    // Both from the same first reddit thread.
+    await page.locator('.mention[data-mention-id="reddit:a:0"] .mention-pick').click();
+    await page.locator('.mention[data-mention-id="reddit:a:1"] .mention-pick').click();
+    await page.locator("#pickgo").click();
+    await page.waitForTimeout(400);
+    const called = await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
+    expect(called).toHaveLength(1);
+    expect(called[0].name).toBe("analyze_comments");
+    expect(called[0].args).toEqual({ url: "https://reddit.example/p/29", limit: 20 });
+    await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
+  });
+
+  test("picking comments from different posts refuses to send a broken call", async ({ page }) => {
     await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
@@ -1326,15 +1360,8 @@ test.describe("brand monitoring", () => {
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
-    // Addressable is the point: another tool has to be able to act on exactly
-    // these comments, which only the tool's own ids allow.
-    expect(called).toHaveLength(1);
-    expect(called[0].name).toBe("analyze_comments");
-    expect(called[0].args.ids).toEqual(["reddit:a:0", "tiktok:c:0"]);
-    expect(called[0].args.comments).toEqual([
-      "nike keeps missing, and nike knows it", "wearing nike today",
-    ]);
-    await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
+    expect(called, "should not have sent analyze_comments a call it will reject").toHaveLength(0);
+    await expect(page.locator("#pickgo")).toContainText(/one post/i);
   });
 
   test("pages from the offset the tool handed back, and only unfiltered", async ({ page }) => {
@@ -1425,10 +1452,10 @@ test.describe("brand monitoring", () => {
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { args: Record<string, unknown> }[]);
-    expect(called[0].args.ids).toHaveLength(7);
-    // And the text of a collapsed comment comes from the result, not the DOM.
-    expect(called[0].args.comments).toHaveLength(7);
-    expect((called[0].args.comments as string[])[6]).toBe("support nike 6");
+    // All seven are one post's comments (BURST is a single thread), so the
+    // real analyze_comments({url, limit?}.strict()) call succeeds — even
+    // though only 4 rows were ever rendered before "select all".
+    expect(called[0].args).toEqual({ url: "https://weibo.example/p/1", limit: 20 });
     // Clicking again clears all seven.
     await page.locator("[data-group-all]").click();
     await expect(page.locator("#pickbar")).toBeHidden();
@@ -1557,5 +1584,286 @@ test.describe("brand monitoring", () => {
       await page.locator("[data-group-all]").click();
       await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
     });
+  });
+});
+
+
+/**
+ * The vetting strip on a creator card.
+ *
+ * `show_collab_shortlist` is the only caller that sends a score, so the two
+ * things worth proving in a real browser are that the strip appears when it
+ * does and stays completely absent when it does not — a stray "Scored by the
+ * assistant" line under a plain `search_creators` result would be attributing
+ * a judgement nobody made.
+ */
+test.describe("collab shortlist", () => {
+  const SHORTLIST = {
+    shortlist: true,
+    niche: "cold plunge",
+    question: "Which of these should we approach?",
+    creators: [
+      {
+        id: "creator:tiktok:dana",
+        username: "dana",
+        nickname: "Dana Reyes",
+        platform: "tiktok",
+        followers: 48200,
+        signature: "recovery nerd · github.com/dana/plunge",
+        rank: 1,
+        score: 84,
+        scoredBy: "the assistant",
+        verdict: "approach",
+        why: "Ships an open-source timer for plunge protocols; the code is maintained.",
+        checked: ["github.com/dana/plunge", "their pinned video"],
+        concerns: ["Posts twice a month, so a campaign would move slowly."],
+        unverifiedScore: false,
+        links: [
+          { url: "https://github.com/dana/plunge", host: "github.com", kind: "code", readable: "Public repositories.", opaque: false },
+          { url: "https://bit.ly/3xYz", host: "bit.ly", kind: "shortener", readable: "Destination unknown.", opaque: true },
+        ],
+      },
+      {
+        id: "creator:tiktok:kai",
+        username: "kai",
+        nickname: "Kai",
+        platform: "tiktok",
+        followers: 910000,
+        rank: 2,
+        score: 41,
+        scoredBy: "the assistant",
+        verdict: "pass",
+        why: "Big, but the niche is general wellness rather than cold exposure.",
+        checked: [],
+        unverifiedScore: true,
+        links: [],
+      },
+    ],
+  };
+
+  // Read #app, not body: setContent leaves the template's own inline script in
+  // the document, so body.textContent contains the template's source strings
+  // and a negative assertion against it would always pass.
+  test("shows the score, and says whose it is", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    const body = await page.textContent("#app");
+    expect(body).toContain("84");
+    // The attribution has to travel with the number, everywhere it appears.
+    expect(body).toContain("Scored by the assistant");
+    expect(body).toContain("approach");
+  });
+
+  test("marks a score reached without opening anything", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    expect(await page.textContent("#app")).toContain("nothing was opened to reach this");
+  });
+
+  test("names what was actually read, and what gave the model pause", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    const body = await page.textContent("#app");
+    expect(body).toContain("github.com/dana/plunge");
+    expect(body).toContain("a campaign would move slowly");
+  });
+
+  test("shows a bio link as text rather than something to click", async ({ page }) => {
+    await renderTemplate(page, SHORTLIST);
+    const body = await page.textContent("#app");
+    expect(body).toContain("code · github.com");
+    // These hosts came out of a field a stranger controls and are not on the
+    // platform-link allowlist, so nothing here may be an anchor.
+    const hrefs = await page.$$eval("a[href]", (as) => as.map((a) => a.getAttribute("href")));
+    expect(hrefs.some((h) => (h ?? "").includes("github.com/dana"))).toBe(false);
+    expect(hrefs.some((h) => (h ?? "").includes("bit.ly"))).toBe(false);
+  });
+
+  test("leaves an ordinary creator list exactly as it was", async ({ page }) => {
+    await renderTemplate(page, {
+      creators: [
+        { username: "dana", nickname: "Dana Reyes", platform: "tiktok", followers: 48200, signature: "recovery nerd" },
+      ],
+    });
+    const body = await page.textContent("#app");
+    expect(body).toContain("Dana Reyes");
+    expect(body).toContain("recovery nerd");
+    // No score was sent, so nothing about scoring may appear.
+    expect(body).not.toContain("Scored by");
+    expect(body).not.toContain("/100");
+  });
+});
+
+/**
+ * track_competitor and why_did_this_underperform both compute a post's ratio
+ * to the creator's own baseline (see performance.ts's standing()) and attach
+ * it to the post as `standing`. Before standingBadge() existed, postCard
+ * rendered the same view/like/comment pills any gallery gets and the
+ * computed comparison never reached the screen — only the chat text carried
+ * it. These pin that the badge actually shows, with the right colour per
+ * verdict, and that ordinary posts with no `standing` are unaffected.
+ */
+test.describe("competitor standing badge", () => {
+  const post = (standing: Record<string, unknown> | undefined) => ({
+    platform: "tiktok",
+    caption: "Post",
+    creatorHandle: "fixture_user",
+    externalUrl: "https://www.tiktok.com/@fixture_user/video/1",
+    videoUrl: "https://mcp.nooticr.com/media/x.mp4",
+    contentType: "video",
+    views: 3000, likes: 300, comments: 30,
+    ...(standing ? { standing } : {}),
+  });
+
+  test("a gallery card shows the ratio and verdict when the post carries standing", async ({ page }) => {
+    await renderTemplate(page, {
+      posts: [
+        post({ value: 3000, median: 2000, ratio: 1.5, percentile: 67, verdict: "breakout" }),
+        post({ value: 2000, median: 2000, ratio: 1, percentile: 33, verdict: "typical" }),
+        post({ value: 1000, median: 2000, ratio: 0.5, percentile: 0, verdict: "below_baseline" }),
+      ],
+    });
+    const cards = page.locator(".card");
+    await expect(cards).toHaveCount(3);
+    await expect(cards.nth(0)).toContainText("1.5× median");
+    await expect(cards.nth(0)).toContainText("Breakout");
+    await expect(cards.nth(1)).toContainText("1× median");
+    await expect(cards.nth(1)).toContainText("Typical");
+    await expect(cards.nth(2)).toContainText("0.5× median");
+    await expect(cards.nth(2)).toContainText("Below baseline");
+  });
+
+  test("a single-post view (why_did_this_underperform) shows the badge too", async ({ page }) => {
+    await renderTemplate(page, {
+      post: post({ value: 100, median: 2000, ratio: 0.05, percentile: 0, verdict: "flop" }),
+    });
+    await expect(page.locator(".card")).toContainText("0.05× median");
+    await expect(page.locator(".card")).toContainText("Underperformed");
+  });
+
+  test("an ordinary post gallery with no standing shows no badge", async ({ page }) => {
+    await renderTemplate(page, { posts: [post(undefined)] });
+    await expect(page.locator(".card")).not.toContainText("median");
+  });
+
+  test("no_baseline (ratio null) is treated as no badge, not a crash", async ({ page }) => {
+    await renderTemplate(page, {
+      post: post({ value: 100, median: null, ratio: null, percentile: null, verdict: "no_baseline" }),
+    });
+    await expect(page.locator(".card")).not.toContainText("median");
+  });
+});
+
+/**
+ * A brand sweep returns the post each comment was left under, carrying
+ * thumbnailUrl, videoUrl and mediaItems — and the monitor view drew none of
+ * them. Monitoring TikTok looked exactly like monitoring a forum: a title, a
+ * link, and comments over a blank header, with the video the conversation was
+ * about nowhere on screen.
+ */
+test.describe("brand sweep shows the post, not just its comments", () => {
+  const thread = (post: Record<string, unknown>, n = 1) => ({
+    post,
+    postIsAboutTerm: true,
+    mentionCount: n,
+    mentions: Array.from({ length: n }, (_, i) => ({
+      id: "m" + i,
+      text: "nooticr is the one I kept",
+      username: "someone" + i,
+      likes: 3,
+      replies: 0,
+      postedAt: "2026-09-01T10:00:00Z",
+      hits: 1,
+    })),
+  });
+  const sweep = (threads: unknown[]) => ({
+    term: "nooticr",
+    totalMentions: threads.length,
+    totalThreads: threads.length,
+    threads,
+    byPlatform: {},
+    unavailable: [],
+    hasMore: false,
+  });
+  // Inline so the assertion never depends on a network fetch.
+  const PIXEL =
+    "data:image/gif;base64,R0lGODlhAQABAPAAAP8AAAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+
+  test("a video post gets a poster with a play affordance", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "tiktok",
+          title: "Six apps I actually kept",
+          externalUrl: "https://tiktok.com/@a/video/1",
+          contentType: "video",
+          thumbnailUrl: PIXEL,
+          videoUrl: "https://example.com/v.mp4",
+        }),
+      ]),
+    );
+    const poster = page.locator(".mgroup-media");
+    await expect(poster).toHaveCount(1);
+    await expect(poster).toHaveClass(/is-playable/);
+    await expect(page.locator(".mgroup-media-img")).toHaveCount(1);
+    // Full-bleed band rather than a collapsed inline button — the bug the
+    // first attempt shipped, because the rule lived in the generated CSS
+    // blob that `npm run build` regenerates rather than in input.css.
+    const box = await poster.boundingBox();
+    expect(box!.height).toBeGreaterThan(100);
+  });
+
+  test("clicking the poster swaps in the real player", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "tiktok",
+          title: "Six apps I actually kept",
+          externalUrl: "https://tiktok.com/@a/video/1",
+          contentType: "video",
+          thumbnailUrl: PIXEL,
+          videoUrl: "https://example.com/v.mp4",
+        }),
+      ]),
+    );
+    await page.locator(".mgroup-media").click();
+    await expect(page.locator(".mgroup-stage")).toHaveCount(1);
+    await expect(page.locator(".mgroup-stage video")).toHaveCount(1);
+    // The comments the sweep is for must survive the swap.
+    await expect(page.locator(".mention")).toHaveCount(1);
+  });
+
+  test("a still image post shows the poster without offering to play it", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "instagram",
+          title: "A photo",
+          externalUrl: "https://instagram.com/p/1",
+          contentType: "image",
+          thumbnailUrl: PIXEL,
+        }),
+      ]),
+    );
+    await expect(page.locator(".mgroup-media")).toHaveCount(1);
+    await expect(page.locator(".mgroup-media")).not.toHaveClass(/is-playable/);
+    await expect(page.locator(".mgroup-media-play")).toHaveCount(0);
+  });
+
+  test("a text post draws no media rather than an empty band", async ({ page }) => {
+    await renderTemplate(
+      page,
+      sweep([
+        thread({
+          platform: "reddit",
+          title: "What are you using for monitoring?",
+          externalUrl: "https://reddit.com/r/x/1",
+          contentType: "post",
+        }),
+      ]),
+    );
+    await expect(page.locator(".mgroup")).toHaveCount(1);
+    await expect(page.locator(".mgroup-media")).toHaveCount(0);
+    await expect(page.locator(".mention")).toHaveCount(1);
   });
 });

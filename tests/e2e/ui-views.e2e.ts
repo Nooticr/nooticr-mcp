@@ -223,7 +223,8 @@ test("5b update_product: the row as it now stands", async ({ page }) => {
   expect(await page.locator(".step-v").nth(keys.indexOf("Niche")).textContent())
     .toContain("lighting for solo shooters");
   expect(await page.locator(".own-tick").count()).toBe(0);
-  expect(await page.locator(".ai-note").textContent()).toContain("omitted");
+  // Two notes now: the row's own, and the one explaining analyze_product's job.
+  expect(await page.locator(".ai-note").first().textContent()).toContain("omitted");
   expect(errs).toEqual([]);
 });
 

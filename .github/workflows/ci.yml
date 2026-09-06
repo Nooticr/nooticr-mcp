@@ -50,8 +50,9 @@ jobs:
         working-directory: cloudflare
         run: npm ci --no-audit --no-fund
 
-      # Four files carry the version and the Worker reports the one in src/,
-      # so a hand bump that misses it ships a server that misreports itself.
+      # Five files carry the version and the Worker reports the one in src/,
+      # so a hand bump that misses one ships a server that misreports itself
+      # or, for server.json, advertises a stale version to the MCP registry.
       - name: The version is the same in every file that carries it
         run: |
           set -euo pipefail
@@ -62,14 +63,19 @@ jobs:
             const m = fs.readFileSync("src/shared/tools.ts", "utf8")
               .match(/export const MCP_SERVER_VERSION = "([^"]+)";/);
             const tools = m && m[1];
-            const bad = [["`.claude-plugin/plugin.json`", plugin], ["`src/shared/tools.ts`", tools]]
-              .filter(([, v]) => v !== pkg);
+            const server = JSON.parse(fs.readFileSync("server.json", "utf8"));
+            const bad = [
+              ["`.claude-plugin/plugin.json`", plugin],
+              ["`src/shared/tools.ts`", tools],
+              ["`server.json`", server.version],
+              ["`server.json` packages[0]", server.packages?.[0]?.version],
+            ].filter(([, v]) => v !== pkg);
             if (bad.length) {
               console.error(`::error title=Version drift::package.json is ${pkg}; ` +
                 bad.map(([f, v]) => `${f} is ${v}`).join("; "));
               process.exit(1);
             }
-            console.log(`version ${pkg} agrees across package.json, plugin.json and tools.ts`);
+            console.log(`version ${pkg} agrees across package.json, plugin.json, tools.ts and server.json`);
           '
 
       - name: Typecheck
@@ -89,6 +95,17 @@ jobs:
       - name: Build the npm package
         run: npm run build
 
+      # Spawns the real built dist/index.js over stdio and round-trips real
+      # tools/list + tools/call requests against scripts/fixture-server.mjs,
+      # a pure-Node stand-in for nooticr-server's /auth/dev-login, /graphql
+      # and /mcp endpoints. Needs no Rust/Postgres toolchain and no secret,
+      # so it runs here on every push — see docs/testing/agentic-e2e-testing.md
+      # for what it does and doesn't prove (this repo's own MCP-protocol
+      # wiring, not nooticr-server's actual behavior; that needs the real
+      # backend — see nooticr-server/.github/workflows/agentic-e2e.yml).
+      - name: Agentic E2E smoke (fixture backend)
+        run: npm run test:e2e-smoke:fixture
+
       # The host contract, checked with the official inspector rather than a
       # bespoke client. Every UI bug this server has shipped was a metadata or
       # mime mistake that this step would have caught: a resourceUri pointing
@@ -101,112 +118,13 @@ jobs:
       # covered: its interactive UI is A2UI, a declarative JSON payload rather
       # than HTML, and Gemini 3 has no remote MCP yet — there is nothing here
       # for it to read.
+      # The check itself lives in scripts/host-contract.{sh,py} so it can be
+      # run before pushing rather than only here. It used to be inlined in this
+      # file, which meant the only way to run it locally was to hand-transcribe
+      # the YAML — done three times in one afternoon, three slightly different
+      # ways, which is exactly what this check exists to prevent.
       - name: Host contract (MCP Inspector CLI)
-        run: |
-          set -euo pipefail
-          INSPECT="npx -y @modelcontextprotocol/inspector@2 --cli node dist/index.js"
-
-          echo "::group::tools/list --app-info"
-          $INSPECT --method tools/list --app-info | tee app-info.ndjson
-          echo "::endgroup::"
-
-          echo "::group::tools/list (full descriptors)"
-          $INSPECT --method tools/list > tools.json
-          echo "::endgroup::"
-
-          echo "::group::resources/list"
-          $INSPECT --method resources/list > resources.json
-          echo "::endgroup::"
-
-          # Portability problems are reported by the inspector itself.
-          $INSPECT --method tools/list --strict > /dev/null
-
-          # Each family must read back on the mime its host requires.
-          $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts > claude-res.json
-          $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts.html > gpt-res.json
-
-          python3 - <<'CHECK'
-          import json, sys
-
-          fail = []
-          # Tools that legitimately have no view. Anything else losing its app
-          # is a regression, not a choice.
-          # Tools with nothing to draw. watch_creator and unwatch_creator change
-          # stored state and return a list; the catch-up that reads that state
-          # does have a view, because it returns posts.
-          #
-          # Tier 1 (own-account intelligence, brand monitoring, connection
-          # state): same reasoning. create_brand_watch/stop_brand_watch return
-          # a quote or a confirmation, not a list of anything; list_brand_watches
-          # and list_own_apps are metadata lists, the same shape watch_creator's
-          # own `entries` list already sets precedent for; connect_social_account
-          # returns a link + message, the same shape as nooticr_login;
-          # list_social_connections is a metadata list of connections. None of
-          # the five return the rich, card-shaped content get_content_plan and
-          # generate_content_plan share (posts with hooks/scripts), which is why
-          # those two do have a view.
-          NO_APP = {
-              "nooticr_login", "watch_creator", "unwatch_creator",
-              "create_brand_watch", "stop_brand_watch", "list_brand_watches",
-              "list_own_apps", "list_social_connections", "connect_social_account",
-          }
-          MCP_APPS_MIME = "text/html;profile=mcp-app"
-          APPS_SDK_MIME = "text/html+skybridge"
-
-          rows = [json.loads(l) for l in open("app-info.ndjson") if l.strip()]
-          if not rows:
-              fail.append("app-info returned nothing at all")
-          for r in rows:
-              name = r.get("toolName")
-              if name in NO_APP:
-                  if r.get("hasApp"):
-                      fail.append(f"{name} gained a view unexpectedly")
-                  continue
-              if not r.get("hasApp"):
-                  fail.append(f"{name} has no app UI")
-                  continue
-              if not r.get("resourceUri"):
-                  fail.append(f"{name} declares an app with no resourceUri")
-              if r.get("resourceMimeType") != MCP_APPS_MIME:
-                  fail.append(f"{name} serves {r.get('resourceMimeType')}, not {MCP_APPS_MIME}")
-
-          # The ChatGPT half: every view must also point at its skybridge twin.
-          tools = json.load(open("tools.json")).get("tools", [])
-          for t in tools:
-              meta = t.get("_meta") or {}
-              claude = meta.get("ui/resourceUri")
-              if t["name"] in NO_APP or not claude:
-                  continue
-              want = f"{claude}.html"
-              if meta.get("openai/outputTemplate") != want:
-                  fail.append(
-                      f"{t['name']} outputTemplate is {meta.get('openai/outputTemplate')!r}, want {want!r}")
-
-          res = json.load(open("resources.json")).get("resources", [])
-          uris = {r["uri"] for r in res}
-          mimes = {r.get("mimeType") for r in res}
-          for want in (MCP_APPS_MIME, APPS_SDK_MIME):
-              if want not in mimes:
-                  fail.append(f"resources/list advertises no {want}")
-          # Connectors created before per-tool URIs still ask for these.
-          for legacy in ("ui://nooticr/view", "ui://nooticr/view.html"):
-              if legacy not in uris:
-                  fail.append(f"{legacy} is not listed; stale connectors will 404")
-
-          for path, want in (("claude-res.json", MCP_APPS_MIME), ("gpt-res.json", APPS_SDK_MIME)):
-              got = json.load(open(path))["contents"][0]
-              if got.get("mimeType") != want:
-                  fail.append(f"{path} came back {got.get('mimeType')}, want {want}")
-              if "<!DOCTYPE html>" not in str(got.get("text", "")):
-                  fail.append(f"{path} carries no template")
-
-          if fail:
-              print("::error title=Host contract broken::" + "; ".join(fail))
-              for f in fail:
-                  print(f"  - {f}")
-              sys.exit(1)
-          print(f"OK: {len(rows)} tools, {len(res)} resources, both host contracts intact")
-          CHECK
+        run: npm run contract:host
 
       # Per-host verdicts from a third-party host catalog, which is the one
       # thing the official inspector does not give: it validates the MCP Apps
@@ -409,12 +327,20 @@ jobs:
               `export const MCP_SERVER_VERSION = \"${v}\";`);
             if (next === src) throw new Error("MCP_SERVER_VERSION not found in " + t);
             fs.writeFileSync(t, next);
+            // The MCP registry entry advertises this version to every client
+            // that resolves com.nooticr/mcp — a stale one here just misreports
+            // to the registry, silently, since nothing else reads this file.
+            const s = "server.json";
+            const server = JSON.parse(fs.readFileSync(s, "utf8"));
+            server.version = v;
+            if (server.packages?.[0]) server.packages[0].version = v;
+            fs.writeFileSync(s, JSON.stringify(server, null, 2) + "\n");
           '
           echo "src changed under a version already on npm — bumped $VERSION -> $NEXT."
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json .claude-plugin/plugin.json src/shared/tools.ts
+          git add package.json package-lock.json .claude-plugin/plugin.json src/shared/tools.ts server.json
           # [skip ci]: this push would otherwise start a run that cancels this
           # one mid-publish — the concurrency group cancels in progress.
           git commit -m "release: $NEXT [skip ci]"

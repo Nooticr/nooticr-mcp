@@ -11,3 +11,8 @@ cloudflare/.dev.vars
 # Playwright
 test-results/
 playwright-report/
+
+# Agentic E2E evals (scripts/run-agentic-evals.sh) — generated per run,
+# carry a live token and API key, never committed.
+.mcpjam/environment.generated.json
+.mcpjam/llms.json

@@ -1,0 +1,14 @@
+{
+  "_comment": "Template for scripts/run-agentic-evals.sh — do not run mcpjam against this file directly. NOOTICR_BASE_URL/NOOTICR_ACCESS_TOKEN are substituted at run time and written to environment.generated.json (gitignored), pointing at a throwaway nooticr-server booted in test mode (ALLOW_DEV_LOGIN=1 NOOTICR_E2E_MODE=1). Never a real account or a real deployment.",
+  "servers": {
+    "nooticr": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "NOOTICR_BASE_URL": "__NOOTICR_BASE_URL__",
+        "NOOTICR_ACCESS_TOKEN": "__NOOTICR_ACCESS_TOKEN__",
+        "NOOTICR_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
