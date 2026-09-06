@@ -3,7 +3,7 @@
   "name": "com.nooticr/mcp",
   "title": "Nooticr",
   "description": "Social intelligence for 10 networks: read posts and trends, monitor brand mentions, then create.",
-  "version": "1.26.20",
+  "version": "1.26.21",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
@@ -35,7 +35,7 @@
     {
       "registryType": "npm",
       "identifier": "@nooticr/mcp",
-      "version": "1.26.20",
+      "version": "1.26.21",
       "transport": {
         "type": "stdio"
       }
