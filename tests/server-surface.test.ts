@@ -93,6 +93,7 @@ describe("tool annotations", () => {
     const closed = tools.filter((t) => t.annotations?.openWorldHint === false).map((t) => t.name);
     // Only the account tools stay inside nooticr; everything else hits a platform.
     // The watchlist tools that only touch stored state are closed-world too.
+    // Sorted, because the actual is.
     expect(closed.sort()).toEqual([
       // Own-account tools: every one of these reads or generates for the
       // caller's own product, never a third party's — nothing here reaches
@@ -101,11 +102,7 @@ describe("tool annotations", () => {
       // outside nooticr, so it is deliberately absent from this list.
       "analyze_product_status",
       "check_nooticr_credits",
-      // Mints a connect link (nooticr's own oauth_start), never a third-party
-      // read or write.
       "connect_social_account",
-      // All three touch nooticr's own stored watch state; the sweep a watch
-      // schedules runs later, server-side, never inside the call itself.
       "create_brand_watch",
       "create_product",
       "draft_post",
@@ -119,7 +116,6 @@ describe("tool annotations", () => {
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
-      // Reads nooticr's own connection records, not a third-party network.
       "list_social_connections",
       "nooticr_login",
       // Formats what the caller classified into text for a tracker on another

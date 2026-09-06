@@ -10,7 +10,12 @@
  *   npx playwright test tests/e2e/ui-template.e2e.ts
  */
 import { test, expect, type Page } from "@playwright/test";
-import { NOOTICR_UI_TEMPLATE } from "../../src/shared/ui-template.js";
+import { uiTemplateFor } from "../../src/shared/tools.js";
+
+// The substituted view, not the raw template: the raw one still carries its
+// __NOOTICR_PLANS__ placeholder, so a test on it would pass with no prices
+// and no ledger while the real view was broken.
+const NOOTICR_UI_TEMPLATE = uiTemplateFor();
 
 // The flat shape postCard() actually reads: a videoUrl is what promotes a
 // card to .card-media and builds the player. Nesting it under video.url (the

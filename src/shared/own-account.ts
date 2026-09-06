@@ -106,6 +106,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
   server.registerTool(
     "create_product",
     {
+      _meta: viewMeta("create_product"),
       title: "Create Product",
       description:
         "Create a new product (\"app\") in your own workspace — the row every other own-account " +
@@ -164,6 +165,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
   server.registerTool(
     "update_product",
     {
+      _meta: viewMeta("update_product"),
       title: "Update Product",
       description:
         "Patch your own product's fields — omitted arguments leave their column unchanged. Takes " +

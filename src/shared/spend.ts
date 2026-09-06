@@ -45,6 +45,19 @@ export const SEARCH_PLATFORMS = [
   "weibo",
 ] as const;
 
+/**
+ * The only two networks `search_spoken_mentions` can reach.
+ *
+ * Both publish a caption track their post detail already carries; everywhere
+ * else the words would have to be inferred from the audio, which is a
+ * different tool at a different price. Named here rather than inline because
+ * three places have to agree on it — the tool's own enum, the filter it puts
+ * every requested platform through, and the wait that prices the sweep. A
+ * platform the filter drops but the price counts is a credit quoted for a
+ * call that never happens.
+ */
+export const SPOKEN_PLATFORMS = ["tiktok", "youtube"] as const;
+
 /** Two per network, except the one that costs an order of magnitude more upstream. */
 export const CREDITS_PER_NETWORK = 2;
 export const XIAOHONGSHU_CREDITS = 5;

@@ -248,18 +248,6 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({}).strict(),
  },
  {
- name: "create_product",
- title: "Create Product",
- description: "Create a new product (\"app\") in your own workspace — the row every other own-account tool needs before it has anything to work with. Takes no workspace argument: it always creates in the calling session's own workspace. Subject to your plan's product limit. Does not generate a brand playbook by itself; call analyze_product afterwards for that. name and slug are required; description, website_url, niche, product_type and the store-listing fields are optional and snake_case. Free — no AI call, just a row.",
- inputSchema: z.object({ name: z.string().describe("Product name."), slug: z.string().describe("URL-safe slug, unique within your workspace."), description: z.string().optional(), website_url: z.string().optional().describe("The product's own site; analyze_product later fetches an excerpt of it."), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
- },
- {
- name: "update_product",
- title: "Update Product",
- description: "Patch your own product's fields — omitted arguments leave their column unchanged. Takes appId (optional with a single-app workspace); every other field is snake_case, same as create_product. Free — no AI call, just a row.",
- inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), name: z.string().optional(), slug: z.string().optional(), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
- },
- {
  name: "get_brand_playbook",
  title: "Get Brand Playbook",
  description: "Your own product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by analyze_product. Read-only. Returns available: false when none exists yet. Takes appId (optional with a single-app workspace). No cost to call.",
@@ -384,6 +372,18 @@ export const TOOL_DEFINITIONS = [
  title: "Search Spoken Mentions",
  description: "Brand mentions people SAY but never type. search_mentions reads captions, post bodies and comments — text — so a video that names a brand only out loud is invisible to it. This reads the words actually spoken, from the platform's own caption track, and searches them for a term. Narrows to candidate posts first (a niche sweep, named creator handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling you set, and returns the matched line with surrounding context. TikTok and YouTube only — the only two networks whose posts carry a caption track this cheaply — and even there a video with no captions is invisible to this tool; the result says how many candidates were found, transcribed and matched. Use when a term might be spoken on camera but not written anywhere. Consumes 2 nooticr credits per platform a niche is searched on, 2 per creator handle checked, and 1 per transcript actually fetched, capped by maxTranscripts.",
  inputSchema: z.object({ term: z.string().describe("Brand, product or person to listen for, e.g. 'nooticr'."), platforms: z.array(z.enum(["tiktok", "youtube"])).optional().describe("Which networks to check (default: both)."), niche: z.string().optional().describe("Niche or keyword for a candidate sweep. Provide this, usernames, useWatchlist, or any combination."), usernames: z.array(z.string()).optional().describe("Specific creator handles to check."), useWatchlist: z.boolean().optional().describe("Also check your watchlisted creators on tiktok or youtube."), candidateLimit: z.number().int().optional().describe("Posts pulled per narrowing call (default 15, max 25)."), maxTranscripts: z.number().int().optional().describe("Hard ceiling on transcripts fetched (default 8, max 20).") }).strict(),
+ },
+ {
+ name: "create_product",
+ title: "Create Product",
+ description: "Create a product in your own workspace \u2014 the row every other own-account tool needs before it has anything to work with; a fresh workspace has none. Takes no workspace argument: it always creates in the workspace of the session calling it, never one you could name. name and slug are required; every other field is optional and all of them are snake_case, read by exact key \u2014 a camelCase websiteUrl is not an alias, it is a field that lands nowhere. Subject to your plan's product limit; the error names the limit if you hit it. Does not generate a brand playbook. Free \u2014 no AI call, just a row.",
+ inputSchema: z.object({ name: z.string().describe("Product name."), slug: z.string().describe("URL-safe slug, unique within your workspace."), description: z.string().optional(), website_url: z.string().optional().describe("The product's own site; analyze_product later fetches an excerpt of it."), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
+ },
+ {
+ name: "update_product",
+ title: "Update Product",
+ description: "Patch your own product's fields \u2014 omitted arguments leave their column unchanged, so this cannot blank a field by not mentioning it. Takes appId, optional when your workspace has exactly one product; every other field is snake_case, the same names create_product takes and read the same way. The result lists which fields were actually written, so a name you spelled wrong shows up as a field that did not change rather than as a silent no-op. Free \u2014 no AI call, just a row.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-product workspace."), name: z.string().optional(), slug: z.string().optional(), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
  },
 ] as const;
 

@@ -662,6 +662,11 @@ export const OUTPUT_SCHEMAS = {
             text: scalar().describe("The spoken line, with surrounding context to judge tone from."),
             position: scalar().describe("Character offset of the match inside the full transcript."),
             occurrence: scalar().describe("Which match this is, 1-based. Only the first few carry an excerpt."),
+            startMs: scalar().describe(
+              "When it was said, from the caption track's own cue timings. Absent, never " +
+                "estimated, when the platform published no timings.",
+            ),
+            timecode: scalar().describe('The same instant as "4:12".'),
           }),
         ),
         wordCount: scalar(),
@@ -677,6 +682,20 @@ export const OUTPUT_SCHEMAS = {
 
   get_post_transcript: open({
     available: scalar().describe("false when the post carries no caption track."),
+    // Deliberately no text: it is already in `transcript`, and a caption
+    // track is long enough that sending it twice would be a real cost in a
+    // payload that ends up in a model's context. `offset` is what makes that
+    // safe — it indexes into the transcript that is there.
+    cues: listOf(
+      open({
+        startMs: scalar().describe("When this line starts, in milliseconds."),
+        endMs: scalar(),
+        offset: scalar().describe(
+          "Where this line's words begin in `transcript`, in UTF-16 code units — so a match " +
+            "found at a string index maps back to the moment it was said.",
+        ),
+      }),
+    ).describe("Cue timings, where the platform published a timed track. Absent for speech-to-text."),
     transcript: scalar(),
     wordCount: scalar(),
     language: scalar(),
@@ -795,6 +814,7 @@ export const OUTPUT_SCHEMAS = {
     checkoutUrl: scalar(),
     packs: listOf(open({})),
   }),
+
   nooticr_login: open({
     signedIn: scalar().describe("true when the session is already good and no link is needed."),
     loginUrl: scalar().describe("Only present when a sign-in is actually required."),

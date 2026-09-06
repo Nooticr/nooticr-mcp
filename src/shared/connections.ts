@@ -19,6 +19,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+// Both of these shipped view-less. The grant a connection actually carries —
+// read, publish, manage comments, each yes/no/unknown — is a table, and a
+// table read out as prose is the thing a view is for; the third value
+// especially, since "unknown" means nobody recorded the scope and must never
+// be drawn as the refusal it is not.
+import { viewMeta } from "./view-meta.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -46,6 +52,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
   server.registerTool(
     "list_social_connections",
     {
+      _meta: viewMeta("list_social_connections"),
       title: "List Social Connections",
       description:
         "List the social accounts your workspace has connected and what each connection is " +
@@ -71,6 +78,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
   server.registerTool(
     "connect_social_account",
     {
+      _meta: viewMeta("connect_social_account"),
       title: "Connect Social Account",
       description:
         "Get a link to open so you can connect one social account. Takes the platform, and " +
