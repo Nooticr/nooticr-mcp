@@ -56,6 +56,11 @@ const NOT_READ_ONLY = [
   "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
+  // Row writes in the caller's own workspace. Free is not the same as
+  // read-only, and a host that auto-approves on readOnlyHint would let these
+  // create and patch products unattended.
+  "create_product",
+  "update_product",
 ];
 
 describe("tool annotations", () => {
@@ -63,7 +68,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(49);
+    expect(tools).toHaveLength(51);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -86,17 +91,12 @@ describe("tool annotations", () => {
     const closed = tools.filter((t) => t.annotations?.openWorldHint === false).map((t) => t.name);
     // Only the account tools stay inside nooticr; everything else hits a platform.
     // The watchlist tools that only touch stored state are closed-world too.
+    // Sorted, because the actual is.
     expect(closed.sort()).toEqual([
       "check_nooticr_credits",
-      // Mints a connect link (nooticr's own oauth_start), never a third-party
-      // read or write.
       "connect_social_account",
-      // All three touch nooticr's own stored watch state; the sweep a watch
-      // schedules runs later, server-side, never inside the call itself.
       "create_brand_watch",
-      // Own-account tools: every one of these reads or generates for the
-      // caller's own product, never a third party's — nothing here reaches
-      // outside nooticr.
+      "create_product",
       "draft_post",
       "generate_captions",
       "generate_content_plan",
@@ -104,17 +104,14 @@ describe("tool annotations", () => {
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
-      // Reads nooticr's own connection records, not a third-party network.
       "list_social_connections",
       "nooticr_login",
       "review_post",
-      // Renders drafts the caller already wrote; fetches nothing, and cannot
-      // send them either — no connection carries comment-write permission.
       "show_audience_replies",
-      // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
       "stop_brand_watch",
       "unwatch_creator",
+      "update_product",
       "watch_creator",
     ]);
   });

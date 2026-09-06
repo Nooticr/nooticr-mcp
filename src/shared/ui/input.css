@@ -138,27 +138,158 @@
     font-weight: 600;
     color: var(--muted);
   }
-  .load-head .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--brand);
-    animation: pulse 1.2s ease-in-out infinite;
-    flex-shrink: 0;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 0.35; }
-    50% { opacity: 1; }
+  /* The price is already in the tool description; repeating it on the face of
+     the wait is what the quiet skeleton spends its saved attention on. */
+  .load-price {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--brand);
+    white-space: nowrap;
   }
 
+  /* ─── The mark, waiting ───
+     The idle illustration carries the load rather than being swapped out for
+     a spinner: the same SVG gains two animations when a call starts, so there
+     is no cut between the placeholder and the wait. Geometry is lifted off
+     the logo path rather than redrawn — the outer ring's r100/r69.5 and the
+     iris's r48.5/r18 are both a 30.5 stroke, which is why the irises can be
+     their own elements and scan while the shell stays put. */
+  .mk {
+    display: block;
+    color: var(--fg);
+    flex-shrink: 0;
+  }
+  .mk .iris {
+    animation: mkScan 3.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  }
+  .mk .lid {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mkBlink 5.4s ease-in-out infinite;
+  }
+  @keyframes mkScan {
+    0%   { transform: translate(0, 0); }
+    18%  { transform: translate(-15px, 7px); }
+    34%  { transform: translate(11px, -5px); }
+    52%  { transform: translate(-8px, 12px); }
+    70%  { transform: translate(14px, 3px); }
+    86%  { transform: translate(-4px, -6px); }
+    100% { transform: translate(0, 0); }
+  }
+  @keyframes mkBlink {
+    0%, 88%, 100% { transform: scaleY(1); }
+    93% { transform: scaleY(0.08); }
+  }
+
+  /* ─── The facts already in hand ───
+     Turn 2c's "no skeleton, the real card fills in", as much of it as is
+     honest: the server streams nothing, but a call is never made with nothing
+     known — a url names its platform, a term is the word being looked for. */
+  .load-known {
+    @apply flex flex-wrap gap-2;
+    margin-bottom: 11px;
+  }
+  .load-fact {
+    @apply inline-flex items-center gap-2 rounded-full;
+    padding: 4px 11px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .load-fact-mark {
+    @apply inline-flex;
+    color: var(--brand);
+  }
+  .load-fact-mark svg { width: 13px; height: 13px; fill: currentColor; }
+
+  /* ─── The fan-out, itemised ───
+     Every row is a call the tool will make and what it costs. No row carries
+     a done state, and that is not an omission: MCP Apps gives a view no
+     progress notification, so a tick here would assert a completion the
+     server never reported. */
+  .led .card-body { padding: 4px 14px 12px; }
+  .led-row {
+    @apply flex items-start gap-3;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .led-row:last-of-type { border-bottom: none; }
+  .led-body { flex: 1; min-width: 0; }
+  .led-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .led-detail {
+    margin-top: 1px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .led-cost {
+    @apply inline-flex items-center rounded-full;
+    flex: none;
+    padding: 2px 9px;
+    background: var(--tag);
+    color: var(--fg);
+    font-size: 11.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .led-mark {
+    @apply inline-flex items-center justify-center;
+    flex: none;
+    width: 16px;
+    margin-top: 1px;
+    color: var(--brand);
+  }
+  .led-mark svg { width: 13px; height: 13px; fill: currentColor; }
+  /* A queued line, not a finished one — a hollow ring rather than a tick. */
+  .led-dot {
+    flex: none;
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+  }
+  .led-foot {
+    margin-top: 10px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* The long fan-outs get the mark centred over the ledger instead of inline:
+     at 21 credits and nine networks the wait is the screen, not a caption. */
+  .load-centre {
+    @apply flex flex-col items-center text-center;
+    padding: 30px 0 22px;
+  }
+  .load-centre .load-what {
+    margin-top: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .load-centre .load-sub {
+    margin-top: 5px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .load-centre .load-bar {
+    width: 210px;
+    margin: 16px 0 0;
+  }
+
+  /* Holds still. A three-card strip used to run eleven independent
+     animations — every block at 1.5s, the head dot at 1.2s, the bar at
+     1.35s — which read as noise rather than as progress. The bar sweeps and
+     the mark scans; nothing else moves. */
   .sk {
     @apply relative overflow-hidden rounded-md;
     background: var(--tag);
-    animation: skpulse 1.5s ease-in-out infinite;
-  }
-  @keyframes skpulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.55; }
   }
   .sk-media {
     @apply w-full rounded-none;
@@ -204,7 +335,7 @@
     padding: 2px 0 8px;
   }
   @media (prefers-reduced-motion: reduce) {
-    .load-bar::after, .sk, .load-head .dot { animation: none; }
+    .load-bar::after, .mk .iris, .mk .lid { animation: none; }
     .load-bar::after { left: 0; width: 100%; opacity: 0.5; }
   }
 
@@ -778,6 +909,21 @@
     font-size: 12px;
     color: var(--muted);
   }
+  /* A spoken hit's video, seated in the card's own corners: the stage bleeds
+     to the group's edges the way .mgroup-media does, so the player reads as
+     the card's top rather than as something dropped inside it. */
+  .mgroup-stage {
+    --stage-max: 300px;
+    width: calc(100% + 28px);
+    margin: -12px -14px 10px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    overflow: hidden;
+  }
+  .mgroup-stage .mp {
+    width: 100%;
+    border-radius: 0;
+    border: 0;
+  }
   .mgroup-media { margin-top: 10px; }
   /* A feed of people, not a table of strings: a face and a platform mark lead
      each row, then the words, then what the row earned. Rows are separated by a
@@ -974,6 +1120,21 @@
      video needs that a comment does not is a small identifying thumbnail —
      everything else the excerpt needs (the highlighted term, the quoted
      line) already exists as .quote-box + .mention-text. */
+  /* A spoken row's face is the video's own frame, badged with the network
+     the way a commenter's avatar is — the creator is the speaker, so the
+     thumbnail stands in for the face there is no separate account for. */
+  .sm-thumb-badged {
+    position: relative;
+    overflow: visible;
+    flex: none;
+  }
+  .sm-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    display: block;
+  }
   .sm-thumb {
     @apply flex-none rounded-lg object-cover;
     width: 56px;
@@ -1068,6 +1229,17 @@
     line-height: 1.45;
     margin: 6px 0;
     border-left: 3px solid var(--blue);
+  }
+  /* The moment, on the quote it belongs to: monospaced and tabular so a
+     column of them lines up rather than jittering on digit widths. */
+  .quote-at {
+    display: block;
+    margin-bottom: 4px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
   }
   .quote-box .copy-btn {
     @apply absolute rounded-md cursor-pointer;
@@ -1661,6 +1833,90 @@
   }
 
   /* ─── Credits ─── */
+  /* ─── Own account ───
+     Connection rows keep the sweep's own .sk-row rhythm rather than inventing
+     a list style, and the yes/no/unknown chips are .chip in its three
+     sentiment tints — the only place colour survives this flat language. */
+  .own-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .own-sub {
+    margin: 3px 0 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .own-head {
+    @apply flex items-center gap-2;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .own-tick {
+    @apply inline-flex;
+    color: var(--green);
+  }
+  .own-connect {
+    @apply flex flex-col items-center text-center;
+    padding: 30px 20px 22px;
+  }
+  .own-connect .btn {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .mono { font-family: var(--font-mono); }
+
+  .conn-row {
+    @apply flex items-start gap-3;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .conn-row:last-child { border-bottom: none; }
+  .conn-body { flex: 1; min-width: 0; }
+  .conn-who {
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--fg);
+  }
+  .conn-sub {
+    margin-top: 1px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .conn-note {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .conn-status {
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+  .conn-connect {
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+  .conn-av {
+    @apply relative shrink-0 rounded-full;
+    width: 32px;
+    height: 32px;
+    background: var(--tag);
+    border: 1px solid var(--border);
+    overflow: visible;
+  }
+  /* Not-yet-connected reads as an outline rather than a face: there is no
+     account behind it to show one for. */
+  .conn-av-empty {
+    background: transparent;
+    border-style: dashed;
+  }
+  .conn-av-mark {
+    @apply absolute flex items-center justify-center;
+    inset: 0;
+    color: var(--muted);
+  }
+
   .credits-card {
     @apply rounded-2xl;
     border: 1px solid var(--border);

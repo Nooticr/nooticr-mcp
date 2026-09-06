@@ -52,6 +52,33 @@ const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.nul
  */
 const anyList = () => z.array(z.any()).nullish();
 
+/**
+ * The product row, as create_product and update_product both return it.
+ *
+ * camelCase out, snake_case in — deliberately, and it is worth saying why
+ * rather than tidying one into the other. The backend reads the write
+ * arguments by exact column name, so a camelCase `websiteUrl` on the way in
+ * lands nowhere at all; on the way out there is no such constraint and the
+ * rest of this file is camelCase.
+ */
+const product = open({
+  appId: scalar().describe("The product's id — what every other own-account tool takes."),
+  name: scalar(),
+  slug: scalar(),
+  description: scalar(),
+  productType: scalar(),
+  websiteUrl: scalar().describe("analyze_product fetches an excerpt of this page."),
+  niche: scalar(),
+  iconUrl: scalar(),
+  primaryCtaLabel: scalar(),
+  primaryCtaUrl: scalar(),
+  externalListingId: scalar(),
+  iosBundleId: scalar(),
+  androidPackage: scalar(),
+  hasBrandPlaybook: scalar().describe("false until analyze_product has run — that is the paid call."),
+  createdAt: scalar(),
+});
+
 /** Every paid tool reports what it charged. */
 const mcpCredits = open({
   cost: scalar().describe("Credits this call consumed."),
@@ -515,6 +542,11 @@ export const OUTPUT_SCHEMAS = {
             text: scalar().describe("The spoken line, with surrounding context to judge tone from."),
             position: scalar().describe("Character offset of the match inside the full transcript."),
             occurrence: scalar().describe("Which match this is, 1-based. Only the first few carry an excerpt."),
+            startMs: scalar().describe(
+              "When it was said, from the caption track's own cue timings. Absent, never " +
+                "estimated, when the platform published no timings.",
+            ),
+            timecode: scalar().describe('The same instant as "4:12".'),
           }),
         ),
         wordCount: scalar(),
@@ -530,6 +562,20 @@ export const OUTPUT_SCHEMAS = {
 
   get_post_transcript: open({
     available: scalar().describe("false when the post carries no caption track."),
+    // Deliberately no text: it is already in `transcript`, and a caption
+    // track is long enough that sending it twice would be a real cost in a
+    // payload that ends up in a model's context. `offset` is what makes that
+    // safe — it indexes into the transcript that is there.
+    cues: listOf(
+      open({
+        startMs: scalar().describe("When this line starts, in milliseconds."),
+        endMs: scalar(),
+        offset: scalar().describe(
+          "Where this line's words begin in `transcript`, in UTF-16 code units — so a match " +
+            "found at a string index maps back to the moment it was said.",
+        ),
+      }),
+    ).describe("Cue timings, where the platform published a timed track. Absent for speech-to-text."),
     transcript: scalar(),
     wordCount: scalar(),
     language: scalar(),
@@ -648,6 +694,13 @@ export const OUTPUT_SCHEMAS = {
     checkoutUrl: scalar(),
     packs: listOf(open({})),
   }),
+  // Both return the product row flat, as `product_summary` builds it in
+  // crates/server/src/mcp_tools.rs — no wrapper, and no list of which columns
+  // moved. An update answers with the whole row, so what changed is read by
+  // comparing it against what you sent.
+  create_product: product,
+  update_product: product,
+
   nooticr_login: open({
     signedIn: scalar().describe("true when the session is already good and no link is needed."),
     loginUrl: scalar().describe("Only present when a sign-in is actually required."),

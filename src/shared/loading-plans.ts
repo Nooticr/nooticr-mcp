@@ -1,0 +1,404 @@
+/**
+ * What each tool is about to do, and what it will cost — for the wait.
+ *
+ * ## Why this exists rather than a table in the view
+ *
+ * The view is a static HTML string with no imports, so its first version of
+ * this was a hand-copied price list. It was wrong within the hour: it took its
+ * numbers from `mcp_tool_cost` in nooticr-server, which prices a *direct*
+ * `/mcp` call, while every evidence tool in this server fans out to cheaper
+ * calls instead. `analyze_post` is billed 6 there and 3 here (frames 2 plus
+ * transcript 1); `analyze_creator_profile` 15 there and 2 here. A price on the
+ * face of a loading screen is a promise, and one copied from the wrong table
+ * is worse than none at all.
+ *
+ * So the plans are built here, from the same constants the tools bill against
+ * — `EVIDENCE_PLANS` and `BACKEND_CALL_CREDITS` — and substituted into the
+ * template as JSON. A tool that changes what it fetches changes what the wait
+ * says, with no second place to remember.
+ *
+ * ## What the view may and may not claim
+ *
+ * MCP Apps gives a view four notifications: tool-input, tool-input-partial,
+ * tool-result and tool-cancelled (`@modelcontextprotocol/ext-apps`). There is
+ * no progress notification, so nothing here can honestly say a step has
+ * *finished* — only what the call is going to do and what each line costs.
+ * The design board's ledger ticks green checks through its rows; that is a
+ * canvas loop, and reproducing it would assert completions this server has no
+ * way to know. The rows are drawn, priced, and left un-ticked.
+ */
+import { EVIDENCE_PLANS, planCalls } from "./evidence.js";
+import {
+  BACKEND_CALL_CREDITS,
+  CREDITS_PER_CREATOR,
+  CREDITS_PER_NETWORK,
+  SEARCH_PLATFORMS,
+  XIAOHONGSHU_CREDITS,
+} from "./spend.js";
+
+/** The shape the answer will arrive in, so the space it needs is reserved. */
+export type LoadingKind = "post" | "strip" | "list" | "text";
+
+/** One backend call the tool will make, named and priced. */
+export interface LoadingStep {
+  via: string;
+  label: string;
+  detail?: string;
+  credits: number;
+}
+
+/**
+ * A line whose *count* an argument sets, expanded by the view.
+ *
+ * `arg` names the argument to measure — an array's length, a number's value.
+ * `defaultCount` is what the tool does when the argument is omitted, which is
+ * the case worth stating: an omitted `platforms` on search_mentions means all
+ * nine networks and 21 credits, and nothing the caller read said so.
+ */
+export interface LoadingPerUnit {
+  via: string;
+  label: string;
+  detail?: string;
+  credits: number;
+  arg?: string;
+  defaultCount: number;
+  /** Price each named platform separately — Xiaohongshu costs more upstream. */
+  perPlatform?: boolean;
+  /** Only runs when this argument is present (a niche sweep, a seed creator). */
+  onlyWith?: string;
+}
+
+export interface LoadingPlan {
+  label: string;
+  kind: LoadingKind;
+  n: number;
+  steps: LoadingStep[];
+  perUnit?: LoadingPerUnit[];
+  /** Free to call: it fetches nothing, or only reads nooticr's own rows. */
+  free?: boolean;
+  /**
+   * Spends the workspace's plan AI credits rather than personal MCP credits.
+   *
+   * A third state, and it has to be: these tools are not free, but the number
+   * they spend is not the balance check_nooticr_credits reports on. Drawing
+   * them as "Free" would be a lie a user only discovers on their plan bill,
+   * and drawing them as an MCP credit count would be a lie about which
+   * balance is moving.
+   */
+  planAi?: boolean;
+  /** Shown under the centred mark on the long fan-outs. */
+  note?: string;
+}
+
+/** What each backend call is doing, in words a person reads rather than a tool name. */
+const CALL_LABELS: Record<string, { label: string; detail?: string }> = {
+  get_post_frames: { label: "Sampling frames", detail: "one per shot, by scene change" },
+  get_post_transcript: { label: "Reading the caption track", detail: "exact wording, not inferred" },
+  get_social_media: { label: "Fetching the post", detail: "stats, caption and media" },
+  get_user_posts: { label: "Loading their posts", detail: "recent window, with stats" },
+  get_post_comments: { label: "Reading the comments", detail: "top replies and their themes" },
+  discover_social_posts: { label: "Searching posts", detail: "recent, for the niche" },
+  search_creators: { label: "Finding creators", detail: "by keyword" },
+  get_similar_creators: { label: "Finding lookalikes", detail: "from the seed creator" },
+  discover_sounds: { label: "Finding sounds", detail: "trending audio" },
+  discover_hashtags: { label: "Reading the trend board", detail: "with volumes and direction" },
+};
+
+function step(via: string): LoadingStep {
+  const said = CALL_LABELS[via] ?? { label: via };
+  return { via, label: said.label, detail: said.detail, credits: BACKEND_CALL_CREDITS[via] ?? 0 };
+}
+
+/** The fan-out an evidence tool declares, as priced lines. */
+function evidenceSteps(tool: string): LoadingStep[] {
+  return planCalls(tool).map(step);
+}
+
+const CREATOR_UNIT: LoadingPerUnit = {
+  via: "get_user_posts",
+  label: "Checking a creator",
+  detail: "since your last catch-up",
+  credits: CREDITS_PER_CREATOR,
+  defaultCount: 1,
+};
+
+/**
+ * One plan per registered tool.
+ *
+ * Pinned by tests/loading-plans.test.ts against the server's own tool list, so
+ * a tool cannot ship without a wait that says what it is doing — which is how
+ * search_mentions, the slowest and dearest call here, ended up drawing a
+ * generic grey box that said "Working".
+ */
+export const LOADING_PLANS: Record<string, LoadingPlan> = {
+  // ─── Read a post ───
+  get_social_media: { label: "Fetching the post", kind: "post", n: 1, steps: [step("get_social_media")] },
+  get_post_transcript: {
+    label: "Reading the caption track",
+    kind: "text",
+    n: 1,
+    steps: [step("get_post_transcript")],
+  },
+  get_post_frames: { label: "Sampling frames", kind: "post", n: 1, steps: [step("get_post_frames")] },
+  get_post_comments: { label: "Loading comments", kind: "list", n: 6, steps: [step("get_post_comments")] },
+
+  // ─── Understand a post ───
+  analyze_post: { label: "Analysing the post", kind: "post", n: 1, steps: evidenceSteps("analyze_post") },
+  understand_social_post: {
+    label: "Watching the video",
+    kind: "post",
+    n: 1,
+    steps: evidenceSteps("understand_social_post"),
+  },
+  analyze_post_fast: {
+    label: "Reading the post",
+    kind: "text",
+    n: 1,
+    steps: evidenceSteps("analyze_post_fast"),
+  },
+  analyze_comments: {
+    label: "Reading the comment section",
+    kind: "text",
+    n: 1,
+    // Not an evidence plan: it proxies one get_post_comments and synthesises.
+    steps: [step("get_post_comments")],
+  },
+  compare_posts: {
+    label: "Fetching the first post",
+    kind: "strip",
+    n: 2,
+    steps: evidenceSteps("compare_posts"),
+    note: "1 credit more for every further post you fetch yourself.",
+  },
+
+  // ─── Research ───
+  discover_social_posts: {
+    label: "Searching posts",
+    kind: "strip",
+    n: 3,
+    steps: [step("discover_social_posts")],
+  },
+  get_user_posts: { label: "Loading their posts", kind: "strip", n: 3, steps: [step("get_user_posts")] },
+  search_creators: { label: "Finding creators", kind: "list", n: 5, steps: [step("search_creators")] },
+  get_similar_creators: {
+    label: "Finding similar creators",
+    kind: "list",
+    n: 5,
+    steps: [step("get_similar_creators")],
+  },
+  discover_sounds: { label: "Finding trending sounds", kind: "list", n: 4, steps: [step("discover_sounds")] },
+  discover_hashtags: {
+    label: "Reading the trend board",
+    kind: "list",
+    n: 6,
+    steps: [step("discover_hashtags")],
+  },
+  analyze_creator_profile: {
+    label: "Reading the profile",
+    kind: "list",
+    n: 4,
+    steps: evidenceSteps("analyze_creator_profile"),
+  },
+  find_hook_pattern: {
+    label: "Reading their openings",
+    kind: "list",
+    n: 5,
+    steps: evidenceSteps("find_hook_pattern"),
+  },
+  niche_report: { label: "Reading the niche", kind: "text", n: 1, steps: evidenceSteps("niche_report") },
+
+  // ─── Make something ───
+  write_hooks: { label: "Reading the source post", kind: "text", n: 1, steps: evidenceSteps("write_hooks") },
+  create_variants: {
+    label: "Reading the post that worked",
+    kind: "text",
+    n: 1,
+    steps: evidenceSteps("create_variants"),
+  },
+  repurpose_post: {
+    label: "Reading the source post",
+    kind: "text",
+    n: 1,
+    steps: evidenceSteps("repurpose_post"),
+  },
+  // Fetches nothing: the draft is already the caller's.
+  score_draft: { label: "Scoring the draft", kind: "text", n: 1, steps: [], free: true },
+
+  // ─── Brand monitoring ───
+  search_mentions: {
+    label: "Sweeping for mentions",
+    kind: "list",
+    n: 6,
+    steps: [],
+    perUnit: [
+      {
+        via: "search_mentions",
+        label: "Sweeping a network",
+        detail: "every comment that names the term",
+        credits: CREDITS_PER_NETWORK,
+        arg: "platforms",
+        defaultCount: SEARCH_PLATFORMS.length,
+        perPlatform: true,
+      },
+    ],
+    note: "Priced per network. Omitting platforms means all of them.",
+  },
+  search_spoken_mentions: {
+    label: "Listening for mentions",
+    kind: "list",
+    n: 4,
+    steps: [],
+    perUnit: [
+      {
+        via: "discover_social_posts",
+        label: "Sweeping for candidates",
+        detail: "per network, when a niche is given",
+        credits: BACKEND_CALL_CREDITS.discover_social_posts,
+        arg: "platforms",
+        defaultCount: 2,
+        onlyWith: "niche",
+      },
+      {
+        via: "get_user_posts",
+        label: "Checking a creator",
+        credits: BACKEND_CALL_CREDITS.get_user_posts,
+        arg: "usernames",
+        defaultCount: 0,
+      },
+      {
+        via: "get_post_transcript",
+        label: "Transcribing a candidate",
+        detail: "most-viewed first, up to the ceiling",
+        credits: BACKEND_CALL_CREDITS.get_post_transcript,
+        arg: "maxTranscripts",
+        defaultCount: 8,
+      },
+    ],
+    note: "The ceiling is the price. Only the survivors are transcribed.",
+  },
+  catch_up_watchlist: {
+    label: "Checking your watchlist",
+    kind: "list",
+    n: 5,
+    steps: [],
+    perUnit: [CREATOR_UNIT],
+    note: "Priced per creator on the watchlist.",
+  },
+
+  // ─── The goal tools (jobs.ts) ───
+  answer_my_audience: {
+    label: "Reading your own replies",
+    kind: "list",
+    n: 6,
+    steps: [step("get_user_posts")],
+    perUnit: [
+      {
+        via: "get_post_comments",
+        label: "Opening a post",
+        detail: "reading what was asked under it",
+        credits: BACKEND_CALL_CREDITS.get_post_comments,
+        arg: "limit",
+        defaultCount: 6,
+      },
+    ],
+  },
+  track_competitor: {
+    label: "Reading what they shipped",
+    kind: "strip",
+    n: 3,
+    steps: [step("get_user_posts")],
+  },
+  who_should_i_work_with: {
+    label: "Building a shortlist",
+    kind: "list",
+    n: 5,
+    steps: [step("search_creators")],
+    perUnit: [
+      {
+        via: "get_similar_creators",
+        label: "Adding their lookalikes",
+        credits: BACKEND_CALL_CREDITS.get_similar_creators,
+        defaultCount: 1,
+        onlyWith: "seed",
+      },
+    ],
+  },
+  why_did_this_underperform: {
+    label: "Measuring it against their own median",
+    kind: "text",
+    n: 1,
+    steps: [step("get_social_media"), step("get_user_posts")],
+  },
+  what_should_i_make_next: {
+    label: "Reading demand against supply",
+    kind: "list",
+    n: 6,
+    steps: [step("get_user_posts"), step("discover_social_posts")],
+    perUnit: [
+      {
+        via: "get_post_comments",
+        label: "Reading a post's comments",
+        detail: "what the audience asked for",
+        credits: BACKEND_CALL_CREDITS.get_post_comments,
+        arg: "limit",
+        defaultCount: 4,
+      },
+    ],
+  },
+
+  // ─── Draws what the caller already has: no fetch, no price ───
+  show_comment_review: { label: "Drawing the labels", kind: "list", n: 6, steps: [], free: true },
+  show_audience_replies: { label: "Laying out the drafts", kind: "list", n: 5, steps: [], free: true },
+
+  // ─── Scheduled monitoring (brand-watch.ts) ───
+  // Managing a schedule is not using it: the sweeps a watch makes are billed
+  // as search_mentions when the worker runs them, later and elsewhere.
+  create_brand_watch: { label: "Setting up the watch", kind: "text", n: 1, steps: [], free: true },
+  list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
+  stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
+
+  // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
+  list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },
+  get_content_plan: { label: "Reading the saved plan", kind: "text", n: 1, steps: [], free: true },
+  // Calls AI, but the dashboard's own pre-publish review has never billed for
+  // it, so neither does this.
+  review_post: { label: "Scoring the post", kind: "text", n: 1, steps: [], free: true },
+
+  // ─── Own-account generation: a different balance ───
+  draft_post: { label: "Drafting the post", kind: "text", n: 1, steps: [], planAi: true },
+  growth_brief: { label: "Writing the brief", kind: "text", n: 1, steps: [], planAi: true },
+  generate_content_plan: {
+    label: "Planning the week",
+    kind: "list",
+    n: 5,
+    steps: [],
+    planAi: true,
+  },
+  generate_captions: { label: "Writing the captions", kind: "text", n: 1, steps: [], planAi: true },
+
+  // ─── Account and own-account: free, and free at a zero balance ───
+  check_nooticr_credits: { label: "Checking your balance", kind: "text", n: 1, steps: [], free: true },
+  buy_nooticr_credits: { label: "Opening checkout", kind: "text", n: 1, steps: [], free: true },
+  nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
+  watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },
+  unwatch_creator: { label: "Removing from your watchlist", kind: "text", n: 1, steps: [], free: true },
+  list_social_connections: { label: "Reading your connections", kind: "list", n: 3, steps: [], free: true },
+  connect_social_account: { label: "Minting a fresh link", kind: "text", n: 1, steps: [], free: true },
+  create_product: { label: "Writing the row", kind: "text", n: 1, steps: [], free: true },
+  update_product: { label: "Patching the row", kind: "text", n: 1, steps: [], free: true },
+};
+
+/** Everything the view needs, as one JSON blob substituted into the template. */
+export function loadingPlansJson(): string {
+  return JSON.stringify({
+    plans: LOADING_PLANS,
+    platforms: SEARCH_PLATFORMS,
+    perNetwork: CREDITS_PER_NETWORK,
+    xiaohongshu: XIAOHONGSHU_CREDITS,
+  });
+}
+
+/** Tools that fan out over an argument, for the tests that pin the wait. */
+export const ARGUMENT_PRICED = Object.keys(LOADING_PLANS).filter((t) => !!LOADING_PLANS[t].perUnit);
+
+void EVIDENCE_PLANS;

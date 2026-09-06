@@ -273,6 +273,11 @@ describe("tool surface", () => {
     "why_did_this_underperform",
     "what_should_i_make_next",
     "search_spoken_mentions",
+    // Own account (own-account.ts): the connection pair and the product pair.
+    "list_social_connections",
+    "connect_social_account",
+    "create_product",
+    "update_product",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -343,6 +348,10 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // A row in the caller's own workspace: no fetch and no AI, which is why
+      // the server dispatches these ahead of the billing path too.
+      "create_product",
+      "update_product",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

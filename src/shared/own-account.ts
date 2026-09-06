@@ -9,9 +9,11 @@
  * (crates/server/src/mcp_tools.rs) — this file is what makes that subset
  * reachable from Claude/ChatGPT, which is the whole gap.
  *
- * Billing is not uniform across these seven tools, and that is deliberate,
- * not a bug to paper over:
+ * Billing is not uniform across these tools, and that is deliberate, not a
+ * bug to paper over:
  *  - list_own_apps and get_content_plan are free reads.
+ *  - create_product and update_product write a plain row in the caller's own
+ *    workspace. No upstream call and no AI call, so no charge.
  *  - review_post calls AI but the dashboard's own pre-publish review has
  *    never billed for it, so neither does this.
  *  - draft_post, growth_brief, generate_content_plan and generate_captions
@@ -55,6 +57,36 @@ function failed(prefix: string, err: unknown) {
     isError: true as const,
   };
 }
+
+/**
+ * The optional product fields, shared by create and update.
+ *
+ * Declared once rather than twice because the two must not drift: `update`
+ * takes exactly the fields `create` takes, and the moment one grows a field
+ * the other does not, a patch silently stops being able to change something a
+ * create could set.
+ */
+const PRODUCT_FIELDS = {
+  description: z.string().optional(),
+  website_url: z
+    .string()
+    .optional()
+    .describe(
+      "The product's own site. analyze_product later fetches an excerpt of this page as part " +
+        "of its analysis.",
+    ),
+  niche: z.string().optional(),
+  product_type: z.string().optional().describe('e.g. "app", "saas", "physical".'),
+  icon_url: z.string().optional(),
+  primary_cta_label: z.string().optional().describe('Call-to-action button text, e.g. "Get the app".'),
+  primary_cta_url: z.string().optional().describe("Where the call-to-action button links."),
+  external_listing_id: z
+    .string()
+    .optional()
+    .describe("App Store / Play Store listing id, if this product has one."),
+  ios_bundle_id: z.string().optional(),
+  android_package: z.string().optional(),
+} as const;
 
 export function registerOwnAccountTools(server: McpServer, makeClient: MakeClient): void {
   server.registerTool(
@@ -321,6 +353,77 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         return toResult(await client.callTool("generate_captions", args));
       } catch (err) {
         return failed("generate_captions failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "create_product",
+    {
+      title: "Create Product",
+      description:
+        "Create a product in your own workspace — the row every other own-account tool needs " +
+        "before it has anything to work with; a fresh workspace has none. Takes no workspace " +
+        "argument: it always creates in the workspace of the session calling it, never one " +
+        "you could name. name and slug are required; every other field is optional and all of " +
+        "them are snake_case, read by exact key — a camelCase websiteUrl is not an alias, it " +
+        "is a field that lands nowhere. Subject to your plan's product limit; the error names " +
+        "the limit if you hit it. Does not generate a brand playbook — that is analyze_product, " +
+        "and that is the call that costs. Free — no AI call, just a row.",
+      _meta: viewMeta("create_product"),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      inputSchema: z
+        .object({
+          name: z.string().describe("Product name."),
+          slug: z.string().describe("URL-safe slug, unique within your workspace."),
+          ...PRODUCT_FIELDS,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.create_product,
+    },
+    async (args, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("create_product", args as Record<string, unknown>));
+      } catch (err) {
+        return failed("create_product failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "update_product",
+    {
+      title: "Update Product",
+      description:
+        "Patch your own product's fields — omitted arguments leave their column unchanged, so " +
+        "this cannot blank a field by not mentioning it. Takes appId, optional when your " +
+        "workspace has exactly one product; every other field is snake_case, the same names " +
+        "create_product takes and read the same way. The result lists which fields were " +
+        "actually written, so a name you spelled wrong shows up as a field that did not " +
+        "change rather than as a silent no-op. Free — no AI call, just a row.",
+      _meta: viewMeta("update_product"),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Your product's id. Omit only with a single-product workspace."),
+          name: z.string().optional(),
+          slug: z.string().optional(),
+          ...PRODUCT_FIELDS,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.update_product,
+    },
+    async (args, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(await client.callTool("update_product", args as Record<string, unknown>));
+      } catch (err) {
+        return failed("update_product failed", err);
       }
     },
   );

@@ -19,7 +19,7 @@
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { matchExcerpts } from "../src/shared/jobs.js";
+import { formatTimecode, matchExcerpts, timeExcerpts } from "../src/shared/jobs.js";
 import { MAX_SPOKEN_HANDLE_CALLS, MAX_SPOKEN_TRANSCRIPTS } from "../src/shared/spend.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import { MemoryWatchStore } from "../src/shared/watchlist.js";
@@ -47,6 +47,69 @@ async function connect(backend: { [tool: string]: (args: Row) => Row }) {
   await client.listTools();
   return { client, calls };
 }
+
+/**
+ * The moment a term was said.
+ *
+ * The caption track carries cue timings and the transcript is what is left
+ * once they are stripped, so the only thing tying a match back to a moment is
+ * that a cue's `offset` indexes into that transcript. Get it wrong and nothing
+ * looks broken: every row still shows a timecode, and every one of them names
+ * the wrong second. So these pin the mapping rather than the formatting.
+ */
+describe("timeExcerpts — the moment, from the track's own cues", () => {
+  // The shape the Rust parser emits: no text, because it is already in the
+  // transcript, and an offset that indexes into it.
+  const TRANSCRIPT = "welcome back to the channel the only one worth it was nooticr honestly";
+  const CUES = [
+    { startMs: 1_000, endMs: 3_500, offset: 0 },   // "welcome back to the channel"
+    { startMs: 252_340, endMs: 255_120, offset: 28 }, // "the only one worth it"
+    { startMs: 255_120, endMs: 257_000, offset: 50 }, // "was nooticr honestly"
+  ];
+
+  it("gives an excerpt the time of the cue its match landed in", () => {
+    const { excerpts } = matchExcerpts(TRANSCRIPT, "nooticr");
+    const timed = timeExcerpts(excerpts, CUES);
+    expect(timed[0].startMs).toBe(255_120);
+    expect(timed[0].timecode).toBe("4:15");
+  });
+
+  it("takes the cue the match is inside, not the nearest one after it", () => {
+    // A match at offset 28 belongs to the cue that starts at 28, and a match
+    // at 49 still belongs to it — walking to the next cue would report a
+    // moment the words had not been reached yet.
+    const { excerpts } = matchExcerpts(TRANSCRIPT, "worth");
+    expect(timeExcerpts(excerpts, CUES)[0].startMs).toBe(252_340);
+  });
+
+  it("leaves an excerpt untimed rather than guessing when there are no cues", () => {
+    // The speech-to-text fallback returns words with no clock. A timecode
+    // estimated from how far through the string the match sits would be wrong
+    // by however long the speaker paused, and would look exactly as
+    // trustworthy as a real one.
+    const { excerpts } = matchExcerpts(TRANSCRIPT, "nooticr");
+    const untimed = timeExcerpts(excerpts, undefined);
+    expect(untimed[0].startMs).toBeUndefined();
+    expect(untimed[0].timecode).toBeUndefined();
+    expect(timeExcerpts(excerpts, [])[0].timecode).toBeUndefined();
+  });
+
+  it("ignores a malformed cue rather than mistiming everything after it", () => {
+    const timed = timeExcerpts(
+      matchExcerpts(TRANSCRIPT, "nooticr").excerpts,
+      [{ startMs: 1_000, offset: 0 }, { offset: 50 }, { startMs: "later", offset: 50 }],
+    );
+    expect(timed[0].startMs).toBe(1_000);
+  });
+
+  it("reads a clock a person can", () => {
+    expect(formatTimecode(0)).toBe("0:00");
+    expect(formatTimecode(9_400)).toBe("0:09");
+    expect(formatTimecode(252_340)).toBe("4:12");
+    // Past an hour the minutes have to be padded or 1:4:12 reads as 1:42.
+    expect(formatTimecode(3_852_000)).toBe("1:04:12");
+  });
+});
 
 describe("matchExcerpts — where a term is actually said", () => {
   it("does not fire inside a longer word", () => {

@@ -131,6 +131,10 @@ them caps that fan-out with an argument.
 | `check_nooticr_credits` | free | Balance and billing URL. |
 | `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
+| `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
+| `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
+| `create_product` | free | Create a product in your own workspace — the row every other own-account tool needs before it has anything to work with. Always creates in the calling session's workspace, never one you could name. `name` and `slug` are required; every other field is snake_case and read by exact key, so a camelCase `websiteUrl` lands nowhere. Writes no brand playbook. |
+| `update_product` | free | Patch a product's fields. An omitted argument leaves its column unchanged, so this cannot blank a field by not mentioning it, and the result lists what was actually written — a misspelled field shows up as one that did not change rather than as a silent no-op. |
 
 ### Your own product
 

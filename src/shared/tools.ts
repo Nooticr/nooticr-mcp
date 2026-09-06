@@ -42,6 +42,7 @@ import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { loadingPlansJson } from "./loading-plans.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.19";
@@ -83,8 +84,33 @@ function uiResource(tool: string): string {
  * "Interactive View" and a generic placeholder while Claude, whose URL carries
  * the URI, named the tool. The server is the one party that always knows.
  */
+/**
+ * The view, with the two things it cannot work out for itself baked in.
+ *
+ * The tool name, because a host that serves this HTML from its own URL leaves
+ * no ui:// path to read one out of. And the loading plans, because the view is
+ * a static string with no imports and the alternative — a price list copied by
+ * hand — was wrong about six tools within a day of being written.
+ */
+const LOADING_PLANS_JSON = loadingPlansJson();
+
+/**
+ * The view as a host actually receives it, for tests and tooling.
+ *
+ * The raw NOOTICR_UI_TEMPLATE still carries its `__NOOTICR_PLANS__`
+ * placeholder, so a browser test that renders it directly gets a view with no
+ * prices and no ledger — passing while the real thing is broken. Anything
+ * that renders the template outside the server should come through here.
+ */
+export function uiTemplateFor(tool = ""): string {
+  return templateFor(tool);
+}
+
 function templateFor(tool: string): string {
- return NOOTICR_UI_TEMPLATE.replace("__NOOTICR_TOOL__", tool);
+ return NOOTICR_UI_TEMPLATE.replace("__NOOTICR_TOOL__", tool).replace(
+  '"__NOOTICR_PLANS__"',
+  LOADING_PLANS_JSON,
+ );
 }
 
 /**
@@ -566,6 +592,13 @@ export function createMcpServer(
   "growth_brief",
   "generate_content_plan",
   "generate_captions",
+  // The two product writes draw the row they made and what it can reach next.
+  "create_product",
+  "update_product",
+  // The connection pair (connections.ts). Registered view-less at first; the
+  // grant each connection carries is a table, which is what a view is for.
+  "list_social_connections",
+  "connect_social_account",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).

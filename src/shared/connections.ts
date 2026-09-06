@@ -26,6 +26,21 @@ interface MakeClient {
     | NooticrClient;
 }
 
+/**
+ * A view for both of these, at the URIs both hosts read.
+ *
+ * They shipped view-less. The grant a connection actually carries — read,
+ * publish, manage comments, each yes/no/unknown — is a table, and a table
+ * read out as prose is the thing a view is for; the third value especially,
+ * since "unknown" means nobody recorded the scope and must never be drawn as
+ * the refusal it is not.
+ */
+const viewMeta = (tool: string) => ({
+  ui: { resourceUri: `ui://nooticr/${tool}` },
+  "ui/resourceUri": `ui://nooticr/${tool}`,
+  "openai/outputTemplate": `ui://nooticr/${tool}.html`,
+});
+
 function toResult(proxy: McpProxyResult) {
   const textBlock = proxy.contentBlocks.find((c) => c.type === "text");
   return {
@@ -46,6 +61,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
   server.registerTool(
     "list_social_connections",
     {
+      _meta: viewMeta("list_social_connections"),
       title: "List Social Connections",
       description:
         "List the social accounts your workspace has connected and what each connection is " +
@@ -71,6 +87,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
   server.registerTool(
     "connect_social_account",
     {
+      _meta: viewMeta("connect_social_account"),
       title: "Connect Social Account",
       description:
         "Get a link to open so you can connect one social account. Takes the platform, and " +
