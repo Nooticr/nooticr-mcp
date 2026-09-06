@@ -27,7 +27,7 @@
  * canvas loop, and reproducing it would assert completions this server has no
  * way to know. The rows are drawn, priced, and left un-ticked.
  */
-import { EVIDENCE_PLANS, planCalls } from "./evidence.js";
+import { planCalls } from "./evidence.js";
 import {
   BACKEND_CALL_CREDITS,
   CREDITS_PER_CREATOR,
@@ -432,5 +432,3 @@ export function loadingPlansJson(): string {
 
 /** Tools that fan out over an argument, for the tests that pin the wait. */
 export const ARGUMENT_PRICED = Object.keys(LOADING_PLANS).filter((t) => !!LOADING_PLANS[t].perUnit);
-
-void EVIDENCE_PLANS;

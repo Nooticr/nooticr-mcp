@@ -633,8 +633,8 @@ export function createMcpServer(
   // The playbook text and a finished analysis are exactly the kind of prose
   // get_content_plan already proved the generic fallback (a formatted JSON
   // block) is an acceptable view for — see scripts/host-contract.py for why
-  // create_product/update_product/analyze_product, which return only
-  // metadata or a bare job-start ack, do not get one.
+  // analyze_product, whose immediate reply is a bare job-start ack, does not
+  // get one while the status tool that polls it does.
   "get_brand_playbook",
   "analyze_product_status",
   "review_post",
@@ -647,7 +647,9 @@ export function createMcpServer(
   // shortlist through the creator gallery.
   "prepare_handoff",
   "show_collab_shortlist",
-  // The two product writes draw the row they made and what it can reach next.
+  // The two product writes draw the row they made and what it can reach next
+  // — and, for a patch, which fields actually moved, which is the one thing
+  // the reply says that prose reliably loses.
   "create_product",
   "update_product",
   // The connection pair (connections.ts). Registered view-less at first; the

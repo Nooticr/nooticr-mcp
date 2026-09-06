@@ -30,20 +30,20 @@ import sys
 # watch_creator and unwatch_creator change stored state and return a list; the
 # catch-up that reads that state does have a view, because it returns posts.
 #
-# Tier 1 (own-account intelligence, brand monitoring, connection state): same
-# reasoning. create_brand_watch/stop_brand_watch return a quote or a
-# confirmation, not a list of anything; list_brand_watches and list_own_apps are
-# metadata lists, the shape watch_creator's own `entries` list already sets
-# precedent for; connect_social_account returns a link + message, the same shape
-# as nooticr_login; list_social_connections is a metadata list of connections.
-# None of the five return the rich, card-shaped content get_content_plan and
-# generate_content_plan share (posts with hooks/scripts), which is why those two
-# do have a view.
+# create_brand_watch/stop_brand_watch return a quote or a confirmation, not a
+# list of anything; list_brand_watches and list_own_apps are metadata lists,
+# the shape watch_creator's own `entries` list already sets precedent for.
 #
-# create_product/update_product are the same shape as list_own_apps above, one
-# row of metadata rather than many — nothing a card adds over the list. Their
-# argument names are unusually snake_case (see own-account.ts's module doc),
-# which is an input-schema fact and has nothing to do with the view decision.
+# The line this set draws is "is there a table or a card in the reply", not
+# "is this an own-account tool" — four tools have crossed it in the other
+# direction and each crossing had to be argued rather than assumed:
+# list_social_connections returns one row per connection with a read/publish/
+# manage grant on each, and a grant read out as prose loses the third value
+# (`unknown` — nobody recorded the scope, which is not "no");
+# connect_social_account returns the link plus the state around it;
+# create_product/update_product return the row that was written, and for a
+# patch which fields actually moved. Adding a tool here is cheap and quiet, so
+# state the shape, not the module.
 #
 # analyze_product's *immediate* reply is only a jobId and state: "pending" —
 # there is nothing to draw until the job finishes, which is what
@@ -59,10 +59,6 @@ NO_APP = {
     "stop_brand_watch",
     "list_brand_watches",
     "list_own_apps",
-    "list_social_connections",
-    "connect_social_account",
-    "create_product",
-    "update_product",
     "analyze_product",
 }
 

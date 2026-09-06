@@ -19,27 +19,18 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+// Both of these shipped view-less. The grant a connection actually carries —
+// read, publish, manage comments, each yes/no/unknown — is a table, and a
+// table read out as prose is the thing a view is for; the third value
+// especially, since "unknown" means nobody recorded the scope and must never
+// be drawn as the refusal it is not.
+import { viewMeta } from "./view-meta.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
     | Promise<NooticrClient>
     | NooticrClient;
 }
-
-/**
- * A view for both of these, at the URIs both hosts read.
- *
- * They shipped view-less. The grant a connection actually carries — read,
- * publish, manage comments, each yes/no/unknown — is a table, and a table
- * read out as prose is the thing a view is for; the third value especially,
- * since "unknown" means nobody recorded the scope and must never be drawn as
- * the refusal it is not.
- */
-const viewMeta = (tool: string) => ({
-  ui: { resourceUri: `ui://nooticr/${tool}` },
-  "ui/resourceUri": `ui://nooticr/${tool}`,
-  "openai/outputTemplate": `ui://nooticr/${tool}.html`,
-});
 
 function toResult(proxy: McpProxyResult) {
   const textBlock = proxy.contentBlocks.find((c) => c.type === "text");

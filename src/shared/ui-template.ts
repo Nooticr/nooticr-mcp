@@ -79,33 +79,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     create_product:"Create a product in your own workspace — the row every other own-account tool needs.",
     update_product:"Patch a product's fields. An omitted field keeps the value it had."
   };
-  /* How many results a tool comes back with, and in what shape — so the
-     skeleton matches the answer instead of being a generic grey box. */
-  var LOADING_SHAPE={
-    get_social_media:        {kind:"post",  n:1, label:"Fetching the post"},
-    get_post_transcript:     {kind:"text",  n:1, label:"Reading the caption track"},
-    analyze_post:            {kind:"post",  n:1, label:"Analysing the post"},
-    understand_social_post:  {kind:"post",  n:1, label:"Watching the video"},
-    analyze_creator_profile: {kind:"list",  n:4, label:"Reading the profile"},
-    compare_posts:           {kind:"strip", n:2, label:"Comparing posts"},
-    discover_social_posts:   {kind:"strip", n:3, label:"Searching posts"},
-    get_user_posts:          {kind:"strip", n:3, label:"Loading their posts"},
-    search_creators:         {kind:"list",  n:5, label:"Finding creators"},
-    get_similar_creators:    {kind:"list",  n:5, label:"Finding similar creators"},
-    discover_sounds:         {kind:"list",  n:4, label:"Finding trending sounds"},
-    discover_hashtags:       {kind:"list",  n:6, label:"Reading the trend board"},
-    get_post_comments:       {kind:"list",  n:6, label:"Loading comments"},
-    analyze_comments:        {kind:"text",  n:1, label:"Reading the comment section"},
-    search_mentions:         {kind:"list",  n:6, label:"Sweeping for mentions"},
-    search_spoken_mentions:  {kind:"list",  n:4, label:"Listening for mentions"},
-    catch_up_watchlist:      {kind:"list",  n:5, label:"Checking your watchlist"},
-    list_social_connections: {kind:"list",  n:3, label:"Reading your connections"},
-    connect_social_account:  {kind:"text",  n:1, label:"Minting a fresh link"},
-    create_product:          {kind:"text",  n:1, label:"Writing the row"},
-    update_product:          {kind:"text",  n:1, label:"Patching the row"},
-    check_nooticr_credits:    {kind:"text",  n:1, label:"Checking your balance"},
-    buy_nooticr_credits:      {kind:"text",  n:1, label:"Opening checkout"}
-  };
 
   // ─── The mark ───
   // The idle illustration and the loading indicator are the same SVG; a call
