@@ -217,6 +217,36 @@ A note on what these check that the unit tests do not: steps 3 and 4 drive the
 template cannot draw, a `.html` twin that 404s, a resource on the wrong mime —
 none of that is visible to vitest, and all of it is visible to a user.
 
+## Whether a chain holds is its own question
+
+Everything in the section above tests one call. The failure that is invisible
+to all of it lives *between* two calls: a tool's guidance says "when you are
+done, call `show_analysis`", the host writes a good analysis, never calls it,
+and every test stays green because every individual call worked.
+
+`npm run test:quests` is that layer — a real host (`claude -p`) driven through
+plain-language requests against the fixture backend, asserting on the chain of
+tools it actually walked. `node scripts/chain-map.mjs` is its deterministic
+half: it calls every tool for real and reads back which other tools the
+guidance names, so a stale pointer or an orphaned `show_*` shows up without
+spending on a model.
+
+Two things to know before adding a quest, both learned the expensive way and
+written up in `docs/testing/tool-chaining-quests.md`:
+
+- **Guidance in a `content` text block does not reach Claude Code** when the
+  result also carries `structuredContent` — which is all 61 schema-carrying
+  tools. Measured: 0 of 59 quest runs received a single guidance string. The
+  chains that do hold (`repurpose_post -> show_repurposed_post`, 3/3) hold on
+  their **tool descriptions**, the one channel a result cannot swallow. So a
+  sentence added to a `guidance()` builder expecting it to steer a Claude host
+  is dead text today; put it in the description instead, or read that doc
+  first.
+- **A fixture a model can tell is a fixture measures itself.** A caption
+  saying "not real content" makes the model stop and say so, which reads in a
+  chaining report as a broken chain. `FIXTURE_POST` in
+  `scripts/fixture-server.mjs` is plausible on purpose.
+
 ## Finding the bugs no single test can see
 
 Six defects in one sitting turned out to be one shape: a contract between two

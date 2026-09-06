@@ -16,3 +16,8 @@ playwright-report/
 # carry a live token and API key, never committed.
 .mcpjam/environment.generated.json
 .mcpjam/llms.json
+
+# Quest runs (scripts/run-quests.sh) — transcripts, the generated MCP config
+# (it carries a live dev-login token), and the report of the last run. The
+# corpus in quests/quests.json is the committed part; a run's output is not.
+quests/report/

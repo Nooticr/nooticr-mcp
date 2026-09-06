@@ -1,5 +1,24 @@
 # Agentic end-to-end testing
 
+> **Two things on this page have gone stale, and both are covered by
+> [`tool-chaining-quests.md`](./tool-chaining-quests.md) now.**
+>
+> 1. **The MCPJam evals tier below cannot run.** `@mcpjam/cli` no longer has
+>    an `evals run` command (5.6.0: `unknown command 'evals'`); evals moved to
+>    `mcpjam cloud eval`, are account-bound and paid, and only target servers
+>    registered in an MCPJam Cloud project — a local stdio `node dist/index.js`
+>    is not a valid target. `.mcpjam/tests.json`'s `expectedToolCalls` is not a
+>    key the current suite schema accepts either. The tier has been un-runnable
+>    since the CLI moved and nothing said so, because it is
+>    `workflow_dispatch`-only and soft-skips without an API key.
+> 2. **Its test cases only ever asserted single calls.** Which tool got called
+>    is the easier half. Quests assert on the *chain* — and the first run found
+>    that Claude Code replaces a result's `content` text blocks with the
+>    serialised `structuredContent`, so all ten `→ show_*` guidance edges (the
+>    entire "close the loop" design this page's last section describes) never
+>    reach the model at all.
+
+
 What this repo's CI already checks, before this doc, is entirely **protocol
 and schema conformance**: `tests/*.test.ts` drive `createMcpServer` in-process
 against a stub `NooticrClient`; CI's Host contract / Host compatibility / MCP

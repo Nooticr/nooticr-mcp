@@ -308,7 +308,12 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     expect(result.isError).not.toBe(true);
     const structured = result.structuredContent as { transcript?: string; available?: boolean };
     expect(structured.available).toBe(true);
-    expect(structured.transcript).toBe("This is a fixture transcript for testing.");
+    // Pinned to a phrase rather than the whole string: the fixture's
+    // transcript is deliberately plausible prose now (see FIXTURE_POST in
+    // scripts/fixture-server.mjs for why an obviously-synthetic one broke
+    // the quest suite), and this assertion is about a transcript arriving,
+    // not about its exact wording.
+    expect(structured.transcript).toContain("moving one thing");
 
     await renderRealResult(page, structured);
     await page.screenshot({ path: "test-results/visual-e2e/full-app-07-transcript.png" });
