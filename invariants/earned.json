@@ -1,0 +1,35 @@
+[
+  {
+    "id": "no-unreachable-platform-claimed",
+    "claim": "No tool description names a platform its backend capability cannot reach.",
+    "source": "src/shared/platform-capabilities.ts:1 — 'every platform claim in this server is a claim about code in a different repository'",
+    "check": "npx vitest run --silent=true tests/platform-claims.test.ts",
+    "mutant": {
+      "file": "src/shared/tools.ts",
+      "find": "\"Searches tiktok, instagram, xiaohongshu. \" +",
+      "replace": "\"Searches tiktok, instagram, xiaohongshu, youtube. \" +"
+    }
+  },
+  {
+    "id": "enumerating-tool-names-every-platform",
+    "claim": "A tool that enumerates platforms names every one its capability serves, so a capability the server has is never invisible to hosts.",
+    "source": "tests/platform-claims.test.ts — the under-advertising check",
+    "check": "npx vitest run --silent=true tests/platform-claims.test.ts",
+    "mutant": {
+      "file": "src/shared/tools.ts",
+      "find": "Xiaohongshu, Weibo, Bilibili or LinkedIn URL:",
+      "replace": "Xiaohongshu, Weibo or Bilibili URL:"
+    }
+  },
+  {
+    "id": "sweep-draws-the-post",
+    "claim": "The brand sweep view draws the post each comment was left under, not only the comments.",
+    "source": "src/shared/ui/input.css — 'monitoring TikTok looked like monitoring a forum'",
+    "check": "npx playwright test tests/e2e/ui-template.e2e.ts -g 'brand sweep'",
+    "mutant": {
+      "file": "src/shared/ui-template.ts",
+      "find": "+mgroupMediaHtml(post,key,playing)",
+      "replace": "+\"\""
+    }
+  }
+]

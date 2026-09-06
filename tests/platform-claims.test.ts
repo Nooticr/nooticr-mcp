@@ -124,9 +124,15 @@ describe("platform claims match what the server serves", () => {
           const tool = tools.find((t) => t.name === name);
           if (!tool) continue;
           const prose = proseOf(tool);
-          if (!prose.includes(platform)) continue; // does not raise it at all
+          const enumerates = cap.enumerating.includes(name);
+          // A tool that enumerates the capability sweeps the caveated platform
+          // whether or not it names it, so silence is the failure rather than
+          // an exemption. Deleting the caveat sentence used to remove the
+          // platform's name too, which made this check skip the tool — the
+          // mutation guard caught that the guard had a hole.
+          if (!enumerates && !prose.includes(platform)) continue;
           if (!/cannot be fetched|post text only/.test(prose)) {
-            offenders.push(`${name} mentions ${platform} without ${capName}'s caveat`);
+            offenders.push(`${name} reaches ${platform} without ${capName}'s caveat`);
           }
         }
       }

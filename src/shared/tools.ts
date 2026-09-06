@@ -2212,7 +2212,7 @@ export function createMcpServer(
    title: "Check Nooticr Credits",
    description:
     "Check your nooticr credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools." +
-    "Use before a run of paid calls to confirm the balance covers it.",
+    "No cost to call. Use before a run of paid calls to confirm the balance covers it.",
    _meta: {
     ui: { resourceUri: uiResource("check_nooticr_credits") },
     "ui/resourceUri": uiResource("check_nooticr_credits"),

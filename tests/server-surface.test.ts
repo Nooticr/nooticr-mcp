@@ -487,3 +487,43 @@ describe("tool descriptions do not advertise platforms the schema rejects", () =
     expect(enumValues).toEqual(["tiktok", "instagram", "xiaohongshu"]);
   });
 });
+
+/**
+ * A billable tool has to say what it costs, in the description a host reads.
+ *
+ * The landing page's prices were already checked; these were not. The gap was
+ * found by scripts/invariant-guard.mjs, which proposed "every tool that spends
+ * credits says so" and then rejected its own candidate because the mutant
+ * survived — stripping the price sentence from search_creators broke nothing.
+ * A host that cannot see a price cannot quote before it charges, which is the
+ * one thing this server promises.
+ */
+describe("every tool declares what it costs, where a host will read it", () => {
+  /**
+   * The three ways this server states a price, all of which count:
+   *   "Consumes 2 nooticr credits" / "Costs 2 nooticr credits"  — MCP credits
+   *   "No cost to call" / "there is no cost"                     — free
+   *   "plan AI credits"                                          — the other
+   *                                                                wallet, for
+   *                                                                own-product
+   *                                                                AI tools
+   * A tool matching none of them has left a host unable to quote before it
+   * charges, which is the one thing this server promises.
+   */
+  const DECLARES_A_PRICE = [
+    /\d+\s+nooticr\s+credit/i,
+    /no cost to call/i,
+    /there is no cost/i,
+    /\bfree\b/i,
+    /plan ai credits/i,
+  ];
+
+  it("leaves no tool silent about its price", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const silent = tools
+      .filter((t) => !DECLARES_A_PRICE.some((re) => re.test(t.description ?? "")))
+      .map((t) => t.name);
+    expect(silent, "tools whose description names no price at all").toEqual([]);
+  });
+});
