@@ -1,16 +1,5 @@
 {
-  "_draft": {
-    "assembledBy": "hand, from this repository \u2014 NOT by the OpenAI Developers plugin's $chatgpt-app-submission skill, which was unavailable",
-    "readBeforeUploading": "Every VALUE below is sourced from the repo and checked (see docs/chatgpt-app-submission.md for the file each came from). The KEY NAMES are a best guess at the form's schema. Reconcile them against the form, or regenerate with the real skill, before uploading. Remove this _draft block once reconciled.",
-    "needsYourInput": [
-      "privacyPolicyUrl",
-      "termsOfServiceUrl",
-      "supportContact",
-      "publisher.legalName",
-      "category"
-    ],
-    "recommendedBeforeSubmitting": "Land issue #26 first. 1,286 outputSchema properties emit `type` as an array; `npm run contract:host` warns that several MCP clients either reject the tool or drop the constraint, and a rejected tool disappears from tools/list with no diagnostic."
-  },
+  "$schema": "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json",
   "name": "Nooticr",
   "id": "com.nooticr/mcp",
   "version": "1.26.23",

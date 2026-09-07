@@ -35,7 +35,8 @@
     "contract:manifest": "node scripts/contract-check.mjs --from=../nooticr-server/platform-capabilities.json",
     "test:mutation": "node scripts/mutation-guard.mjs",
     "test:invariants": "node scripts/invariant-guard.mjs",
-    "verify:deep": "npm run verify && npm run test:mutation && npm run test:invariants"
+    "verify:deep": "npm run verify && npm run test:mutation && npm run test:invariants",
+    "check:submission": "node scripts/check-submission-schema.mjs"
   },
   "keywords": [
     "mcp",

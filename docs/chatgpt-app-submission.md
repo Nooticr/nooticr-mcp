@@ -8,10 +8,42 @@ shape the submission form asks to upload.
 > **This was assembled by hand, not by the OpenAI Developers plugin's
 > `$chatgpt-app-submission` skill.** That skill was not available in the
 > environment this was written in, so **the field names below are a best guess
-> at the form's schema while the values are accurate to the repo.** Before
-> uploading, run the real skill if you can, or reconcile the key names against
-> the form. Accuracy of the submission is the submitter's responsibility and
-> nothing here changes that.
+> at the schema while the values are accurate to the repo.**
+>
+> The schema is declared:
+> `https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json`.
+> It could not be read from here — the egress proxy answers CONNECT for that
+> host with a 403 — so the guessed names have never been checked against it.
+>
+> **Reconcile before uploading.** On any machine that can reach the schema:
+>
+> ```
+> npm run check:submission
+> ```
+>
+> That reports keys the schema does not define (ones we invented), required
+> keys we never filled, and fields still left `null`. It exits 2 rather than 0
+> when it cannot fetch the schema, because a check that passes because it could
+> not look is worse than no check; pass `SUBMISSION_SCHEMA=/path/to/schema.json`
+> to use a hand-downloaded copy. It is a shallow name-and-presence check by
+> design — run a real JSON Schema validator too.
+>
+> Accuracy of the submission is the submitter's responsibility and nothing here
+> changes that.
+
+### A note on what is *not* in the JSON
+
+An earlier draft carried a `_draft` block explaining all of the above inside
+the file itself. That has been removed: if the schema sets
+`additionalProperties: false`, an explanatory key of our own invention is the
+one thing guaranteed to fail validation — a caveat that breaks the upload it is
+warning about. The caveats live here instead, and the JSON holds only fields
+that plausibly belong to the schema.
+
+The five `null` values are deliberate rather than oversights. Omitting them
+would validate more cleanly and hide the gaps; leaving them null means a
+validator names exactly which ones still need a human, and an incomplete file
+cannot be uploaded without noticing.
 
 ## Identity
 
