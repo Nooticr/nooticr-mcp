@@ -100,6 +100,11 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
       "watch_creator",
       "unwatch_creator",
       "track_competitor",
+      // Compares several creators through the same fetch. Its description
+      // carries PLATFORM_ARG, so it names the ten networks and needs a
+      // capability behind that claim; watchlist_standings takes no platform
+      // argument and names none, so it stays out.
+      "compare_creators",
       "catch_up_watchlist",
       "what_should_i_make_next",
       "why_did_this_underperform",

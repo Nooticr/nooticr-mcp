@@ -233,6 +233,71 @@ describe("support page", () => {
  * landed while the branch was open — 1.26.23 in the doc against 1.26.24 in
  * `package.json`.
  */
+/**
+ * The ChatGPT submission file lists every tool with its three annotations and
+ * a justification for each. Nothing checked it against the server.
+ *
+ * So adding a tool left the file describing a surface that no longer existed,
+ * silently: `npm run check:submission` validates the file's shape against the
+ * schema and has no idea what the server ships. That happened the first time a
+ * tool was added after the file was written — three tools in, and the only
+ * symptom would have been a reviewer reading annotations for 64 of 67 tools.
+ */
+describe("the submission file against the server", () => {
+  const doc = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8")) as {
+    tools: Record<string, { annotations: Record<string, boolean>; justifications: Record<string, string> }>;
+  };
+
+  /** The real registration over a real transport, as the surface tests do. */
+  async function connectServer() {
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    return client;
+  }
+
+  it("covers every tool the server ships, and no tool it does not", async () => {
+    const { tools } = await (await connectServer()).listTools();
+    const shipped = tools.map((t) => t.name).sort();
+    expect(Object.keys(doc.tools).sort()).toEqual(shipped);
+  });
+
+  it("quotes the annotations the server actually sends", async () => {
+    // Read off the server rather than authored, which is the property that
+    // makes them worth submitting. A hand-edit that disagrees is a
+    // misrepresentation of the tool, which is the one thing the form asks
+    // reviewers to check.
+    const { tools } = await (await connectServer()).listTools();
+    const wrong: string[] = [];
+    for (const tool of tools) {
+      const declared = doc.tools[tool.name]?.annotations ?? {};
+      for (const hint of ["readOnlyHint", "openWorldHint", "destructiveHint"] as const) {
+        const live = tool.annotations?.[hint];
+        if (declared[hint] !== live) wrong.push(`${tool.name}.${hint}: file=${declared[hint]} server=${live}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it("justifies each hint in terms of that specific tool", async () => {
+    // The form's own words: "give enough detail for us to confirm it doesn't
+    // misrepresent what the tool does". A blank or a placeholder fails that,
+    // and so does a read-only justification identical to another tool's.
+    const readOnly = Object.entries(doc.tools).map(([name, t]) => [name, t.justifications.read_only_justification] as const);
+    for (const [name, text] of readOnly) {
+      expect(text, `${name} has no read-only justification`).toMatch(/\S/);
+    }
+    const distinct = new Set(readOnly.map(([, text]) => text));
+    expect(distinct.size, "every tool needs its own read-only reason, not a shared line").toBe(readOnly.length);
+  });
+});
+
 describe("submission checklist", () => {
   const doc = readFileSync("docs/chatgpt-app-submission.md", "utf8");
 
@@ -414,6 +479,11 @@ describe("tool surface", () => {
     "answer_my_audience",
     "show_audience_replies",
     "track_competitor",
+    // The comparison track_competitor computes and discards: two fetching
+    // tools on the same normalised axis, and the free view for the read.
+    "compare_creators",
+    "watchlist_standings",
+    "show_standings",
     "who_should_i_work_with",
     "why_did_this_underperform",
     "what_should_i_make_next",
@@ -486,6 +556,8 @@ describe("tool surface", () => {
       "show_repurposed_post",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
+      // ...and for the standings a model read out of compare_creators.
+      "show_standings",
       // ...and the trend a model read out of mention_trend. Both free: the
       // sweeps behind the series were billed when they ran.
       "show_trend",

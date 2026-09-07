@@ -116,6 +116,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "compare_creators": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches each named creator's recent posts and scores them against that creator's own median. Nothing is written — it does not touch the watchlist, unlike track_competitor.",
+        "open_world_justification": "Reaches the public internet: one get_user_posts fetch per creator through nooticr's API to third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "compare_posts": {
       "annotations": {
         "readOnlyHint": true,
@@ -644,6 +656,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "show_standings": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only, and it makes no request at all: it renders the standings the caller's own model already read out of compare_creators or watchlist_standings.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request. Everything it returns is composed from the arguments passed to it.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "show_trend": {
       "annotations": {
         "readOnlyHint": true,
@@ -738,6 +762,18 @@
         "read_only_justification": "Not read-only: it stores a creator on the caller's watchlist.",
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "watchlist_standings": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's stored watchlist and fetches each watched creator's recent posts. It does not add, remove, or move any marker — catch_up_watchlist is the tool that advances state.",
+        "open_world_justification": "Reaches the public internet: one get_user_posts fetch per watched creator through nooticr's API to third-party social networks. Reading the watchlist itself is local; the posts are not.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
     "what_should_i_make_next": {

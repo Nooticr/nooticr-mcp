@@ -1868,6 +1868,94 @@ test.describe("brand sweep shows the post, not just its comments", () => {
   });
 });
 
+// Standings put creators on one axis, and the number that makes that legal is
+// the window each was scored over. A table that draws a hit rate without its
+// denominator, or a five-post creator in third place, is the view asserting
+// something the tool refused to (issue #30).
+test.describe("standings", () => {
+  const ROWS = {
+    tool: "compare_creators", metric: "views", thinWindow: 8, aboveRatio: 1.25,
+    ranking: "how hard they beat their own median, not how often",
+    verdict: "@small lands one less often but twice as hard.",
+    creators: [
+      { handle: "small", platform: "tiktok", window: 12, baseline: { median: 41000 }, hitRate: 0.25,
+        medianWinRatio: 3.4, best: { caption: "Launching on a Friday" } },
+      { handle: "large", platform: "tiktok", window: 12, baseline: { median: 380000 }, hitRate: 0.5,
+        medianWinRatio: 1.6, best: { title: "We rebuilt onboarding" } },
+      { handle: "brief", platform: "tiktok", window: 5, baseline: { median: 900 }, hitRate: 0.4,
+        medianWinRatio: 2.1, best: { caption: "day 1" } },
+      { handle: "gone", platform: "tiktok", window: 0, baseline: null, hitRate: null,
+        medianWinRatio: null, unavailable: "no posts came back for this handle" },
+    ],
+  };
+
+  test("draws each creator's own median, not a shared scale", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const body = page.locator(".card-body");
+    await expect(body).toContainText("each against their OWN median views");
+    await expect(body).toContainText("41.0K");
+    await expect(body).toContainText("380.0K");
+  });
+
+  test("every row carries the window it was scored over", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    // The denominator, on screen. Without it a hit rate cannot be judged.
+    const windows = await page.$$eval("tbody tr td:nth-child(2)", (c) => c.map((x) => x.textContent?.trim()));
+    expect(windows).toContain("12");
+    expect(windows).toContain("5");
+  });
+
+  test("a window too short to rank is badged, not placed", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const brief = page.locator("tbody tr", { hasText: "@brief" }).first();
+    await expect(brief).toContainText("too thin to rank");
+    // ...and a long enough one is not badged.
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).not.toContainText("too thin");
+  });
+
+  test("the model's own tooThin list badges a row the window alone would not", async ({ page }) => {
+    await renderTemplate(page, { ...ROWS, tooThin: ["large"] });
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).toContainText("too thin to rank");
+  });
+
+  test("a creator who could not be fetched shows the reason, not a zero", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const gone = page.locator("tbody tr", { hasText: "@gone" }).first();
+    await expect(gone).toContainText("no posts came back");
+    // Absent from the comparison, not bottom of it: no fabricated 0%.
+    await expect(gone).not.toContainText("0%");
+  });
+
+  test("it says which axis the order is on, since the two disagree", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    await expect(page.locator(".card-body")).toContainText("Ordered on: how hard they beat");
+  });
+
+  test("the caveats reach the person, not only the model", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const body = page.locator(".card-body");
+    await expect(body).toContainText("mostly measures follower count");
+    await expect(body).toContainText("A window under 8 posts is one post either way");
+    await expect(body).toContainText("second point in time");
+  });
+
+  test("show_standings renders from its own discriminator", async ({ page }) => {
+    // The free view is called with no `tool` field, so `standings: true` is
+    // what routes it — and the creator gallery claims `creators` first.
+    await renderTemplate(page, {
+      standings: true, metric: "likes",
+      creators: [{ handle: "solo", platform: "tiktok", window: 10, baseline: { median: 5 }, hitRate: 0.1, medianWinRatio: 2 }],
+    });
+    await expect(page.locator(".card-body")).toContainText("Standings");
+    await expect(page.locator(".card-body")).toContainText("median likes");
+  });
+
+  test("a watchlist run says how many it is watching", async ({ page }) => {
+    await renderTemplate(page, { ...ROWS, tool: "watchlist_standings", watching: 4 });
+    await expect(page.locator(".card-body")).toContainText("watchlist of 4");
+  });
+});
+
 // The hashtag view served one source and hardcoded its label, so a Reddit
 // result read "TikTok · US · last 7 days" and every row drew a "▬ steady"
 // chip for a direction nobody measured — the exact shape of bug the repo's

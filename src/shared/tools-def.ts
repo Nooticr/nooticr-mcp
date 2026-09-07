@@ -356,6 +356,24 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts in the window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to rank on (default views)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD.") }).strict(),
  },
  {
+ name: "compare_creators",
+ title: "Compare Creators",
+ description: "Two to five creators side by side, each scored against THEIR OWN recent median rather than against each other's raw numbers — which is the only way the comparison means anything, because a raw view count mostly measures follower count. Returns per creator: how many posts were scored, their own median, the share of the window that beat it, how hard they beat it when they did, every post's ratio, and their best and worst post. The ranking is yours to make: 'how often' and 'how big' usually disagree, and a hit rate over a short window is one post either way, so the window size travels with every number. Fetches one post list per creator: 2 nooticr credits each, 4-10 in total. Use for 'is their hit rate better than mine'; track_competitor is one creator alone.",
+ inputSchema: z.object({ usernames: z.array(z.string()).min(2).max(5), platform: z.string().optional(), limit: z.number().int().optional(), metric: z.string().optional() }).strict(),
+ },
+ {
+ name: "watchlist_standings",
+ title: "Watchlist Standings",
+ description: "The same comparison across everyone on your watchlist, answering 'who moved' in one call instead of one per creator. Each is scored against their own recent median, so the numbers are comparable between accounts of different sizes; the window size travels with each so a short one is not ranked as if it were a season. Reads the watchlist itself for free and fetches one post list per creator on it: 2 nooticr credits each, so the price is the size of your watchlist — it confirms before spending. Use for the weekly 'who is accelerating'; catch_up_watchlist is what is NEW rather than how it did.",
+ inputSchema: z.object({ limit: z.number().int().optional(), metric: z.string().optional() }).strict(),
+ },
+ {
+ name: "show_standings",
+ title: "Show Standings",
+ description: "Draw the standings you read out of compare_creators or watchlist_standings. Free, and makes no requests — it only renders what you pass it: one row per creator with their window, their own median, how often they beat it and how hard, and the post that did best. Pass `ranking` to say which axis you ordered on, and `tooThin` for the creators whose window was too short to rank — a table that hides that is the one mistake this view can make on your behalf. Call this after you have decided what the numbers mean, not instead of deciding.",
+ inputSchema: z.object({ creators: z.array(z.object({}).passthrough()).min(1).max(25), metric: z.string().optional(), ranking: z.string().optional(), verdict: z.string().optional(), tooThin: z.array(z.string()).optional() }).strict(),
+ },
+ {
  name: "who_should_i_work_with",
  title: "Who Should I Work With",
  description: "A shortlist of people to work with \u2014 collaborators, or anyone to hire or commission: designers, developers, photographers, editors. Searches creators by craft or keyword and, when you name someone who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. Every candidate carries the links pulled out of their bio, so vetting is reading the work. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist instead of faking it. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",

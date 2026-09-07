@@ -817,6 +817,87 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
+  /**
+   * One row per creator, on the axis every creator shares. `window` sits
+   * beside every derived number on purpose — a hit rate whose denominator is
+   * invisible cannot be told apart from a hit rate that means something.
+   */
+  compare_creators: open({
+    creators: listOf(open({
+      handle: scalar(),
+      platform: scalar(),
+      window: scalar().describe("Posts scored — the denominator of hitRate and the baseline."),
+      baseline: open({
+        count: scalar(),
+        median: scalar(),
+        min: scalar(),
+        max: scalar(),
+        p25: scalar(),
+        p75: scalar(),
+      }).nullish(),
+      hitRate: scalar().describe("Share of the window at or above aboveRatio x their own median."),
+      medianWinRatio: scalar().describe("How hard they beat their median when they did."),
+      ratios: listOf(z.number()).describe("Every post's ratio to their own median, ascending."),
+      best: post.nullish(),
+      worst: post.nullish(),
+      unavailable: scalar().describe("Set when this creator could not be scored, and why."),
+    })).optional(),
+    platform: scalar(),
+    platformDefaulted: scalar(),
+    metric: scalar(),
+    thinWindow: scalar().describe("Below this many posts, a hit rate is one post either way."),
+    aboveRatio: scalar().describe("The ratio hitRate counts from."),
+    billable: scalar(),
+    mode: scalar(),
+    tool: scalar(),
+    evidenceFrom: listOf(z.string()),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  show_standings: open({
+    creators: listOf(anyObject()),
+    metric: scalar(),
+    ranking: scalar().describe("Which axis the order is on — 'how often' and 'how big' disagree."),
+    verdict: scalar(),
+    tooThin: listOf(z.string()).describe("Handles drawn unranked rather than bottom."),
+    // The discriminator the view keys on, since `creators` alone is ambiguous
+    // with the two fetching tools' payloads.
+    standings: scalar(),
+  }),
+
+  watchlist_standings: open({
+    creators: listOf(open({
+      handle: scalar(),
+      platform: scalar(),
+      window: scalar(),
+      baseline: open({
+        count: scalar(),
+        median: scalar(),
+        min: scalar(),
+        max: scalar(),
+        p25: scalar(),
+        p75: scalar(),
+      }).nullish(),
+      hitRate: scalar(),
+      medianWinRatio: scalar(),
+      ratios: listOf(z.number()),
+      best: post.nullish(),
+      worst: post.nullish(),
+      unavailable: scalar(),
+    })).optional(),
+    watching: scalar().describe("How many creators are on the watchlist."),
+    metric: scalar(),
+    thinWindow: scalar(),
+    aboveRatio: scalar(),
+    billable: scalar(),
+    mode: scalar(),
+    tool: scalar(),
+    evidenceFrom: listOf(z.string()),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
   discover_sounds: open({
     sounds: listOf(open({
       title: scalar(),
