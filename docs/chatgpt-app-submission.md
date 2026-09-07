@@ -25,7 +25,20 @@ shape the submission form asks to upload.
 | Website | https://mcp.nooticr.com | `server.json` `websiteUrl` |
 | Repository | https://github.com/Nooticr/nooticr-mcp | `server.json` `repository` |
 | License | MIT | `package.json`, `LICENSE` |
-| Icon | `assets/brand/icon-512.png` — 512×512 PNG, the eyes mark on `#FFFFFF` | this branch |
+| Icon (48) | `assets/brand/icon-48.png` — 48×48 PNG, eyes mark on `#FFFFFF` | this branch |
+| Icon (512) | `assets/brand/icon-512.png` — 512×512 PNG, eyes mark on `#FFFFFF` | this branch |
+
+### Why the 48 is framed tighter than the 512
+
+Not an oversight. Scaled to the 512's proportions the mark would be 26px wide
+inside the 48px box, and at that size the pupils close up and the rings go
+mushy — checked by rendering it, not assumed. The shipped 48 puts the mark at
+32px wide with 8px side and 14px top/bottom margins, which stays legible and
+still clears a rounded-corner mask at the ~23% radius hosts commonly apply.
+
+Both are rendered from `assets/brand/nooticr-icon.svg` — the 48 by
+supersampling at 16× and downsampling with LANCZOS, which holds the thin
+pupil rings together better than rasterising straight to 48px.
 
 ## What it does
 

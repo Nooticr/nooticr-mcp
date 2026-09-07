@@ -6,6 +6,13 @@
   "version": "1.26.23",
   "icons": [
     {
+      "src": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-48.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "48x48"
+      ]
+    },
+    {
       "src": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
       "mimeType": "image/png",
       "sizes": [
