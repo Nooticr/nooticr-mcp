@@ -118,6 +118,47 @@ place. The five distinct annotation shapes across the surface:
 The justifications are written per tool rather than per group — each names what
 that specific tool does and why the hint follows. 192 of them.
 
+## The skill, the prompts, and the five languages
+
+The panel asks for three things the import file has no field for. All three are
+in the repo rather than typed into the form from memory:
+
+| | |
+|---|---|
+| **Skill** | `.agents/skills/social-listening/` — one `SKILL.md` plus `agents/openai.yaml` |
+| **Example prompts** | three, in `docs/app-description.i18n.md` |
+| **Description, 5 languages** | English, French, German, Portuguese (pt-BR), Spanish — same file |
+
+**On the skill.** One job: turn a question about social into an answer built
+from fetched material rather than from memory. That is the failure this tool
+surface actually has — a model that answers "what are people saying about us"
+from training data, or that fetches a transcript and then asks another tool
+what it means. The skill also carries the support table, because a skill is
+loaded into a host's context and believed: one claiming creator search covers
+YouTube sends the model to spend a credit on a call the enum rejects, and the
+skill is the last place anyone would look for the cause. Every platform claim
+in it is checked against `vendor/platform-capabilities.json` by
+`tests/platform-claims.test.ts`, in both directions.
+
+Its `description` frontmatter carries the boundary (`Do not use for posting,
+replying, DMs, scheduling…`) rather than only the trigger, because hosts
+shorten descriptions when many skills are installed and implicit invocation on
+"post this for me" is the expensive wrong match. `allow_implicit_invocation`
+stays `true` on purpose: the failure it prevents happens precisely when nobody
+thought to name a skill.
+
+**On the prompts.** One per half of the product plus the spoken-mention sweep,
+so the three do not demonstrate the same thing. Bracketed placeholders rather
+than a real brand or a live post URL — the first reads as an endorsement, the
+second dies the day the post is deleted.
+
+**On the translations.** Each is a translation of the English, not fresh copy,
+so the claims stay identical across all five. The two network counts (**ten**
+read, **nine** swept) and the never-posts promise are asserted per language
+against the same manifest, so a dispatcher gaining a platform cannot leave four
+translations quietly wrong in a listing that is the first thing a user in that
+language sees.
+
 ## What the form asks that the import file has no field for
 
 These are filled in the form UI. Sourced here so they are not re-derived under
