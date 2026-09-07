@@ -144,9 +144,12 @@ Four things in there are worth acting on beyond the guidance channel:
   TikTok, and keep an eye on them" selected `analyze_creator_profile` 3/3,
   then went on to `watch_creator` correctly. Two tools read as the same job,
   and the one the user's own word ("track") names loses.
-- **`draft_post` gets called without `list_own_apps` 2/3.** On the fixture that
-  is harmless. On a real backend it is a draft with an `appId` the host did not
-  resolve, which is what `resolve_app_target` exists to reject.
+- **`draft_post` gets called without `list_own_apps` 2/3.** Less alarming than
+  it looks: nooticr-server's `resolve_app_target` auto-resolves a workspace
+  with exactly one app and refuses an `app_id` from another workspace, so the
+  unresolved call is safe. What it costs is on a multi-app workspace, where
+  skipping the lookup means the host has no way to pick the right product and
+  the user gets an error instead of a draft.
 - **The chat host profile chains better than the coding one** on the two quests
   run under both (`hooks`: 3/3 vs 1/3; `analysis`: 1/3 vs 0/3). Claude Code's
   own system prompt makes a model more inclined to answer directly and less
