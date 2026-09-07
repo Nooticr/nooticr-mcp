@@ -353,6 +353,9 @@ describe("UI template dual-host safety", () => {
 describe("tool surface", () => {
   const EXPECTED = [
     "search_mentions",
+    // The series a watch keeps, and the free view of it.
+    "mention_trend",
+    "show_trend",
     "watch_creator",
     "unwatch_creator",
     "catch_up_watchlist",
@@ -483,6 +486,10 @@ describe("tool surface", () => {
       "show_repurposed_post",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
+      // ...and the trend a model read out of mention_trend. Both free: the
+      // sweeps behind the series were billed when they ran.
+      "show_trend",
+      "mention_trend",
       // Own-account reads: nooticr's own already-stored data, never billed.
       "list_own_apps",
       "get_scheduled_posts",

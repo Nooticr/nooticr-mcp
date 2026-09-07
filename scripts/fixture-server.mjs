@@ -507,6 +507,53 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    case "brand_watch_history": {
+      // A real series, because the generic empty case cannot exercise the one
+      // thing mention_trend's guidance is for: telling a short series apart
+      // from a quiet one. Eight weekly points, a network that grows while the
+      // total holds, and a run that found plenty and mailed nothing.
+      const runs = [0, 1, 2, 3, 4, 5, 6, 7].map((w) => {
+        const ranAt = new Date(Date.now() - w * 7 * 864e5).toISOString();
+        const tiktok = 12 - w;
+        const reddit = 4 + w;
+        return {
+          ranAt,
+          found: tiktok + reddit,
+          reported: w === 0 ? 0 : Math.max(0, 5 - w),
+          perPlatform: {
+            tiktok: { found: tiktok, reported: w === 0 ? 0 : Math.max(0, 3 - w) },
+            reddit: { found: reddit, reported: w === 0 ? 0 : Math.min(2, w) },
+          },
+          medianViews: null,
+          postsScored: null,
+          costCredits: 4,
+        };
+      });
+      return {
+        content: [{ type: "text", text: `Fixture history: ${runs.length} runs.` }],
+        structuredContent: {
+          watchId: "11111111-2222-3333-4444-555555555555",
+          kind: "mentions",
+          term: String(args?.term ?? "nooticr"),
+          platforms: ["tiktok", "reddit"],
+          windowDays: 90,
+          retainedDays: 365,
+          watchCreatedAt: new Date(Date.now() - 8 * 7 * 864e5).toISOString(),
+          runs,
+          runCount: runs.length,
+          found: { newest: runs[0].found, oldest: runs[runs.length - 1].found },
+          medianViews: { newest: null, oldest: null },
+          recurring: [
+            {
+              mentionKey: "fixture-sticky-key",
+              timesSeen: 6,
+              firstReportedAt: runs[runs.length - 1].ranAt,
+              lastSeenAt: runs[0].ranAt,
+            },
+          ],
+        },
+      };
+    }
     case "list_brand_watches": {
       return {
         content: [{ type: "text", text: "1 active brand watch." }],

@@ -230,6 +230,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({}).strict(),
  },
  {
+ name: "mention_trend",
+ title: "Mention Trend",
+ description: "What a watch has SEEN OVER TIME, which no other tool here can answer — every read on this surface answers about now, and until the backend started keeping run history each sweep threw its numbers away. Takes `watchId` (or `term`) and an optional `days`. Returns one point per run: when it ran, how many mentions it found, how many were new, and both counts per network. On a competitor watch each point also carries the median that run measured. Also returns the mentions more than one run has seen. FREE: the sweeps were billed when they ran. Read the series yourself and say what changed.",
+ inputSchema: z.object({ watchId: z.string().optional(), term: z.string().optional(), days: z.number().int().optional() }).strict(),
+ },
+ {
+ name: "show_trend",
+ title: "Show Trend",
+ description: "Draw the trend you read out of mention_trend. Free, and makes no requests — it renders what you pass it: the series as a chart, per-network lines where you supply them, and your own read of what changed. Pass `tooShort` when the series has too few points to call a direction, and `edgeIsRecordStart` when the left edge is where the record begins rather than where the conversation did. Call this after you have decided what the numbers mean.",
+ inputSchema: z.object({ points: z.array(z.object({}).passthrough()).min(1).max(400), term: z.string().optional(), metric: z.string().optional(), verdict: z.string().optional(), tooShort: z.boolean().optional(), edgeIsRecordStart: z.boolean().optional() }).strict(),
+ },
+ {
  name: "stop_brand_watch",
  title: "Stop Brand Watch",
  description: "Stop a scheduled brand-monitoring watch, by watchId or by term. Takes effect immediately — the run that was due does not happen and nothing further is charged. Works even at a zero balance, since a user out of credits is exactly the user who needs to turn off what is spending them. No cost to call.",

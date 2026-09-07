@@ -939,6 +939,57 @@ export const OUTPUT_SCHEMAS = {
     firstRun: scalar(),
     message: scalar(),
   }),
+  /**
+   * A run series. `runs` is newest first, and every derived number the caller
+   * might want is left underived on purpose — the model reads the series.
+   */
+  show_trend: open({
+    points: listOf(anyObject()),
+    term: scalar(),
+    metric: scalar(),
+    verdict: scalar(),
+    // Both caveats are fields rather than prose, so the view can draw them
+    // and cannot quietly omit them.
+    tooShort: scalar().describe("Too few points to call a direction."),
+    edgeIsRecordStart: scalar().describe("The left edge is the record's start, not the conversation's."),
+    trend: scalar().describe("The discriminator the view keys on."),
+  }),
+
+  mention_trend: open({
+    runs: listOf(open({
+      ranAt: scalar(),
+      found: scalar().describe("Everything that sweep saw."),
+      reported: scalar().describe("The subset that was new — a different question from found."),
+      perPlatform: anyObject().nullish().describe('{"tiktok":{"found":12,"reported":3},...}'),
+      medianViews: scalar().describe("Competitor watches only: the baseline that run measured."),
+      postsScored: scalar(),
+      costCredits: scalar(),
+    })).optional(),
+    watchId: scalar(),
+    kind: scalar(),
+    term: scalar(),
+    competitorHandle: scalar(),
+    platforms: listOf(z.string()),
+    windowDays: scalar(),
+    // Two numbers a caller cannot derive and will otherwise assume: how long
+    // anything is kept, and how long the watch has existed. A flat left edge
+    // is one of those, not a quiet period.
+    retainedDays: scalar(),
+    watchCreatedAt: scalar(),
+    runCount: scalar(),
+    found: anyObject().nullish().describe("newest and oldest in the window, so direction needs no array maths."),
+    medianViews: anyObject().nullish(),
+    recurring: listOf(open({
+      mentionKey: scalar().describe("A fingerprint. The text is deliberately not stored."),
+      timesSeen: scalar(),
+      firstReportedAt: scalar(),
+      lastSeenAt: scalar(),
+    })),
+    available: scalar(),
+    billable: scalar(),
+    mcpCredits,
+  }),
+
   list_brand_watches: open({
     watches: listOf(
       open({

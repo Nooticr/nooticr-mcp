@@ -3690,6 +3690,46 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +"</div></div>";
       return;}
 
+    // A run series. Drawn as bars rather than a line: the points are sweeps on
+    // a cadence, not a continuous signal, and a line between two sweeps
+    // asserts the shape of something nobody measured. Both caveats the tool
+    // computes are drawn — a chart that hides "too few points" or "this is
+    // where the record starts, not where the conversation did" is the view
+    // making a claim the tool refused to (issue #28).
+    if(Array.isArray(d.points)&&(d.trend||d.tool==="mention_trend")){
+      var metric=String(d.metric||"found");
+      var pts=d.points.slice().sort(function(a,b){return String(a.ranAt||"")<String(b.ranAt||"")?-1:1;});
+      var vals=pts.map(function(p){var v=p[metric];return typeof v==="number"?v:0;});
+      var top=Math.max.apply(null,vals.concat([1]));
+      var bars=pts.map(function(p,i){
+        var v=vals[i];
+        var h=Math.max(2,Math.round((v/top)*90));
+        var when=String(p.ranAt||"").slice(0,10);
+        var label=when+" — "+fmtNum(v)+" "+metric+(p.reported!=null?" ("+fmtNum(p.reported)+" new)":"");
+        return '<div style="flex:1;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px" title="'+esc(label)+'">'
+          +'<div style="width:100%;max-width:26px;height:'+h+'px;background:var(--brand);border-radius:3px 3px 0 0;opacity:'+(i===pts.length-1?"1":".62")+'"></div>'
+          +"</div>";
+      }).join("");
+      var first=pts.length?String(pts[0].ranAt||"").slice(0,10):"";
+      var last=pts.length?String(pts[pts.length-1].ranAt||"").slice(0,10):"";
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700">'+(d.term?esc(String(d.term)):"Trend")+"</div>"
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 12px">'
+        +pts.length+" run"+(pts.length===1?"":"s")+" · "+esc(metric)+" per sweep</div>"
+        +(d.tooShort
+          ?'<div style="font-size:12.5px;color:var(--warn);font-weight:600;margin-bottom:8px">Too few points to call a direction</div>'
+          :"")
+        +'<div style="display:flex;align-items:flex-end;gap:2px;height:100px;border-bottom:1px solid var(--border)">'+bars+"</div>"
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px">'
+        +"<span>"+esc(first)+(d.edgeIsRecordStart?" · record starts here":"")+"</span><span>"+esc(last)+"</span></div>"
+        +(d.verdict?'<div style="font-size:13.5px;line-height:1.6;margin-top:12px">'+esc(String(d.verdict))+"</div>":"")
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">'
+        +"Each bar is one sweep, not a day"
+        +(d.edgeIsRecordStart?" — and the earliest bar is where the kept record begins, not where the conversation did":"")
+        +". A flat run of bars is a conversation that has stopped moving, which is not the same as one that has stopped."
+        +"</div></div></div>";
+      return;}
+
     // Trending hashtags. Two sources with different evidence behind them: the
     // TikTok trend board, which measures direction over time, and a count
     // across one niche sweep, which cannot. The header names which, and a
