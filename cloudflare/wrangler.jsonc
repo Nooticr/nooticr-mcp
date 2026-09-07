@@ -24,6 +24,13 @@
   "version_metadata": {
     "binding": "CF_VERSION_METADATA"
   },
+  // Plain config only. Two values are secrets and are deliberately absent
+  // here: NOOTICR_ACCESS_TOKEN, and OPENAI_APPS_VERIFICATION_TOKEN — the
+  // ChatGPT Apps domain-verification challenge served at
+  // /.well-known/openai-apps-challenge. Both are set with
+  // `wrangler secret put <NAME>` and take effect on the next deploy; the
+  // challenge route 404s until its one is set, so an unconfigured deploy
+  // cannot look like it is claiming a domain it isn't.
   "vars": {
     "PUBLIC_URL": "https://mcp.nooticr.com",
     "NOOTICR_BASE_URL": "https://api.nooticr.com"

@@ -145,6 +145,40 @@ Both are the eyes mark in `#14151A` on `#FFFFFF`, rendered from
 512's proportions the mark would be 26px wide and the pupils close up. Checked
 by rendering three candidates and looking at them, not assumed.
 
+### Domain verification
+
+OpenAI issues a token during submission and fetches it back from a fixed path
+to prove the domain is ours:
+
+```
+GET https://mcp.nooticr.com/.well-known/openai-apps-challenge
+→ 200 text/plain; charset=utf-8, Cache-Control: no-store
+   <the token, and nothing else>
+```
+
+The route is `cloudflare/src/index.ts`; the token is a **Worker secret**, not a
+committed value, because committing it makes rotation a code change and leaves
+a stale copy in git that outlives the live one. Two commands, in order:
+
+```
+cd cloudflare && npx wrangler secret put OPENAI_APPS_VERIFICATION_TOKEN
+npx wrangler deploy
+```
+
+Until the secret is set the path returns **404**, deliberately — an
+unconfigured deploy must not look like it is claiming a domain it isn't.
+
+Three things about the response are load-bearing and each is pinned by
+`tests/well-known.test.ts`, because a verifier rejects without saying why:
+
+- **The token is trimmed.** `wrangler secret put` stores whatever the shell
+  hands it, so a token pasted with a trailing newline is served with one and
+  compared byte-for-byte against a token without.
+- **HEAD is answered, not only GET.** A verifier that probes with HEAD first
+  used to fall through every route below and land on the JSON 404.
+- **Nothing is cached.** A cached challenge outlives the token it answers with,
+  so a re-issued token would be shadowed by the stale one at the edge.
+
 ### Authentication
 
 OAuth 2.0 Authorization Code + PKCE (S256), public client, per MCP 2025-03-26.
