@@ -190,13 +190,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "check_nooticr_credits",
  title: "Check Nooticr Credits",
- description: "Check your MCP credit balance, billing URL and pack size. New users get 20 free credits. No cost — call anytime to see remaining credits before running other tools. Use before a run of paid calls to confirm the balance covers it.",
- inputSchema: z.object({}).strict(),
- },
- {
- name: "buy_nooticr_credits",
- title: "Buy Nooticr Credits",
- description: "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. Use when the balance is short and the user has agreed to top up. No cost to call.",
+ description: "Check your nooticr credit balance. No cost to call — call anytime to see remaining credits before running other tools. Nothing here sells or tops up credits: this server offers no purchase of any kind, so when the balance is short, say that it is and that topping up happens on the nooticr website, and do not offer a link or a price. Use before a run of paid calls to confirm the balance covers it.",
  inputSchema: z.object({}).strict(),
  },
  {

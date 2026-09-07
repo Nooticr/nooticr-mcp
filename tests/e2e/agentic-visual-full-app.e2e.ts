@@ -396,39 +396,6 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     await expect(page.locator(".creator-card").first()).toBeVisible();
   });
 
-  // FIXED (was two real bugs):
-  // 1. checkoutUrl used to arrive mangled — proxyUrls() only exempted a
-  //    fixed key list, and `checkoutUrl` fell through to the generic
-  //    branch that rewrites any https:// string value regardless of key
-  //    name, turning a Stripe Checkout link into a /media/proxy?url=...
-  //    link. `checkoutUrl` is now in RAW_URL_KEYS and passes through raw.
-  // 2. The checkout view hardcoded three fixed pack prices and had no
-  //    click handler at all on .pack/.pack-featured. Each pack card is now
-  //    a real <a href> to the real checkoutUrl, built from the real
-  //    d.packs when present, so the existing generic anchor handler opens
-  //    it via ui/open-link — same as every other "Open on ..." link.
-  test("buy_nooticr_credits: the real checkoutUrl passes through raw, and clicking a pack opens it", async ({
-    page,
-  }: {
-    page: Page;
-  }) => {
-    const result = await session.client.callTool({ name: "buy_nooticr_credits", arguments: {} });
-    expect(result.isError).not.toBe(true);
-    const structured = result.structuredContent as { checkoutUrl?: string };
-    expect(structured.checkoutUrl).toBe("https://checkout.stripe.com/fixture-session");
-
-    await renderRealResult(page, structured);
-    await page.screenshot({ path: "test-results/visual-e2e/full-app-12-buy-credits-checkout.png" });
-
-    await clearSentMessages(page);
-    await page.locator(".pack, .pack-featured").first().click();
-    await page.waitForTimeout(200);
-    const sent = await sentMessages(page);
-    const open = sent.find((m) => m.method === "ui/open-link");
-    expect(open, `expected ui/open-link, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
-    expect((open!.params as { url: string }).url).toBe(structured.checkoutUrl);
-  });
-
   test("check_nooticr_credits renders the credits card", async ({ page }: { page: Page }) => {
     const result = await session.client.callTool({ name: "check_nooticr_credits", arguments: {} });
     expect(result.isError).not.toBe(true);

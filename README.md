@@ -136,7 +136,6 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `check_nooticr_credits` | free | Balance and billing URL. |
-| `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 | `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
 | `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
@@ -485,7 +484,7 @@ and text** posts.
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
   for the two that fetch frames *and* transcript. Every tool bills from the
   first call. Top up via
-  `buy_nooticr_credits`, `check_nooticr_credits`, or the nooticr dashboard at
+  `check_nooticr_credits`, or the nooticr dashboard at
   `https://nooticr.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   nooticr server. Run `npx @nooticr/mcp login` again to re-authenticate.

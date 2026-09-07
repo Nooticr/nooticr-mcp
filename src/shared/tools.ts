@@ -241,12 +241,6 @@ const RAW_URL_KEYS = new Set([
  "videoFallbackUrl",
  "thumbnailFallbackUrl",
  "musicFallbackUrl",
- // Not a media asset — a Stripe Checkout link buy_nooticr_credits returns.
- // Without this it fell through to the generic string branch below (which
- // proxies *any* https:// string regardless of key name) and got rewritten
- // into a /media/proxy?url=... link, a URL meant to serve image/video
- // bytes, not redirect to a payment page.
- "checkoutUrl",
 ]);
 
 /**
@@ -589,7 +583,6 @@ export function createMcpServer(
   "niche_report",
   "find_hook_pattern",
   "check_nooticr_credits",
-  "buy_nooticr_credits",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like nooticr_login.
@@ -2252,8 +2245,11 @@ export function createMcpServer(
   {
    title: "Check Nooticr Credits",
    description:
-    "Check your nooticr credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools." +
-    "No cost to call. Use before a run of paid calls to confirm the balance covers it.",
+    "Check your nooticr credit balance. No cost to call — call anytime to see remaining credits " +
+    "before running other tools. Nothing here sells or tops up credits: this server offers no purchase " +
+    "of any kind, so when the balance is short, say that it is and that topping up happens on the " +
+    "nooticr website, and do not offer a link or a price. " +
+    "Use before a run of paid calls to confirm the balance covers it.",
    _meta: {
     ui: { resourceUri: uiResource("check_nooticr_credits") },
     "ui/resourceUri": uiResource("check_nooticr_credits"),
@@ -2268,37 +2264,28 @@ export function createMcpServer(
   async (_args: Record<string, never>, extra) => {
    const client = await makeClient(extra);
    try {
-    return await toToolResult(await client.callTool("check_nooticr_credits", {}));
+    const proxy = await client.callTool("check_nooticr_credits", {});
+    // The backend still returns a billing URL, because the dashboard and the
+    // website both use it. It is dropped here rather than passed through: a
+    // link to buy credits is a link to buy a digital good, and this server
+    // must offer no purchase path at all — not a checkout, and not a pointer
+    // to one. Stripped at the edge, so the backend needs no change and no
+    // other consumer of it does either.
+    //
+    // Dropped from the proxy result BEFORE toToolResult, not from what it
+    // returns. toToolResult also serialises the payload into the text block,
+    // so stripping the structured half afterwards left the URL in the text a
+    // model reads — which the guard in tests/site.test.ts caught on its first
+    // run, and is the whole reason it asserts on the serialised result rather
+    // than on `structuredContent` alone.
+    const structured = proxy.structured as Record<string, unknown> | undefined;
+    if (structured && "billingUrl" in structured) {
+     const { billingUrl: _dropped, ...rest } = structured;
+     return await toToolResult({ ...proxy, structured: rest });
+    }
+    return await toToolResult(proxy);
    } catch (err) {
     return toolError("check_nooticr_credits failed", err);
-   }
-  }
- );
-
- server.registerTool(
-  "buy_nooticr_credits",
-  {
-   title: "Buy Nooticr Credits",
-   description:
-    "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call." +
-    "Use when the balance is short and the user has agreed to top up.",
-   _meta: {
-    ui: { resourceUri: uiResource("buy_nooticr_credits") },
-    "ui/resourceUri": uiResource("buy_nooticr_credits"),
-    // ChatGPT reads only this one, and reads it to find the
-    // text/html+skybridge twin rather than the Claude resource.
-    "openai/outputTemplate": appsSdkResource("buy_nooticr_credits"),
-   },
-   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-   outputSchema: OUTPUT_SCHEMAS.buy_nooticr_credits,
-   inputSchema: z.object({}).strict(),
-  },
-  async (_args: Record<string, never>, extra) => {
-   const client = await makeClient(extra);
-   try {
-    return await toToolResult(await client.callTool("buy_nooticr_credits", {}));
-   } catch (err) {
-    return toolError("buy_nooticr_credits failed", err);
    }
   }
  );

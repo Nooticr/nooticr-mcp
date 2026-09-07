@@ -43,7 +43,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Discover Sounds",
     understand_social_post:"Understand Social Post",
     check_nooticr_credits:"Check Credits",
-    buy_nooticr_credits:"Buy Credits",
     compose_sequence:"Compose Sequence",
     overlay_bake:"Overlay Bake",
     spawn_variants:"Spawn Variants",
@@ -67,7 +66,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
     understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
-    buy_nooticr_credits:"Purchase additional Nooticr credits.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
     spawn_variants:"Generate multiple content variants from a single seed.",
@@ -3816,32 +3814,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +(tier?'<span class="tier-badge">'+esc(tier)+"</span>":"")+"</div>"
         +'<div style="font-size:36px;font-weight:800;margin:10px 0;letter-spacing:-1px">'+bal+"</div>"
         +'<div style="font-size:13px;color:var(--muted)">credits remaining</div>'+freeHtml+"</div>";return;}
-    // Checkout. Real packs/prices, not the three hardcoded tiers this used
-    // to show regardless of what the backend actually returned — and each
-    // card is a real <a href> now, so the existing generic anchor handler
-    // (search this file for "cannot navigate the top-level window") opens
-    // the real checkoutUrl via ui/open-link. There was no click handler at
-    // all before this: .pack{cursor:pointer} in the CSS promised a click
-    // that did nothing.
-    if(d.checkoutUrl||d.packs){
-      var checkoutUrl=d.checkoutUrl||"#";
-      var packList=Array.isArray(d.packs)?d.packs:[];
-      var packHtml=function(p,featured){
-        var name=(p&&(p.name||p.label||p.title))||"Credits";
-        var price=(p&&(p.price||p.priceLabel||p.cost))||"";
-        var credits=p&&p.credits!=null?fmtNum(p.credits)+" credits":(p&&(p.description||p.credit))||"";
-        return '<a href="'+esc(checkoutUrl)+'" target="_blank" rel="noopener" class="'+(featured?"pack-featured":"pack")+'" style="text-decoration:none;color:inherit;display:block">'
-          +'<div class="text-sm font-semibold">'+esc(name)+'</div>'
-          +(price?'<div class="mt-2 text-2xl font-extrabold">'+esc(price)+"</div>":"")
-          +(credits?'<div class="mt-2 text-xs text-muted">'+esc(credits)+"</div>":"")+"</a>";
-      };
-      var cards=packList.length
-        ? packList.map(function(p,i){return packHtml(p,i===1);}).join("")
-        : packHtml({name:"Buy credits",description:"Opens Stripe Checkout"},true);
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div class="mb-3 text-base font-bold">🛒 Credit Packs</div>'
-        +'<div class="grid grid-cols-3 gap-2">'+cards
-        +"</div></div></div>";return;}
     // Hooks (show_hooks) — quote() gives each one its own Copy button.
     if(d.hooks&&Array.isArray(d.hooks)){
       if(!d.hooks.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">💬</div><div class="text">No hooks yet</div></div>';return;}
