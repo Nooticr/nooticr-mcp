@@ -14,9 +14,9 @@
 > 2. **Its test cases only ever asserted single calls.** Which tool got called
 >    is the easier half. Quests assert on the *chain* — and the first run found
 >    that Claude Code replaces a result's `content` text blocks with the
->    serialised `structuredContent`, so all ten `→ show_*` guidance edges (the
->    entire "close the loop" design this page's last section describes) never
->    reach the model at all.
+>    serialised `structuredContent`: 0 of 59 runs received a single guidance
+>    phrase, so every `→ show_*` instruction (the entire "close the loop"
+>    design this page's last section describes) never reaches the model at all.
 
 
 What this repo's CI already checks, before this doc, is entirely **protocol

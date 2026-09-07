@@ -25,7 +25,7 @@
 //     --model <id>             model the driving host runs
 //     --concurrency <n>        quests in flight at once (default 3)
 //     --gate                   exit non-zero when a quest is below threshold
-//     --emit-mcpjam <file>     write the corpus as an MCPJam v1 eval suite
+//     --emit-mcpjam <file>     write the corpus as an MCPJam v1 eval suite and exit
 //     --out <dir>              where the report and transcripts land
 import fs from "node:fs";
 import path from "node:path";
@@ -57,7 +57,9 @@ if (has("emit-mcpjam")) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(toMcpjamSuite(quests), null, 2));
   console.log(`wrote ${file} (MCPJam Cloud eval suite, schemaVersion 1)`);
-  if (!has("gate") && !has("run")) process.exit(0);
+  // Exporting is the whole job when asked for: falling through into a real
+  // run would spend a model call per quest on someone who asked for a file.
+  process.exit(0);
 }
 
 if (!claudeAvailable()) {

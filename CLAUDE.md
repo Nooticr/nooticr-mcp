@@ -235,13 +235,18 @@ Two things to know before adding a quest, both learned the expensive way and
 written up in `docs/testing/tool-chaining-quests.md`:
 
 - **Guidance in a `content` text block does not reach Claude Code** when the
-  result also carries `structuredContent` — which is all 61 schema-carrying
-  tools. Measured: 0 of 59 quest runs received a single guidance string. The
-  chains that do hold (`repurpose_post -> show_repurposed_post`, 3/3) hold on
-  their **tool descriptions**, the one channel a result cannot swallow. So a
-  sentence added to a `guidance()` builder expecting it to steer a Claude host
-  is dead text today; put it in the description instead, or read that doc
-  first.
+  result also carries `structuredContent` — which is all 64 tools. Measured:
+  0 of 59 quest runs, across 175 tool results, contained a single guidance
+  phrase. Prose inside `structuredContent` does arrive (see
+  `who_should_i_work_with`'s `rubric`); a sentence added to a `guidance()`
+  builder expecting it to steer a Claude host is dead text today.
+- **What decides whether a chain holds is retrieval, not wording.** With 64
+  tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
+  in a `show_*` tool, it was called 0/18 times when ToolSearch never returned
+  it and 14/18 when it did. The 3/3 case (`repurpose_post ->
+  show_repurposed_post`) was decided by the model's FIRST query naming both —
+  a shared name stem — before any description was in context. So a `show_X`
+  nobody searches for steers nothing, however well its description reads.
 - **A fixture a model can tell is a fixture measures itself.** A caption
   saying "not real content" makes the model stop and say so, which reads in a
   chaining report as a broken chain. `FIXTURE_POST` in

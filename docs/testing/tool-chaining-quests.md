@@ -29,10 +29,12 @@ npx vitest run tests/quests.test.ts         # the harness's own logic, no model
 
 ## What quests found, on the first run
 
-**Claude Code never sees a word of this server's guidance.** When a tool
-result carries `structuredContent`, Claude Code replaces the result's
-`content` text blocks with the serialised `structuredContent` before the
-model sees it. Every one of this server's 61 schema-carrying tools returns
+### 1. No text-block guidance reaches Claude Code
+
+When a tool result carries `structuredContent`, Claude Code drops **every**
+`content` text block, keeps the non-text blocks, and appends the serialised
+`structuredContent` as the only text the model sees. All 64 tools the built
+server publishes declare an `outputSchema` and therefore return
 `structuredContent`. So `evidence.ts`'s premise —
 
 > *"A tool result is the only channel to the calling model — prompts are
@@ -40,53 +42,94 @@ model sees it. Every one of this server's 61 schema-carrying tools returns
 > documentation; it is the steering, and it lands in the model's context."*
 
 — does not hold on the host this server is primarily built for. Measured
-across a full corpus run: **0 of 59 runs received a single guidance string.**
-Not one transcript contains the phrase "When you are done, call show_" that
-every evidence tool's result actually ends with.
+across a full corpus run: **0 of 59 runs, across 175 tool results, contained
+a single guidance phrase.** Seven distinct probes ("when you are done", "so it
+is visible", "reason over this yourself", "chosen by scene change", "billed as
+the fetches", …) each appear in 0 of 59 transcripts.
 
-Reproduced three ways, all run rather than reasoned about:
+`node scripts/chain-map.mjs` reaches the same answer without spending on a
+model: it calls all 64 tools for real, finds 31 guidance edges (one tool's
+result naming another tool), and reports that **0 of the 31** survive on a
+host that renders `structuredContent` — 57 of 64 tools carry their guidance in
+a text block and nowhere else.
 
-1. **A minimal server, isolating the cause.** Three tools returning the same
-   text block: one with `outputSchema` + `structuredContent`, one with
-   `structuredContent` and no schema, one with neither. Driven through
-   `claude -p`, the model was handed `{"value":42}` for the first two and the
-   full text for the third, and quoted them back that way. The switch is the
-   presence of `structuredContent`; declaring an `outputSchema` changes
-   nothing.
-2. **A differential on an instruction that exists nowhere else.** Guidance
+Say it precisely, because the absolute version is wrong: *text-block* guidance
+never arrives. Prose that lives **inside** `structuredContent` does — e.g.
+`who_should_i_work_with` ships a whole `rubric` array of instructions and the
+model reads it. That is the same channel the fix below relies on.
+
+Reproduced four ways, all run rather than reasoned about:
+
+1. **A minimal server, isolating the cause.** Probes returning the same text
+   block with and without `structuredContent`. The model quoted back
+   `{"value":42}` for the structured ones and the full passphrase for the
+   others. Ruled out one by one, each with its own probe: `outputSchema`
+   (a probe with `structuredContent` and no schema still lost its text), size
+   (an 11.6 KB text block with no `structuredContent` arrived intact), image
+   blocks, `ToolSearch` deferral, config directory, and model.
+2. **The mechanism, read out of the shipped binary.** Claude Code 2.1.263
+   branches on `"structuredContent" in result && result.structuredContent !== undefined`,
+   filters `type !== "text"` out of the content array, and substitutes
+   `JSON.stringify(structuredContent)`. Unconditional — no setting, no flag,
+   and `outputSchema` is never consulted. Package inspection puts the change
+   between claude-code 2.0.0 (no such handling) and 2.1.100 (same branch,
+   without even the image-preserving arm), so it is not this machine.
+3. **A differential on an instruction that exists nowhere else.** Guidance
    telling the model to pass `sourceId: "EVIDENCE-7742"` to a follow-up tool
-   whose own description never mentions it. With the guidance only in a text
-   block: 0/3 runs called the follow-up. With the same guidance carried as a
-   field inside `structuredContent`: it called it and passed
-   `sourceId: "EVIDENCE-7742"` and a `frameSpan` it could only have got from
-   the guidance. The channel is what changed, not the words.
-3. **The real server, the real chain.** `analyze_post`: a raw MCP client sees
-   a ~2,000-character guidance block ending in the `show_analysis`
-   instruction; the model driven through Claude Code sees only
-   `{"mode":"evidence","tool":"analyze_post","evidenceFrom":[...],...}`. It
-   wrote a real analysis — hook, structure, contrarian-open, the lot — and
-   delivered all of it in chat.
+   whose own description never mentions it. Guidance in a text block: 0/3 runs
+   called the follow-up. The same words inside `structuredContent`: it called
+   it and passed `sourceId: "EVIDENCE-7742"` and a `frameSpan` it could only
+   have read there.
+4. **The real server, the real chain.** A raw MCP client sees `analyze_post`
+   return a ~2,000-character guidance block ending in the `show_analysis`
+   instruction. The same call in a transcript arrives as
+   `[image, image, image, text]` where the text is 903 characters of pure
+   `structuredContent`. The model wrote a real analysis — hook, structure,
+   contrarian-open, the lot — and delivered all of it in chat.
 
-### The chains that still work run on descriptions, not guidance
+### 2. What decides whether a chain holds is retrieval, not wording
 
-This is the part that would be easy to get wrong, and the corpus is what
-settles it. Chaining is not uniformly dead: `repurpose_post →
-show_repurposed_post` held 3/3, `create_variants → show_variants` 2/3,
-`analyze_comments → show_comment_review` 2/3. Since no guidance reached the
-model in any of those runs, what carried them is the only channel that
-survives — the **tool descriptions**, which are not part of a result.
-`show_repurposed_post`'s description opens *"Display the ... you wrote after
-repurpose_post handed you a post's material"*, and that was enough.
+This is the part that would be easy to get wrong, and the corpus settles it
+against the obvious guess.
 
-Where the description does not name its predecessor that clearly, the chain
-collapses: `show_analysis` (0/9 across its three quests), `show_comparison`
-(0/3), `show_collab_shortlist` (0/3). So the practical read is narrower and
-more useful than "guidance is broken": **guidance text is currently doing
-nothing at all, and everything the surface achieves it achieves through
-descriptions.** Any sentence you write in a `guidance()` builder expecting it
-to steer a Claude host is, today, dead text.
+Chaining is not uniformly dead: `repurpose_post → show_repurposed_post` held
+3/3, `create_variants → show_variants` 2/3, `analyze_comments →
+show_comment_review` 2/3. The tempting conclusion is that their **descriptions**
+carried them. That does not survive contact with the descriptions themselves:
+`show_analysis` (1/12) says *"Display an analysis you wrote after analyze_post,
+analyze_post_fast or understand_social_post handed you the material… Call this
+after you have done the analysing, not instead of it"* — the same template as
+`show_repurposed_post`'s, naming three predecessors instead of one.
+`show_comparison` and `show_collab_shortlist` (both 0/3) name theirs too.
+The wording does not vary between the cases that pass and the cases that fail.
 
-### Full corpus, 20 quests / 59 runs, ~4.5 minutes at `--concurrency 4`
+What varies is whether the tool was ever **retrieved**. 64 tools is past the
+point where Claude Code keeps them all in context, so every one of them sits
+behind a `ToolSearch` and only enters context if a search returns it. Over the
+36 runs whose expected chain ends in a `show_*` tool:
+
+| | called |
+|---|---|
+| `ToolSearch` never returned the `show_*` tool | **0 / 18** |
+| `ToolSearch` did return it | **14 / 18** |
+| the model's **first** `ToolSearch` query already named it | **9 / 10** |
+| it was not in the first query | 5 / 26 |
+
+And the passing case is decided before any description or result is in
+context: all three `repurpose_post` runs opened with
+`select:repurpose_post,show_repurposed_post` as their very first query. The
+chain was committed from the **deferred tool-name list alone** —
+`repurpose_post` / `show_repurposed_post` share a distinctive stem, so the
+pair gets shortlisted together. `analyze_post` / `show_analysis`, sitting in a
+crowded `analyze_*` family, does not: `show_analysis` was retrieved in only
+4 of its 12 runs, so in the other 8 its description was never in context at
+all and cannot be what failed.
+
+The practical read: **guidance text is dead on this host, and what the surface
+achieves it achieves through the tool-name surface.** A `show_X` the model
+never searches for steers nothing, however well its description reads.
+
+### 3. Full corpus, 20 quests / 59 runs, ~4.5 minutes at `--concurrency 4`
 
 | result | quests |
 |---|---|
@@ -99,39 +142,44 @@ Four things in there are worth acting on beyond the guidance channel:
 
 - **`track_competitor` never gets picked.** "Track what @x has been doing on
   TikTok, and keep an eye on them" selected `analyze_creator_profile` 3/3,
-  then went on to `watch_creator` correctly. Two tools read as the same job
-  from their descriptions, and the one the user's word ("track") names loses.
-- **`draft_post` gets called without `list_own_apps` 2/3.** On the fixture
-  that is harmless. On a real backend it is a draft with an `appId` the host
-  did not resolve, which is what `resolve_app_target` exists to reject.
-- **The chat host profile chains better than the coding one** on the two
-  quests run under both (`hooks`: 3/3 vs 1/3; `analysis`: 1/3 vs 0/3). Claude
-  Code's own system prompt makes a model more inclined to answer directly and
-  less inclined to make another call it was not explicitly asked for. Worth
-  keeping both profiles for anything you change here.
+  then went on to `watch_creator` correctly. Two tools read as the same job,
+  and the one the user's own word ("track") names loses.
+- **`draft_post` gets called without `list_own_apps` 2/3.** On the fixture that
+  is harmless. On a real backend it is a draft with an `appId` the host did not
+  resolve, which is what `resolve_app_target` exists to reject.
+- **The chat host profile chains better than the coding one** on the two quests
+  run under both (`hooks`: 3/3 vs 1/3; `analysis`: 1/3 vs 0/3). Claude Code's
+  own system prompt makes a model more inclined to answer directly and less
+  inclined to make a call it was not explicitly asked for.
 - **The handle-miss recovery is one-sided.** The negative half passes 3/3 (an
-  empty result on X does not become a TikTok answer) — but that is the
-  model's own caution, not the guidance, which never arrived. The positive
-  half (`get_user_posts → search_creators` on TikTok) is 0/3.
+  empty result on X does not become a TikTok answer) — but that is the model's
+  own caution, not the guidance, which never arrived. The positive half
+  (`get_user_posts → search_creators` on TikTok) is 0/3.
 
 ### What to do about it is a product decision, not a test one
 
-The quest suite deliberately does not fix this. Three routes, with what each
-costs:
+The quest suite deliberately does not fix this. Four routes, with what the
+corpus says about each:
 
-- **Carry the guidance inside `structuredContent`** (e.g. a `guidance` field
-  on the evidence payload). Verified to work in the differential above. Costs
-  an `OUTPUT_SCHEMAS` entry per tool and a check that `ui-template.ts`'s
-  generic fallback view does not start drawing a wall of prose.
+- **Carry the guidance inside `structuredContent`** (e.g. a `guidance` field on
+  the evidence payload). Verified to work in reproduction 3, and
+  `who_should_i_work_with`'s `rubric` shows the channel already carrying prose
+  today. Costs an `OUTPUT_SCHEMAS` entry per tool and a check that
+  `ui-template.ts`'s generic fallback view does not start drawing a wall of
+  prose.
+- **Make the `show_*` tools retrievable.** The strongest single predictor in
+  the corpus, and nothing else in this list matters if the tool is never
+  searched for. That means naming (`show_repurposed_post` wins because it
+  shares a stem with `repurpose_post`) and it means the words a host would
+  search — `show_analysis` competes with five `analyze_*` tools for the same
+  query.
 - **Drop `structuredContent` on the tools whose value is the guidance.**
   Cheapest to write, but those tools' views go with it.
-- **Move the chain into the tool *descriptions*.** This is the one the corpus
-  says already works — `repurpose_post`'s 3/3 is a description doing the job.
-  It cannot carry everything guidance carries (a description cannot mention
-  what a particular result contained), but for "call `show_X` when you are
-  done" it is measurably the strongest channel available today.
+- **Move the chain instruction into the tool descriptions.** Necessary but
+  demonstrably not sufficient: the descriptions already say it, in the failing
+  cases as clearly as in the passing ones.
 
-Re-run `npm run test:quests` after any of them: the pass rates above are the
+Re-run `npm run test:quests` after any of them: the rates above are the
 baseline to beat.
 
 ## What a quest looks like
@@ -244,7 +292,7 @@ model will engage with it.
 ## Cost, and why this is not in `npm run verify`
 
 Every run is a real model call. The corpus is 20 quests / 59 runs; a full
-sweep is on the order of 15 minutes wall-clock at `--concurrency 4`. That is
+sweep took 4m37s wall-clock at `--concurrency 4`. That is
 why it is its own command, why `--runs 1` exists, and why the runner
 **reports rather than gates** unless you pass `--gate`.
 

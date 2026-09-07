@@ -125,6 +125,11 @@ export function judgeQuest(quest, runs) {
   const passed = verdicts.filter((v) => v.ok).length;
   const passRate = verdicts.length ? passed / verdicts.length : 0;
   const threshold = quest.threshold ?? 1;
+  // A quest that produced no runs at all is not a failing chain, and saying
+  // so matters: without this it prints as a red line with nothing under it.
+  const noRuns = verdicts.length === 0
+    ? [{ run: 0, kind: "no-runs", detail: "the driver produced no runs for this quest" }]
+    : [];
   return {
     id: quest.id,
     title: quest.title,
@@ -134,7 +139,7 @@ export function judgeQuest(quest, runs) {
     threshold,
     ok: passRate >= threshold,
     chains: verdicts.map((v) => v.chain),
-    failures: verdicts.flatMap((v, i) => v.failures.map((f) => ({ run: i + 1, ...f }))),
+    failures: [...noRuns, ...verdicts.flatMap((v, i) => v.failures.map((f) => ({ run: i + 1, ...f })))],
   };
 }
 

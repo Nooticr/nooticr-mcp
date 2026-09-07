@@ -103,15 +103,14 @@ for (const tool of tools) {
   const structured = result.structuredContent ?? null;
   const structuredJson = structured ? JSON.stringify(structured) : "";
 
+  // Pass 3, per tool rather than per edge: does the GUIDANCE PROSE survive,
+  // not merely does the target tool's name appear somewhere in the payload.
+  // That distinction is the whole finding — analyze_post's structuredContent
+  // lists get_post_transcript in `evidenceFrom`, which is data, and an
+  // earlier version of this check read that as "the steering survived".
+  const guidanceSurvives = !structured || structuredJson.includes(text.slice(0, 60));
   for (const to of mentions(text, names, tool.name)) {
-    edges.push({
-      from: tool.name,
-      to,
-      kind: "guidance-text",
-      // The whole point of pass 3: an edge the model can only follow if the
-      // sentence carrying it survives the host's rendering of the result.
-      reachesStructuredContentHosts: mentions(structuredJson, [to], tool.name).length > 0,
-    });
+    edges.push({ from: tool.name, to, kind: "guidance-text", guidanceSurvives });
   }
   dangling.push(...danglingIn(text, names).map((token) => ({ where: `${tool.name} guidance`, token })));
 
@@ -121,7 +120,7 @@ for (const tool of tools) {
     hasStructuredContent: Boolean(structured),
     // A tool whose steering lives only in a text block loses it on any host
     // that renders structuredContent instead.
-    guidanceOnlyInTextBlock: Boolean(structured) && text.length > 0 && !structuredJson.includes(text.slice(0, 60)),
+    guidanceOnlyInTextBlock: Boolean(structured) && text.length > 0 && !guidanceSurvives,
     isError: Boolean(result.isError),
   });
 }
@@ -132,12 +131,12 @@ const pointedAt = new Set(edges.map((e) => e.to));
 const pointsFrom = new Set(edges.map((e) => e.from));
 const isolated = names.filter((n) => !pointedAt.has(n) && !pointsFrom.has(n));
 const orphanShow = names.filter((n) => n.startsWith("show_") && !pointedAt.has(n));
-const lostGuidance = byKind("guidance-text").filter((e) => !e.reachesStructuredContentHosts);
+const lostGuidance = byKind("guidance-text").filter((e) => !e.guidanceSurvives);
 const atRisk = delivery.filter((d) => d.guidanceOnlyInTextBlock);
 
 say(`selection edges (descriptions): ${byKind("tool-description").length + byKind("arg-description").length}`);
 say(`guidance edges (real tool results): ${byKind("guidance-text").length}`);
-say(`  ... of which reach a structuredContent-rendering host: ${byKind("guidance-text").length - lostGuidance.length}`);
+say(`  ... of which survive on a structuredContent-rendering host: ${byKind("guidance-text").length - lostGuidance.length}`);
 say(`tools whose guidance text is dropped by such a host: ${atRisk.length}/${delivery.length}`);
 say(`tools in no edge at all: ${isolated.length}${isolated.length ? ` (${isolated.join(", ")})` : ""}`);
 say(`show_* tools nothing points to: ${orphanShow.length}${orphanShow.length ? ` (${orphanShow.join(", ")})` : ""}`);
@@ -147,7 +146,7 @@ if (probeFailures.length) say(`tools that could not be probed: ${probeFailures.m
 if (!quiet) {
   say("\nguidance chains (from -> to), as the real server returns them:");
   for (const e of byKind("guidance-text").sort((a, b) => a.from.localeCompare(b.from))) {
-    say(`  ${e.from} -> ${e.to}${e.reachesStructuredContentHosts ? "" : "   [lost on structuredContent hosts]"}`);
+    say(`  ${e.from} -> ${e.to}${e.guidanceSurvives ? "" : "   [lost on structuredContent hosts]"}`);
   }
 }
 
