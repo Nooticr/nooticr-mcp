@@ -108,7 +108,31 @@ for (const tool of tools) {
   // That distinction is the whole finding — analyze_post's structuredContent
   // lists get_post_transcript in `evidenceFrom`, which is data, and an
   // earlier version of this check read that as "the steering survived".
-  const guidanceSurvives = !structured || structuredJson.includes(text.slice(0, 60));
+  // Compare against the PARSED values, not the serialised JSON. Checking
+  // `JSON.stringify(structured).includes(text.slice(0, 60))` reported a false
+  // negative for every tool whose guidance opens with a newline or a quote,
+  // because the JSON form escapes them and the raw text does not — five
+  // evidence tools looked like they had lost their guidance when they were
+  // carrying it correctly.
+  const needle = text.slice(0, 60);
+  const carriesGuidance = (value) => {
+    if (typeof value === "string") return value.includes(needle);
+    if (Array.isArray(value)) return value.some(carriesGuidance);
+    if (value && typeof value === "object") return Object.values(value).some(carriesGuidance);
+    return false;
+  };
+  // A text block that is simply the serialised payload loses nothing when a
+  // host swaps it for that payload — the watchlist tools are built that way,
+  // and reading them as "guidance lost" was wrong.
+  let textIsThePayload = false;
+  if (structured) {
+    try {
+      textIsThePayload = JSON.stringify(JSON.parse(text)) === structuredJson;
+    } catch {
+      textIsThePayload = false;
+    }
+  }
+  const guidanceSurvives = !structured || textIsThePayload || carriesGuidance(structured);
   for (const to of mentions(text, names, tool.name)) {
     edges.push({ from: tool.name, to, kind: "guidance-text", guidanceSurvives });
   }

@@ -428,16 +428,34 @@ async function runEvidence(
   }
  }
 
- // The guidance leads. A model reads the first text block in a result, and
- // that is where the account of what to produce has to be — everything below
- // it is material with no instruction attached.
+ // The guidance rides in BOTH channels, and the structured one is the one
+ // that arrives.
+ //
+ // This used to say "the guidance leads: a model reads the first text block in
+ // a result, and that is where the account of what to produce has to be". That
+ // is what the MCP spec allows, and it is not what hosts do. Claude Code
+ // discards every `content` text block whenever a result carries
+ // `structuredContent`, keeps the non-text blocks, and shows the model the
+ // serialised JSON instead — unconditionally, with no setting, and without
+ // consulting `outputSchema`. Every tool here declares one, so every guidance
+ // string this file writes was landing nowhere.
+ //
+ // Measured before changing it, over 59 real runs of the quest suite: 0
+ // guidance phrases across 175 tool results. `analyze_post` handed back frames,
+ // a transcript and 2,000 characters ending in "call show_analysis when you are
+ // done"; the model wrote the analysis and delivered it in chat, and
+ // show_analysis was called in 1 run of 12.
+ //
+ // The text block stays for hosts that honour it (and for the images, which
+ // must sit in `content`). `guidance` on the payload is what reaches the rest.
+ // See docs/testing/tool-chaining-quests.md.
  const billing = nothingToFetch
   ? "Nothing was fetched for this call, so nothing was charged."
   : fetchBillingNote(tool);
- const content: ToolContent[] = [
-  { type: "text", text: `${plan.guidance(args)}\n\n${billing}` } as ToolContent,
- ];
+ const guidance = `${plan.guidance(args)}\n\n${billing}`;
+ const content: ToolContent[] = [{ type: "text", text: guidance } as ToolContent];
  const out: Record<string, unknown> = {
+  guidance,
   // Kept, and constant. It is not an echo of an argument — the job tools in
   // jobs.ts set the same key with no argument to echo — it marks a payload as
   // material the caller still has to read. Dropping it would break anything
@@ -1332,9 +1350,14 @@ export function createMcpServer(
     const res = await client.callTool("get_post_comments", { ...args });
     const structured = (res.structured ?? {}) as Record<string, unknown>;
     const comments = toEvidence(args.url, structured.comments);
+    const guidance = reviewGuidance(args.url, comments.length);
     return {
-     content: [{ type: "text" as const, text: reviewGuidance(args.url, comments.length) }],
+     content: [{ type: "text" as const, text: guidance }],
      structuredContent: {
+      // See runEvidence: a text block alone reaches no host that renders
+      // structuredContent, and this is the tool show_comment_review's whole
+      // chain hangs off.
+      guidance,
       mode: "evidence",
       url: args.url,
       platform: structured.platform ?? null,
@@ -2028,16 +2051,24 @@ export function createMcpServer(
   // argument: the draft is the caller's own text, so the backend was only ever
   // being paid to hold it up against a standard, and the standard is what
   // comes back instead. Nothing here can fail, which is why nothing is caught.
-  async (args: { draft: string; platform?: string }) => ({
-   content: [{ type: "text" as const, text: scoreDraftGuidance(args.draft, String(args.platform ?? "")) }],
+  async (args: { draft: string; platform?: string }) => {
+   const guidance = scoreDraftGuidance(args.draft, String(args.platform ?? ""));
+   return {
+   content: [{ type: "text" as const, text: guidance }],
    structuredContent: {
+    // The rubric IS this tool's answer — it fetches nothing and scores
+    // nothing itself. In a text block it reached no host that renders
+    // structuredContent, which made the tool return its own input and a
+    // credit note. See runEvidence.
+    guidance,
     draft: args.draft,
     platform: args.platform ?? "tiktok",
     // Same shape the free tools use, so a caller totting up a session's spend
     // does not have to special-case this one.
     mcpCredits: { cost: 0 },
    },
-  })
+   };
+  }
  );
 
  server.registerTool(

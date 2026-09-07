@@ -3888,8 +3888,18 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 
     // Single post
     if(d.post||d.platform){app.innerHTML=postCard(d.post||d,true);return;}
-    // Fallback
-    app.innerHTML='<div class="json-block fade-in">'+esc(JSON.stringify(d,null,2))+"</div>";
+    // Fallback. The guidance field is prose written for the model, not data —
+    // dumped into the JSON block it reads as a wall of escaped text, and it is
+    // the longest string in most payloads. Drawn above the block and dropped
+    // from it. This is also what finally gives score_draft a view worth
+    // looking at: its rubric IS its answer, and the card used to show the
+    // echoed draft and a credit cost with the rubric nowhere on screen.
+    var rest=d,lead="";
+    if(d&&typeof d==="object"&&typeof d.guidance==="string"){
+      lead='<div class="fade-in" style="white-space:pre-wrap;line-height:1.5;margin-bottom:12px">'+esc(d.guidance)+"</div>";
+      rest={};for(var gk in d){if(gk!=="guidance")rest[gk]=d[gk];}
+    }
+    app.innerHTML=lead+'<div class="json-block fade-in">'+esc(JSON.stringify(rest,null,2))+"</div>";
     setTimeout(reportSize,50);
   }
 

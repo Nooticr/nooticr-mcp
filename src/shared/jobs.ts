@@ -772,9 +772,14 @@ const metricArg = z
 
 export function registerJobTools(server: McpServer, makeClient: MakeClient, store: WatchStore): void {
   /** Guidance in the text block, evidence in the structured one — as every tool here does. */
+  // Both channels, because only one of them arrives. A host that renders
+  // `structuredContent` replaces the content text blocks with the serialised
+  // JSON, so guidance kept only in a text block reaches no model — measured at
+  // 0 phrases across 175 tool results. See tools.ts's runEvidence for the full
+  // note, and docs/testing/tool-chaining-quests.md for the measurement.
   const evidence = (guidance: string, payload: Row) => ({
     content: [{ type: "text" as const, text: guidance }],
-    structuredContent: payload,
+    structuredContent: { guidance, ...payload },
   });
 
   const failed = (prefix: string, err: unknown) => ({
