@@ -1,0 +1,134 @@
+{
+  "_draft": {
+    "assembledBy": "hand, from this repository — NOT by the OpenAI Developers plugin's $chatgpt-app-submission skill, which was unavailable",
+    "readBeforeUploading": "Every VALUE below is sourced from the repo and checked (see docs/chatgpt-app-submission.md for the file each came from). The KEY NAMES are a best guess at the form's schema. Reconcile them against the form, or regenerate with the real skill, before uploading. Remove this _draft block once reconciled.",
+    "needsYourInput": [
+      "privacyPolicyUrl",
+      "termsOfServiceUrl",
+      "supportContact",
+      "publisher.legalName",
+      "category"
+    ],
+    "recommendedBeforeSubmitting": "Land issue #26 first. 1,286 outputSchema properties emit `type` as an array; `npm run contract:host` warns that several MCP clients either reject the tool or drop the constraint, and a rejected tool disappears from tools/list with no diagnostic."
+  },
+
+  "name": "Nooticr",
+  "id": "com.nooticr/mcp",
+  "version": "1.26.23",
+
+  "shortDescription": "Social intelligence for 10 networks: read posts and trends, monitor brand mentions, then create.",
+  "longDescription": "Nooticr gives ChatGPT three things. It can read real social posts across ten networks — TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo and Bilibili. It can understand them: the transcript, video frames as real images, the comments, the numbers. And it can help make something from what it learned — opening hooks, variants to film, a scored draft, a post repurposed for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.",
+
+  "category": null,
+  "keywords": [
+    "social media",
+    "brand monitoring",
+    "social listening",
+    "content research",
+    "creator analytics"
+  ],
+
+  "publisher": {
+    "name": "Nooticr",
+    "legalName": null,
+    "websiteUrl": "https://mcp.nooticr.com",
+    "supportContact": null
+  },
+
+  "privacyPolicyUrl": null,
+  "termsOfServiceUrl": null,
+
+  "icon": {
+    "path": "assets/brand/icon-512.png",
+    "url": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
+    "mimeType": "image/png",
+    "size": "512x512",
+    "background": "#FFFFFF",
+    "note": "The Nooticr eyes mark, #14151A on a pure white ground. Rendered from assets/brand/nooticr-icon.svg so the edges are not blended toward the previous off-white."
+  },
+
+  "server": {
+    "transport": "streamable-http",
+    "url": "https://mcp.nooticr.com/mcp",
+    "protocolVersion": "2025-11-25",
+    "alsoDistributedAs": {
+      "registryType": "npm",
+      "identifier": "@nooticr/mcp",
+      "transport": "stdio"
+    }
+  },
+
+  "authentication": {
+    "type": "oauth2",
+    "grant": "authorization_code",
+    "pkce": "S256",
+    "clientType": "public",
+    "discoveryUrl": "https://mcp.nooticr.com/.well-known/oauth-authorization-server",
+    "authorizationEndpoint": "https://mcp.nooticr.com/authorize",
+    "tokenEndpoint": "https://mcp.nooticr.com/token",
+    "accessTokenLifetimeSeconds": 3600,
+    "notes": "Redirect URIs are restricted to loopback or https. Authorization codes and PKCE challenges are one-time use and short-lived. No credential passes through a tool argument or the model's context."
+  },
+
+  "widgets": {
+    "count": 56,
+    "totalTools": 64,
+    "declaredVia": "_meta[\"openai/outputTemplate\"]",
+    "mimeType": "text/html+skybridge",
+    "deviationDeclaredUpFront": "Each view is served twice: text/html;profile=mcp-app for MCP Apps hosts, and text/html+skybridge at a .html-suffixed sibling URI for the ChatGPT Apps SDK, which looks for openai/outputTemplate and expects that mime. Handing ChatGPT the profile mime renders the HTML but never attaches the bridge. Two MCP Apps conformance checks (ui-listed-resources-valid, ui-resource-contents-valid) object to this because both require the profile mime everywhere; they are excluded deliberately and the remaining checks score 100/100. Pinned by tests/ui-resource.test.ts."
+  },
+
+  "dataHandling": {
+    "sentUpstream": "Tool arguments only — a post URL, a creator handle, a search term. No conversation content is sent.",
+    "stored": "The creator watchlist and scheduled brand watches, per workspace. A scheduled watch stores an opaque content fingerprint per already-mailed mention rather than the mention text.",
+    "thirdPartyContentReturned": true,
+    "thirdPartyContentHandling": "Post captions, comments, transcripts and search results come from the public internet, not from Nooticr. Every tool returning such text frames it as data to reason over rather than as instructions (the shared closing line in src/shared/evidence.ts). prepare_handoff additionally redacts contact details and defangs @handles and #numbers before the text reaches an issue tracker.",
+    "writesToSocialNetworks": false,
+    "writesToSocialNetworksNote": "No Nooticr connection carries comment-write permission on any network, so the audience-reply tools draft text for a person to paste in themselves."
+  },
+
+  "billing": {
+    "model": "credits",
+    "freeOnSignup": 20,
+    "topUp": "Stripe Checkout",
+    "priceDisclosure": "Each tool states its own credit cost in its description. The six tools whose price is set by an argument ask for confirmation over MCP elicitation above 6 credits; a scheduled watch always asks, and one that emails a digest requires a human to have seen the dialog before it accepts a delivery address.",
+    "refunds": "A call that produces no answer is not billed."
+  },
+
+  "stateChangingTools": [
+    "buy_nooticr_credits",
+    "watch_creator",
+    "unwatch_creator",
+    "catch_up_watchlist",
+    "track_competitor",
+    "create_brand_watch",
+    "stop_brand_watch",
+    "create_product",
+    "update_product",
+    "analyze_product",
+    "review_post",
+    "draft_post",
+    "growth_brief",
+    "generate_content_plan",
+    "generate_captions",
+    "connect_social_account"
+  ],
+
+  "supportedPlatforms": [
+    "tiktok",
+    "instagram",
+    "youtube",
+    "twitter",
+    "reddit",
+    "linkedin",
+    "douyin",
+    "xiaohongshu",
+    "weibo",
+    "bilibili"
+  ],
+
+  "repository": {
+    "url": "https://github.com/Nooticr/nooticr-mcp",
+    "license": "MIT"
+  }
+}
