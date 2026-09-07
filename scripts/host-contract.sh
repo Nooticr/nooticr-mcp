@@ -25,8 +25,28 @@ $INSPECT --method tools/list --app-info > "$WORK/app-info.ndjson"
 $INSPECT --method tools/list          > "$WORK/tools.json"
 $INSPECT --method resources/list      > "$WORK/resources.json"
 
-# Portability problems are reported by the inspector itself.
-$INSPECT --method tools/list --strict > /dev/null
+# Portability problems are reported by the inspector itself — and now gated on,
+# rather than printed and scrolled past. This step passed for a long time while
+# the inspector was saying "0 errors, 1291 warnings across 64 tools", because
+# only errors ever failed it; 1,286 of those warnings were one helper emitting
+# `type` as an array, which strict clients reject or silently ignore. A check
+# carrying 1,291 standing warnings is one nobody reads, and nothing turns red as
+# the count climbs. See issue #26.
+#
+# The test is "did the strict pass say anything at all", not "does its output
+# match a wording". A clean surface makes it completely silent — 0 bytes on
+# stderr, verified — so grepping for `Warning:` would quietly stop catching
+# anything the day the inspector rephrases itself. A future version that prints
+# something benign here fails the build instead, which is the direction to be
+# wrong in. The three $INSPECT calls above have already warmed the npx cache, so
+# what lands in this file is the inspector's verdict rather than a download.
+$INSPECT --method tools/list --strict > /dev/null 2> "$WORK/strict.txt"
+if [ -s "$WORK/strict.txt" ]; then
+  echo "FAIL: the inspector's strict pass reported portability findings:" >&2
+  cat "$WORK/strict.txt" >&2
+  printf '\ntests/output-schema-shape.test.ts names the offending schema paths.\n' >&2
+  exit 1
+fi
 
 # Each family must read back on the mime its host requires.
 $INSPECT --method resources/read --uri ui://nooticr/discover_social_posts      > "$WORK/claude-res.json"
