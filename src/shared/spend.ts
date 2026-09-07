@@ -72,6 +72,29 @@ export const SEARCH_PLATFORMS = [
  */
 export const SPOKEN_PLATFORMS = ["tiktok", "youtube", "douyin"] as const;
 
+/**
+ * Platforms a niche sweep can reach — the server's DISCOVERABLE_PLATFORMS.
+ *
+ * Named here for the same reason as the list above: more than one place has to
+ * agree on it. `discover_hashtags` counts tags across a sweep for every network
+ * but TikTok, so this list decides both which platforms it accepts and what its
+ * refusal names as the alternatives. LinkedIn is the one absentee — a post URL
+ * and a handle's feed both work there, discovery does not — and a tool that
+ * accepted it would spend a credit to return nothing, which then reads as "this
+ * niche has no tags".
+ */
+export const DISCOVERABLE_PLATFORMS = [
+  "youtube",
+  "tiktok",
+  "instagram",
+  "douyin",
+  "xiaohongshu",
+  "twitter",
+  "bilibili",
+  "reddit",
+  "weibo",
+] as const;
+
 /** Two per network, except the one that costs an order of magnitude more upstream. */
 export const CREDITS_PER_NETWORK = 2;
 export const XIAOHONGSHU_CREDITS = 5;

@@ -26,10 +26,7 @@ async function connect(structured: unknown = {}) {
   return client;
 }
 
-// The one tool with a side effect: it opens a Stripe checkout session, and a
-// second call is a second session.
 const NOT_READ_ONLY = [
-  "buy_nooticr_credits",
   // The watchlist tools write: two change stored state, and the catch-up also
   // moves every baseline forward, which is why it is not idempotent either.
   "watch_creator",
@@ -66,11 +63,24 @@ const NOT_READ_ONLY = [
 ];
 
 describe("tool annotations", () => {
+  /**
+   * Restored, not added. A regex in the change that removed
+   * `buy_nooticr_credits` (#40) was written to delete that tool's one test
+   * and matched greedily from the first `it(` in the block, taking these two
+   * with it — so the tool count went unchecked and, worse, nothing compared
+   * `readOnlyHint` against `NOT_READ_ONLY` any more. That second one is the
+   * guard whose own comment explains why it matters: a host auto-approves on
+   * `readOnlyHint`, so a wrong `true` waves through a real side effect. Both
+   * were absent from main for the length of one merge.
+   *
+   * The checkout test that removal was actually aiming at is correctly gone:
+   * the tool it asserted on no longer exists.
+   */
   it("every tool carries them", async () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(67);
+    expect(tools).toHaveLength(68);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -79,13 +89,6 @@ describe("tool annotations", () => {
     // A host auto-approves on readOnlyHint, so a wrong `true` here is worse
     // than a missing annotation: it waves through a real side effect.
     expect(writes).toEqual([...NOT_READ_ONLY].sort());
-  });
-
-  it("does not claim a checkout is idempotent", async () => {
-    const { tools } = await (await connect()).listTools();
-    const buy = tools.find((t) => t.name === "buy_nooticr_credits");
-    expect(buy?.annotations?.idempotentHint).toBe(false);
-    expect(buy?.annotations?.destructiveHint).toBe(false);
   });
 
   it("says which tools reach outside nooticr", async () => {
@@ -117,6 +120,7 @@ describe("tool annotations", () => {
       "list_brand_watches",
       "list_own_apps",
       "list_social_connections",
+      "mention_trend",
       "nooticr_login",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
@@ -142,6 +146,9 @@ describe("tool annotations", () => {
       // tools that FETCH those standings are open-world and deliberately not
       // here; this one only renders.
       "show_standings",
+      // Draws a series the caller read. mention_trend is closed-world too:
+      // it reads stored aggregates and makes no upstream call.
+      "show_trend",
       "show_variants",
       "stop_brand_watch",
       "unwatch_creator",

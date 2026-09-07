@@ -120,9 +120,18 @@ function handleMcpCall(name, args, workspaceId) {
       // tests/e2e/agentic-visual.e2e.ts render and click real posts that
       // came from an actual tools/call, not a hand-crafted fixture.
       const niche = String(args?.niche ?? "demo");
-      const posts = [1, 2].map((i) => ({
-        platform: "tiktok",
-        caption: `Fixture post ${i} about ${niche}`,
+      const platform = String(args?.platform ?? "tiktok");
+      // Three posts, not two, and carrying tags — because `discover_hashtags`
+      // derives its answer for every network but TikTok by counting tags
+      // across this sweep, and it drops any tag only one post uses. Two
+      // untagged posts made that route return an empty list against the
+      // fixture, which proves the plumbing and nothing about the answer.
+      // The tags are split between the array and the caption on purpose: X,
+      // Reddit and LinkedIn routinely fill only the caption.
+      const posts = [1, 2, 3].map((i) => ({
+        platform,
+        caption: `Fixture post ${i} about ${niche} #${niche} ${i === 3 ? "#护肤" : "#fixturetag"}`,
+        hashtags: i === 1 ? [`#${niche}`, "#fixturetag"] : [],
         creatorHandle: `fixture_creator_${i}`,
         externalUrl: `https://www.tiktok.com/@fixture_creator_${i}/video/${i}`,
         videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
@@ -133,7 +142,7 @@ function handleMcpCall(name, args, workspaceId) {
       }));
       return {
         content: [{ type: "text", text: `Found ${posts.length} fixture posts about ${niche}.` }],
-        structuredContent: { platform: "tiktok", posts },
+        structuredContent: { platform, posts },
       };
     }
     case "get_social_media": {
@@ -378,21 +387,6 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
-    case "buy_nooticr_credits": {
-      // This raw URL is what the backend returns; tools.ts's proxyUrls()
-      // rewrites it into a /media/proxy?url=... link before it reaches this
-      // repo's client, since `checkoutUrl` is neither a RAW_URL_KEYS entry
-      // nor one of the fixed image-key names — see
-      // tests/e2e/agentic-visual-full-app.e2e.ts's buy_nooticr_credits test
-      // for why that's a real bug, not something to route around here.
-      return {
-        content: [{ type: "text", text: "Fixture checkout link." }],
-        structuredContent: {
-          checkoutUrl: "https://checkout.stripe.com/fixture-session",
-          packs: [{ name: "Starter", price: "$12.50", credits: 500 }],
-        },
-      };
-    }
     case "generate_captions": {
       // Real shape (own-account.ts passthrough): {ok, cues, transcript, cost,
       // provider} — no `available`/`wordCount`. See ui-template.ts's
@@ -524,6 +518,53 @@ function handleMcpCall(name, args, workspaceId) {
             runsAffordableAtCurrentBalance: Math.floor(500 / costPerRun),
           },
           instructions: "Call again with confirm: true and this confirmationToken to actually create the watch.",
+        },
+      };
+    }
+    case "brand_watch_history": {
+      // A real series, because the generic empty case cannot exercise the one
+      // thing mention_trend's guidance is for: telling a short series apart
+      // from a quiet one. Eight weekly points, a network that grows while the
+      // total holds, and a run that found plenty and mailed nothing.
+      const runs = [0, 1, 2, 3, 4, 5, 6, 7].map((w) => {
+        const ranAt = new Date(Date.now() - w * 7 * 864e5).toISOString();
+        const tiktok = 12 - w;
+        const reddit = 4 + w;
+        return {
+          ranAt,
+          found: tiktok + reddit,
+          reported: w === 0 ? 0 : Math.max(0, 5 - w),
+          perPlatform: {
+            tiktok: { found: tiktok, reported: w === 0 ? 0 : Math.max(0, 3 - w) },
+            reddit: { found: reddit, reported: w === 0 ? 0 : Math.min(2, w) },
+          },
+          medianViews: null,
+          postsScored: null,
+          costCredits: 4,
+        };
+      });
+      return {
+        content: [{ type: "text", text: `Fixture history: ${runs.length} runs.` }],
+        structuredContent: {
+          watchId: "11111111-2222-3333-4444-555555555555",
+          kind: "mentions",
+          term: String(args?.term ?? "nooticr"),
+          platforms: ["tiktok", "reddit"],
+          windowDays: 90,
+          retainedDays: 365,
+          watchCreatedAt: new Date(Date.now() - 8 * 7 * 864e5).toISOString(),
+          runs,
+          runCount: runs.length,
+          found: { newest: runs[0].found, oldest: runs[runs.length - 1].found },
+          medianViews: { newest: null, oldest: null },
+          recurring: [
+            {
+              mentionKey: "fixture-sticky-key",
+              timesSeen: 6,
+              firstReportedAt: runs[runs.length - 1].ranAt,
+              lastSeenAt: runs[0].ranAt,
+            },
+          ],
         },
       };
     }

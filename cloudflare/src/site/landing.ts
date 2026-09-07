@@ -190,7 +190,7 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     `<div class="wrap"><section id="pricing">` +
     `<div class="sec-head"><span class="eyebrow">Pricing</span>` +
     `<h2>Pay for what you use</h2>` +
-    `<p>Credits never expire. Top up from your assistant with <code>buy_nooticr_credits</code> or from the dashboard.</p></div>` +
+    `<p>Credits never expire. Top up from your <a href="/dashboard" style="color:var(--brand)">dashboard</a> — the assistant can tell you the balance, but buying happens here rather than in the chat.</p></div>` +
     `<div class="prices">` +
     `<div class="price"><h3>Starter</h3><div class="amt">$15</div>` +
     `<div class="per">600 credits · $0.025 each</div>` +

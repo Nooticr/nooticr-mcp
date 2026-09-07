@@ -253,6 +253,10 @@ after the product owner weighed in.
    arbitrary cross-post selection, so sending nothing is correct, not a
    remaining gap.
 2. **`buy_nooticr_credits`'s pack cards had no click handler**, and
+   *(the tool itself has since been removed — ChatGPT's Commerce & Purchasing
+   policy supports physical goods only, and credit packs are a digital good.
+   The finding is kept because the bug class is not: a view that draws
+   something clickable and wires no handler.)*
    hardcoded three fixed prices regardless of the real `d.checkoutUrl`/
    `d.packs`. Fixed: each card is now a real `<a href>` to the real
    checkout URL, built from the real `d.packs` when present, so the

@@ -82,8 +82,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "discover_hashtags",
  title: "Discover Hashtags",
- description: "Trending TikTok hashtags from the Creative Center trend board, with post counts, view counts and whether each is rising, cooling or steady. Filter by country and time window. Use to find what to tag, or to spot a wave early. Consumes 2 nooticr credits.",
- inputSchema: z.object({ country: z.string().optional().describe("2-letter country code (default US)."), days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7)."), count: z.number().int().optional().describe("Max hashtags (default 20)."), industryId: z.string().optional().describe("Optional TikTok industry id to filter by.") }).strict(),
+ description: "What to tag a post with, on any network that can be searched. TikTok is read from the Creative Center trend board: post counts, view counts, and whether each tag is rising, cooling or steady. The other eight — instagram, youtube, douyin, xiaohongshu, twitter, bilibili, reddit, weibo — have no trend board upstream, so the tags are counted across a live sweep of the niche you name, which needs `niche` set and returns no rising/cooling signal because there is no earlier sample to compare against. The result says which of the two it is in `source`; do not present a counted sample as a trend board. One network cannot be swept at all: linkedin. Filter by country and time window on TikTok. Consumes 2 nooticr credits either way. Use to find what to tag, or to spot a wave early.",
+ inputSchema: z.object({ platform: z.string().optional().describe("Network to tag for. Defaults to tiktok, the only one with a real trend board. Anything else counts tags across a sweep and needs `niche`. linkedin cannot be swept."), niche: z.string().optional().describe("Topic to sweep, required for every platform but tiktok — the tags are counted from the posts a search for this returns, so without it there is nothing to count."), country: z.string().optional().describe("2-letter country code (default US). TikTok only."), days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7). TikTok only."), count: z.number().int().optional().describe("Max hashtags (default 20)."), industryId: z.string().optional().describe("Optional TikTok industry id to filter by.") }).strict(),
  },
  {
  name: "analyze_post_fast",
@@ -190,13 +190,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "check_nooticr_credits",
  title: "Check Nooticr Credits",
- description: "Check your MCP credit balance, billing URL and pack size. New users get 20 free credits. No cost — call anytime to see remaining credits before running other tools. Use before a run of paid calls to confirm the balance covers it.",
- inputSchema: z.object({}).strict(),
- },
- {
- name: "buy_nooticr_credits",
- title: "Buy Nooticr Credits",
- description: "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. Use when the balance is short and the user has agreed to top up. No cost to call.",
+ description: "Check your nooticr credit balance. No cost to call — call anytime to see remaining credits before running other tools. Nothing here sells or tops up credits: this server offers no purchase of any kind, so when the balance is short, say that it is and that topping up happens on the nooticr website, and do not offer a link or a price. Use before a run of paid calls to confirm the balance covers it.",
  inputSchema: z.object({}).strict(),
  },
  {
@@ -234,6 +228,18 @@ export const TOOL_DEFINITIONS = [
  title: "List Brand Watches",
  description: "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
  inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "mention_trend",
+ title: "Mention Trend",
+ description: "What a watch has SEEN OVER TIME, which no other tool here can answer — every read on this surface answers about now, and until the backend started keeping run history each sweep threw its numbers away. Takes `watchId` (or `term`) and an optional `days`. Returns one point per run: when it ran, how many mentions it found, how many were new, and both counts per network. On a competitor watch each point also carries the median that run measured. Also returns the mentions more than one run has seen. FREE: the sweeps were billed when they ran. Read the series yourself and say what changed.",
+ inputSchema: z.object({ watchId: z.string().optional(), term: z.string().optional(), days: z.number().int().optional() }).strict(),
+ },
+ {
+ name: "show_trend",
+ title: "Show Trend",
+ description: "Draw the trend you read out of mention_trend. Free, and makes no requests — it renders what you pass it: the series as a chart, per-network lines where you supply them, and your own read of what changed. Pass `tooShort` when the series has too few points to call a direction, and `edgeIsRecordStart` when the left edge is where the record begins rather than where the conversation did. Call this after you have decided what the numbers mean.",
+ inputSchema: z.object({ points: z.array(z.object({}).passthrough()).min(1).max(400), term: z.string().optional(), metric: z.string().optional(), verdict: z.string().optional(), tooShort: z.boolean().optional(), edgeIsRecordStart: z.boolean().optional() }).strict(),
  },
  {
  name: "stop_brand_watch",

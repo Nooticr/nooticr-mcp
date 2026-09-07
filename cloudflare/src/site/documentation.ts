@@ -230,7 +230,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<li>A call interrupted after it was charged — a deploy, a dropped connection, a timeout — is billed <strong>once at most</strong>. Retries carry an idempotency key.</li>` +
         `<li>Payment is handled by Stripe. Nooticr never sees or stores card details.</li>` +
         `</ul>` +
-        `<p>Check the balance any time with <code>check_nooticr_credits</code>, top up with <code>buy_nooticr_credits</code>, or use the <a href="/dashboard">dashboard</a>.</p>`,
+        `<p>Check the balance any time with <code>check_nooticr_credits</code>. Top up on the <a href="/dashboard">dashboard</a> — the MCP surface deliberately offers no purchase of any kind, so nothing in a conversation can sell you credits.</p>`,
     },
     {
       id: "errors",
