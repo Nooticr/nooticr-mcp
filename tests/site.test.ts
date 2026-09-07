@@ -226,6 +226,34 @@ describe("support page", () => {
   });
 });
 
+/**
+ * The submission checklist is filled in by a person under time pressure, so
+ * anything in it that CI moves on its own must be a pointer rather than a
+ * copy. The version was a copy, and went stale the first time a release
+ * landed while the branch was open — 1.26.23 in the doc against 1.26.24 in
+ * `package.json`.
+ */
+describe("submission checklist", () => {
+  const doc = readFileSync("docs/chatgpt-app-submission.md", "utf8");
+
+  it("quotes no version number of its own", () => {
+    const pinned = doc.match(/\b\d+\.\d+\.\d+\b/g) ?? [];
+    expect(pinned, `hardcoded version(s) in the doc: ${pinned.join(", ")}`).toEqual([]);
+  });
+
+  it("names the four things only a human can supply, and their values", () => {
+    for (const value of [
+      "https://mcp.nooticr.com/support",
+      "https://mcp.nooticr.com/terms",
+      "https://mcp.nooticr.com/privacy",
+      BRAND.supportEmail,
+      BRAND.company,
+    ]) {
+      expect(doc, `checklist omits ${value}`).toContain(value);
+    }
+  });
+});
+
 describe("dashboard", () => {
   const usage = {
     balance: 42,

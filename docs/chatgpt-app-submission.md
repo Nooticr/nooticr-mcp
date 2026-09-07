@@ -131,7 +131,7 @@ time pressure.
 | MCP endpoint | `https://mcp.nooticr.com/mcp` |
 | Also ships | stdio via `npx -y @nooticr/mcp` (`package.json` `bin`) |
 | Protocol version | 2025-11-25 (`npm run conformance:mcpjam`) |
-| Version | 1.26.23 — CI gates `package.json`, `.claude-plugin/plugin.json` and `MCP_SERVER_VERSION` against each other |
+| Version | read it, don't copy it: `node -p "require('./package.json').version"`. CI owns the number and bumps it on every merge, so a copy written here is stale before the form is filled. The `version` job gates `package.json`, `.claude-plugin/plugin.json` and `MCP_SERVER_VERSION` against each other |
 
 ### Icons
 
