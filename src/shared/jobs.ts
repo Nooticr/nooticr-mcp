@@ -67,6 +67,7 @@ import {
   MAX_SPOKEN_HANDLE_CALLS,
   MAX_SPOKEN_TRANSCRIPTS,
   SPOKEN_PLATFORMS,
+  CREDITS_PER_CREATOR,
 } from "./spend.js";
 import {
   distributionOf,
@@ -77,6 +78,13 @@ import {
   type Standing,
 } from "./performance.js";
 import { normaliseHandle, watchEntryId, watchlistOwner, type WatchStore } from "./watchlist.js";
+import {
+  creatorStanding,
+  standingsGuidance,
+  THIN_WINDOW,
+  ABOVE_RATIO,
+  type CreatorStanding,
+} from "./standings.js";
 import { viewMeta } from "./view-meta.js";
 import { extractLinks, COLLAB_RUBRIC, vettingGuidance } from "./collab.js";
 
@@ -1166,6 +1174,231 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           outperformers: outperformers.map((p) => p.postId),
           posts: scoredPosts,
           unavailable: [],
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        },
+      );
+    },
+  );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 2b. compare_creators / watchlist_standings
+  //
+  // The comparison track_competitor computes and discards. Both are pure
+  // compositions of get_user_posts — one fetch per creator, priced as the sum
+  // — and both leave the reading to the caller, because a ranking hides the
+  // window size that decides whether the ranking means anything.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /** One creator's window, fetched and scored. Shared by both tools below. */
+  const standingFor = async (
+    client: NooticrClient,
+    spend: Spend,
+    handle: string,
+    platform: string,
+    metric: Metric,
+    cap: number,
+  ): Promise<CreatorStanding> => {
+    try {
+      const res = await client.callTool("get_user_posts", { username: handle, platform, limit: cap });
+      const structured = structuredOf(res);
+      spend.record("get_user_posts", structured);
+      const posts = rowsOf(structured.posts).map((p, i) => ({
+        ...p,
+        postId: postIdOf(p, i),
+        postedAt: postDate(p),
+      }));
+      return creatorStanding(handle, platform, posts, metric, (post) => metricOf(post, metric));
+    } catch (err) {
+      // One creator failing must not lose the others: a comparison of three is
+      // still worth reading, and saying which one is missing is the honest
+      // version of an answer with a hole in it.
+      spend.attempted("get_user_posts");
+      return {
+        handle,
+        platform,
+        window: 0,
+        baseline: null,
+        hitRate: null,
+        medianWinRatio: null,
+        ratios: [],
+        best: null,
+        worst: null,
+        unavailable: reason(err),
+      };
+    }
+  };
+
+  server.registerTool(
+    "compare_creators",
+    {
+      title: "Compare Creators",
+      _meta: viewMeta("compare_creators"),
+      description:
+        "Two to five creators side by side, each scored against THEIR OWN recent median rather " +
+        "than against each other's raw numbers — which is the only way the comparison means " +
+        "anything, because a raw view count mostly measures follower count. Returns per creator: " +
+        "how many posts were scored, their own median, the share of the window that beat it, how " +
+        "hard they beat it when they did, every post's ratio, and their best and worst post. The " +
+        "ranking is yours to make: 'how often' and 'how big' usually disagree, and a hit rate " +
+        "over a short window is one post either way, so the window size travels with every " +
+        "number. Fetches one post list per creator: 2 nooticr credits each, 4-10 in total. " +
+        "Use for 'is their hit rate better than mine'; track_competitor is one creator alone.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      outputSchema: OUTPUT_SCHEMAS.compare_creators,
+      inputSchema: z
+        .object({
+          usernames: z
+            .array(z.string())
+            .min(2)
+            .max(5)
+            .describe(
+              "2-5 creator handles, with or without @. Include your own to benchmark against " +
+                "them. These are handles, not brand names — resolve a company name first.",
+            ),
+          platform: z.string().optional().describe(PLATFORM_ARG),
+          limit: z
+            .number()
+            .int()
+            .optional()
+            .describe("Posts per creator (default 12, max 30). One fetch each either way."),
+          metric: metricArg,
+        })
+        .strict(),
+    },
+    async (
+      args: { usernames: string[]; platform?: string; limit?: number; metric?: Metric },
+      extra,
+    ) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const platform = (args.platform || "tiktok").toLowerCase();
+      const cap = clamp(args.limit, 12, 1, 30);
+      const metric: Metric = args.metric ?? "views";
+      // Deduped, because comparing a creator against themselves is two paid
+      // fetches for one column.
+      const handles = [...new Set(args.usernames.map(normaliseHandle))].filter(Boolean);
+      if (handles.length < 2) {
+        return evidence(
+          "A comparison needs two different creators. After removing duplicates only " +
+            `${handles.length} handle${handles.length === 1 ? "" : "s"} remained, so nothing was ` +
+            "fetched and nothing was charged.",
+          { tool: "compare_creators", creators: [], billable: false, mcpCredits: { cost: 0 } },
+        );
+      }
+
+      const credits = costOf(handles.map(() => "get_user_posts"));
+      const decision = await confirmSpend(server.server, {
+        credits,
+        summary: `Read the recent posts of ${handles.map((h) => "@" + h).join(", ")} on ${platform}.`,
+        cheaper: "Compare fewer creators — each one is a separate fetch.",
+      });
+      if (!decision.proceed) {
+        return declinedResult(credits, "That comparison", "Compare fewer creators.");
+      }
+
+      const spend = new Spend();
+      const rows: CreatorStanding[] = [];
+      for (const handle of handles) {
+        rows.push(await standingFor(client, spend, handle, platform, metric, cap));
+      }
+
+      return evidence(
+        standingsGuidance({ rows, metric, source: "handles" }) + "\n\n" + ownIt,
+        {
+          mode: "evidence",
+          tool: "compare_creators",
+          evidenceFrom: ["get_user_posts"],
+          platform,
+          platformDefaulted: !args.platform,
+          metric,
+          thinWindow: THIN_WINDOW,
+          aboveRatio: ABOVE_RATIO,
+          creators: rows as unknown as Row[],
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        },
+      );
+    },
+  );
+
+  server.registerTool(
+    "watchlist_standings",
+    {
+      title: "Watchlist Standings",
+      _meta: viewMeta("watchlist_standings"),
+      description:
+        "The same comparison across everyone on your watchlist, answering 'who moved' in one " +
+        "call instead of one per creator. Each is scored against their own recent median, so the " +
+        "numbers are comparable between accounts of different sizes; the window size travels " +
+        "with each so a short one is not ranked as if it were a season. Reads the watchlist " +
+        "itself for free and fetches one post list per creator on it: 2 nooticr credits each, so " +
+        "the price is the size of your watchlist — it confirms before spending. Use for the " +
+        "weekly 'who is accelerating'; catch_up_watchlist is what is NEW rather than how it did.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      outputSchema: OUTPUT_SCHEMAS.watchlist_standings,
+      inputSchema: z
+        .object({
+          limit: z
+            .number()
+            .int()
+            .optional()
+            .describe("Posts per creator (default 12, max 30). One fetch each either way."),
+          metric: metricArg,
+        })
+        .strict(),
+    },
+    async (args: { limit?: number; metric?: Metric }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const cap = clamp(args.limit, 12, 1, 30);
+      const metric: Metric = args.metric ?? "views";
+
+      let entries: Awaited<ReturnType<WatchStore["list"]>> = [];
+      try {
+        entries = await store.list(await watchlistOwner(client));
+      } catch (err) {
+        return failed("watchlist_standings could not read your watchlist", err);
+      }
+      if (!entries.length) {
+        // Not an error and not billed: an empty watchlist is a state with a
+        // next step, and saying so beats a comparison of nobody.
+        return evidence(
+          "Your watchlist is empty, so there is nobody to compare. Add creators with " +
+            "watch_creator first — the standings are then one call. Nothing was charged.",
+          { tool: "watchlist_standings", watching: 0, creators: [], billable: false, mcpCredits: { cost: 0 } },
+        );
+      }
+
+      const credits = entries.length * CREDITS_PER_CREATOR;
+      const decision = await confirmSpend(server.server, {
+        credits,
+        summary:
+          `Read the recent posts of all ${entries.length} creator${entries.length === 1 ? "" : "s"} ` +
+          "on your watchlist and score each against their own median.",
+        cheaper: "Unwatch creators you no longer follow, or use track_competitor for just one.",
+      });
+      if (!decision.proceed) {
+        return declinedResult(credits, "Those standings", "Use track_competitor for a single creator.");
+      }
+
+      const spend = new Spend();
+      const rows: CreatorStanding[] = [];
+      for (const entry of entries) {
+        rows.push(
+          await standingFor(client, spend, entry.handle, entry.platform, metric, cap),
+        );
+      }
+
+      return evidence(
+        standingsGuidance({ rows, metric, source: "watchlist" }) + "\n\n" + ownIt,
+        {
+          mode: "evidence",
+          tool: "watchlist_standings",
+          evidenceFrom: ["get_user_posts"],
+          metric,
+          watching: entries.length,
+          thinWindow: THIN_WINDOW,
+          aboveRatio: ABOVE_RATIO,
+          creators: rows as unknown as Row[],
           creditsCharged: spend.credits,
           mcpCredits: spend.payload,
         },

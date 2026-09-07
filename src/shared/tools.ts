@@ -611,6 +611,11 @@ export function createMcpServer(
   "answer_my_audience",
   "show_audience_replies",
   "track_competitor",
+  // The comparison track_competitor computes per creator and never puts side
+  // by side, plus the free view that draws the table once a read is written.
+  "compare_creators",
+  "watchlist_standings",
+  "show_standings",
   "who_should_i_work_with",
   "why_did_this_underperform",
   "what_should_i_make_next",
@@ -1568,6 +1573,81 @@ export function createMcpServer(
  // ui-template.ts already renders (show_comparison → the comparison
  // scoreboard, show_analysis → analysisCard) or a new one added alongside
  // it (show_hooks, show_variants, show_repurposed_post).
+ server.registerTool(
+  "show_standings",
+  {
+   title: "Show Standings",
+   description:
+    "Draw the standings you read out of compare_creators or watchlist_standings. Free, and makes " +
+    "no requests — it only renders what you pass it: one row per creator with their window, their " +
+    "own median, how often they beat it and how hard, and the post that did best. Pass `ranking` " +
+    "to say which axis you ordered on, and `tooThin` for the creators whose window was too short " +
+    "to rank — a table that hides that is the one mistake this view can make on your behalf. " +
+    "Call this after you have decided what the numbers mean, not instead of deciding.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_standings") },
+    "ui/resourceUri": uiResource("show_standings"),
+    "openai/outputTemplate": appsSdkResource("show_standings"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_standings,
+   inputSchema: z
+    .object({
+     creators: z
+      .array(anyObject())
+      .min(1)
+      .max(25)
+      .describe(
+       "The creator rows, in the order you decided on — the same shape compare_creators returned " +
+        "(handle, platform, window, baseline, hitRate, medianWinRatio, best, ...)."
+      ),
+     metric: z.string().optional().describe("Which stat the standings are on (views, likes, ...)."),
+     ranking: z
+      .string()
+      .optional()
+      .describe(
+       'What you ordered on and why — "how often they land one" and "how big it is when they do" ' +
+        "usually disagree, so the reader needs to know which they are looking at."
+      ),
+     verdict: z.string().optional().describe("Your read, in a sentence or two."),
+     tooThin: z
+      .array(z.string())
+      .optional()
+      .describe(
+       "Handles whose window was too short to rank. Drawn as unranked rather than bottom, " +
+        "because missing from a comparison is not the same as losing it."
+      ),
+    })
+    .strict(),
+  },
+  async (args: {
+   creators: Array<Record<string, unknown>>;
+   metric?: string;
+   ranking?: string;
+   verdict?: string;
+   tooThin?: string[];
+  }) => {
+   return {
+    content: [
+     {
+      type: "text" as const,
+      text:
+       `Showing standings for ${args.creators.length} creator${args.creators.length === 1 ? "" : "s"}.` +
+       (args.verdict ? ` ${args.verdict}` : ""),
+     },
+    ],
+    structuredContent: {
+     creators: args.creators,
+     metric: args.metric ?? "views",
+     ranking: args.ranking ?? null,
+     verdict: args.verdict ?? null,
+     tooThin: args.tooThin ?? [],
+     standings: true,
+    },
+   };
+  }
+ );
+
  server.registerTool(
   "show_comparison",
   {

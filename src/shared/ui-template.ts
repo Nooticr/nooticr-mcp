@@ -3664,6 +3664,64 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(d.posts&&Array.isArray(d.posts)){
       if(!d.posts.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🔍</div><div class="text">No posts found</div></div>';return;}
       app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false,true);}).join(""),d.posts.length)+pickBarHtml();initPicks();return;}
+    // Standings: creators on one normalised axis. A table, because the question
+    // is comparative — and every row carries the window it was scored over. A
+    // hit rate whose denominator is invisible cannot be told apart from one
+    // that means something, which is why these numbers were computed per
+    // creator and never put side by side before (issue #30).
+    if(Array.isArray(d.creators)&&(d.standings||d.tool==="compare_creators"||d.tool==="watchlist_standings")){
+      var thin=Array.isArray(d.tooThin)?d.tooThin:[];
+      var floor=typeof d.thinWindow==="number"?d.thinWindow:8;
+      var above=typeof d.aboveRatio==="number"?d.aboveRatio:1.25;
+      var met=esc(d.metric||"views");
+      var rows=d.creators.map(function(c){
+        var un=c.unavailable;
+        // A window shorter than the floor, or one the model flagged, is drawn
+        // unranked. Bottom of a table is a claim; unranked is the truth.
+        var short=!un&&(thin.indexOf(String(c.handle))>=0||(typeof c.window==="number"&&c.window<floor));
+        var med=c.baseline&&c.baseline.median!=null?fmtNum(c.baseline.median):"-";
+        var hit=c.hitRate!=null?Math.round(c.hitRate*100)+"%":"-";
+        var win=c.medianWinRatio!=null?(Math.round(c.medianWinRatio*100)/100)+"x":"-";
+        var best=c.best&&(c.best.title||c.best.caption)?String(c.best.title||c.best.caption):"";
+        return '<tr style="border-top:1px solid var(--border-soft)'+(un?";opacity:.6":"")+'">'
+          +'<td style="padding:9px 10px;font-weight:600;white-space:nowrap">@'+esc(c.handle)
+          +(c.platform?'<span style="font-weight:400;color:var(--muted)"> · '+esc(c.platform)+"</span>":"")
+          +(short?'<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--warn)">too thin to rank</span>':"")
+          +"</td>"
+          +(un
+            ?'<td colspan="4" style="padding:9px 10px;color:var(--muted);font-size:12.5px">'+esc(String(un))+"</td>"
+            :'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+fmtNum(c.window||0)+"</td>"
+              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+med+"</td>"
+              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+hit+"</td>"
+              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+win+"</td>")
+          +"</tr>"
+          +(best&&!un
+            ?'<tr><td colspan="5" style="padding:0 10px 9px 10px;color:var(--muted);font-size:12px">best: '+esc(best.slice(0,120))+"</td></tr>"
+            :"");
+      }).join("");
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700">Standings</div>'
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">'
+        +d.creators.length+" creator"+(d.creators.length===1?"":"s")+" · each against their OWN median "+met
+        +(d.watching!=null?" · watchlist of "+fmtNum(d.watching):"")+"</div>"
+        +(d.ranking?'<div style="font-size:12.5px;margin:0 0 8px">Ordered on: '+esc(String(d.ranking))+"</div>":"")
+        +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+        +'<thead><tr style="text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em">'
+        +'<th style="padding:0 10px 6px">Creator</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">Window</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">Their median</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">Beat it</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">By</th>'
+        +"</tr></thead><tbody>"+rows+"</tbody></table></div>"
+        +(d.verdict?'<div style="font-size:13.5px;line-height:1.6;margin-top:12px">'+esc(String(d.verdict))+"</div>":"")
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">'
+        +'"Beat it" is the share of the window at or above '+above+"x that creator's own median. "
+        +"A raw view count mostly measures follower count, so nothing here compares raw numbers. "
+        +"A window under "+floor+" posts is one post either way, and no ratio here says whether a "
+        +"baseline is itself moving — that needs a second point in time."
+        +"</div></div></div>";
+      return;}
+
     // Creators
     if(d.creators&&Array.isArray(d.creators)){
       if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}

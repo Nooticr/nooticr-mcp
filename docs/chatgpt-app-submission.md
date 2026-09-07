@@ -92,7 +92,7 @@ prompt that should spend nothing (*"What is the capital of Portugal?"*).
 | `app_info.subtitle` | "Social listening, then create" — 29 of 30 chars | written for this |
 | `app_info.description` | 1,648 of 4,000 chars, drawn from `README.md`'s opening rather than written fresh | `README.md` |
 | `app_info.category` | `BUSINESS` | see below |
-| `tools` | all **64** tools, each with three annotations and three justifications | annotations read from `tools/list` on the built server |
+| `tools` | **every** tool the server ships, each with three annotations and three justifications | annotations read from `tools/list` on the built server, and pinned to it by `tests/site.test.ts` |
 | `test_cases` | **exactly 5** — the uploader's requirement, not a minimum | written against real tool names and real behaviour |
 | `negative_test_cases` | **exactly 3** — same rule, inferred | the same |
 
@@ -109,14 +109,23 @@ place. The five distinct annotation shapes across the surface:
 
 | `readOnly` / `openWorld` / `destructive` | count | what they are |
 |---|---|---|
-| `true` / `true` / `false` | 28 | fetch public social content, write nothing |
-| `true` / `false` / `false` | 20 | read the caller's own workspace, or draw locally with no network call |
-| `false` / `false` / `false` | 10 | write to the caller's own workspace, or spend plan AI credits |
-| `false` / `true` / `false` | 4 | fetch **and** advance the caller's own marker, or open a Stripe checkout |
+| `true` / `true` / `false` | most | fetch public social content, write nothing |
+| `true` / `false` / `false` | many | read the caller's own workspace, or draw locally with no network call |
+| `false` / `false` / `false` | several | write to the caller's own workspace, or spend plan AI credits |
+| `false` / `true` / `false` | a few | fetch **and** advance the caller's own marker, or open a Stripe checkout |
 | `false` / `false` / `true` | 2 | `unwatch_creator`, `stop_brand_watch` |
 
 The justifications are written per tool rather than per group — each names what
-that specific tool does and why the hint follows. 192 of them.
+that specific tool does and why the hint follows, and a test rejects two tools
+sharing a read-only reason.
+
+The tool list is no longer a number written here. It was **64**, and adding
+three tools left the file describing a surface that no longer existed —
+`npm run check:submission` validates the file's shape against the schema and
+has no idea what the server ships, so the only symptom would have been a
+reviewer reading annotations for 64 of 67 tools. `tests/site.test.ts` now
+compares the file's tool list and every annotation in it against a real
+`tools/list`, in both directions.
 
 ## The skill, the prompts, and the five languages
 
@@ -271,7 +280,9 @@ everywhere. They are excluded deliberately in
 `scripts/mcpjam-apps-conformance.sh`, and the remaining checks score
 **100/100, 5/5**. Pinned by `tests/ui-resource.test.ts`.
 
-56 of the 64 tools carry a widget. The 8 without are a login tool, pure state
+Most tools carry a widget; `scripts/host-contract.py`'s `NO_APP` set is the
+authoritative list of the ones that do not, and CI fails if a tool outside it
+ships without a view. Those exceptions are a login tool, pure state
 mutations and a job-start acknowledgement — things with nothing to draw.
 
 ### Publisher, contact and legal URLs

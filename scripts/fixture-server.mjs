@@ -194,16 +194,30 @@ function handleMcpCall(name, args, workspaceId) {
       // A handle that finds nothing is a real case with its own guidance path
       // (the competitor-on-the-wrong-network failure), and the generic empty
       // response cannot exercise it. Any handle starting `missing_` misses.
+      // Honour `limit` rather than always returning three. compare_creators
+      // and watchlist_standings score a window against its own median, and a
+      // three-post window is below the floor at which they will rank anything
+      // — so a fixture stuck at three could only ever exercise the "too thin
+      // to call" path. Three stays the default, so nothing that assumed it
+      // moves.
+      const count = Math.min(Math.max(1, Number(args?.limit) || 3), 30);
+      // Views vary by handle, not just by index. Identical distributions make
+      // every creator identical, and a comparison of identical columns
+      // demonstrates the plumbing and nothing about the comparison. Derived
+      // from the handle so it is deterministic across runs.
+      const seed = [...username].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 97, 7) + 3;
       const posts = username.startsWith("missing_")
         ? []
-        : [1, 2, 3].map((i) => ({
+        : Array.from({ length: count }, (_, k) => k + 1).map((i) => ({
             platform,
             caption: `Post ${i} by ${username}`,
             creatorHandle: username,
             externalUrl: `https://www.tiktok.com/@${username}/video/${i}`,
             videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
             contentType: "video",
-            views: 1000 * i,
+            // One post per handle carries the outlier, so hit rates and win
+            // ratios differ between handles instead of lining up.
+            views: 1000 * i * (i === seed % count + 1 ? seed : 1),
             likes: 100 * i,
             comments: 10 * i,
           }));

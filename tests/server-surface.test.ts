@@ -70,7 +70,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(64);
+    expect(tools).toHaveLength(67);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -138,6 +138,10 @@ describe("tool annotations", () => {
       "show_comparison",
       "show_hooks",
       "show_repurposed_post",
+      // Draws the standings the caller read out of compare_creators. The two
+      // tools that FETCH those standings are open-world and deliberately not
+      // here; this one only renders.
+      "show_standings",
       "show_variants",
       "stop_brand_watch",
       "unwatch_creator",
