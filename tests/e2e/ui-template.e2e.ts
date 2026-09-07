@@ -1867,3 +1867,81 @@ test.describe("brand sweep shows the post, not just its comments", () => {
     await expect(page.locator(".mention")).toHaveCount(1);
   });
 });
+
+// The hashtag view served one source and hardcoded its label, so a Reddit
+// result read "TikTok · US · last 7 days" and every row drew a "▬ steady"
+// chip for a direction nobody measured — the exact shape of bug the repo's
+// own notes warn about: two artifacts locally correct, no test spanning them
+// (issue #32).
+test.describe("hashtags from a trend board and from a counted sweep", () => {
+  const BOARD = {
+    source: "trend-board", platform: "tiktok", country: "GB", days: 30,
+    hashtags: [
+      { hashtag: "skincare", posts: 128000, views: 9400000000, trend: "rising", url: "https://t.test/1" },
+      { hashtag: "glowup", posts: 900, views: 40000000, trend: "steady", url: "https://t.test/3" },
+    ],
+  };
+  const DERIVED = {
+    source: "derived-from-sweep", platform: "reddit", niche: "skincare", sweptPosts: 24,
+    note: "Counted across 24 recent reddit posts. This is a sample of one search, not a trend board.",
+    hashtags: [
+      { hashtag: "skincare", posts: 9, views: 41000, medianViews: 3800, example: "https://r.test/1" },
+      { hashtag: "护肤", posts: 4, views: 12000, medianViews: 2900, example: "https://r.test/2" },
+      { hashtag: "retinol", posts: 2, views: null, medianViews: null, example: null },
+    ],
+  };
+
+  test("the trend board keeps its arrows and says which board it is", async ({ page }) => {
+    await renderTemplate(page, BOARD);
+    await expect(page.locator(".card-body")).toContainText("TikTok trend board · GB · last 30 days");
+    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
+    expect(chips).toEqual(["▲ rising", "▬ steady"]);
+  });
+
+  test("a counted sweep names its own network, never TikTok", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    const body = page.locator(".card-body");
+    await expect(body).toContainText("reddit · counted across 24 posts");
+    await expect(body).toContainText('matching "skincare"');
+    await expect(body).not.toContainText("TikTok");
+  });
+
+  test("a counted sweep draws no trend arrow, because nothing measured one", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
+    expect(chips, "a steady chip asserts a direction the tool did not measure").toEqual([]);
+  });
+
+  test("it draws the median the tool computed, and the caveat under it", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    const body = page.locator(".card-body");
+    // The median, not the total: one outlier in a 30-post sweep moves a total.
+    await expect(body).toContainText("median 3.8K views");
+    await expect(body).not.toContainText("41.0K views");
+    // A row the network reports no views for still renders, with just a count.
+    await expect(body).toContainText("2 posts");
+    // The caveat reaches the person, not only the model's context.
+    await expect(body).toContainText("not a trend board");
+  });
+
+  test("a non-Latin tag survives to the screen", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    await expect(page.locator(".card-body")).toContainText("#护肤");
+  });
+
+  test("a row links the example post the tool supplied", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    await expect(page.locator('a[href="https://r.test/2"]')).toHaveCount(1);
+    // ...and a row with no example is not a link to nowhere.
+    await expect(page.locator('a[href="#"]')).toHaveCount(0);
+  });
+
+  test("a network that cannot be swept says why, not 'none found'", async ({ page }) => {
+    await renderTemplate(page, {
+      source: "derived-from-sweep", platform: "linkedin", available: false, hashtags: [],
+      reason: "linkedin cannot be swept for posts, so there is no sample to count tags in.",
+    });
+    await expect(page.locator(".empty-state")).toContainText("linkedin cannot be swept");
+    await expect(page.locator(".empty-state")).not.toContainText("No trending hashtags found");
+  });
+});
