@@ -326,7 +326,7 @@ vitest file and runs on every push.
 
 ## MCPJam: `evals run` no longer exists
 
-`scripts/run-agentic-evals.sh` calls `npx @mcpjam/cli@latest evals run`. At
+`scripts/run-agentic-evals.sh` called `npx @mcpjam/cli@latest evals run`. At
 5.6.0 that command is gone:
 
 ```
