@@ -51,8 +51,34 @@ const SPOKEN = {
   unavailable: [],
 };
 
+/** A 1x1 transparent GIF, so a poster/thumbnail request resolves to real bytes. */
+const PIXEL = Buffer.from(
+  "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+  "base64",
+);
+
 async function boot(page: Page, tool = "") {
   const errs: string[] = [];
+  // Nothing in this file may reach the network.
+  //
+  // The fixtures below carry real-looking media URLs deliberately — several
+  // tests assert on their shape, and a `data:` URI would not exercise the same
+  // code path. But every one of these tests then asserts `errs` is empty, so
+  // letting the browser actually fetch them made the suite depend on
+  // mcp.nooticr.com serving two files: seven render assertions failed with
+  // ERR_TUNNEL_CONNECTION_FAILED on any runner without egress, and passed for
+  // the wrong reason on one with it. Serving them here keeps the URLs as URLs
+  // and the assertion about page errors about page errors.
+  await page.route("**/*mcp.nooticr.com/**", (route) => {
+    const url = route.request().url();
+    if (/\.(mp4|webm|m3u8)$/.test(url)) {
+      // An empty 200 rather than a failure: the <video> element raises its own
+      // error event for undecodable bytes, which is not a console error, where
+      // a 4xx is logged as one and would defeat the point.
+      return route.fulfill({ status: 200, contentType: "video/mp4", body: "" });
+    }
+    return route.fulfill({ status: 200, contentType: "image/gif", body: PIXEL });
+  });
   page.on("pageerror", (e) => errs.push(String(e)));
   page.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
   // Each tool is served at its own resource URI with its name baked in, which
@@ -421,17 +447,18 @@ test("a spoken sweep prices what the tool clamps to, not what was typed", async 
   const errs = await boot(page);
   // The vitest suite pins these same numbers against the plan data; this is
   // the copy that runs, and the divergence between the two is the whole
-  // reason both exist. 2 networks swept at 2, plus the default 8 transcripts.
+  // reason both exist. 3 caption-track networks swept at 2, plus the default
+  // 8 transcripts.
   await loading(page, "search_spoken_mentions", { term: "nooticr", niche: "skincare" });
-  expect(await page.locator(".load-sub").textContent()).toContain("12 credits committed");
+  expect(await page.locator(".load-sub").textContent()).toContain("14 credits committed");
   expect(errs).toEqual([]);
 });
 
 test("a network the spoken sweep cannot reach is not a line on its bill", async ({ page }) => {
   const errs = await boot(page);
-  // Only tiktok and youtube publish a caption track this reads; the tool
-  // filters the rest out before it spends, so pricing three sweeps here
-  // quoted two that never run.
+  // Only the caption-track networks (tiktok, youtube, douyin) are reachable
+  // here; the tool filters the rest out before it spends, so pricing three
+  // sweeps for this argument quoted two that never run.
   await loading(page, "search_spoken_mentions", {
     term: "nooticr", niche: "skincare", platforms: ["instagram", "reddit", "tiktok"],
   });
@@ -447,7 +474,7 @@ test("a transcript ceiling above the server's own is drawn at the server's", asy
   // jobs.ts clamps maxTranscripts to MAX_SPOKEN_TRANSCRIPTS (20). Counting
   // the argument as typed drew a 200-credit line for a 20-credit call.
   await loading(page, "search_spoken_mentions", { term: "n", niche: "s", maxTranscripts: 200 });
-  expect(await page.locator(".load-sub").textContent()).toContain("24 credits committed");
+  expect(await page.locator(".load-sub").textContent()).toContain("26 credits committed");
   const reads = page.locator(".led-row", { hasText: "Transcribing a candidate" });
   expect(await reads.locator(".led-label").textContent()).toContain("×20");
   expect(errs).toEqual([]);
@@ -455,9 +482,9 @@ test("a transcript ceiling above the server's own is drawn at the server's", asy
 
 test("a named handle is checked once per network, and the watchlist is a ceiling", async ({ page }) => {
   const errs = await boot(page);
-  // Two handles across both networks is four calls, not two.
+  // Two handles across all three networks is six calls, not two.
   await loading(page, "search_spoken_mentions", { term: "n", usernames: ["@a", "@b"] });
-  expect(await page.locator(".load-sub").textContent()).toContain("16 credits committed");
+  expect(await page.locator(".load-sub").textContent()).toContain("20 credits committed");
 
   // A watchlist a sandboxed view cannot read is drawn as the ceiling it is
   // clamped to, and says so — it used to be priced at nothing at all.

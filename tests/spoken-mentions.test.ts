@@ -20,7 +20,12 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { formatTimecode, matchExcerpts, timeExcerpts } from "../src/shared/jobs.js";
-import { MAX_SPOKEN_HANDLE_CALLS, MAX_SPOKEN_TRANSCRIPTS } from "../src/shared/spend.js";
+import {
+  MAX_SPOKEN_HANDLE_CALLS,
+  MAX_SPOKEN_TRANSCRIPTS,
+  SPOKEN_PLATFORMS,
+} from "../src/shared/spend.js";
+import { listIsCeiling, platformsFor } from "./platform-capabilities.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import { MemoryWatchStore } from "../src/shared/watchlist.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
@@ -274,5 +279,43 @@ describe("the ceilings that make the fan-out affordable", () => {
     // copy and the pricing note in the tool description need revisiting too.
     expect(MAX_SPOKEN_TRANSCRIPTS).toBeLessThanOrEqual(25);
     expect(MAX_SPOKEN_HANDLE_CALLS).toBeLessThanOrEqual(10);
+  });
+});
+
+/**
+ * Which networks this tool listens to is a claim about nooticr-server, so it
+ * is checked against the manifest nooticr-server generates rather than against
+ * a list typed in here.
+ *
+ * `SPOKEN_PLATFORMS` said `["tiktok", "youtube"]` and justified it in prose:
+ * "everywhere else the words would have to be inferred from the audio, which
+ * is a different tool at a different price". Both halves were wrong — it is
+ * the same tool (`get_post_transcript`) at the same price (1 credit) — and the
+ * cost of being wrong was Douyin, which reads a caption track on the same
+ * match arm as TikTok and sat unreachable behind the limit anyway. Nothing
+ * caught it because the tool is filed under the `mentions` capability, so the
+ * check that exists for exactly this ("a fast path is not a ceiling") never
+ * reaches it.
+ */
+describe("the networks it listens to are the ones the server reads captions for", () => {
+  it("is exactly the server's caption-track set, in either direction", () => {
+    expect([...SPOKEN_PLATFORMS].sort()).toEqual([...platformsFor("transcript")].sort());
+  });
+
+  it("does not present that set as the limit of what could be transcribed", async () => {
+    // `transcript.listIsCeiling` is false: the server's `_` arm transcribes
+    // every other platform's audio. So this tool may say "these are the cheap
+    // ones" but must not say "these are the only ones" — the sentence that
+    // sent a caller away from a network that works.
+    expect(listIsCeiling("transcript")).toBe(false);
+    const { client } = await connect({});
+    const shipped = (await client.listTools()).tools.find(
+      (t) => t.name === "search_spoken_mentions",
+    );
+    const prose = String(shipped?.description ?? "");
+    expect(prose).not.toMatch(/only two networks|TikTok and YouTube only/i);
+    expect(prose, "must say the other networks are reachable, just not from here").toMatch(
+      /every other network|other network's audio/i,
+    );
   });
 });
