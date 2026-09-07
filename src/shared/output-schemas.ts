@@ -522,7 +522,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  track_competitor: open({
+  track_creator: open({
     ...evidence,
     username: scalar(),
     platform: scalar(),
@@ -531,7 +531,7 @@ export const OUTPUT_SCHEMAS = {
     since: scalar(),
     sinceApplied: scalar(),
     tracked: scalar().describe("True when this creator is on the watchlist, which is what makes a diff possible."),
-    lastCheckedAt: scalar().describe("When track_competitor last looked, or null on a first look."),
+    lastCheckedAt: scalar().describe("When track_creator last looked, or null on a first look."),
     newSincePreviousCheck: scalar().describe("Posts not seen at the last check; null when there was none."),
     baseline: open({
       count: scalar(),

@@ -292,7 +292,7 @@ describe("tool surface", () => {
     // the question rather than the endpoint.
     "answer_my_audience",
     "show_audience_replies",
-    "track_competitor",
+    "track_creator",
     "who_should_i_work_with",
     "why_did_this_underperform",
     "what_should_i_make_next",

@@ -38,7 +38,7 @@ const NOT_READ_ONLY = [
   // Same shape as the catch-up: it fetches, and for a creator already on the
   // watchlist it moves that creator's "last tracked" marker forward, so a
   // second call in a row does not answer the same question as the first.
-  "track_competitor",
+  "track_creator",
   // Creates a recurring watch (on confirm) / stops one — both change stored
   // state. list_brand_watches only reads, so it stays out of this list.
   "create_brand_watch",
@@ -227,8 +227,8 @@ describe("prompts", () => {
     // write, and watching before the paid baseline check that depends on it.
     expect(text.indexOf("search_creators")).toBeLessThan(text.indexOf("analyze_creator_profile"));
     expect(text.indexOf("analyze_creator_profile")).toBeLessThan(text.indexOf("watch_creator"));
-    expect(text.indexOf("watch_creator")).toBeLessThan(text.indexOf("track_competitor"));
-    expect(text.indexOf("track_competitor")).toBeLessThan(text.indexOf("catch_up_watchlist"));
+    expect(text.indexOf("watch_creator")).toBeLessThan(text.indexOf("track_creator"));
+    expect(text.indexOf("track_creator")).toBeLessThan(text.indexOf("catch_up_watchlist"));
     expect(text).toContain("Acme, acme.com");
   });
 

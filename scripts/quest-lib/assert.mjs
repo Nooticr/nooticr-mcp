@@ -67,6 +67,17 @@ export function judgeRun(quest, calls) {
     }
   }
 
+  // Some journeys have no meaningful order. "Track this creator and keep an
+  // eye on them" is satisfied by tracking then watching or watching then
+  // tracking, and a `chain` assertion would fail one of them for a difference
+  // the user cannot perceive — which is how a quest starts reporting a
+  // regression that is really an over-specified test.
+  for (const tool of expect.includes ?? []) {
+    if (!seq.includes(tool)) {
+      failures.push({ kind: "missing-call", detail: `never called ${tool}` });
+    }
+  }
+
   if (expect.chainExact && JSON.stringify(expect.chainExact) !== JSON.stringify(seq)) {
     failures.push({ kind: "chain-not-exact", detail: `wanted exactly ${expect.chainExact.join(" -> ")}, got ${seq.join(" -> ") || "(nothing)"}` });
   }

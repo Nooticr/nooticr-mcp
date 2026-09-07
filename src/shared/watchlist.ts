@@ -33,10 +33,17 @@
  * registers, and only one registration under a name can win — but renaming
  * either side would break whichever hosts had already learned the old one,
  * for a tool whose whole promise is "what you called before still works". So
- * nothing about the surface moved. `watch_creator`, `unwatch_creator`,
- * `catch_up_watchlist` and `track_competitor` keep their names, arguments and
+ * nothing about the surface moved for THAT change. `watch_creator`,
+ * `unwatch_creator` and `catch_up_watchlist` keep their names, arguments and
  * behaviour; only the bytes moved, and the backend's own twins stay
  * unregistered here because they would be a second, disconnected list.
+ *
+ * `track_creator` is the one exception, and for an unrelated reason: it was
+ * `track_competitor`, and that name was measured to be unreachable for the
+ * way most people ask for it — see its registration in jobs.ts. The backend
+ * still registers `track_competitor` for its own dashboard copilot, which is
+ * the ordinary state of two repos with two release cycles rather than a
+ * collision: the names no longer overlap, so nothing has to win.
  *
  * The stores above are still live and still matter. They are the fallback for
  * an account with no workspace or a backend too old to have the tools, and
@@ -66,12 +73,12 @@ export interface WatchEntry {
     topViews?: number;
   };
   /**
-   * What track_competitor saw the last time it looked at this creator.
+   * What track_creator saw the last time it looked at this creator.
    *
    * Deliberately not the same field as `baseline`. Both tools answer "what has
    * changed since I last looked" and both move a marker forward when they do,
    * so sharing one marker would mean each tool silently consumed the other's
-   * answer: run a catch-up and the next track_competitor reports nothing new,
+   * answer: run a catch-up and the next track_creator reports nothing new,
    * which is wrong and looks like the creator stopped posting.
    */
   competitorBaseline?: {
@@ -190,9 +197,10 @@ export class FileWatchStore implements WatchStore {
  * and on ChatGPT had two, and a server-side scheduler could read neither.
  *
  * The swap is deliberately at `WatchStore` rather than at the tool layer.
- * `watch_creator`, `unwatch_creator`, `catch_up_watchlist` and
- * `track_competitor` keep their names, their arguments and their behaviour;
- * only where the bytes live changes. That is the whole reason the collision
+ * `watch_creator`, `unwatch_creator` and `catch_up_watchlist` keep their
+ * names, their arguments and their behaviour; only where the bytes live
+ * changes. (`track_creator` was later renamed from `track_competitor` for a
+ * reason that has nothing to do with storage — see above.) That is the whole reason the collision
  * with the backend's identically-named tools was not worth solving by
  * renaming anything: a host that already learned `watch_creator` keeps
  * working, and it now writes somewhere the other host can see.

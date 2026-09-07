@@ -628,7 +628,7 @@ export function createMcpServer(
   // a search_mentions result render in the monitoring view.
   "answer_my_audience",
   "show_audience_replies",
-  "track_competitor",
+  "track_creator",
   "who_should_i_work_with",
   "why_did_this_underperform",
   "what_should_i_make_next",
@@ -1059,7 +1059,11 @@ export function createMcpServer(
     "Work out their niche, recurring themes, hook formula, what over- and under-performs and who " +
     "their audience is, reading the spread of the numbers rather than only the best post, and " +
     `name the posts you reason from. ${costSentence("analyze_creator_profile")} ` +
-    "Use for the teardown itself; find_hook_pattern fetches the same posts and asks only for the formula.",
+    "Use for the teardown itself; find_hook_pattern fetches the same posts and asks only for the " +
+    "formula. NOT for keeping an eye on a rival over time: \"track X\", \"how are they doing " +
+    "lately\", \"what have they shipped since I last looked\" are track_creator, which scores " +
+    "each post against that creator's own median and remembers where you left off. This tool " +
+    "returns the posts and no verdict, and remembers nothing between calls.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_creator_profile") },
     "ui/resourceUri": uiResource("analyze_creator_profile"),
@@ -2441,7 +2445,7 @@ export function createMcpServer(
  );
 
  registerPrompts(server);
- // One store for both. track_competitor keeps its "since I last looked" marker
+ // One store for both. track_creator keeps its "since I last looked" marker
  // on the same watchlist entries, in its own field — two stores would mean a
  // creator you watch and a creator you track were different people.
  //

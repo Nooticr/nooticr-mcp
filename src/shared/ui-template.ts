@@ -2785,7 +2785,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   /**
    * The one line a competitor sweep or an underperformance check actually
    * exists to produce — ratio to the creator's own median, and the verdict
-   * that ratio earns. track_competitor and why_did_this_underperform attach
+   * that ratio earns. track_creator and why_did_this_underperform attach
    * "standing" to every post they score (see performance.ts), and until this
    * existed postCard rendered the same view/like/comment pills any gallery
    * gets, so the computed comparison a person paid for never reached the

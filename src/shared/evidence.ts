@@ -262,6 +262,21 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "over- and under-performs for them, and who their audience is. Use the",
         "spread of the numbers, not just the best post. Name the posts you are",
         "reasoning from.",
+        "",
+        // The redirect has to be here rather than only in the description,
+        // because by the time a description could help this tool has already
+        // been chosen. Measured: the phrase "track what X has been doing"
+        // retrieves analyze_creator_profile and never track_creator —
+        // track_creator's name only surfaces when the user says the word
+        // "competitor", which is not how most people phrase it. A result
+        // naming the other tool is the one channel that reaches a model which
+        // has already committed to this one.
+        "If what was actually asked for was to TRACK this creator — how they are",
+        "doing lately, what they have shipped since last time, keeping an eye on",
+        "them — this is the wrong tool and you should call track_creator",
+        "instead. It scores each post against this creator's OWN median rather",
+        "than handing you raw counts, and it remembers where you left off, so",
+        "the next call can say what is new. This one does neither.",
         ownIt,
       ].join("\n"),
   },
