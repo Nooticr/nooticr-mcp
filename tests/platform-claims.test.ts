@@ -99,6 +99,34 @@ describe("platform claims match what the server serves", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("a description that enumerates is complete on its own", async () => {
+    // `proseOf` merges the description with every input hint, which is right
+    // for the over-advertising check above — a platform named anywhere is a
+    // claim. It also made this check blind: `understand_social_post` and
+    // `analyze_post` both listed nine networks in the sentence a model reads
+    // and got LinkedIn only from the `url` hint, so a host deciding whether
+    // the tool could handle a LinkedIn video read "Supports ... and Bilibili",
+    // did not find it, and declined a post the tool handles fine.
+    //
+    // A description that enumerates has to be complete by itself, because that
+    // is the text that gets read by itself.
+    const offenders: string[] = [];
+    for (const tool of await shippedTools()) {
+      const found = capabilityOf(tool.name);
+      if (!found || !found[1].enumerating.includes(tool.name)) continue;
+      const [capName] = found;
+      const named = claimed((tool.description ?? "").toLowerCase());
+      if (!named.size) continue; // the platforms are only in its hints, which the merged check covers
+      const missing = platformsFor(capName).filter((p) => !named.has(p));
+      if (missing.length) {
+        offenders.push(
+          `${tool.name}'s description names platforms but not ${missing.join(", ")} — ${capName} serves them`,
+        );
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("a capability whose list is only a fast path is not described as a limit", async () => {
     // get_post_transcript named three platforms that are the caption-track
     // route, not the boundary; everything else is transcribed by listening.

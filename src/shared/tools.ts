@@ -872,7 +872,7 @@ export function createMcpServer(
     "lands and who it is aimed at, citing the frame or line behind each claim. " +
     "It fans out to two fetches and you pay for both. " +
     `${costSentence("analyze_post")} Each frame costs roughly 1,200 tokens of your context. ` +
-    "Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. " +
+    "Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili and LinkedIn. " +
     "Use when the visuals are the point; analyze_post_fast reads the same post without the frames for one credit less.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_post") },
@@ -1058,7 +1058,7 @@ export function createMcpServer(
       .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin", "reddit", "weibo"])
       .optional()
       .describe("Which platform (default tiktok)."),
-     limit: z.number().int().optional().describe("Posts to fetch (default 6; first 3 analyzed)."),
+     limit: z.number().int().optional().describe("Posts to fetch (default 12, max 30)."),
      focus: z.string().optional().describe("Extra instruction for the profile synthesis."),
     })
     .strict(),
@@ -2099,7 +2099,7 @@ export function createMcpServer(
     .object({
      niche: z.string().describe("Niche or topic, e.g. 'home fitness'."),
      platform: z.string().optional().describe("Platform to survey (default tiktok)."),
-     count: z.number().int().optional().describe("Posts to survey (default 20, max 40)."),
+     count: z.number().int().optional().describe("Posts to survey (default 12, max 40)."),
     })
     .strict(),
   },
@@ -2136,7 +2136,7 @@ export function createMcpServer(
     .object({
      username: z.string().describe("Creator handle, with or without @."),
      platform: z.string().optional().describe("Platform (default tiktok)."),
-     limit: z.number().int().optional().describe("Posts to read (default 20, max 40)."),
+     limit: z.number().int().optional().describe("Posts to read (default 12, max 40)."),
     })
     .strict(),
   },
@@ -2378,7 +2378,7 @@ export function createMcpServer(
     "what physically happens on screen, in order, with every observation anchored to a frame. " +
     "It fans out to two fetches and you pay for both. " +
     `${costSentence("understand_social_post")} Each frame costs roughly 1,200 tokens of your context. ` +
-    "Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. " +
+    "Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili and LinkedIn. " +
     "Use when you need the events rather than the strategy; analyze_post puts the strategic question to the same material.",
    _meta: {
     ui: { resourceUri: uiResource("understand_social_post") },

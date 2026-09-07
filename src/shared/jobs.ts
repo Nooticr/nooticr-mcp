@@ -59,7 +59,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
-import { handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
+import { clamp, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
 import {
   confirmSpend,
   costOf,
@@ -81,13 +81,6 @@ import { viewMeta } from "./view-meta.js";
 import { extractLinks, COLLAB_RUBRIC, vettingGuidance } from "./collab.js";
 
 type Row = Record<string, unknown>;
-
-/** Every fan-out is capped; the cap is an argument, and the argument is clamped. */
-function clamp(value: unknown, fallback: number, min: number, max: number): number {
-  const n = Math.floor(numberOf(value ?? fallback));
-  if (!n) return fallback;
-  return Math.min(max, Math.max(min, n));
-}
 
 const rowsOf = (value: unknown): Row[] =>
   Array.isArray(value) ? (value.filter((r) => r && typeof r === "object") as Row[]) : [];
@@ -1867,9 +1860,12 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "speech recognition — see get_post_transcript), and searches them for a term. Narrows to " +
         "candidate posts first (a niche/keyword sweep, named creator handles, and/or your " +
         "watchlist), transcribes only the most-viewed survivors up to a hard ceiling you set, and " +
-        "returns the matched line with surrounding context so tone can be judged. TikTok and " +
-        "YouTube only — the only two networks whose posts carry a caption track this cheaply — " +
-        "and even there a video with no captions is invisible to this tool; coverage is real but " +
+        "returns the matched line with surrounding context so tone can be judged. TikTok, YouTube " +
+        "and Douyin — the networks whose post detail already carries a caption track, which is " +
+        "what makes a transcript one cheap read rather than a wait. Every other network's audio " +
+        "can be transcribed too, at the same price, but not yet from here: see " +
+        "get_post_transcript for that route. Even on these three a video whose creator disabled " +
+        "captions is invisible to this tool; coverage is real but " +
         "partial, and the result says how many candidates were found, transcribed and matched so " +
         "the gap is never silent. Costs 2 nooticr credits per platform a niche is searched on, 2 " +
         "per creator handle checked (including ones added by useWatchlist), and 1 per transcript " +

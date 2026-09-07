@@ -14,8 +14,8 @@ model of ours for an opinion first. You pay for the fetch and nothing else.
 
 It also **monitors a name**: `search_mentions` sweeps nine of those networks for
 every comment that says your brand, inside a date window you choose, and
-`search_spoken_mentions` reads the words actually said out loud in TikTok and
-YouTube videos for the mentions that were never typed anywhere.
+`search_spoken_mentions` reads the words actually said out loud in TikTok,
+YouTube and Douyin videos for the mentions that were never typed anywhere.
 
 Runs over stdio locally or as a hosted connector at `https://mcp.nooticr.com/mcp`.
 Billed against your nooticr credits; new accounts get 20 free.
@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-49 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+64 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Seven of them — the ones under **Answer a question you actually have** — are not
@@ -67,7 +67,7 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
-| `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
+| `get_post_transcript` | 1 | The words actually spoken. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is — exact rather than inferred, and far cheaper than watching the video; everywhere else the post's own audio is transcribed, which needs speech-to-text configured on the server. Use before any analysis when the wording matters. |
 | `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
@@ -95,7 +95,7 @@ them caps that fan-out with an argument.
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
 | `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
 | `find_hook_pattern` | 2 | A creator's recent posts, so their opening lines can be read as a set and turned into fill-in-the-blank templates. One `get_user_posts` call. |
-| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok and YouTube. |
+| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok, YouTube and Douyin. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
@@ -117,7 +117,7 @@ them caps that fan-out with an argument.
 | `show_collab_shortlist` | free | Draws the candidates you scored, ranked, and asks the user which to approach. The scores are attributed to your model, not presented as a nooticr rating, and a candidate scored without anything having been opened is marked unverified. Makes no requests. |
 | `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
-| `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok and YouTube only, and only where the platform actually supplies a caption track. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
+| `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok, YouTube and Douyin, and only where the creator actually enabled captions. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
 
 ### Make something
 
@@ -254,17 +254,31 @@ selectable. Free, and it makes no requests.
 ## Before an expensive call, it asks
 
 Most tools print their price in their own description, so a call costs what you
-already read. Two do not, because their price is set by an argument:
+already read. Six do not, because their price is set by an argument — or by a
+list the request never mentions:
 
 - `search_mentions` bills **per network swept**, so a bare "monitor my brand"
   sweeps all nine for 21 credits.
-- `catch_up_watchlist` bills **per creator**, so the price is the length of a
-  list the request never mentions.
+- `catch_up_watchlist` bills **per creator**, so the price is the length of your
+  watchlist.
+- `answer_my_audience` and `what_should_i_make_next` bill **per post opened**
+  (14 and 12 credits at their defaults), so they ask once the real post count is
+  known rather than on a worst case.
+- `search_spoken_mentions` bills per network, per handle and per transcript, so
+  it asks on the worst case it could reach.
+- `create_brand_watch` asks **however small the number is**, because what is
+  being agreed to is a recurring charge rather than one run.
 
-Above 6 credits those two ask first, over MCP `elicitation` — the client shows
-the number and you accept or decline. Declining spends nothing and is not an
-error. A client that does not support elicitation is not blocked; the call runs
-as it always did.
+Above 6 credits those first five ask first, over MCP `elicitation` — the client
+shows the number and you accept or decline. Declining spends nothing and is not
+an error. A client that does not support elicitation is not blocked; the call
+runs as it always did.
+
+Two rules go further than the threshold. A scheduled watch always asks, because
+the standing arrangement is the thing being approved. And a watch that emails a
+digest refuses to accept a `deliverTo` address unless a person actually saw the
+dialog and said yes — "nobody could be asked" is a fine answer for a spend and
+the wrong one for an address.
 
 ## Prerequisites
 
