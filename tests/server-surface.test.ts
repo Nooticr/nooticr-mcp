@@ -70,7 +70,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(64);
+    expect(tools).toHaveLength(66);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -117,6 +117,7 @@ describe("tool annotations", () => {
       "list_brand_watches",
       "list_own_apps",
       "list_social_connections",
+      "mention_trend",
       "nooticr_login",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
@@ -138,6 +139,9 @@ describe("tool annotations", () => {
       "show_comparison",
       "show_hooks",
       "show_repurposed_post",
+      // Draws a series the caller read. mention_trend is closed-world too:
+      // it reads stored aggregates and makes no upstream call.
+      "show_trend",
       "show_variants",
       "stop_brand_watch",
       "unwatch_creator",

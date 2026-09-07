@@ -452,6 +452,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "mention_trend": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads run aggregates the backend already stored when each sweep happened. It records nothing and advances no marker.",
+        "open_world_justification": "Closed domain. It reads stored history from the caller's own nooticr account over nooticr's API — no third-party network is contacted, which is exactly why it is free: the sweeps that produced these numbers were billed when they ran.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "niche_report": {
       "annotations": {
         "readOnlyHint": true,
@@ -641,6 +653,18 @@
       "justifications": {
         "read_only_justification": "Read-only: it draws rewritten copy the caller's model produced. Nothing is written.",
         "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_trend": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only, and it makes no request at all: it renders the trend the caller's own model read out of mention_trend.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request. Everything it returns is composed from the arguments passed to it.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },

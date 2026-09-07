@@ -403,6 +403,10 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   show_variants: { label: "Laying out the variants", kind: "list", n: 4, steps: [], free: true },
   show_repurposed_post: { label: "Laying out the rewrites", kind: "text", n: 1, steps: [], free: true },
   show_collab_shortlist: { label: "Drawing the shortlist", kind: "list", n: 5, steps: [], free: true },
+  show_trend: { label: "Drawing the trend", kind: "text", n: 1, steps: [], free: true },
+  // Reads stored aggregates the sweeps already paid for. Free, and no
+  // upstream step to wait on — the wait is a database read.
+  mention_trend: { label: "Reading the run history", kind: "text", n: 1, steps: [], free: true },
   prepare_handoff: { label: "Packaging the handoff", kind: "list", n: 4, steps: [], free: true },
 
   // ─── Own-account reads: nooticr's own stored rows ───

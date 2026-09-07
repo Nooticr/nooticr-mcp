@@ -595,6 +595,9 @@ export function createMcpServer(
   // state tools have nothing to show and stay view-less, like nooticr_login.
   "catch_up_watchlist",
   "search_mentions",
+  // The series a watch keeps, and the free view for the read of it.
+  "mention_trend",
+  "show_trend",
   "show_comment_review",
   // Close the loop the evidence-only tools open: your own analysis/hooks/
   // variants/repurposing/comparison, drawn — same shape as
@@ -1568,6 +1571,88 @@ export function createMcpServer(
  // ui-template.ts already renders (show_comparison → the comparison
  // scoreboard, show_analysis → analysisCard) or a new one added alongside
  // it (show_hooks, show_variants, show_repurposed_post).
+ server.registerTool(
+  "show_trend",
+  {
+   title: "Show Trend",
+   description:
+    "Draw the trend you read out of mention_trend. Free, and makes no requests — it renders what " +
+    "you pass it: the series as a chart, per-network lines where you supply them, and your own " +
+    "read of what changed. Pass `tooShort` when the series has too few points to call a " +
+    "direction, and `edgeIsRecordStart` when the left edge is where the record begins rather " +
+    "than where the conversation did — a chart that hides either is the one mistake this view " +
+    "can make on your behalf. Call this after you have decided what the numbers mean.",
+   _meta: {
+    ui: { resourceUri: uiResource("show_trend") },
+    "ui/resourceUri": uiResource("show_trend"),
+    "openai/outputTemplate": appsSdkResource("show_trend"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.show_trend,
+   inputSchema: z
+    .object({
+     points: z
+      .array(anyObject())
+      .min(1)
+      .max(400)
+      .describe(
+       "The series, oldest first or newest first as you like — the same shape mention_trend " +
+        "returned (ranAt, found, reported, perPlatform, medianViews)."
+      ),
+     term: z.string().optional().describe("What is being watched."),
+     metric: z
+      .string()
+      .optional()
+      .describe('Which number the chart plots: "found" (default), "reported" or "medianViews".'),
+     verdict: z.string().optional().describe("Your read of what changed, in a sentence or two."),
+     tooShort: z
+      .boolean()
+      .optional()
+      .describe(
+       "True when there are too few points to call a direction. Drawn as a stated caveat rather " +
+        "than a trend line, because two points of scraped data are mostly the scrape."
+      ),
+     edgeIsRecordStart: z
+      .boolean()
+      .optional()
+      .describe(
+       "True when the earliest point is the start of the kept record or the watch's own age, " +
+        "not the start of the conversation. Marks the left edge so a flat start is not read as " +
+        "silence."
+      ),
+    })
+    .strict(),
+  },
+  async (args: {
+   points: Array<Record<string, unknown>>;
+   term?: string;
+   metric?: string;
+   verdict?: string;
+   tooShort?: boolean;
+   edgeIsRecordStart?: boolean;
+  }) => {
+   return {
+    content: [
+     {
+      type: "text" as const,
+      text:
+       `Showing a ${args.points.length}-point trend${args.term ? ` for "${args.term}"` : ""}.` +
+       (args.verdict ? ` ${args.verdict}` : ""),
+     },
+    ],
+    structuredContent: {
+     points: args.points,
+     term: args.term ?? null,
+     metric: args.metric ?? "found",
+     verdict: args.verdict ?? null,
+     tooShort: args.tooShort ?? false,
+     edgeIsRecordStart: args.edgeIsRecordStart ?? false,
+     trend: true,
+    },
+   };
+  }
+ );
+
  server.registerTool(
   "show_comparison",
   {
