@@ -99,7 +99,22 @@
       "douyin",
       "youtube"
     ],
-    "source": "social_import.rs::fetch_post_transcript"
+    "source": "social_import.rs::fetch_post_transcript",
+    "speechToText": {
+      "note": "same tool and same price as the caption route; asynchronous, and a poll is not billed",
+      "platforms": [
+        "instagram",
+        "twitter",
+        "xiaohongshu",
+        "weibo",
+        "linkedin"
+      ],
+      "requiresConfiguration": "WHISPER_MODEL",
+      "unreachable": {
+        "bilibili": "no videoUrl or mediaItems is emitted; needs the two-call DASH path",
+        "reddit": "videoUrl is an HLS/DASH manifest and the listening path byte-downloads it"
+      }
+    }
   },
   "userPosts": {
     "listIsCeiling": true,

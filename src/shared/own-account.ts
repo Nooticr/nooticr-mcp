@@ -478,7 +478,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
           caption: z.string().optional(),
           contentType: z.string().optional(),
           thumbnailUrl: z.string().optional().describe("Looked at by the reviewer when given."),
-          mediaItems: z.array(z.unknown()).optional(),
+          mediaItems: z.array(z.any()).optional(),
           platform: z.string().optional(),
           influencerId: z.number().int().optional(),
         })

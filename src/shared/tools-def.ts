@@ -64,7 +64,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "get_post_transcript",
  title: "Get Post Transcript",
- description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason when the post has no captions. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",
+ description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason. A poll costs nothing, and neither does a call that comes back with no transcript. The listening route needs speech-to-text configured on the server and cannot reach Reddit or Bilibili at all. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",
  inputSchema: z.object({ url: z.string().describe("Post URL (TikTok or YouTube)."), language: z.string().optional().describe("Preferred language code, e.g. 'en'.") }).strict(),
  },
  {
@@ -161,13 +161,13 @@ export const TOOL_DEFINITIONS = [
  name: "show_comparison",
  title: "Show Comparison",
  description: "Display a comparison you wrote after compare_posts fetched the first post and you fetched the rest yourself. Free, and makes no requests — it only draws what you pass it: each post with a BEST badge on the winner, what differed, shared strengths and the next experiment worth running. Call this after you have done the comparing, not instead of it.",
- inputSchema: z.object({ posts: z.array(z.record(z.unknown())).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
+ inputSchema: z.object({ posts: z.array(z.object({}).passthrough()).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
  },
  {
  name: "show_analysis",
  title: "Show Analysis",
  description: "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post handed you the material. Free, and makes no requests — it only draws what you pass it: hook strength, script structure, quotable lines, hashtags, target audience, viral triggers and more, whichever of these you actually produced. Call this after you have done the analysing, not instead of it.",
- inputSchema: z.object({ url: z.string(), post: z.record(z.unknown()).optional(), analysis: z.record(z.unknown()) }).strict(),
+ inputSchema: z.object({ url: z.string(), post: z.object({}).passthrough().optional(), analysis: z.object({}).passthrough() }).strict(),
  },
  {
  name: "show_hooks",
@@ -179,7 +179,7 @@ export const TOOL_DEFINITIONS = [
  name: "show_variants",
  title: "Show Variants",
  description: "Display the post variants you wrote after create_variants handed you the original post's material. Free, and makes no requests — it only draws what you pass it: each variant's hook, the angle that changes, its shot beats and its call to action. Call this after you have written the variants, not instead of writing them.",
- inputSchema: z.object({ sourceUrl: z.string(), post: z.record(z.unknown()).optional(), variants: z.array(z.object({ title: z.string(), hook: z.string(), angle: z.string().optional(), beats: z.array(z.string()).optional(), cta: z.string().optional(), whyItCouldWork: z.string().optional() })).min(1) }).strict(),
+ inputSchema: z.object({ sourceUrl: z.string(), post: z.object({}).passthrough().optional(), variants: z.array(z.object({ title: z.string(), hook: z.string(), angle: z.string().optional(), beats: z.array(z.string()).optional(), cta: z.string().optional(), whyItCouldWork: z.string().optional() })).min(1) }).strict(),
  },
  {
  name: "show_repurposed_post",
@@ -293,7 +293,7 @@ export const TOOL_DEFINITIONS = [
  name: "review_post",
  title: "Review Post",
  description: "Score a post before you publish it: hook strength, an optional A-vs-B hook comparison, aesthetic and storytelling notes, and rewritten hook/caption suggestions. Pass postId for something already in your pipeline, or appId plus draft fields otherwise. Nothing is published. Free — nothing is billed for this, same as the dashboard's own pre-publish review.",
- inputSchema: z.object({ postId: z.number().int().optional(), appId: z.number().int().optional(), title: z.string().optional(), titleB: z.string().optional(), caption: z.string().optional(), contentType: z.string().optional(), thumbnailUrl: z.string().optional(), mediaItems: z.array(z.unknown()).optional(), platform: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
+ inputSchema: z.object({ postId: z.number().int().optional(), appId: z.number().int().optional(), title: z.string().optional(), titleB: z.string().optional(), caption: z.string().optional(), contentType: z.string().optional(), thumbnailUrl: z.string().optional(), mediaItems: z.array(z.any()).optional(), platform: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
  },
  {
  name: "draft_post",

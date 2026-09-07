@@ -21,6 +21,52 @@ import { z } from "zod";
 const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough();
 
 /**
+ * A union branch that renders as its own `type`, instead of being folded into
+ * a `type` array with its siblings.
+ *
+ * `z.union([z.string(), z.number(), z.boolean()])` renders as
+ * `{ type: ["string", "number", "boolean"] }`. That is legal JSON Schema and
+ * the wrong thing to send: a client that reads `type` as a single string
+ * either rejects the tool or drops the constraint, and both failures are
+ * invisible from here — a rejected tool just stops appearing in `tools/list`,
+ * with no error this repo would ever see. The whole surface emitted 1,286 of
+ * them, from this helper and `listOf` alone.
+ *
+ * The fold happens in zod-to-json-schema's union parser, which collapses a
+ * union whose every member is a bare primitive carrying no checks. There are
+ * only two ways out, and only one of them is free:
+ *
+ *   - Give a member a check. `z.number().finite()` renders as plain
+ *     `{ type: "number" }` and defeats the fold, but it also stops accepting
+ *     `Infinity` — which a ratio-to-baseline division by a zero median really
+ *     does produce, and which this file exists to keep from turning a working
+ *     call into a hard failure. Rejected for that reason, not on taste.
+ *   - Give a member a wrapper whose type name is not a primitive.
+ *     `.readonly()` is the one that costs nothing: on a primitive it is a
+ *     runtime no-op (`Object.freeze` of a string is that string), the parsed
+ *     value is discarded by the SDK's output validation anyway, and
+ *     `Readonly<string>` is `string`, so nothing downstream sees a new type.
+ *     It also happens to be true — these are output schemas.
+ *
+ * So the wrapper is load-bearing and is not about readonly-ness. Removing it
+ * silently reintroduces all 1,286, which is what
+ * `tests/output-schema-shape.test.ts` is there to catch.
+ */
+const oneType = <T extends z.ZodTypeAny>(branch: T) => branch.readonly();
+
+/**
+ * "This type, or null" — as `anyOf`, not as a two-element `type` array.
+ *
+ * `z.number().nullish()` renders as `{ type: ["number", "null"] }`, which is
+ * the same portability problem as `scalar()` in miniature. The three inline
+ * output schemas in `watchlist.ts` contributed 5 of the 1,286 this way, and
+ * they are the reason this is exported rather than kept private: a tool that
+ * declares its schema inline should not have to re-derive why.
+ */
+export const orNull = <T extends z.ZodTypeAny>(inner: T) =>
+  z.union([oneType(inner), z.null()]).optional();
+
+/**
  * One scalar type for every leaf, and it accepts null.
  *
  * The first version of this file typed each leaf from a sampled response —
@@ -35,10 +81,15 @@ const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough(
  * agent needs from this file is which keys exist and what they mean. So the
  * keys and their descriptions are the contract, and the types are deliberately
  * as wide as the data can be.
+ *
+ * Which is why the branches are wrapped in `oneType()` and null is a member of
+ * the union rather than a `.nullish()` around it. Both exist to control the
+ * JSON Schema this renders as, and neither changes what the schema accepts —
+ * see `oneType` below.
  */
-const scalar = () => z.union([z.string(), z.number(), z.boolean()]).nullish();
+const scalar = () => z.union([oneType(z.string()), oneType(z.number()), oneType(z.boolean()), z.null()]).optional();
 /** Same reasoning for lists: a null list, and a null element, must both pass. */
-const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.null()])).nullish();
+const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([oneType(item), z.null()])).nullish();
 /**
  * A list whose elements are not one shape — themes, fixes, failures.
  *
@@ -51,6 +102,24 @@ const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.nul
  * empty schema in item position, which accepts anything, which is the point.
  */
 const anyList = () => z.array(z.any()).nullish();
+
+/**
+ * "An object whose contents we are not constraining" — for input schemas.
+ *
+ * Exported from a file about output schemas because the concern is the same
+ * one documented above: what a zod type renders as on the wire. The natural
+ * spelling, `z.record(z.unknown())`, renders as
+ * `{ type: "object", additionalProperties: {} }`, and that `{}` carries no
+ * validation keyword at all — the object-literal spelling of a bare `true`,
+ * which reads to a strict client as an unvalidated schema rather than a
+ * deliberately open one. `z.object({}).passthrough()` accepts exactly the same
+ * values and says `additionalProperties: true`, which is the same permission
+ * stated in a keyword rather than by omission.
+ *
+ * The array counterpart needs no helper: `z.array(z.unknown())` emits
+ * `items: {}` for the same reason, and `z.array(z.any())` simply omits `items`.
+ */
+export const anyObject = () => z.object({}).passthrough();
 
 /** Every paid tool reports what it charged. */
 const mcpCredits = open({

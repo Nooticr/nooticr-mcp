@@ -21,6 +21,7 @@ import {
   KNOWN_PLATFORMS,
   capabilityOf,
   commentsUnavailable,
+  fallbackRoute,
   listIsCeiling,
   platformsFor,
 } from "./platform-capabilities.js";
@@ -50,11 +51,28 @@ function proseOf(tool: { description?: string; inputSchema?: unknown }): string 
 }
 
 /**
- * Platforms a piece of prose claims. Anything after "not searchable here:" is
- * a stated limitation, so it is a claim about absence, not presence.
+ * Markers after which a platform name is a stated limitation rather than a
+ * claim — "we cannot do X" names X without offering it.
+ *
+ * `search_creators` needed the first one; `get_post_transcript` needed the
+ * second, to say that Reddit and Bilibili cannot be listened to at all because
+ * the audio cannot be fetched from what their posts carry. Naming an exclusion
+ * is the behaviour these checks want (silence is how a caller concludes nobody
+ * said anything), so it must not read as over-advertising — but the marker has
+ * to be a fixed phrase rather than free prose, or "cannot" anywhere in a
+ * description would switch the check off.
+ */
+const EXCLUSION_MARKERS = ["not searchable here:", "cannot be listened to:"];
+
+/**
+ * Platforms a piece of prose claims. Anything after an exclusion marker is a
+ * stated limitation, so it is a claim about absence, not presence.
  */
 function claimed(prose: string): Set<string> {
-  const [positive] = prose.split("not searchable here:");
+  let positive = prose;
+  for (const marker of EXCLUSION_MARKERS) {
+    [positive] = positive.split(marker);
+  }
   const found = new Set<string>();
   for (const p of KNOWN_PLATFORMS) {
     if (new RegExp(`\\b${p}\\b`).test(positive)) found.add(p);
@@ -180,5 +198,90 @@ describe("platform claims match what the server serves", () => {
       }
     }
     expect(undeclared).toEqual([]);
+  });
+});
+
+/**
+ * The fallback route's own facts, now that the server publishes them.
+ *
+ * `spend.ts` used to justify a two-network limit on `search_spoken_mentions`
+ * with "the words would have to be inferred from the audio, which is a
+ * different tool at a different price". Both halves were false — it is the `_`
+ * arm of the same `fetch_post_transcript`, behind the same
+ * `get_post_transcript`, at the same 1 credit — and nothing could contradict
+ * it, because the only description of the fallback lived in the other repo's
+ * Rust and this side was inferring it.
+ *
+ * `transcript.speechToText` in the generated manifest now carries the reach,
+ * the configuration gate and the two platforms that are out regardless. These
+ * check the prose against it.
+ */
+describe("what the prose says about listening matches what the server publishes", () => {
+  it("publishes a fallback route at all, since transcript is not a ceiling", () => {
+    // If this ever goes missing, the checks below stop checking anything —
+    // which is precisely how the original claim survived.
+    expect(listIsCeiling("transcript")).toBe(false);
+    const route = fallbackRoute("transcript");
+    expect(route, "transcript.speechToText is what the checks below read").toBeTruthy();
+    expect(route!.platforms.length).toBeGreaterThan(0);
+    expect(route!.requiresConfiguration).toBeTruthy();
+  });
+
+  it("no tool calls the fallback a different tool or a different price", async () => {
+    // The exact shape of the claim that was wrong, in any tool that makes it.
+    const offenders: string[] = [];
+    for (const tool of await shippedTools()) {
+      const prose = proseOf(tool);
+      if (!/speech-to-text|transcrib|listen/.test(prose)) continue;
+      if (/different tool/.test(prose) && /different price/.test(prose)) {
+        offenders.push(`${tool.name} calls listening a different tool at a different price`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("no tool offers to listen to a platform the fallback cannot fetch", async () => {
+    // Reddit's videoUrl is an HLS manifest and Bilibili carries no media URL
+    // at all, so both answer a spoken-mention sweep with silence that reads as
+    // "nobody said it". The manifest names them and why.
+    const unreachable = Object.keys(fallbackRoute("transcript")?.unreachable ?? {});
+    expect(unreachable.length, "the manifest should name the exclusions").toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const tool of await shippedTools()) {
+      // Only the tools whose job is listening; a tool that merely mentions
+      // Reddit for comments or discovery is not claiming to hear it.
+      if (!/spoken|said out loud|words actually spoken/i.test(tool.description ?? "")) continue;
+      for (const platform of unreachable) {
+        // Naming it to rule it out is the correct behaviour, so only an
+        // unqualified mention counts.
+        const prose = proseOf(tool);
+        if (!prose.includes(platform)) continue;
+        if (!/cannot|not reach|no audio|excluded/.test(prose)) {
+          offenders.push(`${tool.name} names ${platform} without saying it cannot be listened to`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("the tool that owns the route says it needs configuring", async () => {
+    // A capability that silently returns nothing when unconfigured is
+    // indistinguishable from one that does not exist. get_post_transcript is
+    // where a host finds out, so it is where it has to be said.
+    const transcript = (await shippedTools()).find((t) => t.name === "get_post_transcript");
+    const prose = proseOf(transcript!);
+    // Narrow on purpose. /configured|configuration/ passed a mutant that
+    // deleted this caveat outright, because the sentence about Reddit and
+    // Bilibili says "whatever the configuration" — the check was matching a
+    // stray word rather than the claim. These two are the claim: the route
+    // needs turning on, and an unconfigured server must not be reported as a
+    // post with no transcript.
+    expect(prose, "must say the route needs speech-to-text configured").toMatch(
+      /speech-to-text configured/,
+    );
+    expect(prose, "must say an unconfigured server is not the platform's fault").toMatch(
+      /blaming the platform|about us, not about the post/,
+    );
   });
 });
