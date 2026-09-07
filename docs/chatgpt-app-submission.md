@@ -10,19 +10,30 @@ Two artifacts, with different jobs:
   JSON has no field for. Each value names the file it came from, so any line can
   be checked rather than trusted.
 
-## Note the `$schema` URL
+## The `$schema` URL: `/apps-sdk/`, and why the vendored schema disagrees
 
-The schema's own `properties.$schema.const` requires:
+The file declares:
 
 ```
-https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json
+https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json
 ```
 
-— `/plugins/`, not `/apps-sdk/`. A file declaring the `/apps-sdk/` path fails
-validation on that `const` and on nothing else; `npm run check:submission`
-reports it as the first finding. If the form turns out to want `/apps-sdk/`
-after all, change the file and the vendored schema together, or the check will
-contradict the form.
+The published schema document does not ask for that. Its
+`properties.$schema.const` is the **`/plugins/`** path, and its `$id` is too.
+But the submission uploader rejects a file declaring `/plugins/` and requires
+`/apps-sdk/`, so the two disagree and the uploader is the one that matters — a
+file that satisfies the document and fails the upload is no use to anybody.
+
+So `docs/chatgpt-app-submission.schema.json` is a vendored copy with exactly
+one deliberate edit: `properties.$schema.const` is pinned to `/apps-sdk/`. The
+reason is recorded in the schema's own `$comment` rather than only here, because
+the next person to read that file will be looking at the const and wondering
+why it does not match the `$id` a line above it. `$id` is left as published.
+
+`npm run check:submission` therefore agrees with the uploader rather than with
+the document. If the uploader changes its mind, edit the const and
+`chatgpt-app-submission.json` together; the check fails first and names the
+mismatch either way, so the two cannot drift silently.
 
 ## What the import file covers
 

@@ -156,7 +156,10 @@ if (n) {
 
 const toolCount = Object.keys(doc.tools).length;
 console.log(
-  `chatgpt-app-submission.json satisfies ${schema.$id}\n` +
+  // The const, not `$id`. They differ on purpose — see the schema's own
+  // `$comment` — and printing `$id` here reported a URL the file does not
+  // declare, which reads as a mismatch the moment anyone compares the two.
+  `chatgpt-app-submission.json satisfies ${wantSchema}\n` +
     `  ${toolCount} tools, each with three annotations and three justifications\n` +
     `  ${doc.test_cases?.length ?? 0} positive and ${doc.negative_test_cases?.length ?? 0} negative test cases\n` +
     "Schema-valid is not the same as accurate: the justifications and test cases " +
