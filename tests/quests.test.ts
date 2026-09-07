@@ -91,9 +91,9 @@ describe("chain assertions", () => {
     // "Track this creator and keep an eye on them" is satisfied either way
     // round. A chain assertion would fail one of them for a difference the
     // user cannot perceive.
-    const quest = { id: "x", expect: { includes: ["track_competitor", "watch_creator"] } };
-    expect(judgeRun(quest, [call("watch_creator"), call("track_competitor")]).ok).toBe(true);
-    expect(judgeRun(quest, [call("track_competitor"), call("watch_creator")]).ok).toBe(true);
+    const quest = { id: "x", expect: { includes: ["track_creator", "watch_creator"] } };
+    expect(judgeRun(quest, [call("watch_creator"), call("track_creator")]).ok).toBe(true);
+    expect(judgeRun(quest, [call("track_creator"), call("watch_creator")]).ok).toBe(true);
     const missed = judgeRun(quest, [call("analyze_creator_profile"), call("watch_creator")]);
     expect(missed.ok).toBe(false);
     expect(missed.failures[0]).toMatchObject({ kind: "missing-call" });

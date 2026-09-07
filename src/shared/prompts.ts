@@ -409,7 +409,7 @@ export function registerPrompts(server: McpServer): void {
           `over- and under-performs, who the audience is. 2 credits.\n` +
           `4. watch_creator to add them to your watchlist — free, stores the handle only, fetches ` +
           `nothing.\n` +
-          `5. track_competitor on the same handle — what they have shipped recently and which of it ` +
+          `5. track_creator on the same handle — what they have shipped recently and which of it ` +
           `beat THEIR OWN median, not a raw view count that mostly measures follower count. 2 credits, ` +
           `whatever the window. Because they are now on your watchlist, this also sets its own "since I ` +
           `last checked" marker — a different one from catch_up_watchlist's.\n` +

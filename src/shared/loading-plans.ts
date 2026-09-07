@@ -345,7 +345,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
       },
     ],
   },
-  track_competitor: {
+  track_creator: {
     label: "Reading what they shipped",
     kind: "strip",
     n: 3,

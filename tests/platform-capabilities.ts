@@ -80,7 +80,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
       "find_hook_pattern",
       "watch_creator",
       "unwatch_creator",
-      "track_competitor",
+      "track_creator",
       "catch_up_watchlist",
       "what_should_i_make_next",
       "why_did_this_underperform",

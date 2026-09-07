@@ -130,7 +130,7 @@ describe("not re-stamping a baseline that did not move", () => {
 
   it("keeps the two baselines on separate markers", async () => {
     // The bug the two-column split exists to prevent: a catch-up must not
-    // consume track_competitor's answer, so they advance independently.
+    // consume track_creator's answer, so they advance independently.
     const b = fakeBackend();
     const store = storeOver(b);
     await store.list("u1");

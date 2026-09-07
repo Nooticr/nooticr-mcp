@@ -1003,7 +1003,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 2. track_competitor
+  // 2. track_creator
   //
   // Writes, when the creator is on the watchlist: it moves a baseline forward
   // so the next call can say what is new. That baseline is deliberately not
@@ -1011,17 +1011,17 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // looked" means each silently consumes the other's answer.
   // ───────────────────────────────────────────────────────────────────────────
   server.registerTool(
-    "track_competitor",
+    "track_creator",
     {
       title: "Track Competitor",
-      _meta: viewMeta("track_competitor"),
+      _meta: viewMeta("track_creator"),
       description:
         "Track a competitor, keep an eye on a rival, see how someone is doing lately, catch what " +
         "they shipped since you last looked — this is the tool for all of those. What a creator " +
         "shipped recently and which of it beat THEIR OWN baseline: fetches their recent posts " +
         "once and scores each against the median of that same window, because a raw view count " +
         "mostly measures follower count — outperformance against themselves is the signal. If " +
-        "they are on your watchlist it also marks what is new since your last track_competitor " +
+        "they are on your watchlist it also marks what is new since your last track_creator " +
         "call and moves that marker forward. " +
         "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival " +
         "you follow; analyze_creator_profile is the full teardown of one you do not.",
@@ -1033,7 +1033,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         idempotentHint: false,
         openWorldHint: true,
       },
-      outputSchema: OUTPUT_SCHEMAS.track_competitor,
+      outputSchema: OUTPUT_SCHEMAS.track_creator,
       inputSchema: z
         .object({
           username: z
@@ -1078,7 +1078,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         spend.record("get_user_posts", structured);
         feed = rowsOf(structured.posts);
       } catch (err) {
-        return failed("track_competitor could not list the posts", err);
+        return failed("track_creator could not list the posts", err);
       }
 
       // Nothing came back. Previously this fell through to the scoring path and
@@ -1087,7 +1087,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       if (feed.length === 0) {
         return evidence(handleMissGuidance({ handle, platform, defaulted: platformDefaulted }), {
           mode: "evidence",
-          tool: "track_competitor",
+          tool: "track_creator",
           evidenceFrom: ["get_user_posts"],
           username: handle,
           platform,
@@ -1162,7 +1162,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }),
         {
           mode: "evidence",
-          tool: "track_competitor",
+          tool: "track_creator",
           evidenceFrom: ["get_user_posts"],
           username: handle,
           platform,
@@ -1974,7 +1974,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
 
       // A watchlist handle already knows its own platform, so it is checked
       // once there rather than once per requested platform — the same
-      // precision track_competitor already applies when it reads this store.
+      // precision track_creator already applies when it reads this store.
       let watchlistUnits: Array<{ handle: string; platform: string }> = [];
       let watchlistTotal = 0;
       if (args.useWatchlist) {

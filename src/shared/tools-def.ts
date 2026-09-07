@@ -344,9 +344,9 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ username: z.string().describe("Whose audience this is, with or without @."), summary: z.string().optional(), replies: z.array(z.object({ id: z.string(), comment: z.string(), author: z.string().optional(), likes: z.number().optional(), postUrl: z.string().optional(), postTitle: z.string().optional(), postedAt: z.string().optional(), draft: z.string().optional(), kind: z.string().optional(), why: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
  },
  {
- name: "track_competitor",
+ name: "track_creator",
  title: "Track Competitor",
- description: "What a creator shipped recently, and which of it beat their own baseline. Scores every post in the window against the median of that same window, because a raw view count mostly measures follower count \u2014 outperformance against themselves is the signal worth reporting. If they are on your watchlist it also marks which posts are new since your last track_competitor call and moves that marker forward. Use for a rival you follow over time. Consumes 2 nooticr credits, whatever the window size.",
+ description: "What a creator shipped recently, and which of it beat their own baseline. Scores every post in the window against the median of that same window, because a raw view count mostly measures follower count \u2014 outperformance against themselves is the signal worth reporting. If they are on your watchlist it also marks which posts are new since your last track_creator call and moves that marker forward. Use for a rival you follow over time. Consumes 2 nooticr credits, whatever the window size.",
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts in the window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to rank on (default views)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD.") }).strict(),
  },
  {

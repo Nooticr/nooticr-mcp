@@ -157,12 +157,12 @@
     {
       "id": "competitor-tracking-offers-to-watch",
       "title": "Tracking a competitor leads to actually watching them",
-      "why": "chain-map edge track_competitor -> watch_creator. The watchlist is what makes catch_up_watchlist worth anything later, and nothing else in the surface puts a creator on it. Asserted unordered on purpose: watching then tracking and tracking then watching are both correct, and pinning one order failed runs for a difference no user can perceive. What must not happen is the ask being answered with a profile teardown and neither tool called, which is what it did before.",
+      "why": "chain-map edge track_creator -> watch_creator. The watchlist is what makes catch_up_watchlist worth anything later, and nothing else in the surface puts a creator on it. Asserted unordered on purpose: watching then tracking and tracking then watching are both correct, and pinning one order failed runs for a difference no user can perceive. What must not happen is the ask being answered with a profile teardown and neither tool called, which is what it did before.",
       "prompt": "Track what @fixture_creator_1 has been doing on TikTok, and keep an eye on them from now on.",
       "runs": 3,
       "expect": {
         "includes": [
-          "track_competitor",
+          "track_creator",
           "watch_creator"
         ]
       }
