@@ -13,6 +13,7 @@ import { NooticrClient, NooticrError, type McpProxyResult } from "./nooticr.js";
 import { NOOTICR_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
+import { deriveHashtags, derivedNote, type SweptPost } from "./hashtags.js";
 import { createTaskStore, registerSlowTool } from "./tasks.js";
 import {
   COMMENT_CATEGORIES,
@@ -35,6 +36,7 @@ import {
   declinedResult,
   searchMentionsCost,
   SEARCH_PLATFORMS,
+  DISCOVERABLE_PLATFORMS,
 } from "./spend.js";
 import type { TaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/interfaces.js";
 import {
@@ -52,7 +54,7 @@ import { registerHandoff } from "./handoff.js";
 import { registerCollabTools } from "./collab.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.25";
+export const MCP_SERVER_VERSION = "1.26.26";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -241,12 +243,6 @@ const RAW_URL_KEYS = new Set([
  "videoFallbackUrl",
  "thumbnailFallbackUrl",
  "musicFallbackUrl",
- // Not a media asset — a Stripe Checkout link buy_nooticr_credits returns.
- // Without this it fell through to the generic string branch below (which
- // proxies *any* https:// string regardless of key name) and got rewritten
- // into a /media/proxy?url=... link, a URL meant to serve image/video
- // bytes, not redirect to a payment page.
- "checkoutUrl",
 ]);
 
 /**
@@ -313,6 +309,40 @@ export function proxyUrls(obj: unknown): unknown {
   return out;
  }
  return obj;
+}
+
+const structuredOf = (res: { structured?: unknown }): Record<string, unknown> =>
+ (res.structured ?? {}) as Record<string, unknown>;
+
+/** A structured result this server computed rather than proxied. */
+function toStructured(value: Record<string, unknown>) {
+ return {
+  content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
+  structuredContent: value,
+ };
+}
+
+/**
+ * A refusal that spent nothing, said as a result rather than an error.
+ *
+ * An `isError` here would be read by a host as the call having gone wrong, and
+ * the model would retry it — the same paid call, refused for the same reason.
+ * A plain result carrying the reason is what lets it pick a different argument
+ * instead, and `billable: false` is what keeps the backend from charging for a
+ * call that answered nothing.
+ */
+function unbilled(reason: string) {
+ return toStructured({ available: false, billable: false, reason, mcpCredits: { cost: 0 } });
+}
+
+/** Tag a proxied result with where its numbers came from. */
+function withSource(
+ result: { content: ToolContent[]; structuredContent?: Record<string, unknown> },
+ source: string,
+ platform: string
+) {
+ if (!result.structuredContent) return result;
+ return { ...result, structuredContent: { ...result.structuredContent, source, platform } };
 }
 
 async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolContent[]; structuredContent?: Record<string, unknown> }> {
@@ -589,7 +619,6 @@ export function createMcpServer(
   "niche_report",
   "find_hook_pattern",
   "check_nooticr_credits",
-  "buy_nooticr_credits",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like nooticr_login.
@@ -1946,10 +1975,15 @@ export function createMcpServer(
   {
    title: "Discover Hashtags",
    description:
-    "Trending TikTok hashtags from the Creative Center trend board, with post counts, view counts " +
-    "and whether each is rising, cooling or steady. Filter by country and time window. Use to find " +
-    "what to tag, or to spot a wave early. Consumes 2 nooticr credits." +
-    "Use to find what to tag, or to spot a wave early.",
+    "What to tag a post with, on any network that can be searched. TikTok is read from the " +
+    "Creative Center trend board: post counts, view counts, and whether each tag is rising, " +
+    "cooling or steady. The other eight — instagram, youtube, douyin, xiaohongshu, twitter, " +
+    "bilibili, reddit, weibo — have no trend board upstream, so the tags are counted across a " +
+    "live sweep of the niche you name, which needs `niche` set and returns no rising/cooling " +
+    "signal because there is no earlier sample to compare against. The result says which of the " +
+    "two it is in `source`; do not present a counted sample as a trend board. One network cannot " +
+    "be swept at all: linkedin. Filter by country and time window on TikTok. " +
+    "Consumes 2 nooticr credits either way. Use to find what to tag, or to spot a wave early.",
    _meta: {
     ui: { resourceUri: uiResource("discover_hashtags") },
     "ui/resourceUri": uiResource("discover_hashtags"),
@@ -1961,17 +1995,84 @@ export function createMcpServer(
    outputSchema: OUTPUT_SCHEMAS.discover_hashtags,
    inputSchema: z
     .object({
-     country: z.string().optional().describe("2-letter country code (default US)."),
-     days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7)."),
+     platform: z
+      .string()
+      .optional()
+      .describe(
+       "Network to tag for. Defaults to tiktok, the only one with a real trend board. Anything " +
+        "else counts tags across a sweep and needs `niche`. linkedin cannot be swept."
+      ),
+     niche: z
+      .string()
+      .optional()
+      .describe(
+       "Topic to sweep, required for every platform but tiktok — the tags are counted from the " +
+        "posts a search for this returns, so without it there is nothing to count."
+      ),
+     country: z.string().optional().describe("2-letter country code (default US). TikTok only."),
+     days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7). TikTok only."),
      count: z.number().int().optional().describe("Max hashtags (default 20)."),
      industryId: z.string().optional().describe("Optional TikTok industry id to filter by."),
     })
     .strict(),
   },
-  async (args: { country?: string; days?: number; count?: number; industryId?: string }, extra) => {
+  async (
+   args: {
+    platform?: string;
+    niche?: string;
+    country?: string;
+    days?: number;
+    count?: number;
+    industryId?: string;
+   },
+   extra
+  ) => {
    const client = await makeClient({ ...extra, arguments: args });
+   const platform = (args.platform || "tiktok").toLowerCase();
+   // TikTok keeps the trend board it always had — a real rising/cooling signal
+   // is worth more than a count, so nothing routes away from it.
+   if (platform === "tiktok") {
+    try {
+     const { platform: _p, niche: _n, ...board } = args;
+     const result = await toToolResult(await client.callTool("discover_hashtags", board));
+     return withSource(result, "trend-board", platform);
+    } catch (err) {
+     return toolError("discover_hashtags failed", err);
+    }
+   }
+   // Everything else is derived, and two things make that impossible rather
+   // than merely worse. Refuse both before spending a credit: a paid call that
+   // cannot answer is the failure mode the platform-claims tests exist for.
+   if (!(DISCOVERABLE_PLATFORMS as readonly string[]).includes(platform)) {
+    return unbilled(
+     `${platform} cannot be swept for posts, so there is no sample to count tags in and no trend ` +
+      `board upstream either. Searchable networks: ${DISCOVERABLE_PLATFORMS.join(", ")}. Nothing was charged.`
+    );
+   }
+   if (!args.niche?.trim()) {
+    return unbilled(
+     `Only tiktok has a trend board. Tags for ${platform} are counted across a sweep, so this ` +
+      "needs `niche` set to the topic to sweep. Nothing was charged."
+    );
+   }
    try {
-    return await toToolResult(await client.callTool("discover_hashtags", { ...args }));
+    const res = await client.callTool("discover_social_posts", {
+     niche: args.niche,
+     platform,
+     limit: 30,
+    });
+    const structured = structuredOf(res);
+    const posts = Array.isArray(structured.posts) ? (structured.posts as SweptPost[]) : [];
+    const hashtags = deriveHashtags(posts, args.count ?? 20);
+    return toStructured({
+     hashtags,
+     platform,
+     niche: args.niche,
+     source: "derived-from-sweep",
+     sweptPosts: posts.length,
+     note: derivedNote(args.niche, platform, posts.length, hashtags.length),
+     mcpCredits: structured.mcpCredits ?? null,
+    });
    } catch (err) {
     return toolError("discover_hashtags failed", err);
    }
@@ -2337,8 +2438,11 @@ export function createMcpServer(
   {
    title: "Check Nooticr Credits",
    description:
-    "Check your nooticr credit balance, billing URL and pack size. No cost — call anytime to see remaining credits before running other tools." +
-    "No cost to call. Use before a run of paid calls to confirm the balance covers it.",
+    "Check your nooticr credit balance. No cost to call — call anytime to see remaining credits " +
+    "before running other tools. Nothing here sells or tops up credits: this server offers no purchase " +
+    "of any kind, so when the balance is short, say that it is and that topping up happens on the " +
+    "nooticr website, and do not offer a link or a price. " +
+    "Use before a run of paid calls to confirm the balance covers it.",
    _meta: {
     ui: { resourceUri: uiResource("check_nooticr_credits") },
     "ui/resourceUri": uiResource("check_nooticr_credits"),
@@ -2353,37 +2457,28 @@ export function createMcpServer(
   async (_args: Record<string, never>, extra) => {
    const client = await makeClient(extra);
    try {
-    return await toToolResult(await client.callTool("check_nooticr_credits", {}));
+    const proxy = await client.callTool("check_nooticr_credits", {});
+    // The backend still returns a billing URL, because the dashboard and the
+    // website both use it. It is dropped here rather than passed through: a
+    // link to buy credits is a link to buy a digital good, and this server
+    // must offer no purchase path at all — not a checkout, and not a pointer
+    // to one. Stripped at the edge, so the backend needs no change and no
+    // other consumer of it does either.
+    //
+    // Dropped from the proxy result BEFORE toToolResult, not from what it
+    // returns. toToolResult also serialises the payload into the text block,
+    // so stripping the structured half afterwards left the URL in the text a
+    // model reads — which the guard in tests/site.test.ts caught on its first
+    // run, and is the whole reason it asserts on the serialised result rather
+    // than on `structuredContent` alone.
+    const structured = proxy.structured as Record<string, unknown> | undefined;
+    if (structured && "billingUrl" in structured) {
+     const { billingUrl: _dropped, ...rest } = structured;
+     return await toToolResult({ ...proxy, structured: rest });
+    }
+    return await toToolResult(proxy);
    } catch (err) {
     return toolError("check_nooticr_credits failed", err);
-   }
-  }
- );
-
- server.registerTool(
-  "buy_nooticr_credits",
-  {
-   title: "Buy Nooticr Credits",
-   description:
-    "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. No cost to call." +
-    "Use when the balance is short and the user has agreed to top up.",
-   _meta: {
-    ui: { resourceUri: uiResource("buy_nooticr_credits") },
-    "ui/resourceUri": uiResource("buy_nooticr_credits"),
-    // ChatGPT reads only this one, and reads it to find the
-    // text/html+skybridge twin rather than the Claude resource.
-    "openai/outputTemplate": appsSdkResource("buy_nooticr_credits"),
-   },
-   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-   outputSchema: OUTPUT_SCHEMAS.buy_nooticr_credits,
-   inputSchema: z.object({}).strict(),
-  },
-  async (_args: Record<string, never>, extra) => {
-   const client = await makeClient(extra);
-   try {
-    return await toToolResult(await client.callTool("buy_nooticr_credits", {}));
-   } catch (err) {
-    return toolError("buy_nooticr_credits failed", err);
    }
   }
  );

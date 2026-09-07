@@ -120,9 +120,18 @@ function handleMcpCall(name, args, workspaceId) {
       // tests/e2e/agentic-visual.e2e.ts render and click real posts that
       // came from an actual tools/call, not a hand-crafted fixture.
       const niche = String(args?.niche ?? "demo");
-      const posts = [1, 2].map((i) => ({
-        platform: "tiktok",
-        caption: `Fixture post ${i} about ${niche}`,
+      const platform = String(args?.platform ?? "tiktok");
+      // Three posts, not two, and carrying tags — because `discover_hashtags`
+      // derives its answer for every network but TikTok by counting tags
+      // across this sweep, and it drops any tag only one post uses. Two
+      // untagged posts made that route return an empty list against the
+      // fixture, which proves the plumbing and nothing about the answer.
+      // The tags are split between the array and the caption on purpose: X,
+      // Reddit and LinkedIn routinely fill only the caption.
+      const posts = [1, 2, 3].map((i) => ({
+        platform,
+        caption: `Fixture post ${i} about ${niche} #${niche} ${i === 3 ? "#护肤" : "#fixturetag"}`,
+        hashtags: i === 1 ? [`#${niche}`, "#fixturetag"] : [],
         creatorHandle: `fixture_creator_${i}`,
         externalUrl: `https://www.tiktok.com/@fixture_creator_${i}/video/${i}`,
         videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
@@ -133,7 +142,7 @@ function handleMcpCall(name, args, workspaceId) {
       }));
       return {
         content: [{ type: "text", text: `Found ${posts.length} fixture posts about ${niche}.` }],
-        structuredContent: { platform: "tiktok", posts },
+        structuredContent: { platform, posts },
       };
     }
     case "get_social_media": {
@@ -361,21 +370,6 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: {
           report: { themes: ["fixture theme"], objections: [], whatToMakeNext: ["fixture idea"] },
           commentsAnalyzed: 2,
-        },
-      };
-    }
-    case "buy_nooticr_credits": {
-      // This raw URL is what the backend returns; tools.ts's proxyUrls()
-      // rewrites it into a /media/proxy?url=... link before it reaches this
-      // repo's client, since `checkoutUrl` is neither a RAW_URL_KEYS entry
-      // nor one of the fixed image-key names — see
-      // tests/e2e/agentic-visual-full-app.e2e.ts's buy_nooticr_credits test
-      // for why that's a real bug, not something to route around here.
-      return {
-        content: [{ type: "text", text: "Fixture checkout link." }],
-        structuredContent: {
-          checkoutUrl: "https://checkout.stripe.com/fixture-session",
-          packs: [{ name: "Starter", price: "$12.50", credits: 500 }],
         },
       };
     }

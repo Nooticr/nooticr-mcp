@@ -93,7 +93,7 @@ them caps that fan-out with an argument.
 | `search_creators` | 2 | People by what they make — designers, developers, photographers, anyone with an audience — found by craft, niche or keyword. Use when you know the kind of person but not their names. Searches TikTok, Instagram and Xiaohongshu; **not** YouTube, Douyin, X, Reddit or LinkedIn, which cannot be creator-searched upstream. |
 | `get_similar_creators` | 2 | Lookalikes for a creator that already works. |
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
-| `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
+| `discover_hashtags` | 2 | What to tag with. TikTok comes from the Creative Center trend board — volumes plus rising/cooling/steady. The other eight searchable networks have no trend board upstream, so tags are counted across a live sweep of a niche you name: real and current, but a single sample, so no rising/cooling signal. `source` says which you got. LinkedIn cannot be swept. |
 | `find_hook_pattern` | 2 | A creator's recent posts, so their opening lines can be read as a set and turned into fill-in-the-blank templates. One `get_user_posts` call. |
 | `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok, YouTube and Douyin. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
@@ -138,7 +138,6 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `check_nooticr_credits` | free | Balance and billing URL. |
-| `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 | `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
 | `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
@@ -487,7 +486,7 @@ and text** posts.
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
   for the two that fetch frames *and* transcript. Every tool bills from the
   first call. Top up via
-  `buy_nooticr_credits`, `check_nooticr_credits`, or the nooticr dashboard at
+  `check_nooticr_credits`, or the nooticr dashboard at
   `https://nooticr.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   nooticr server. Run `npx @nooticr/mcp login` again to re-authenticate.

@@ -794,9 +794,24 @@ export const OUTPUT_SCHEMAS = {
       hashtag: scalar(),
       posts: scalar(),
       views: scalar(),
-      trend: scalar().describe("rising, cooling or steady."),
+      // Only the derived route computes these two: a trend board reports its
+      // own totals, a counted sample reports the middle post and one example
+      // so a claim about a tag can be checked against a real post.
+      medianViews: scalar().describe("Derived route only — views of the median post carrying it."),
+      example: scalar().describe("Derived route only — a post that used it."),
+      trend: scalar().describe("rising, cooling or steady. Trend board only; a sample has none."),
       url: scalar(),
     })).optional(),
+    // Which of the two routes answered, so a counted sample is not read as a
+    // trend board. Same marker as get_post_transcript's `source`.
+    source: scalar().describe('"trend-board" (tiktok) or "derived-from-sweep" (everywhere else).'),
+    platform: scalar(),
+    niche: scalar().describe("Derived route only — the sweep the tags were counted from."),
+    sweptPosts: scalar().describe("Derived route only — how many posts were counted."),
+    note: scalar().describe("Derived route only — the sample size and what it does not establish."),
+    available: scalar().describe("false when the network cannot be swept at all."),
+    billable: scalar(),
+    reason: scalar(),
     country: scalar(),
     days: scalar(),
     mcpCredits,
@@ -876,12 +891,7 @@ export const OUTPUT_SCHEMAS = {
     // so the description is what steers a reader off it.
     firstFreeRemaining: listOf(z.string())
       .describe("Superseded by firstFreeTools, which carries the same value. Kept for backward compatibility — read firstFreeTools."),
-    billingUrl: scalar(),
     hint: scalar(),
-  }),
-  buy_nooticr_credits: open({
-    checkoutUrl: scalar(),
-    packs: listOf(open({})),
   }),
 
   nooticr_login: open({

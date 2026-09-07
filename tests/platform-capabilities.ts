@@ -116,8 +116,12 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     enumerating: ["discover_sounds"],
   },
   discovery: {
-    enumerating: [],
-    quiet: ["discover_social_posts", "niche_report", "discover_hashtags"],
+    // discover_hashtags enumerates now. It used to be `quiet`, which is why
+    // nothing flagged that it named no platform at all while its capability
+    // served nine — "what should I tag?" was answerable on one network out of
+    // ten and no check could see it (issue #32).
+    enumerating: ["discover_hashtags"],
+    quiet: ["discover_social_posts", "niche_report"],
   },
   transcript: {
     enumerating: [],
