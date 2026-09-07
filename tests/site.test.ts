@@ -398,7 +398,6 @@ describe("tool surface", () => {
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
-    "buy_nooticr_credits",
     "nooticr_login",
     "show_comment_review",
     "show_comparison",
@@ -472,7 +471,6 @@ describe("tool surface", () => {
     // here — it fetches per creator, and says so.
     const free = [
       "check_nooticr_credits",
-      "buy_nooticr_credits",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",
@@ -593,6 +591,123 @@ describe("README", () => {
  * server. A mismatch here means a customer is charged one thing and told
  * another, so pin the set.
  */
+/**
+ * No commerce on the tool surface.
+ *
+ * ChatGPT's Commerce & Purchasing policy supports physical goods only, and
+ * nooticr credits are a digital good. `buy_nooticr_credits` opened a Stripe
+ * Checkout session from inside a conversation, which is squarely an in-app
+ * purchase, so it is gone — and `check_nooticr_credits` strips the billing URL
+ * the backend still returns, because a link to buy a digital good is still
+ * offering one.
+ *
+ * The website selling credits is untouched and fine: the policy is about what
+ * the plugin offers, which is why the `credit packs` block below still checks
+ * the dashboard's prices. This block is about the tool surface only.
+ *
+ * A policy answer is worth only as much as the thing keeping it true. This is
+ * that thing: a purchase path added back by anyone, for any host, fails here.
+ */
+describe("nothing on the tool surface sells anything", () => {
+  async function shipped() {
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    return (await client.listTools()).tools;
+  }
+
+  it("registers no tool that transacts", async () => {
+    const names = (await shipped()).map((t) => t.name);
+    for (const banned of ["buy_nooticr_credits", "purchase_credits", "checkout", "buy_credits"]) {
+      expect(names, `${banned} would be a purchase of a digital good`).not.toContain(banned);
+    }
+    // And nothing new shaped like one, whatever it ends up called.
+    const transacting = names.filter((n) => /^(buy|purchase|checkout|subscribe|order)_/.test(n));
+    expect(transacting, "a tool whose name starts like a transaction").toEqual([]);
+  });
+
+  it("offers no purchase in any description a host reads", async () => {
+    // The description is what reaches a model and a reviewer. "credits" and
+    // "cost" are fine and necessary — every tool states its price. Offering
+    // to SELL is what must not appear.
+    const offending: string[] = [];
+    for (const tool of await shipped()) {
+      const prose = String(tool.description ?? "");
+      // The balance tool says the opposite, in those words, and must not trip.
+      if (/nothing here sells/i.test(prose)) continue;
+      for (const phrase of [/stripe/i, /checkout/i, /\bbuy\b/i, /credit pack/i, /top[- ]up/i]) {
+        if (phrase.test(prose)) offending.push(`${tool.name}: ${String(phrase)}`);
+      }
+    }
+    expect(offending, "a tool description offering a purchase").toEqual([]);
+  });
+
+  it("returns no billing URL, even when the backend sends one", async () => {
+    // check_nooticr_credits proxies a backend that still holds a billing URL,
+    // because the dashboard needs it. The edge is what must drop it.
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () =>
+        ({
+          callTool: async () => ({
+            contentBlocks: [{ type: "text", text: "{}" }],
+            structured: {
+              balance: 12,
+              billingUrl: "https://billing.stripe.com/p/session_should_not_pass_through",
+              packSize: 500,
+            },
+          }),
+        }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    await client.listTools();
+    const res = await client.callTool(
+      { name: "check_nooticr_credits", arguments: {} },
+      undefined,
+      { timeout: 30_000 },
+    );
+    const structured = (res.structuredContent ?? {}) as Record<string, unknown>;
+    expect(structured.balance, "the balance itself must still come through").toBe(12);
+    expect(structured).not.toHaveProperty("billingUrl");
+    expect(JSON.stringify(res)).not.toContain("billing.stripe.com");
+  });
+
+  it("declares no output field that would carry a purchase link", async () => {
+    const { OUTPUT_SCHEMAS } = await import("../src/shared/output-schemas.js");
+    expect(Object.keys(OUTPUT_SCHEMAS)).not.toContain("buy_nooticr_credits");
+    const { toJsonSchemaCompat } = await import(
+      "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js"
+    );
+    const shapes = JSON.stringify(
+      Object.entries(OUTPUT_SCHEMAS).map(([name, schema]) => [
+        name,
+        toJsonSchemaCompat(schema as never, { strictUnions: true }),
+      ]),
+    );
+    for (const field of ["checkoutUrl", "billingUrl", "priceId"]) {
+      expect(shapes, `an output schema still declares ${field}`).not.toContain(`"${field}"`);
+    }
+  });
+
+  it("says so in the submission file and in the checklist", () => {
+    const submission = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8")) as {
+      tools: Record<string, unknown>;
+    };
+    expect(Object.keys(submission.tools)).not.toContain("buy_nooticr_credits");
+    expect(readFileSync("docs/chatgpt-app-submission.md", "utf8")).toMatch(/Nothing here\s+sells anything/);
+  });
+});
+
 describe("credit packs", () => {
   const PACKS = [
     { id: "starter", price: "$15", credits: 600 },
@@ -717,7 +832,6 @@ describe("documentation", () => {
     }
     for (const free of [
       "check_nooticr_credits",
-      "buy_nooticr_credits",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",

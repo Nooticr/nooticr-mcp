@@ -876,12 +876,7 @@ export const OUTPUT_SCHEMAS = {
     // so the description is what steers a reader off it.
     firstFreeRemaining: listOf(z.string())
       .describe("Superseded by firstFreeTools, which carries the same value. Kept for backward compatibility — read firstFreeTools."),
-    billingUrl: scalar(),
     hint: scalar(),
-  }),
-  buy_nooticr_credits: open({
-    checkoutUrl: scalar(),
-    packs: listOf(open({})),
   }),
 
   nooticr_login: open({

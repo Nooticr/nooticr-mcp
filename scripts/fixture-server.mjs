@@ -364,21 +364,6 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
-    case "buy_nooticr_credits": {
-      // This raw URL is what the backend returns; tools.ts's proxyUrls()
-      // rewrites it into a /media/proxy?url=... link before it reaches this
-      // repo's client, since `checkoutUrl` is neither a RAW_URL_KEYS entry
-      // nor one of the fixed image-key names — see
-      // tests/e2e/agentic-visual-full-app.e2e.ts's buy_nooticr_credits test
-      // for why that's a real bug, not something to route around here.
-      return {
-        content: [{ type: "text", text: "Fixture checkout link." }],
-        structuredContent: {
-          checkoutUrl: "https://checkout.stripe.com/fixture-session",
-          packs: [{ name: "Starter", price: "$12.50", credits: 500 }],
-        },
-      };
-    }
     case "generate_captions": {
       // Real shape (own-account.ts passthrough): {ok, cues, transcript, cost,
       // provider} — no `available`/`wordCount`. See ui-template.ts's

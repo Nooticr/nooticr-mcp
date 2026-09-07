@@ -252,10 +252,15 @@ Authorization codes and PKCE challenges are one-time use and short-lived.
   comment-write permission, so the audience-reply tools draft text for a person
   to paste in. (See issue #29 for the one place that claim is in tension with
   what `list_social_connections` reports.)
-- **Billing:** nooticr credits, 20 free on signup, Stripe Checkout for top-ups.
-  Each tool states its cost; the six whose price is set by an argument confirm
-  over MCP `elicitation` above 6 credits, a scheduled watch always confirms, and
-  a call that produces no answer is not billed.
+- **Billing, and no commerce in the plugin:** nooticr credits, 20 free on
+  signup. Each tool states its cost; the six whose price is set by an argument
+  confirm over MCP `elicitation` above 6 credits, a scheduled watch always
+  confirms, and a call that produces no answer is not billed. **Nothing here
+  sells anything.** No tool offers a purchase, a checkout, a price or a link to
+  one — the `buy_nooticr_credits` tool was removed and `check_nooticr_credits`
+  strips the backend's billing URL before returning, so the surface carries no
+  purchase path at all. Credits are bought on mcp.nooticr.com, outside any
+  conversation. `tests/site.test.ts` fails if a purchase path reappears.
 
 ### The dual-mime deviation — declare it rather than let it be found
 

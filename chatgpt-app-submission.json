@@ -92,18 +92,6 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "buy_nooticr_credits": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": true,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Not read-only: it creates a Stripe Checkout session. No charge is made until the user completes payment in their own browser.",
-        "open_world_justification": "Reaches an external system: it creates a Stripe Checkout session and returns that URL, so the outcome depends on Stripe rather than on this server.",
-        "destructive_justification": "Not destructive: it only opens a checkout URL. Nothing of the caller's is removed or overwritten."
-      }
-    },
     "catch_up_watchlist": {
       "annotations": {
         "readOnlyHint": false,

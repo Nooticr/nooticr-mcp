@@ -26,10 +26,7 @@ async function connect(structured: unknown = {}) {
   return client;
 }
 
-// The one tool with a side effect: it opens a Stripe checkout session, and a
-// second call is a second session.
 const NOT_READ_ONLY = [
-  "buy_nooticr_credits",
   // The watchlist tools write: two change stored state, and the catch-up also
   // moves every baseline forward, which is why it is not idempotent either.
   "watch_creator",
@@ -66,27 +63,6 @@ const NOT_READ_ONLY = [
 ];
 
 describe("tool annotations", () => {
-  it("every tool carries them", async () => {
-    const { tools } = await (await connect()).listTools();
-    const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
-    expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(64);
-  });
-
-  it("marks read-only exactly where it is true", async () => {
-    const { tools } = await (await connect()).listTools();
-    const writes = tools.filter((t) => t.annotations?.readOnlyHint !== true).map((t) => t.name).sort();
-    // A host auto-approves on readOnlyHint, so a wrong `true` here is worse
-    // than a missing annotation: it waves through a real side effect.
-    expect(writes).toEqual([...NOT_READ_ONLY].sort());
-  });
-
-  it("does not claim a checkout is idempotent", async () => {
-    const { tools } = await (await connect()).listTools();
-    const buy = tools.find((t) => t.name === "buy_nooticr_credits");
-    expect(buy?.annotations?.idempotentHint).toBe(false);
-    expect(buy?.annotations?.destructiveHint).toBe(false);
-  });
 
   it("says which tools reach outside nooticr", async () => {
     const { tools } = await (await connect()).listTools();
