@@ -62,8 +62,16 @@ function proseOf(tool: { description?: string; inputSchema?: unknown }): string 
  * said anything), so it must not read as over-advertising — but the marker has
  * to be a fixed phrase rather than free prose, or "cannot" anywhere in a
  * description would switch the check off.
+ *
+ * The third arrived with `discover_hashtags` (issue #32), which now names the
+ * eight networks it counts tags across and the one it cannot sweep at all.
+ * Adding a marker is the intended way to widen this; rewording the check is not.
  */
-const EXCLUSION_MARKERS = ["not searchable here:", "cannot be listened to:"];
+const EXCLUSION_MARKERS = [
+  "not searchable here:",
+  "cannot be listened to:",
+  "cannot be swept at all:",
+];
 
 /**
  * Platforms a piece of prose claims. Anything after an exclusion marker is a

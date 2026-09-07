@@ -3690,20 +3690,45 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +"</div></div>";
       return;}
 
-    // Trending hashtags
+    // Trending hashtags. Two sources with different evidence behind them: the
+    // TikTok trend board, which measures direction over time, and a count
+    // across one niche sweep, which cannot. The header names which, and a
+    // counted row draws no trend arrow — an arrow for a direction nobody
+    // measured is the view asserting something the tool did not.
     if(d.hashtags&&Array.isArray(d.hashtags)){
-      if(!d.hashtags.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">#</div><div class="text">No trending hashtags found</div></div>';return;}
+      var derived=d.source==="derived-from-sweep";
+      var where=derived
+        ?esc(String(d.platform||"")||"this network")+" · counted across "+fmtNum(d.sweptPosts||0)+" post"+((d.sweptPosts===1)?"":"s")+(d.niche?' matching "'+esc(d.niche)+'"':"")
+        :"TikTok trend board · "+esc(d.country||"US")+" · last "+(d.days||7)+" days";
+      if(!d.hashtags.length){
+        app.innerHTML='<div class="empty-state fade-in"><div class="icon">#</div><div class="text">'
+          +esc(d.reason||(derived?"No tag was used by more than one post in that sweep":"No trending hashtags found"))
+          +'</div><div class="sub" style="font-size:11.5px;color:var(--muted);margin-top:6px">'+where+"</div></div>";
+        return;}
       var hr=d.hashtags.slice(0,30).map(function(t){
         var dir=t.trend==="rising"?["▲","var(--green)"]:t.trend==="cooling"?["▼","var(--red)"]:["▬","var(--muted)"];
-        return '<a href="'+esc(t.url||"#")+'" target="_blank" rel="noopener" class="comment-row" style="text-decoration:none">'
+        var stat=fmtNum(t.posts||0)+" post"+((t.posts===1)?"":"s");
+        // A counted sample reports the middle post, because one outlier in a
+        // 30-post sweep moves a total and not a median.
+        if(derived){if(t.medianViews!=null)stat+=" · median "+fmtNum(t.medianViews)+" views";}
+        else if(t.views!=null)stat+=" · "+fmtNum(t.views)+" views";
+        var href=t.url||t.example||"";
+        var open=href?'<a href="'+esc(href)+'" target="_blank" rel="noopener" class="comment-row" style="text-decoration:none">':'<div class="comment-row">';
+        return open
           +'<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">#'+esc(t.hashtag)+"</div>"
-          +'<div style="font-size:11.5px;color:var(--muted)">'+fmtNum(t.posts||0)+" posts · "+fmtNum(t.views||0)+" views</div></div>"
-          +'<span style="font-size:11px;font-weight:700;color:'+dir[1]+';white-space:nowrap">'+dir[0]+" "+esc(t.trend||"")+"</span></a>";
+          +'<div style="font-size:11.5px;color:var(--muted)">'+stat+"</div></div>"
+          +(t.trend?'<span style="font-size:11px;font-weight:700;color:'+dir[1]+';white-space:nowrap">'+dir[0]+" "+esc(t.trend)+"</span>":"")
+          +(href?"</a>":"</div>");
       }).join("");
       app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">#<span>Trending hashtags</span></div>'
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">TikTok · '+esc(d.country||"US")+" · last "+(d.days||7)+" days</div>"
-        +hr+"</div></div>";
+        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">#<span>'+(derived?"Tags in this niche":"Trending hashtags")+"</span></div>"
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">'+where+"</div>"
+        +hr
+        // The caveat goes in front of the person too, not only into the
+        // context handed to the model: a ranked list reads as a trend whatever
+        // the payload says, so the sentence saying it is not sits under it.
+        +(derived&&d.note?'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">'+esc(d.note)+"</div>":"")
+        +"</div></div>";
       return;}
 
     // Comment analysis
