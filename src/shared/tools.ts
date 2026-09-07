@@ -1059,7 +1059,11 @@ export function createMcpServer(
     "Work out their niche, recurring themes, hook formula, what over- and under-performs and who " +
     "their audience is, reading the spread of the numbers rather than only the best post, and " +
     `name the posts you reason from. ${costSentence("analyze_creator_profile")} ` +
-    "Use for the teardown itself; find_hook_pattern fetches the same posts and asks only for the formula.",
+    "Use for the teardown itself; find_hook_pattern fetches the same posts and asks only for the " +
+    "formula. NOT for keeping an eye on a rival over time: \"track X\", \"how are they doing " +
+    "lately\", \"what have they shipped since I last looked\" are track_competitor, which scores " +
+    "each post against that creator's own median and remembers where you left off. This tool " +
+    "returns the posts and no verdict, and remembers nothing between calls.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_creator_profile") },
     "ui/resourceUri": uiResource("analyze_creator_profile"),

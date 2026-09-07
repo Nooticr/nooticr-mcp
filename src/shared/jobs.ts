@@ -1016,13 +1016,15 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       title: "Track Competitor",
       _meta: viewMeta("track_competitor"),
       description:
-        "What a creator shipped recently and which of it beat THEIR OWN baseline. Fetches their " +
-        "recent posts once and scores each against the median of that same window, because a raw " +
-        "view count mostly measures follower count — outperformance against themselves is the " +
-        "signal. If they are on your watchlist it also marks what is new since your last " +
-        "track_competitor call and moves that marker forward. " +
-        "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival you " +
-        "follow; analyze_creator_profile is the full teardown of one you do not.",
+        "Track a competitor, keep an eye on a rival, see how someone is doing lately, catch what " +
+        "they shipped since you last looked — this is the tool for all of those. What a creator " +
+        "shipped recently and which of it beat THEIR OWN baseline: fetches their recent posts " +
+        "once and scores each against the median of that same window, because a raw view count " +
+        "mostly measures follower count — outperformance against themselves is the signal. If " +
+        "they are on your watchlist it also marks what is new since your last track_competitor " +
+        "call and moves that marker forward. " +
+        "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival " +
+        "you follow; analyze_creator_profile is the full teardown of one you do not.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
