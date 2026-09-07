@@ -98,7 +98,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
   },
   discovery: {
     enumerating: [],
-    quiet: ["discover_social_posts", "niche_report", "discover_hashtags"],
+    quiet: ["discover_social_posts", "niche_report", "discover_hashtags", "find_people_with_problem"],
   },
   transcript: {
     enumerating: [],

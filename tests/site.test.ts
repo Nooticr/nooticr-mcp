@@ -297,6 +297,9 @@ describe("tool surface", () => {
     "why_did_this_underperform",
     "what_should_i_make_next",
     "search_spoken_mentions",
+    // The prospect search: the same keyword call as discover_social_posts,
+    // widened into the shapes a complaint takes rather than the topic.
+    "find_people_with_problem",
     // Neither fetches: one packages what the model classified for a tracker
     // on another server, the other draws the shortlist it scored.
     "prepare_handoff",

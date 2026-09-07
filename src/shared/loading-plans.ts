@@ -351,6 +351,16 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     n: 3,
     steps: [step("get_user_posts")],
   },
+  find_people_with_problem: {
+    label: "Looking for people with this problem",
+    kind: "list",
+    n: 6,
+    // Three query shapes per platform, so the step repeats rather than
+    // representing one search — the wait is proportional to platforms asked
+    // for, and a single-step plan would under-report it badly.
+    steps: [step("discover_social_posts")],
+  },
+
   who_should_i_work_with: {
     label: "Building a shortlist",
     kind: "list",

@@ -560,6 +560,24 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
+  /**
+   * Prospect discovery. The unit is a POST that might be someone describing a
+   * problem — `posts` rather than a bespoke key, because the gallery view
+   * already draws that shape and a wide net does not need a view of its own.
+   */
+  find_people_with_problem: open({
+    ...evidence,
+    problem: scalar(),
+    platforms: listOf(z.string()),
+    posts: listOf(post),
+    searchedShapes: listOf(z.string()).describe(
+      "Which complaint phrasings were searched: plain, shared, asking.",
+    ),
+    unavailable: anyList().describe("Searches that errored, by platform and shape."),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
   who_should_i_work_with: open({
     ...evidence,
     niche: scalar(),
