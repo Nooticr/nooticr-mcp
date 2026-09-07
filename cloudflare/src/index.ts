@@ -12,6 +12,7 @@
 import { landingPage as sitelanding } from "./site/landing.js";
 import { termsPage, privacyPage } from "./site/legal.js";
 import { documentationPage } from "./site/documentation.js";
+import { supportPage } from "./site/support.js";
 import { dashboardPage, dashboardSignedOut } from "./site/dashboard.js";
 import { NooticrClient } from "../../src/shared/nooticr.js";
 import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
@@ -64,10 +65,18 @@ export default {
     // `wrangler secret put OPENAI_APPS_VERIFICATION_TOKEN` after starting
     // that submission. 404 rather than an empty 200 while unset, so an
     // unconfigured deploy cannot look like it is claiming a domain it isn't.
-    if (path === "/.well-known/openai-apps-challenge" && method === "GET") {
-      return env.OPENAI_APPS_VERIFICATION_TOKEN
-        ? textResponse(200, env.OPENAI_APPS_VERIFICATION_TOKEN)
-        : textResponse(404, "not configured");
+    //
+    // Trimmed, and HEAD answered, because both are how this fails in practice
+    // and neither failure says why. `wrangler secret put` keeps whatever the
+    // shell hands it, so a token pasted with a trailing newline is served with
+    // one and compared byte-for-byte against a token without: a rejection with
+    // nothing visibly wrong at either end. A verifier that probes with HEAD
+    // before GET, meanwhile, used to fall through every route below and land
+    // on the JSON 404. A challenge endpoint has one job, and being strict
+    // about the request shape is not part of it.
+    if (path === "/.well-known/openai-apps-challenge" && (method === "GET" || method === "HEAD")) {
+      const token = env.OPENAI_APPS_VERIFICATION_TOKEN?.trim();
+      return token ? textResponse(200, token) : textResponse(404, "not configured");
     }
     if (path === "/register" && method === "POST") {
       return handleRegister(request, env);
@@ -96,6 +105,14 @@ export default {
     if (path === "/docs" && method === "GET") {
       return new Response(null, { status: 301, headers: { location: "/documentation" } });
     }
+    if (path === "/support" && method === "GET") {
+      return htmlResponse(200, supportPage(env.PUBLIC_URL), CACHEABLE);
+    }
+    // Both spellings, because "contact" is what people type and what other
+    // pages have historically linked.
+    if ((path === "/contact" || path === "/help") && method === "GET") {
+      return new Response(null, { status: 301, headers: { location: "/support" } });
+    }
     if (path === "/terms" && method === "GET") {
       return htmlResponse(200, termsPage(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
     }
@@ -109,7 +126,7 @@ export default {
       );
     }
     if (path === "/sitemap.xml" && method === "GET") {
-      const pages = ["/", "/documentation", "/terms", "/privacy"];
+      const pages = ["/", "/documentation", "/support", "/terms", "/privacy"];
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?>` +
           `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +

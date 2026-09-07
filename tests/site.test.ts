@@ -8,12 +8,15 @@
  * nobody updates the page, that is a billing surprise, so it fails here first.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { landingPage } from "../cloudflare/src/site/landing.js";
 import { termsPage, privacyPage, LEGAL_EFFECTIVE } from "../cloudflare/src/site/legal.js";
+import { supportPage } from "../cloudflare/src/site/support.js";
 import { dashboardPage, dashboardSignedOut } from "../cloudflare/src/site/dashboard.js";
 import { TOOLS } from "../cloudflare/src/site/catalogue.js";
 import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
+import { BRAND } from "../cloudflare/src/site/layout.js";
 import { EVIDENCE_PLANS, planCost } from "../src/shared/evidence.js";
 
 const URL = "https://mcp.nooticr.com";
@@ -131,6 +134,122 @@ describe("legal pages", () => {
     const t = termsPage(URL, API);
     for (const heading of ["Credits and payment", "Acceptable use", "Liability", "Termination"]) {
       expect(t, `terms missing "${heading}"`).toContain(heading);
+    }
+  });
+});
+
+/**
+ * The support page is a submission requirement — ChatGPT and Claude both ask
+ * for a support URL — so the things that make it one are asserted rather than
+ * eyeballed: it names the same address the legal pages do, it reaches the
+ * pages a reviewer follows next, and it is actually routed and indexed rather
+ * than existing only as a function nothing calls.
+ */
+describe("support page", () => {
+  const html = supportPage(URL);
+  const worker = readFileSync("cloudflare/src/index.ts", "utf8");
+
+  it("gives one contact address, and it is the one the rest of the site gives", () => {
+    // A support page quoting a different address from the Privacy Policy is
+    // worse than no support page: one of them is wrong and neither says which.
+    expect(BRAND.supportEmail).toBe("support@nooticr.com");
+    expect(html).toContain(`mailto:${BRAND.supportEmail}`);
+    for (const other of [termsPage(URL, API), privacyPage(URL, API)]) {
+      expect(other).toContain(`mailto:${BRAND.supportEmail}`);
+    }
+  });
+
+  it("is routed, redirected to from the obvious spellings, and in the sitemap", () => {
+    // The page function existing proves nothing — this is the wiring.
+    expect(worker).toContain('path === "/support"');
+    expect(worker).toContain("supportPage(env.PUBLIC_URL)");
+    expect(worker).toMatch(/path === "\/contact" \|\| path === "\/help"/);
+    expect(worker).toContain('const pages = ["/", "/documentation", "/support", "/terms", "/privacy"]');
+  });
+
+  it("is linked from every page's footer, not buried", () => {
+    for (const [name, page] of [
+      ["landing", landingPage(URL, API)],
+      ["terms", termsPage(URL, API)],
+      ["privacy", privacyPage(URL, API)],
+      ["support", html],
+    ] as const) {
+      expect(page, `${name} does not link /support`).toContain('href="/support"');
+    }
+  });
+
+  it("answers the four questions it claims to answer", () => {
+    // Each of these has a real answer elsewhere in the product, and a support
+    // page that collects a message instead of giving it wastes both sides' time.
+    for (const claim of [
+      "Creator search covers TikTok, Instagram and Xiaohongshu",
+      "cannot reach Reddit or Bilibili",
+      "is not billed",
+      "render no widgets at all",
+      "within 30 days",
+    ]) {
+      expect(html, `support page omits "${claim}"`).toContain(claim);
+    }
+    expect(html).toContain('href="/documentation#tools"');
+    expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain('href="/terms"');
+  });
+
+  it("collects nothing: no form, and the button is a mailto", () => {
+    // A form with no action submits GET to the current URL, so with scripting
+    // off everything typed would land in a request line for /support — which
+    // would make the page's own promise false. There is no form at all.
+    expect(html).not.toContain("<form");
+    expect(html).not.toContain("onsubmit");
+    expect(html).toMatch(/id="send" href="mailto:/);
+    expect(html).toContain("Nothing is submitted to us from this page");
+  });
+
+  it("emits a composer script that actually parses", () => {
+    // It did not, once. An escape lost in an edit put a literal newline inside
+    // a JS string, so the emitted script was a syntax error: the button kept
+    // its bare mailto and every field was silently dropped, with nothing
+    // thrown anywhere a person would look. `new Function` is the cheapest
+    // thing that would have caught it.
+    const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+    expect(script, "no composer script in the page").toBeTruthy();
+    expect(() => new Function(script as string)).not.toThrow();
+    // And it must still be building the body from the fields.
+    for (const id of ["summary", "detail", "tool", "client", "link", "account", "topic"]) {
+      expect(script, `composer never reads #${id}`).toContain(`'${id}'`);
+    }
+  });
+
+  it("escapes interpolated values", () => {
+    expect(supportPage('https://x.test/"><script>alert(1)</script>')).not.toContain("<script>alert(1)");
+  });
+});
+
+/**
+ * The submission checklist is filled in by a person under time pressure, so
+ * anything in it that CI moves on its own must be a pointer rather than a
+ * copy. The version was a copy, and went stale the first time a release
+ * landed while the branch was open — 1.26.23 in the doc against 1.26.24 in
+ * `package.json`.
+ */
+describe("submission checklist", () => {
+  const doc = readFileSync("docs/chatgpt-app-submission.md", "utf8");
+
+  it("quotes no version number of its own", () => {
+    const pinned = doc.match(/\b\d+\.\d+\.\d+\b/g) ?? [];
+    expect(pinned, `hardcoded version(s) in the doc: ${pinned.join(", ")}`).toEqual([]);
+  });
+
+  it("names the four things only a human can supply, and their values", () => {
+    for (const value of [
+      "https://mcp.nooticr.com/support",
+      "https://mcp.nooticr.com/terms",
+      "https://mcp.nooticr.com/privacy",
+      BRAND.supportEmail,
+      BRAND.company,
+    ]) {
+      expect(doc, `checklist omits ${value}`).toContain(value);
     }
   });
 });

@@ -241,7 +241,7 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     faq("Do I need a credit card to try it?", "No. New accounts get 20 credits, which is enough for a full pass over a post and its comments several times over. You only pay when you choose to top up.") +
     faq("What happens if a tool call fails?", "You are not charged. Failed calls are refunded to your balance automatically, and a call interrupted mid-flight is billed once at most, never twice.") +
     faq("Where is my usage visible?", `Your <a href="/dashboard" style="color:var(--brand)">dashboard</a> shows balance, credits spent, calls per tool and recent activity. Your assistant can also call <code>check_nooticr_credits</code> at any time.`) +
-    faq("Can I revoke access?", `Yes. Disconnect the connector in your AI client, or email <a href="mailto:support@nooticr.com" style="color:var(--brand)">support@nooticr.com</a> to have the account and its data deleted.`) +
+    faq("Can I revoke access?", `Yes. Disconnect the connector in your AI client, or ask us via <a href="/support" style="color:var(--brand)">support</a> to have the account and its data deleted.`) +
     faq("How is authentication handled?", "OAuth 2.1 with PKCE and dynamic client registration. Your assistant receives a scoped access token; Nooticr never asks you to paste a long-lived API key into a chat window.") +
     `</div></section></div>` +
 
