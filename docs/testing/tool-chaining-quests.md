@@ -159,6 +159,34 @@ Four things in there are worth acting on beyond the guidance channel:
   own caution, not the guidance, which never arrived. The positive half
   (`get_user_posts → search_creators` on TikTok) is 0/3.
 
+### Measured after the fix
+
+Carrying the guidance inside `structuredContent` (#44) and re-running the whole
+corpus, same model, same fixture:
+
+| | before | after |
+|---|---|---|
+| quests at or above threshold | 6 / 20 | **8 / 20** |
+| `show_*` runs where the tool was **never retrieved** | 18 / 36 | **8 / 36** |
+| ... of those, called | 0 / 18 | 0 / 8 |
+| `show_*` runs where it **was** retrieved | 18 / 36 | 28 / 36 |
+| ... of those, called | 14 / 18 | 21 / 28 |
+| `show_analysis` retrieved | 4 / 12 | **9 / 12** |
+| `show_analysis` called | 1 / 12 | **5 / 12** |
+
+The headline number moves modestly; the mechanism moves a lot. **Delivering the
+guidance more than halved the retrieval failures** — from 18 runs to 8 — which
+is the compounding effect the retrieval section predicts: once a result names
+`show_analysis` in text the model can read, the model can search for it, and a
+tool it never searches for is a tool it cannot call. Conversion *once* retrieved
+barely changed (78% → 75%), which is the right shape: guidance was never the
+thing stopping a model that already had the tool in context.
+
+Two tools did not follow: `show_comparison` (retrieved 2/3, called 0/3) and
+`show_collab_shortlist` (retrieved 1/3, called 0/3). Those are now a different
+problem from the rest — the model has the tool and still does not call it — and
+worth their own look rather than being folded into the retrieval story.
+
 ### What to do about it is a product decision, not a test one
 
 The quest suite deliberately does not fix this. Four routes, with what the
