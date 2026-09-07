@@ -208,9 +208,21 @@ page a reviewer clicks cannot disagree:
 | | | source in this repo |
 |---|---|---|
 | Publisher | Nooticr | `BRAND.company`, `cloudflare/src/site/layout.ts` |
+| Support URL | https://mcp.nooticr.com/support | `supportPage()`, `cloudflare/src/site/support.ts`, routed at `cloudflare/src/index.ts` |
 | Support contact | support@nooticr.com | `BRAND.supportEmail`, same file |
 | Terms of service | https://mcp.nooticr.com/terms | `termsPage()`, `cloudflare/src/site/legal.ts`, routed at `cloudflare/src/index.ts` |
 | Privacy policy | https://mcp.nooticr.com/privacy | `privacyPage()`, same |
+
+`/support` is new. It answers the four questions that account for most
+requests — an empty tool result that is really a platform limit, a charge for a
+call that looked like it failed, a result that renders as text in a host that
+draws no widgets, and account deletion — and then offers a contact form. The
+form composes a `mailto:` in the visitor's own mail client rather than posting
+anywhere: this Worker stores no data of its own and the Privacy Policy says so,
+so a contact endpoint would have made that false, and honouring it properly
+would mean an email provider, an API key in Worker env, spam handling and a
+retention answer. Composing in the visitor's client keeps the claim true and
+shows them the message before it is sent. `/contact` and `/help` 301 to it.
 
 An earlier revision of this document said none of these existed in the repo.
 That was wrong — it looked in the repo root and in `server.json` and not in

@@ -138,6 +138,14 @@ footer a:hover{color:var(--fg)}
 .prose ul{padding-left:22px}
 .prose li{margin:5px 0}
 .prose strong{color:var(--fg);font-weight:600}
+/* The global rule sets a{color:inherit;text-decoration:none}, which suits the
+   nav and the footer and makes a link inside a paragraph invisible. Prose is
+   where links carry the meaning — a triage answer on /support is mostly
+   pointers — so they get the brand colour, plus a rule beneath on hover.
+   Excluding .btn: this rule outranks .btn-primary's own colour and painted the
+   button label brand-on-brand, an orange pill with nothing written on it. */
+.prose a:not(.btn){color:var(--brand);text-decoration:none;border-bottom:1px solid transparent}
+.prose a:not(.btn):hover{border-bottom-color:currentColor}
 /* Wide tables scroll inside their own box rather than widening the page. */
 .prose table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;
   display:block;overflow-x:auto;white-space:nowrap}
@@ -216,9 +224,9 @@ function footer(publicUrl: string): string {
     `<footer><div class="wrap"><div class="cols">` +
     `<div><a class="logo" href="/" style="margin-bottom:12px">${logoMark(24)}<span>Nooticr</span><small>MCP</small></a>` +
     `<p class="muted" style="margin:0;max-width:22rem;font-size:13.5px">${esc(BRAND.tagline)}. An MCP server that lets AI assistants read and analyse public social posts.</p></div>` +
-    `<div><h4>Product</h4><a href="/#tools">Tools</a><a href="/#pricing">Pricing</a><a href="/dashboard">Dashboard</a><a href="/health">Status</a></div>` +
+    `<div><h4>Product</h4><a href="/#tools">Tools</a><a href="/#pricing">Pricing</a><a href="/dashboard">Dashboard</a><a href="/support">Support</a><a href="/health">Status</a></div>` +
     `<div><h4>Developers</h4><a href="/documentation">Documentation</a><a href="/#install">Install</a><a href="https://www.npmjs.com/package/@nooticr/mcp" rel="noopener">npm package</a><a href="https://github.com/Nooticr/nooticr-mcp" rel="noopener">GitHub</a><a href="/.well-known/oauth-authorization-server">OAuth metadata</a></div>` +
-    `<div><h4>Legal</h4><a href="/terms">Terms of Use</a><a href="/privacy">Privacy Policy</a><a href="mailto:${esc(BRAND.supportEmail)}">Contact</a></div>` +
+    `<div><h4>Legal</h4><a href="/terms">Terms of Use</a><a href="/privacy">Privacy Policy</a></div>` +
     `</div><div class="legal-bar"><span>© ${year} ${esc(BRAND.company)}. All rights reserved.</span>` +
     `<span class="faint">${esc(publicUrl.replace(/^https?:\/\//, ""))}</span></div></div></footer>`
   );

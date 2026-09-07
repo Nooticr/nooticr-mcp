@@ -12,6 +12,7 @@
 import { landingPage as sitelanding } from "./site/landing.js";
 import { termsPage, privacyPage } from "./site/legal.js";
 import { documentationPage } from "./site/documentation.js";
+import { supportPage } from "./site/support.js";
 import { dashboardPage, dashboardSignedOut } from "./site/dashboard.js";
 import { NooticrClient } from "../../src/shared/nooticr.js";
 import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
@@ -96,6 +97,14 @@ export default {
     if (path === "/docs" && method === "GET") {
       return new Response(null, { status: 301, headers: { location: "/documentation" } });
     }
+    if (path === "/support" && method === "GET") {
+      return htmlResponse(200, supportPage(env.PUBLIC_URL), CACHEABLE);
+    }
+    // Both spellings, because "contact" is what people type and what other
+    // pages have historically linked.
+    if ((path === "/contact" || path === "/help") && method === "GET") {
+      return new Response(null, { status: 301, headers: { location: "/support" } });
+    }
     if (path === "/terms" && method === "GET") {
       return htmlResponse(200, termsPage(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
     }
@@ -109,7 +118,7 @@ export default {
       );
     }
     if (path === "/sitemap.xml" && method === "GET") {
-      const pages = ["/", "/documentation", "/terms", "/privacy"];
+      const pages = ["/", "/documentation", "/support", "/terms", "/privacy"];
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?>` +
           `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
