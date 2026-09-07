@@ -122,6 +122,60 @@ export function handleMissGuidance(a: {
   return lines.filter((l, i, all) => !(l === "" && all[i - 1] === "")).join("\n");
 }
 
+/**
+ * Every network the surface can be asked for, for recognising one in an error.
+ *
+ * Deliberately a flat list rather than a per-capability one: this is used to
+ * spot a platform NAME in a failure message, and a platform that failed is a
+ * platform whatever it was capable of.
+ */
+export const KNOWN_PLATFORMS = [
+  "tiktok",
+  "instagram",
+  "youtube",
+  "douyin",
+  "xiaohongshu",
+  "twitter",
+  "bilibili",
+  "linkedin",
+  "reddit",
+  "weibo",
+] as const;
+
+/**
+ * What to say when a network ERRORED, as opposed to came back empty.
+ *
+ * Those want opposite responses and nothing distinguished them. An empty
+ * result means try a different query; an error means try a different network,
+ * or tell the user. Without that split a host does the one thing that cannot
+ * work: re-runs the same call with the words changed.
+ *
+ * From a real session. Reddit's discovery endpoint started failing, and the
+ * model read "The social data service could not complete this request" as a
+ * bad query — three more discover_social_posts calls with reworded niches,
+ * then a search_mentions, every one a paid upstream call against a network
+ * that was never going to answer. The user had asked for "X and Reddit"; they
+ * were told about X and never told Reddit had failed at all.
+ *
+ * So: name the network, say the failure is not about the query, forbid the
+ * reword loop explicitly, and say what to do instead. `handleMissGuidance`'s
+ * shape, for the other half of the same problem.
+ */
+export function platformFailureGuidance(a: { platform: string; message: string }): string {
+  return [
+    `${a.platform} could not be searched: ${a.message}`,
+    "",
+    "This is the network failing, not your query. Do NOT call this again with different " +
+      "wording, a different niche phrasing, or a different tool against the same network — " +
+      "each attempt is another paid upstream call that fails the same way.",
+    "",
+    `Carry on with any other networks the user asked for, and tell them plainly that ` +
+      `${a.platform} could not be searched this time. An answer that silently covers half of ` +
+      "what was asked for reads as a complete answer, which is worse than a short one that " +
+      "says what is missing.",
+  ].join("\n");
+}
+
 /** Closing line every guidance block shares. */
 export const ownIt =
   "Reason over this yourself rather than asking for an interpretation of it — " +

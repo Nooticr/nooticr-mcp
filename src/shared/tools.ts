@@ -29,6 +29,8 @@ import {
  framesToBlocks,
  planCalls,
  scoreDraftGuidance,
+  KNOWN_PLATFORMS,
+  platformFailureGuidance,
 } from "./evidence.js";
 import {
   confirmSpend,
@@ -384,6 +386,23 @@ function toolError(prefix: string, err: unknown): {
      `Call nooticr_login to get a sign-in link. This call will be re-run for you ` +
      `as soon as you are back, so there is no need to ask twice. (${msg})`,
    }],
+   isError: true,
+  };
+ }
+ // A network that ERRORED is not a network that came back empty, and the two
+ // want opposite responses: an empty result means try a different query, an
+ // error means try a different network or tell the user. Nothing said which,
+ // so a host did the one thing that cannot work — re-ran the same call with
+ // the words changed, three times, each a paid upstream call. The backend
+ // names the platform in these messages ("... failed: reddit: ..."), so the
+ // split is recoverable here without every one of the 26 call sites having to
+ // pass its arguments down.
+ const platform = KNOWN_PLATFORMS.find((p) =>
+  new RegExp(`(^|[^a-z])${p}([^a-z]|$)`, "i").test(msg),
+ );
+ if (platform) {
+  return {
+   content: [{ type: "text", text: `${prefix}. ${platformFailureGuidance({ platform, message: msg })}` }],
    isError: true,
   };
  }
