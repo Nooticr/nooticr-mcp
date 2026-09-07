@@ -1,110 +1,164 @@
 #!/usr/bin/env node
 /**
- * Check `chatgpt-app-submission.json` against the schema it declares.
+ * Validate `chatgpt-app-submission.json` against the ChatGPT App submission
+ * schema, offline.
  *
- * This exists because the submission file was assembled by hand — the
- * `$chatgpt-app-submission` skill was not available where it was written — so
- * every VALUE in it is sourced from this repo and checked, while the FIELD
- * NAMES were a guess. The schema URL is known
- * (`developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json`)
- * and was unreachable from that environment: the egress proxy returns 403 on
- * CONNECT for that host.
+ * The schema is vendored at `docs/chatgpt-app-submission.schema.json` rather
+ * than fetched, for the reason `contract:manifest` gives about the platform
+ * manifest: a check that cannot reach its source is a check that passes
+ * because it could not look. `developers.openai.com` is not reachable from
+ * every environment this repo is worked on — the egress proxy answers CONNECT
+ * for it with a 403 — and a submission check that silently skips in exactly
+ * those environments is worse than none.
  *
- * So the reconciliation is one command on any machine that can reach it,
- * rather than a paragraph of instructions nobody runs.
+ * Hand-rolled rather than ajv. Every constraint the schema states is checked
+ * below; the schema is small, stable and versioned in its own filename
+ * (`.v1.json`), so a dependency to interpret 90 lines of it is not a trade
+ * worth making in a package that ships `dist` only. If v2 arrives with
+ * anything structurally new, re-vendor the schema and extend this — the
+ * `$schema` const check will fail first and say so.
  *
- * Deliberately dependency-free and deliberately shallow. It does NOT validate
- * types, formats, enums or nested shapes — that needs a real JSON Schema
- * validator, and adding ajv to this package to check one file that ships
- * nowhere is not a trade worth making. What it does catch is exactly the risk
- * the hand-assembly created:
- *
- *   - a key we invented that the schema does not have
- *   - a required key we never filled in
- *   - a key we left `null` (visible on purpose, so a gap cannot be uploaded
- *     silently — but `null` will fail a real validator if the field wants a
- *     string, which is the point)
- *
- * Anything it reports as OK still needs a real validator before submitting.
- * Exits 1 on a finding so it can gate a release step, and 2 when it could not
- * reach the schema — a check that passes because it could not look is worse
- * than no check.
+ * Exits 1 on any finding, 0 when the file satisfies the schema.
  */
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const file = resolve(root, "chatgpt-app-submission.json");
+const read = (p) => JSON.parse(readFileSync(resolve(root, p), "utf8"));
 
-const submission = JSON.parse(readFileSync(file, "utf8"));
-const schemaUrl = submission.$schema;
-if (!schemaUrl) {
-  console.error("chatgpt-app-submission.json declares no $schema.");
-  process.exit(1);
-}
+const doc = read("chatgpt-app-submission.json");
+const schema = read("docs/chatgpt-app-submission.schema.json");
 
-let schema;
-try {
-  const res = await fetch(schemaUrl, { redirect: "follow" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  schema = await res.json();
-} catch (err) {
-  console.error(`Could not fetch ${schemaUrl}: ${err.message}`);
-  console.error(
-    "Exiting 2 rather than 0: this check is worthless if it cannot read the schema.\n" +
-      "If the network blocks it, download the schema by hand and re-run with\n" +
-      "  SUBMISSION_SCHEMA=/path/to/schema.json node scripts/check-submission-schema.mjs",
-  );
-  const local = process.env.SUBMISSION_SCHEMA;
-  if (!local) process.exit(2);
-  schema = JSON.parse(readFileSync(local, "utf8"));
-  console.error(`Using local copy: ${local}\n`);
-}
-
-const properties = schema.properties ?? {};
-const known = new Set(Object.keys(properties));
-// `$schema` is a schema-level key, not a payload field; schemas rarely list it.
-known.add("$schema");
-const required = new Set(schema.required ?? []);
-
-const ours = Object.keys(submission);
 const findings = [];
+const fail = (where, msg) => findings.push(`${where}: ${msg}`);
 
-if (!Object.keys(properties).length) {
-  findings.push(
-    "The document at $schema has no `properties` — it may not be a JSON Schema. " +
-      "Inspect it by hand before trusting anything below.",
-  );
+/** The schema's own string shapes. `pattern: "\\S"` means "not all whitespace". */
+const nonEmpty = (v) => typeof v === "string" && /\S/.test(v);
+const nullableString = (v) => v === null || v === undefined || typeof v === "string";
+const nullableStringArray = (v) =>
+  v === null || v === undefined || (Array.isArray(v) && v.every((x) => typeof x === "string"));
+
+// ── top level ──
+const wantSchema = schema.properties.$schema.const;
+if (doc.$schema !== wantSchema) {
+  fail("$schema", `must be exactly ${wantSchema} (found ${doc.$schema ?? "nothing"})`);
+}
+const wantVersion = schema.properties.schema_version.const;
+if (doc.schema_version !== wantVersion) {
+  fail("schema_version", `must be ${wantVersion} (found ${JSON.stringify(doc.schema_version)})`);
+}
+for (const key of schema.required) {
+  if (!(key in doc)) fail(key, "required by the schema and absent");
 }
 
-for (const key of ours) {
-  if (!known.has(key)) {
-    findings.push(`unknown key "${key}" — the schema does not define it (we guessed this name)`);
+// ── app_info ──
+if (doc.app_info !== undefined) {
+  const a = doc.app_info;
+  if (typeof a !== "object" || a === null) fail("app_info", "must be an object");
+  else {
+    if ("display_name" in a && !nonEmpty(a.display_name))
+      fail("app_info.display_name", "must be a non-blank string");
+    if ("subtitle" in a) {
+      if (!nonEmpty(a.subtitle)) fail("app_info.subtitle", "must be a non-blank string");
+      else if (a.subtitle.length > 30)
+        fail("app_info.subtitle", `max 30 characters, found ${a.subtitle.length}`);
+    }
+    if ("description" in a) {
+      if (!nonEmpty(a.description)) fail("app_info.description", "must be a non-blank string");
+      else if (a.description.length > 4000)
+        fail("app_info.description", `max 4000 characters, found ${a.description.length}`);
+    }
+    const categories = schema.$defs.appInfo.properties.category.enum;
+    if ("category" in a && !categories.includes(a.category))
+      fail("app_info.category", `must be one of ${categories.join(", ")} (found ${a.category})`);
   }
 }
-for (const key of required) {
-  if (!(key in submission)) findings.push(`missing required key "${key}"`);
-}
-const nulls = ours.filter((k) => submission[k] === null);
-for (const key of nulls) {
-  const isRequired = required.has(key) ? " (and the schema requires it)" : "";
-  findings.push(`"${key}" is null — needs a real value before submitting${isRequired}`);
+
+// ── tools: every entry needs three annotations and three justifications ──
+if (doc.tools === undefined || typeof doc.tools !== "object" || doc.tools === null) {
+  fail("tools", "must be an object keyed by tool name");
+} else {
+  const hints = schema.$defs.tool.properties.annotations.required;
+  const reasons = schema.$defs.tool.properties.justifications.required;
+  const names = Object.keys(doc.tools);
+  if (!names.length) fail("tools", "is empty — the form has nothing to import");
+  for (const name of names) {
+    const t = doc.tools[name];
+    if (typeof t !== "object" || t === null) {
+      fail(`tools.${name}`, "must be an object");
+      continue;
+    }
+    if (typeof t.annotations !== "object" || t.annotations === null) {
+      fail(`tools.${name}.annotations`, "required and must be an object");
+    } else {
+      for (const h of hints) {
+        if (typeof t.annotations[h] !== "boolean")
+          fail(`tools.${name}.annotations.${h}`, "required and must be a boolean");
+      }
+    }
+    if (typeof t.justifications !== "object" || t.justifications === null) {
+      fail(`tools.${name}.justifications`, "required and must be an object");
+    } else {
+      for (const r of reasons) {
+        if (!nonEmpty(t.justifications[r]))
+          fail(`tools.${name}.justifications.${r}`, "required and must be a non-blank string");
+      }
+    }
+  }
 }
 
-const label = (n) => `${n} ${n === 1 ? "finding" : "findings"}`;
-if (findings.length) {
-  console.error(`${label(findings.length)} in chatgpt-app-submission.json:\n`);
+// ── test cases ──
+function checkCases(key, min, requiredKeys, longDescription) {
+  const rows = doc[key];
+  if (rows === undefined) {
+    // Not required by the schema, but a submission without them is not one
+    // anybody should upload — so say so rather than pass it silently.
+    fail(key, `absent — the schema allows it, but the form expects at least ${min}`);
+    return;
+  }
+  if (!Array.isArray(rows)) return fail(key, "must be an array");
+  if (rows.length < min) fail(key, `needs at least ${min} entries, found ${rows.length}`);
+  rows.forEach((r, i) => {
+    const at = `${key}[${i}]`;
+    if (typeof r !== "object" || r === null) return fail(at, "must be an object");
+    for (const k of requiredKeys) {
+      if (!nonEmpty(r[k])) fail(`${at}.${k}`, "required and must be a non-blank string");
+    }
+    if (longDescription && typeof r.description === "string" && r.description.length > 4000)
+      fail(`${at}.description`, `max 4000 characters, found ${r.description.length}`);
+    if (!nullableStringArray(r.file_attachment_urls))
+      fail(`${at}.file_attachment_urls`, "must be an array of strings, or null");
+    for (const k of ["expected_output", "expected_output_url"]) {
+      if (!nullableString(r[k])) fail(`${at}.${k}`, "must be a string or null");
+    }
+  });
+}
+// A positive case must name the tools it triggers; a negative one may be null,
+// which is the point of a negative case.
+checkCases("test_cases", schema.properties.test_cases.minItems,
+  schema.$defs.positiveTestCase.required, true);
+checkCases("negative_test_cases", schema.properties.negative_test_cases.minItems,
+  schema.$defs.negativeTestCase.required, false);
+if (Array.isArray(doc.negative_test_cases)) {
+  doc.negative_test_cases.forEach((r, i) => {
+    if (r && "tools_triggered" in r && !nullableString(r.tools_triggered))
+      fail(`negative_test_cases[${i}].tools_triggered`, "must be a string or null");
+  });
+}
+
+const n = findings.length;
+if (n) {
+  console.error(`${n} ${n === 1 ? "finding" : "findings"} in chatgpt-app-submission.json:\n`);
   for (const f of findings) console.error(`  - ${f}`);
-  console.error(
-    "\nThis is a shallow name-and-presence check. Run a real JSON Schema " +
-      "validator before uploading.",
-  );
   process.exit(1);
 }
 
+const toolCount = Object.keys(doc.tools).length;
 console.log(
-  `chatgpt-app-submission.json: ${ours.length} keys, all defined by the schema, ` +
-    "every required key present, no nulls left.\n" +
-    "Still a shallow check — types, formats and nested shapes are unverified.",
+  `chatgpt-app-submission.json satisfies ${schema.$id}\n` +
+    `  ${toolCount} tools, each with three annotations and three justifications\n` +
+    `  ${doc.test_cases?.length ?? 0} positive and ${doc.negative_test_cases?.length ?? 0} negative test cases\n` +
+    "Schema-valid is not the same as accurate: the justifications and test cases " +
+    "are claims about behaviour and still want a human read.",
 );

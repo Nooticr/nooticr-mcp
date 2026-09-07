@@ -1,119 +1,856 @@
 {
-  "$schema": "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json",
-  "name": "Nooticr",
-  "id": "com.nooticr/mcp",
-  "version": "1.26.23",
-  "shortDescription": "Social intelligence for 10 networks: read posts and trends, monitor brand mentions, then create.",
-  "longDescription": "Nooticr gives ChatGPT three things. It can read real social posts across ten networks \u2014 TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo and Bilibili. It can understand them: the transcript, video frames as real images, the comments, the numbers. And it can help make something from what it learned \u2014 opening hooks, variants to film, a scored draft, a post repurposed for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.",
-  "category": null,
-  "keywords": [
-    "social media",
-    "brand monitoring",
-    "social listening",
-    "content research",
-    "creator analytics"
-  ],
-  "publisher": {
-    "name": "Nooticr",
-    "legalName": null,
-    "websiteUrl": "https://mcp.nooticr.com",
-    "supportContact": null
+  "$schema": "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "Nooticr",
+    "subtitle": "Social listening, then create",
+    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nNothing here posts to a social network. No nooticr connection carries comment-write permission, so the audience-reply tools draft text for a person to paste in themselves.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
+    "category": "BUSINESS"
   },
-  "privacyPolicyUrl": null,
-  "termsOfServiceUrl": null,
-  "icons": [
+  "tools": {
+    "analyze_comments": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a post's comments for the caller to classify. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "analyze_creator_profile": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a creator's recent posts and their numbers. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "analyze_post": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a post's frames and transcript for the caller's own model to read. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "analyze_post_fast": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a post's transcript, caption and stats. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "analyze_product": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it starts a background job that overwrites the product's brand playbook, and it spends plan AI credits.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive of the caller's content, but it does overwrite the product's existing brand playbook with the new analysis. Nothing else of the caller's is touched."
+      }
+    },
+    "analyze_product_status": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only. It polls the state of a job that analyze_product already started and changes nothing itself.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "answer_my_audience": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a creator's posts and the comments on them. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "buy_nooticr_credits": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it creates a Stripe Checkout session. No charge is made until the user completes payment in their own browser.",
+        "open_world_justification": "Reaches an external system: it creates a Stripe Checkout session and returns that URL, so the outcome depends on Stripe rather than on this server.",
+        "destructive_justification": "Not destructive: it only opens a checkout URL. Nothing of the caller's is removed or overwritten."
+      }
+    },
+    "catch_up_watchlist": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only. Besides fetching, it moves each watched creator's snapshot forward, so a second call answers 'what is new' rather than repeating the first answer.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive of any content, though it does advance the caller's own snapshot, so the previous 'what is new' boundary is not recoverable."
+      }
+    },
+    "check_nooticr_credits": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own credit balance. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "compare_posts": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches the first of several posts the caller wants compared. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "connect_social_account": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it mints a fresh one-time authorisation link. No account is connected until the user approves at the provider, and no credential passes through this tool.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: each call mints a new link rather than replacing a connection, and nothing is connected until the user approves."
+      }
+    },
+    "create_brand_watch": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it creates a scheduled watch that will keep spending the caller's credits and emailing a digest until stopped.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "create_product": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it inserts a product row in the caller's own workspace.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "create_variants": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a post that worked so the caller can propose variants. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "discover_hashtags": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads TikTok's public trend board. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "discover_social_posts": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches a niche for recent public posts. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "discover_sounds": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists trending sounds for a keyword. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "draft_post": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it spends the workspace's plan AI credits. It saves and schedules nothing — the draft text is returned for the caller to use.",
+        "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "find_hook_pattern": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a creator's recent posts so their opening lines can be read as a set. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "generate_captions": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it spends the workspace's plan AI credits. It burns nothing onto any video and touches no stored media.",
+        "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "generate_content_plan": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it saves the generated plan on the caller's product and spends plan AI credits. It schedules and publishes nothing.",
+        "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
+        "destructive_justification": "Not destructive of posts, but it replaces the product's saved weekly plan. No post is scheduled, changed or published."
+      }
+    },
+    "get_brand_playbook": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own brand playbook. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_content_plan": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads a saved content plan from the caller's own workspace. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_post_comments": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches the top comments on a public post. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_post_frames": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it samples frames from a post's video and returns them as images. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_post_performance": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own published posts and their counters. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_post_transcript": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it returns the words spoken in a post, from its caption track or by transcribing its audio. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_scheduled_posts": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own draft and scheduled posts. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_similar_creators": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it asks a network for creators similar to a given handle. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_social_media": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches one public post's facts, stats and media URLs. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_user_posts": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists a public creator's recent posts. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_video_stats": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own last-synced video stats. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "growth_brief": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it spends the workspace's plan AI credits. It changes none of the caller's content.",
+        "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "list_brand_watches": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the caller's own scheduled watches. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "list_own_apps": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the products in the caller's own workspace. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "list_social_connections": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists which social accounts the caller's workspace has connected. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "niche_report": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches recent posts in a niche. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "nooticr_login": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only. It returns a sign-in URL; the caller opens it and authorises out of band.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "prepare_handoff": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only. It formats text the caller passed in and files nothing — this server holds no tracker credential and makes no call to GitHub, Jira or Linear.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "repurpose_post": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a source post so the caller can rewrite it for other surfaces. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "review_post": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only. Given a postId it saves the review onto that post, and either way it spends the workspace's plan AI credits.",
+        "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
+        "destructive_justification": "Not destructive. Given a postId it attaches a review to the post; it edits none of the post's own fields and publishes nothing."
+      }
+    },
+    "score_draft": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only. The draft is text the caller already has; it is returned with the rubric to score it against and nothing is stored.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "search_creators": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches for creators by craft or keyword. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "search_mentions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it sweeps nine networks for public comments naming a term. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "search_spoken_mentions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it transcribes candidate videos and searches the spoken words for a term. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_analysis": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws an analysis the caller's model wrote. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_audience_replies": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws reply drafts the caller's model wrote. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_collab_shortlist": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws a ranked shortlist the caller's model scored. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_comment_review": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws comment classifications the caller's model produced. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_comparison": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws a comparison the caller's model wrote. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_hooks": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws hooks the caller's model wrote. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_repurposed_post": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws rewritten copy the caller's model produced. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_variants": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws variants the caller's model wrote. Nothing is written.",
+        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "stop_brand_watch": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stops a scheduled watch, and the run that was due does not happen.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: it halts a recurring watch. Nothing further is charged and the due run does not happen, which is deliberate — a user out of credits is exactly the user who needs to turn off what is spending them."
+      }
+    },
+    "track_competitor": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only. For a creator already on the watchlist it advances that creator's tracking marker, so consecutive calls do not answer the same question.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive of any content, though it advances the caller's tracking marker for that creator, so the previous boundary is not recoverable."
+      }
+    },
+    "understand_social_post": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a post's frames and transcript. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "unwatch_creator": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it deletes a row from the caller's watchlist.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: it removes the watchlist entry, including the snapshot behind it, and that state is not recoverable through this surface. The handle can be re-added, but the baseline restarts."
+      }
+    },
+    "update_product": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it patches columns on the caller's own product. Omitted arguments are left unchanged, so it cannot blank a field by not mentioning it.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "watch_creator": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a creator on the caller's watchlist.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+      }
+    },
+    "what_should_i_make_next": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the comments on a creator's posts and sweeps their niche. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "who_should_i_work_with": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches for creators and their lookalikes to build a shortlist. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "why_did_this_underperform": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches one post plus its creator's recent window to place it in that distribution. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "write_hooks": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches a source post so the caller can write opening lines against it. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    }
+  },
+  "test_cases": [
     {
-      "path": "assets/brand/icon-48.png",
-      "url": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-48.png",
-      "mimeType": "image/png",
-      "size": "48x48",
-      "background": "#FFFFFF",
-      "note": "Framed tighter than the 512 on purpose. At the 512's proportions the mark would be 26px wide here and the pupils close up; this one is 32px wide with 8px side margins, which survives a rounded-corner mask."
+      "description": "The default read. A single public post URL, analysed from its transcript, caption and stats without paying for frames, then drawn as a card.",
+      "user_prompt": "What makes this TikTok work? https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
+      "tools_triggered": "analyze_post_fast, show_analysis",
+      "expected_output": "The hook, script structure, CTA and target audience, each cited to a line of the transcript or a stat, with an explicit note that the visuals were not seen. Ends with a rendered analysis card."
     },
     {
-      "path": "assets/brand/icon-512.png",
-      "url": "https://raw.githubusercontent.com/Nooticr/nooticr-mcp/main/assets/brand/icon-512.png",
-      "mimeType": "image/png",
-      "size": "512x512",
-      "background": "#FFFFFF",
-      "note": "The Nooticr eyes mark, #14151A on a pure white ground. Rendered from assets/brand/nooticr-icon.svg so the edges are not blended toward the previous off-white."
+      "description": "The visual read, where a judgement genuinely needs the pictures. Frames come back as real image content blocks rather than a description of them.",
+      "user_prompt": "Look at the frames of this Reel and tell me how the on-screen text is used: https://www.instagram.com/reel/C8xKp2LtQZv/",
+      "tools_triggered": "analyze_post, show_analysis",
+      "expected_output": "Observations anchored to specific frames, plus the payload's own coverage note about how many shots were found and whether any were left out."
+    },
+    {
+      "description": "Brand monitoring across networks. The mention is usually in the replies rather than the caption, so comments are the unit and are grouped under the post they were left on.",
+      "user_prompt": "What are people saying about Nooticr on TikTok, Reddit and X in the last 30 days?",
+      "tools_triggered": "search_mentions",
+      "expected_output": "Comments grouped under their post, each with a stable id and how many times it names the term, plus a per-network count. Xiaohongshu, if swept, is reported as post-text-only because its comments cannot be fetched."
+    },
+    {
+      "description": "The mirror of the text sweep: brand mentions that were spoken on camera and never typed. Narrows to candidates first and transcribes only the most-viewed survivors, up to a ceiling the caller sets.",
+      "user_prompt": "Has anyone mentioned Nooticr out loud in a skincare video recently?",
+      "tools_triggered": "search_spoken_mentions",
+      "expected_output": "Matched spoken lines with surrounding context so tone can be judged, and counts of how many candidates were found, transcribed and matched so the coverage gap is never silent."
+    },
+    {
+      "description": "A competitor measured against their own baseline rather than a raw view count, because a raw count mostly measures follower size.",
+      "user_prompt": "What has @zoundsapp shipped lately, and which of it actually beat their own average?",
+      "tools_triggered": "track_competitor",
+      "expected_output": "Their recent posts with each scored against the median of that same window, marking which beat it and by how much."
+    },
+    {
+      "description": "Moving from why a post worked to what to film next. The tool hands over the source post and its transcript; the model writes the variants.",
+      "user_prompt": "This post did well — give me four variants I could film next. https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
+      "tools_triggered": "create_variants, show_variants",
+      "expected_output": "Four variants, each with a hook, the one angle that changes, ordered shot beats and a CTA, keeping whatever made the original work — and saying what that was."
+    },
+    {
+      "description": "Triaging the questions waiting under the creator's own posts. It finds and drafts; it cannot send.",
+      "user_prompt": "What questions are people asking under my recent posts, and draft me replies?",
+      "tools_triggered": "answer_my_audience, show_audience_replies",
+      "expected_output": "Comments grouped under their post with questions and requests flagged and sorted to the top, each with a drafted reply — and a clear statement that the drafts are for a person to paste in, because no connection can post a comment."
     }
   ],
-  "server": {
-    "transport": "streamable-http",
-    "url": "https://mcp.nooticr.com/mcp",
-    "protocolVersion": "2025-11-25",
-    "alsoDistributedAs": {
-      "registryType": "npm",
-      "identifier": "@nooticr/mcp",
-      "transport": "stdio"
+  "negative_test_cases": [
+    {
+      "description": "Posting a reply is out of scope by design. No nooticr connection carries comment-write permission on any network, so the model must decline rather than claim it sent something.",
+      "user_prompt": "Reply to that commenter on TikTok for me and tell them the feature ships next week.",
+      "tools_triggered": null,
+      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the text has to be pasted in by a person."
+    },
+    {
+      "description": "Creator search does not cover YouTube. The tool names the networks it cannot search so the model says so instead of quietly substituting one it can.",
+      "user_prompt": "Find me YouTube creators who make woodworking videos.",
+      "tools_triggered": null,
+      "expected_output": "A statement that creator search covers TikTok, Instagram and Xiaohongshu only, and that YouTube cannot be searched here — not a silent TikTok search presented as a YouTube answer."
+    },
+    {
+      "description": "Spoken-mention search cannot reach Reddit: the audio cannot be fetched from what a Reddit post carries. Silence there is our limitation, not evidence that nobody said anything.",
+      "user_prompt": "Search Reddit videos for anyone saying our brand name out loud.",
+      "tools_triggered": null,
+      "expected_output": "An explanation that Reddit cannot be listened to, with the text sweep offered as the alternative — rather than an empty result implied to mean nobody mentioned the brand."
+    },
+    {
+      "description": "Private or non-public data is not reachable. Every read here goes through public post detail.",
+      "user_prompt": "Pull the DMs and follower email addresses for @zoundsapp.",
+      "tools_triggered": null,
+      "expected_output": "A refusal: only public post data is available, and no tool reads private messages or personal contact details."
+    },
+    {
+      "description": "An unrelated general-knowledge question should be answered directly rather than by spending a credit on a social tool.",
+      "user_prompt": "What is the capital of Portugal?",
+      "tools_triggered": null,
+      "expected_output": "A direct answer with no tool call, since nothing about the question needs social data."
     }
-  },
-  "authentication": {
-    "type": "oauth2",
-    "grant": "authorization_code",
-    "pkce": "S256",
-    "clientType": "public",
-    "discoveryUrl": "https://mcp.nooticr.com/.well-known/oauth-authorization-server",
-    "authorizationEndpoint": "https://mcp.nooticr.com/authorize",
-    "tokenEndpoint": "https://mcp.nooticr.com/token",
-    "accessTokenLifetimeSeconds": 3600,
-    "notes": "Redirect URIs are restricted to loopback or https. Authorization codes and PKCE challenges are one-time use and short-lived. No credential passes through a tool argument or the model's context."
-  },
-  "widgets": {
-    "count": 56,
-    "totalTools": 64,
-    "declaredVia": "_meta[\"openai/outputTemplate\"]",
-    "mimeType": "text/html+skybridge",
-    "deviationDeclaredUpFront": "Each view is served twice: text/html;profile=mcp-app for MCP Apps hosts, and text/html+skybridge at a .html-suffixed sibling URI for the ChatGPT Apps SDK, which looks for openai/outputTemplate and expects that mime. Handing ChatGPT the profile mime renders the HTML but never attaches the bridge. Two MCP Apps conformance checks (ui-listed-resources-valid, ui-resource-contents-valid) object to this because both require the profile mime everywhere; they are excluded deliberately and the remaining checks score 100/100. Pinned by tests/ui-resource.test.ts."
-  },
-  "dataHandling": {
-    "sentUpstream": "Tool arguments only \u2014 a post URL, a creator handle, a search term. No conversation content is sent.",
-    "stored": "The creator watchlist and scheduled brand watches, per workspace. A scheduled watch stores an opaque content fingerprint per already-mailed mention rather than the mention text.",
-    "thirdPartyContentReturned": true,
-    "thirdPartyContentHandling": "Post captions, comments, transcripts and search results come from the public internet, not from Nooticr. Every tool returning such text frames it as data to reason over rather than as instructions (the shared closing line in src/shared/evidence.ts). prepare_handoff additionally redacts contact details and defangs @handles and #numbers before the text reaches an issue tracker.",
-    "writesToSocialNetworks": false,
-    "writesToSocialNetworksNote": "No Nooticr connection carries comment-write permission on any network, so the audience-reply tools draft text for a person to paste in themselves."
-  },
-  "billing": {
-    "model": "credits",
-    "freeOnSignup": 20,
-    "topUp": "Stripe Checkout",
-    "priceDisclosure": "Each tool states its own credit cost in its description. The six tools whose price is set by an argument ask for confirmation over MCP elicitation above 6 credits; a scheduled watch always asks, and one that emails a digest requires a human to have seen the dialog before it accepts a delivery address.",
-    "refunds": "A call that produces no answer is not billed."
-  },
-  "stateChangingTools": [
-    "buy_nooticr_credits",
-    "watch_creator",
-    "unwatch_creator",
-    "catch_up_watchlist",
-    "track_competitor",
-    "create_brand_watch",
-    "stop_brand_watch",
-    "create_product",
-    "update_product",
-    "analyze_product",
-    "review_post",
-    "draft_post",
-    "growth_brief",
-    "generate_content_plan",
-    "generate_captions",
-    "connect_social_account"
-  ],
-  "supportedPlatforms": [
-    "tiktok",
-    "instagram",
-    "youtube",
-    "twitter",
-    "reddit",
-    "linkedin",
-    "douyin",
-    "xiaohongshu",
-    "weibo",
-    "bilibili"
-  ],
-  "repository": {
-    "url": "https://github.com/Nooticr/nooticr-mcp",
-    "license": "MIT"
-  }
+  ]
 }

@@ -1,129 +1,91 @@
-# ChatGPT app submission — sourced answers
+# ChatGPT app submission
 
-Everything here is read out of this repository, with the file it came from, so a
-reviewer can check any line rather than trust it. The companion
-`chatgpt-app-submission.json` at the repo root carries the same values in the
-shape the submission form asks to upload.
+Two artifacts, with different jobs:
 
-> **This was assembled by hand, not by the OpenAI Developers plugin's
-> `$chatgpt-app-submission` skill.** That skill was not available in the
-> environment this was written in, so **the field names below are a best guess
-> at the schema while the values are accurate to the repo.**
->
-> The schema is declared:
-> `https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json`.
-> It could not be read from here — the egress proxy answers CONNECT for that
-> host with a 403 — so the guessed names have never been checked against it.
->
-> **Reconcile before uploading.** On any machine that can reach the schema:
->
-> ```
-> npm run check:submission
-> ```
->
-> That reports keys the schema does not define (ones we invented), required
-> keys we never filled, and fields still left `null`. It exits 2 rather than 0
-> when it cannot fetch the schema, because a check that passes because it could
-> not look is worse than no check; pass `SUBMISSION_SCHEMA=/path/to/schema.json`
-> to use a hand-downloaded copy. It is a shallow name-and-presence check by
-> design — run a real JSON Schema validator too.
->
-> Accuracy of the submission is the submitter's responsibility and nothing here
-> changes that.
+- **`chatgpt-app-submission.json`** — the file the submission form imports. Its
+  shape is fixed by `docs/chatgpt-app-submission.schema.json`, vendored from
+  `developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json`.
+  Validate it with `npm run check:submission`.
+- **This document** — the sourced answers for everything the form asks that the
+  JSON has no field for. Each value names the file it came from, so any line can
+  be checked rather than trusted.
 
-### A note on what is *not* in the JSON
+## Note the `$schema` URL
 
-An earlier draft carried a `_draft` block explaining all of the above inside
-the file itself. That has been removed: if the schema sets
-`additionalProperties: false`, an explanatory key of our own invention is the
-one thing guaranteed to fail validation — a caveat that breaks the upload it is
-warning about. The caveats live here instead, and the JSON holds only fields
-that plausibly belong to the schema.
+The schema's own `properties.$schema.const` requires:
 
-The five `null` values are deliberate rather than oversights. Omitting them
-would validate more cleanly and hide the gaps; leaving them null means a
-validator names exactly which ones still need a human, and an incomplete file
-cannot be uploaded without noticing.
+```
+https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json
+```
 
-## Identity
+— `/plugins/`, not `/apps-sdk/`. A file declaring the `/apps-sdk/` path fails
+validation on that `const` and on nothing else; `npm run check:submission`
+reports it as the first finding. If the form turns out to want `/apps-sdk/`
+after all, change the file and the vendored schema together, or the check will
+contradict the form.
 
-| Field | Value | Source |
+## What the import file covers
+
+| Section | Contents | Source |
 |---|---|---|
-| Name | Nooticr | `server.json` `title` |
-| Slug / id | `com.nooticr/mcp` | `server.json` `name` |
-| npm package | `@nooticr/mcp` | `package.json` |
-| Version | 1.26.23 | `package.json`, `server.json`, `MCP_SERVER_VERSION` (CI gates all three) |
-| Short description | Social intelligence for 10 networks: read posts and trends, monitor brand mentions, then create. | `server.json` `description` |
-| Website | https://mcp.nooticr.com | `server.json` `websiteUrl` |
-| Repository | https://github.com/Nooticr/nooticr-mcp | `server.json` `repository` |
-| License | MIT | `package.json`, `LICENSE` |
-| Icon (48) | `assets/brand/icon-48.png` — 48×48 PNG, eyes mark on `#FFFFFF` | this branch |
-| Icon (512) | `assets/brand/icon-512.png` — 512×512 PNG, eyes mark on `#FFFFFF` | this branch |
+| `app_info.display_name` | Nooticr | `server.json` `title` |
+| `app_info.subtitle` | "Social listening, then create" — 29 of 30 chars | written for this |
+| `app_info.description` | 1,648 of 4,000 chars, drawn from `README.md`'s opening rather than written fresh | `README.md` |
+| `app_info.category` | `BUSINESS` | see below |
+| `tools` | all **64** tools, each with three annotations and three justifications | annotations read from `tools/list` on the built server |
+| `test_cases` | 7 (schema minimum 5) | written against real tool names and real behaviour |
+| `negative_test_cases` | 5 (schema minimum 3) | the same |
 
-### Why the 48 is framed tighter than the 512
+**On the category.** `BUSINESS` over `PRODUCTIVITY` because the job is brand
+monitoring and competitive research for marketers and creators, not personal
+task management. Both are defensible; if the listing reads better under
+`PRODUCTIVITY` it is a one-word change and the checker validates the enum.
 
-Not an oversight. Scaled to the 512's proportions the mark would be 26px wide
-inside the 48px box, and at that size the pupils close up and the rings go
-mushy — checked by rendering it, not assumed. The shipped 48 puts the mark at
-32px wide with 8px side and 14px top/bottom margins, which stays legible and
-still clears a rounded-corner mask at the ~23% radius hosts commonly apply.
+**On the annotations.** Not authored — read off the built server, so they cannot
+disagree with what a host receives. `tests/server-surface.test.ts` already fails
+if the `readOnlyHint` values and its own `NOT_READ_ONLY` list drift apart, which
+makes the 16 not-read-only tools in the import the same 16 a test holds in
+place. The five distinct annotation shapes across the surface:
 
-Both are rendered from `assets/brand/nooticr-icon.svg` — the 48 by
-supersampling at 16× and downsampling with LANCZOS, which holds the thin
-pupil rings together better than rasterising straight to 48px.
-
-## What it does
-
-Long description, drawn from `README.md`'s opening rather than written fresh:
-
-> Gives an AI assistant three things: it can **read** real social posts across
-> ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin,
-> Xiaohongshu, Weibo, Bilibili), **understand** them — transcript, video
-> frames, comments, the numbers — and **make** something from what it learned:
-> hooks, variants to film, a scored draft, a repurposed thread.
->
-> The understanding is the user's own model's, not ours. Every tool fetches
-> material and hands it over with an account of what to do with it; none of
-> them ask a model of ours for an opinion first. You pay for the fetch and
-> nothing else.
->
-> It also **monitors a name**: `search_mentions` sweeps nine of those networks
-> for every comment that says a brand, inside a date window, and
-> `search_spoken_mentions` reads the words actually said out loud in videos for
-> the mentions that were never typed anywhere.
-
-Suggested categories: productivity / marketing / research. Not verified against
-the form's own list.
-
-## Technical surface
-
-| Field | Value | Source |
+| `readOnly` / `openWorld` / `destructive` | count | what they are |
 |---|---|---|
-| Transport | Streamable HTTP | `server.json` `remotes` |
-| MCP endpoint | `https://mcp.nooticr.com/mcp` | `server.json` |
-| Also ships | stdio via `npx -y @nooticr/mcp` | `package.json` `bin` |
-| Protocol version | 2025-11-25 | `npm run conformance:mcpjam` output |
-| Tools | **64** | `tools/list` on the built server |
-| Tools with a ChatGPT widget | **56** | `_meta["openai/outputTemplate"]`, verified by `npm run contract:host` |
-| UI resources | 114 (56 Claude + 56 ChatGPT twins + 2 legacy view aliases) | `npm run conformance:mcpjam` |
-| Widget mime | `text/html+skybridge` at `.html`-suffixed sibling URIs | `src/shared/tools.ts` `APPS_SDK_MIME_TYPE` |
+| `true` / `true` / `false` | 28 | fetch public social content, write nothing |
+| `true` / `false` / `false` | 20 | read the caller's own workspace, or draw locally with no network call |
+| `false` / `false` / `false` | 10 | write to the caller's own workspace, or spend plan AI credits |
+| `false` / `true` / `false` | 4 | fetch **and** advance the caller's own marker, or open a Stripe checkout |
+| `false` / `false` / `true` | 2 | `unwatch_creator`, `stop_brand_watch` |
 
-### The dual-mime arrangement, stated up front
+The justifications are written per tool rather than per group — each names what
+that specific tool does and why the hint follows. 192 of them.
 
-Every view is served twice: `text/html;profile=mcp-app` for hosts that speak
-the MCP Apps spec, and `text/html+skybridge` at a `.html` sibling URI for
-ChatGPT, whose Apps SDK looks for `_meta["openai/outputTemplate"]` and expects
-that mime. Handing ChatGPT the profile mime renders the HTML but never attaches
-the bridge — the widget sits on its idle placeholder with a clean console.
+## What the form asks that the import file has no field for
 
-This is deliberate and is pinned by `tests/ui-resource.test.ts` and by
-`scripts/mcpjam-apps-conformance.sh`, which excludes exactly two conformance
-checks (`ui-listed-resources-valid`, `ui-resource-contents-valid`) because both
-require the profile mime everywhere. Score on the remaining checks: **100/100,
-5/5**. Worth mentioning in the submission so the deviation is not read as a
-defect.
+These are filled in the form UI. Sourced here so they are not re-derived under
+time pressure.
 
-## Authentication
+### Endpoint and distribution
+
+| | |
+|---|---|
+| Transport | Streamable HTTP (`server.json` `remotes`) |
+| MCP endpoint | `https://mcp.nooticr.com/mcp` |
+| Also ships | stdio via `npx -y @nooticr/mcp` (`package.json` `bin`) |
+| Protocol version | 2025-11-25 (`npm run conformance:mcpjam`) |
+| Version | 1.26.23 — CI gates `package.json`, `.claude-plugin/plugin.json` and `MCP_SERVER_VERSION` against each other |
+
+### Icons
+
+| | |
+|---|---|
+| 48×48 | `assets/brand/icon-48.png` — mark 32px wide, 8px side margins |
+| 512×512 | `assets/brand/icon-512.png` — mark 284px wide |
+
+Both are the eyes mark in `#14151A` on `#FFFFFF`, rendered from
+`assets/brand/nooticr-icon.svg`. The 48 is framed tighter on purpose: at the
+512's proportions the mark would be 26px wide and the pupils close up. Checked
+by rendering three candidates and looking at them, not assumed.
+
+### Authentication
 
 OAuth 2.0 Authorization Code + PKCE (S256), public client, per MCP 2025-03-26.
 From `README.md` "How authentication works" and `src/oauth.ts`:
@@ -135,86 +97,90 @@ From `README.md` "How authentication works" and `src/oauth.ts`:
 - every MCP RPC validates the Bearer against the session map
 
 No credential passes through a tool argument or the model's context.
-Authorization codes and PKCE challenges are one-time use and short-lived
-(`README.md` "Security notes").
+Authorization codes and PKCE challenges are one-time use and short-lived.
 
-## Data handling
+### Data handling
 
-Answers a review will ask for, all verifiable in the source:
-
-- **What leaves the user's session:** the tool arguments (a post URL, a handle,
-  a search term) go to `api.nooticr.com`, which fetches from the upstream data
-  provider. No conversation content is sent.
-- **What is stored:** the creator watchlist and scheduled brand watches, per
-  workspace (`migrations/0048_creator_watchlist.sql`,
-  `0045_brand_watches.sql` in nooticr-server). A scheduled watch stores an
-  opaque content fingerprint per already-mailed mention, not the mention text.
-- **Third-party content is returned to the model:** post captions, comments,
-  transcripts and search results come from the public internet, not from
-  nooticr. Every tool that returns such text frames it as data to reason over
-  rather than as instructions — the shared `ownIt` line in
-  `src/shared/evidence.ts` and `reviewGuidance()` in
-  `src/shared/comment-review.ts`. `prepare_handoff` additionally redacts
-  contact details and defangs `@handles` and `#numbers` before the text reaches
-  a tracker. This is a prompt-injection surface handled deliberately; say so
-  rather than leaving a reviewer to find it.
+- **Leaves the session:** tool arguments only — a post URL, a handle, a search
+  term. No conversation content is sent.
+- **Stored:** the creator watchlist and scheduled brand watches, per workspace.
+  A scheduled watch stores an opaque content fingerprint per already-mailed
+  mention rather than the mention text.
+- **Third-party content reaches the model:** captions, comments, transcripts and
+  search results come from the public internet, not from nooticr. Every tool
+  returning such text frames it as evidence rather than instructions — the
+  shared closing line in `src/shared/evidence.ts` and `reviewGuidance()` in
+  `src/shared/comment-review.ts`. `prepare_handoff` additionally redacts contact
+  details and defangs `@handles` and `#numbers` before text reaches a tracker.
+  Worth stating in the submission rather than leaving a reviewer to find it.
+- **Writes to social networks: none.** No nooticr connection carries
+  comment-write permission, so the audience-reply tools draft text for a person
+  to paste in. (See issue #29 for the one place that claim is in tension with
+  what `list_social_connections` reports.)
 - **Billing:** nooticr credits, 20 free on signup, Stripe Checkout for top-ups.
-  Tools price themselves in their own descriptions; the six whose price is set
-  by an argument ask for confirmation over MCP `elicitation` above 6 credits.
+  Each tool states its cost; the six whose price is set by an argument confirm
+  over MCP `elicitation` above 6 credits, a scheduled watch always confirms, and
+  a call that produces no answer is not billed.
 
-### Tools that change state (16 of 64)
+### The dual-mime deviation — declare it rather than let it be found
 
-`buy_nooticr_credits`, `watch_creator`, `unwatch_creator`,
-`catch_up_watchlist`, `track_competitor`, `create_brand_watch`,
-`stop_brand_watch`, `create_product`, `update_product`, `analyze_product`,
-`review_post`, `draft_post`, `growth_brief`, `generate_content_plan`,
-`generate_captions`, `connect_social_account`.
+Every view is served twice: `text/html;profile=mcp-app` for MCP Apps hosts, and
+`text/html+skybridge` at a `.html`-suffixed sibling URI for ChatGPT, whose Apps
+SDK reads `_meta["openai/outputTemplate"]` and expects that mime. Handing
+ChatGPT the profile mime renders the HTML but never attaches the bridge — the
+widget sits on its idle placeholder with a clean console.
 
-Source: `NOT_READ_ONLY` in `tests/server-surface.test.ts`, which fails if the
-list and the tools' `readOnlyHint` annotations disagree. The other 48 declare
-`readOnlyHint: true`.
+Two MCP Apps conformance checks (`ui-listed-resources-valid`,
+`ui-resource-contents-valid`) object, because both require the profile mime
+everywhere. They are excluded deliberately in
+`scripts/mcpjam-apps-conformance.sh`, and the remaining checks score
+**100/100, 5/5**. Pinned by `tests/ui-resource.test.ts`.
 
-**Nothing in this server posts to a social network.** No nooticr connection
-carries comment-write permission, so `answer_my_audience` and
-`show_audience_replies` draft replies for a person to paste in themselves. See
-issue #29 for the one place that claim is in tension with
-`list_social_connections`' reported scopes.
+56 of the 64 tools carry a widget. The 8 without are a login tool, pure state
+mutations and a job-start acknowledgement — things with nothing to draw.
 
-## What only you can supply
+### Still needed from a human
 
-These are not in the repo and must not be invented:
+Not in the repo, not in the schema, and not inventable:
 
-- [ ] **Privacy policy URL** — nothing in the repo references one. Almost
-      certainly a hard requirement.
+- [ ] **Privacy policy URL** — nothing in the repo references one.
 - [ ] **Terms of service URL** — same.
-- [ ] **Support contact** (email or URL) — no `support@` anywhere in the repo.
+- [ ] **Support contact** — no `support@` anywhere in the repo.
 - [ ] **Publisher / legal entity name** as it should appear.
-- [ ] **Category** from the form's own list.
-- [ ] Whether the submission should point at the hosted endpoint only, or also
-      declare the npm/stdio distribution.
 
-While you are there: `package.json` has no `homepage`, `repository` or `author`
-field. `server.json` carries all three, so nothing is broken, but a reviewer
-looking at the npm page will find them missing.
+`package.json` also has no `homepage`, `repository` or `author`. `server.json`
+carries all three, so nothing is broken, but the npm page shows them missing.
 
-## Readiness — one technical item worth fixing first
+## One readiness item worth fixing before submitting
 
-**Issue #26 is directly relevant to this submission.** `npm run contract:host`
-passes with 0 errors and **1,291 warnings**, of which 1,286 are:
+**Issue #26 is about this submission specifically.** `npm run contract:host`
+passes with 0 errors and 1,291 warnings, 1,286 of which say:
 
 > `type` is an array (`["string","number","boolean"]`). The array form is legal
 > JSON Schema, but several MCP clients read `type` as a single string and
-> **either reject the tool or drop the constraint**.
+> **either reject the tool or drop the constraint.**
 
-ChatGPT is precisely the third-party strict client that warning is about. The
-failure mode is invisible from here — a host that rejects a tool makes it
-disappear from `tools/list` with no error this repo would ever see. The fix is
-in a handful of helpers in `src/shared/output-schemas.ts`, not in 1,286 places.
+ChatGPT is the strict third-party client that warning describes, and the failure
+is silent at both ends: a host that rejects a tool drops it from `tools/list`
+with no error this repo would ever see. The fix is a handful of helpers in
+`src/shared/output-schemas.ts`, not 1,286 edits.
 
-I would land #26 before submitting rather than after a rejection that gives no
-diagnostic.
+Better to land it than to read a rejection with no diagnostic.
 
-Everything else is green as of this branch: tsc clean on root and
-`cloudflare/`, 765 unit tests, `contract:host` 0 errors,
-`contract:manifest` intact, mcpjam conformance 100/100, mutation guard 6/6,
-`playwright` 153/153.
+## Checking the file
+
+```
+npm run check:submission
+```
+
+Validates against the vendored schema — offline, no dependency. It checks the
+two `const` values, every required key, `subtitle` ≤ 30, `description` ≤ 4000,
+the category enum, all three annotations and all three justifications on every
+tool, the 5-positive and 3-negative minimums, and the nullable shapes. It was
+mutation-checked against nine deliberate breakages — wrong `$schema`, a
+31-character subtitle, a category off the enum, a dropped hint, a blanked
+justification, four positive cases, two negative cases, a positive case with no
+`tools_triggered`, `schema_version: 2` — and caught all nine.
+
+Schema-valid is not the same as accurate. The justifications and test cases are
+claims about behaviour, and they still want a human read before upload.
