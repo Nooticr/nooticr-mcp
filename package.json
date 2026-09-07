@@ -3,6 +3,15 @@
   "mcpName": "com.nooticr/mcp",
   "version": "1.26.23",
   "description": "MCP server for nooticr - fetch, discover and understand TikTok/Instagram/YouTube/X/Reddit/LinkedIn/Weibo posts with AI (media metadata, niche discovery, brand monitoring, hook & viral analysis)",
+  "homepage": "https://mcp.nooticr.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nooticr/nooticr-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nooticr/nooticr-mcp/issues"
+  },
+  "author": "Nooticr <support@nooticr.com>",
   "type": "module",
   "main": "dist/index.js",
   "files": [

@@ -785,12 +785,6 @@
       "expected_output": "The hook, script structure, CTA and target audience, each cited to a line of the transcript or a stat, with an explicit note that the visuals were not seen. Ends with a rendered analysis card."
     },
     {
-      "description": "The visual read, where a judgement genuinely needs the pictures. Frames come back as real image content blocks rather than a description of them.",
-      "user_prompt": "Look at the frames of this Reel and tell me how the on-screen text is used: https://www.instagram.com/reel/C8xKp2LtQZv/",
-      "tools_triggered": "analyze_post, show_analysis",
-      "expected_output": "Observations anchored to specific frames, plus the payload's own coverage note about how many shots were found and whether any were left out."
-    },
-    {
       "description": "Brand monitoring across networks. The mention is usually in the replies rather than the caption, so comments are the unit and are grouped under the post they were left on.",
       "user_prompt": "What are people saying about Nooticr on TikTok, Reddit and X in the last 30 days?",
       "tools_triggered": "search_mentions",
@@ -813,12 +807,6 @@
       "user_prompt": "This post did well — give me four variants I could film next. https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
       "tools_triggered": "create_variants, show_variants",
       "expected_output": "Four variants, each with a hook, the one angle that changes, ordered shot beats and a CTA, keeping whatever made the original work — and saying what that was."
-    },
-    {
-      "description": "Triaging the questions waiting under the creator's own posts. It finds and drafts; it cannot send.",
-      "user_prompt": "What questions are people asking under my recent posts, and draft me replies?",
-      "tools_triggered": "answer_my_audience, show_audience_replies",
-      "expected_output": "Comments grouped under their post with questions and requests flagged and sorted to the top, each with a drafted reply — and a clear statement that the drafts are for a person to paste in, because no connection can post a comment."
     }
   ],
   "negative_test_cases": [
@@ -827,18 +815,6 @@
       "user_prompt": "Reply to that commenter on TikTok for me and tell them the feature ships next week.",
       "tools_triggered": null,
       "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the text has to be pasted in by a person."
-    },
-    {
-      "description": "Creator search does not cover YouTube. The tool names the networks it cannot search so the model says so instead of quietly substituting one it can.",
-      "user_prompt": "Find me YouTube creators who make woodworking videos.",
-      "tools_triggered": null,
-      "expected_output": "A statement that creator search covers TikTok, Instagram and Xiaohongshu only, and that YouTube cannot be searched here — not a silent TikTok search presented as a YouTube answer."
-    },
-    {
-      "description": "Spoken-mention search cannot reach Reddit: the audio cannot be fetched from what a Reddit post carries. Silence there is our limitation, not evidence that nobody said anything.",
-      "user_prompt": "Search Reddit videos for anyone saying our brand name out loud.",
-      "tools_triggered": null,
-      "expected_output": "An explanation that Reddit cannot be listened to, with the text sweep offered as the alternative — rather than an empty result implied to mean nobody mentioned the brand."
     },
     {
       "description": "Private or non-public data is not reachable. Every read here goes through public post detail.",

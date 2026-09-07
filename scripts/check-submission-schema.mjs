@@ -109,16 +109,25 @@ if (doc.tools === undefined || typeof doc.tools !== "object" || doc.tools === nu
 }
 
 // ── test cases ──
-function checkCases(key, min, requiredKeys, longDescription) {
+/**
+ * The schema states `minItems` and no maximum, but the uploader reads that
+ * number as an exact count: a file with seven positive cases is rejected with
+ * "test_cases must include exactly 5 entries". So `minItems` is the count
+ * here, not a floor — the same way the `$schema` const is the uploader's
+ * value rather than the document's. Too many entries is as much a finding as
+ * too few, and only the upload can tell you, which is why it is checked here.
+ */
+function checkCases(key, exact, requiredKeys, longDescription) {
   const rows = doc[key];
   if (rows === undefined) {
     // Not required by the schema, but a submission without them is not one
     // anybody should upload — so say so rather than pass it silently.
-    fail(key, `absent — the schema allows it, but the form expects at least ${min}`);
+    fail(key, `absent — the schema allows it, but the form expects exactly ${exact}`);
     return;
   }
   if (!Array.isArray(rows)) return fail(key, "must be an array");
-  if (rows.length < min) fail(key, `needs at least ${min} entries, found ${rows.length}`);
+  if (rows.length !== exact)
+    fail(key, `must include exactly ${exact} entries, found ${rows.length}`);
   rows.forEach((r, i) => {
     const at = `${key}[${i}]`;
     if (typeof r !== "object" || r === null) return fail(at, "must be an object");
@@ -136,6 +145,13 @@ function checkCases(key, min, requiredKeys, longDescription) {
 }
 // A positive case must name the tools it triggers; a negative one may be null,
 // which is the point of a negative case.
+//
+// 5 and 3 are the two `minItems` values, read as exact counts per above. Only
+// the positive count is confirmed by a rejection message; the negative one is
+// the same rule applied to the other array, on the reasoning that one
+// validator serves both. If the uploader turns out to accept more negatives,
+// this is where to relax it — and `docs/chatgpt-app-submission.md` keeps the
+// two cases that were dropped to reach 3, so they can go straight back in.
 checkCases("test_cases", schema.properties.test_cases.minItems,
   schema.$defs.positiveTestCase.required, true);
 checkCases("negative_test_cases", schema.properties.negative_test_cases.minItems,

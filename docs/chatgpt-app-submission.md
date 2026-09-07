@@ -35,6 +35,55 @@ the document. If the uploader changes its mind, edit the const and
 `chatgpt-app-submission.json` together; the check fails first and names the
 mismatch either way, so the two cannot drift silently.
 
+## The case counts are exact, not minimums
+
+The schema says `test_cases` has `minItems: 5` and `negative_test_cases`
+`minItems: 3`, and states no maximum. The uploader does not read them that way.
+A file carrying seven positive cases is rejected with:
+
+> `test_cases must include exactly 5 entries.`
+
+So the file carries exactly 5 and exactly 3. Only the positive count is
+confirmed by that message; the negative count is the same rule applied to the
+other array, on the reasoning that one validator serves both and 3 satisfies
+the schema either way. If the uploader accepts more, relax the count in
+`scripts/check-submission-schema.mjs` and add the cases back — the four that
+were cut to reach these counts are kept below rather than lost.
+
+### The two positive cases that were cut
+
+Both were dropped for redundancy, not because they are wrong:
+
+- **`analyze_post` + `show_analysis`** — the visual read, where frames come
+  back as real image content blocks. *"Look at the frames of this Reel and tell
+  me how the on-screen text is used."* It draws the same `show_analysis` widget
+  as the case that was kept, and repeats its intent.
+- **`answer_my_audience` + `show_audience_replies`** — triaging questions under
+  the creator's own posts and drafting replies. Its distinctive point, that the
+  tools draft but cannot send, is already the first negative case.
+
+The five kept cases are one per distinct widget, and together they trace the
+subtitle: `analyze_post_fast` → `search_mentions` → `search_spoken_mentions` →
+`track_competitor` → `create_variants`. Listening, then create.
+
+### The two negative cases that were cut
+
+Both are platform-honesty cases — the app declining to fake coverage it does
+not have — which is quality we care about more than a reviewer's checklist does:
+
+- **Creator search does not cover YouTube.** *"Find me YouTube creators who
+  make woodworking videos."* Expected: a statement that creator search covers
+  TikTok, Instagram and Xiaohongshu only — not a silent TikTok search presented
+  as a YouTube answer.
+- **Spoken-mention search cannot reach Reddit.** *"Search Reddit videos for
+  anyone saying our brand name out loud."* Expected: an explanation that Reddit
+  cannot be listened to, with the text sweep offered instead — rather than an
+  empty result implied to mean nobody mentioned the brand.
+
+The three kept are the ones a reviewer actually tests: an out-of-scope action
+(posting a reply), a request for private data (DMs and follower emails), and a
+prompt that should spend nothing (*"What is the capital of Portugal?"*).
+
 ## What the import file covers
 
 | Section | Contents | Source |
@@ -44,8 +93,8 @@ mismatch either way, so the two cannot drift silently.
 | `app_info.description` | 1,648 of 4,000 chars, drawn from `README.md`'s opening rather than written fresh | `README.md` |
 | `app_info.category` | `BUSINESS` | see below |
 | `tools` | all **64** tools, each with three annotations and three justifications | annotations read from `tools/list` on the built server |
-| `test_cases` | 7 (schema minimum 5) | written against real tool names and real behaviour |
-| `negative_test_cases` | 5 (schema minimum 3) | the same |
+| `test_cases` | **exactly 5** — the uploader's requirement, not a minimum | written against real tool names and real behaviour |
+| `negative_test_cases` | **exactly 3** — same rule, inferred | the same |
 
 **On the category.** `BUSINESS` over `PRODUCTIVITY` because the job is brand
 monitoring and competitive research for marketers and creators, not personal
@@ -150,17 +199,30 @@ everywhere. They are excluded deliberately in
 56 of the 64 tools carry a widget. The 8 without are a login tool, pure state
 mutations and a job-start acknowledgement — things with nothing to draw.
 
-### Still needed from a human
+### Publisher, contact and legal URLs
 
-Not in the repo, not in the schema, and not inventable:
+Confirmed by the account owner, and every one of them already served by this
+repo — which is better than either on its own, because the form answer and the
+page a reviewer clicks cannot disagree:
 
-- [ ] **Privacy policy URL** — nothing in the repo references one.
-- [ ] **Terms of service URL** — same.
-- [ ] **Support contact** — no `support@` anywhere in the repo.
-- [ ] **Publisher / legal entity name** as it should appear.
+| | | source in this repo |
+|---|---|---|
+| Publisher | Nooticr | `BRAND.company`, `cloudflare/src/site/layout.ts` |
+| Support contact | support@nooticr.com | `BRAND.supportEmail`, same file |
+| Terms of service | https://mcp.nooticr.com/terms | `termsPage()`, `cloudflare/src/site/legal.ts`, routed at `cloudflare/src/index.ts` |
+| Privacy policy | https://mcp.nooticr.com/privacy | `privacyPage()`, same |
 
-`package.json` also has no `homepage`, `repository` or `author`. `server.json`
-carries all three, so nothing is broken, but the npm page shows them missing.
+An earlier revision of this document said none of these existed in the repo.
+That was wrong — it looked in the repo root and in `server.json` and not in
+`cloudflare/src/site/`, where the Worker that serves `mcp.nooticr.com` keeps
+its landing, legal and documentation pages. Both legal pages carry an effective
+date (`LEGAL_EFFECTIVE`, currently 29 August 2026) and both link the support
+address for data-deletion and privacy requests, which is what a reviewer
+following the privacy URL will be looking for.
+
+`package.json` now carries `homepage`, `repository`, `bugs` and `author` from
+the same values, so the npm page and the submission agree. `server.json`
+already carried `websiteUrl` and `repository`.
 
 ## One readiness item worth fixing before submitting
 
@@ -187,11 +249,13 @@ npm run check:submission
 Validates against the vendored schema — offline, no dependency. It checks the
 two `const` values, every required key, `subtitle` ≤ 30, `description` ≤ 4000,
 the category enum, all three annotations and all three justifications on every
-tool, the 5-positive and 3-negative minimums, and the nullable shapes. It was
-mutation-checked against nine deliberate breakages — wrong `$schema`, a
+tool, the exact 5-positive and 3-negative counts, and the nullable shapes. It
+was mutation-checked against twelve deliberate breakages — wrong `$schema`, a
 31-character subtitle, a category off the enum, a dropped hint, a blanked
-justification, four positive cases, two negative cases, a positive case with no
-`tools_triggered`, `schema_version: 2` — and caught all nine.
+justification, four positive cases, six positive cases, two negative cases,
+four negative cases, a positive case with no `tools_triggered`,
+`schema_version: 2`, and the `$schema` reverted to `/plugins/` — and caught all
+twelve.
 
 Schema-valid is not the same as accurate. The justifications and test cases are
 claims about behaviour, and they still want a human read before upload.
