@@ -1,7 +1,7 @@
 {
   "name": "@nooticr/mcp",
   "mcpName": "com.nooticr/mcp",
-  "version": "1.26.27",
+  "version": "1.26.28",
   "description": "MCP server for nooticr - fetch, discover and understand TikTok/Instagram/YouTube/X/Reddit/LinkedIn/Weibo posts with AI (media metadata, niche discovery, brand monitoring, hook & viral analysis)",
   "homepage": "https://mcp.nooticr.com",
   "repository": {
