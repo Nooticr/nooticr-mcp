@@ -224,21 +224,28 @@ following the privacy URL will be looking for.
 the same values, so the npm page and the submission agree. `server.json`
 already carried `websiteUrl` and `repository`.
 
-## One readiness item worth fixing before submitting
+## The readiness item is fixed
 
-**Issue #26 is about this submission specifically.** `npm run contract:host`
-passes with 0 errors and 1,291 warnings, 1,286 of which say:
+**Issue #26 was about this submission specifically.** `npm run contract:host`
+passed while the inspector printed `0 errors, 1291 warnings across 64 tools`,
+1,286 of which said:
 
 > `type` is an array (`["string","number","boolean"]`). The array form is legal
 > JSON Schema, but several MCP clients read `type` as a single string and
 > **either reject the tool or drop the constraint.**
 
-ChatGPT is the strict third-party client that warning describes, and the failure
-is silent at both ends: a host that rejects a tool drops it from `tools/list`
-with no error this repo would ever see. The fix is a handful of helpers in
-`src/shared/output-schemas.ts`, not 1,286 edits.
+ChatGPT is the strict third-party client that warning describes, and the
+failure is silent at both ends: a host that rejects a tool drops it from
+`tools/list` with no error this repo would ever see. Reading a rejection with
+no diagnostic was the risk.
 
-Better to land it than to read a rejection with no diagnostic.
+Fixed in PR #36 — three helpers in `src/shared/output-schemas.ts`, not 1,286
+edits. Every schema now emits one `type` per `anyOf` branch, what each accepts
+is unchanged, and two gates keep the count at zero:
+`tests/output-schema-shape.test.ts` (which reproduced the inspector's count
+exactly on the broken surface before being trusted at zero) and
+`scripts/host-contract.sh`, which now fails on a strict finding instead of
+printing it. Submit once that has landed.
 
 ## Checking the file
 
