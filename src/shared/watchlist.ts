@@ -49,6 +49,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { confirmSpend, declinedResult, CREDITS_PER_CREATOR } from "./spend.js";
 import { PLATFORM_ARG } from "./evidence.js";
+import { orNull } from "./output-schemas.js";
 
 export const WATCHLIST_URI = "nooticr://watchlist";
 
@@ -540,8 +541,8 @@ export function registerWatchlist(
         .strict(),
       outputSchema: z
         .object({
-          watching: z.number().nullish(),
-          added: z.string().nullish(),
+          watching: orNull(z.number()),
+          added: orNull(z.string()),
           entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
         })
         .passthrough(),
@@ -582,8 +583,8 @@ export function registerWatchlist(
         .strict(),
       outputSchema: z
         .object({
-          removed: z.boolean().nullish(),
-          watching: z.number().nullish(),
+          removed: orNull(z.boolean()),
+          watching: orNull(z.number()),
           entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
         })
         .passthrough(),
@@ -622,7 +623,7 @@ export function registerWatchlist(
         .strict(),
       outputSchema: z
         .object({
-          checked: z.number().nullish(),
+          checked: orNull(z.number()),
           creators: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
           posts: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish().describe("Everything new, flattened, for the card view."),
           mcpCredits: z.object({}).passthrough().nullish(),
