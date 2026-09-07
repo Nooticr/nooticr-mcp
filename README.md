@@ -511,9 +511,11 @@ Those are unit tests against a stub backend. For real MCP-protocol
 end-to-end tests — no Rust, no Postgres, no API key —
 `npm run test:e2e-smoke:fixture` spawns this repo's real built CLI and
 drives it over stdio against a pure-Node stand-in for nooticr-server. See
-`docs/testing/agentic-e2e-testing.md` for that plus the two tiers above it
-(`npm run test:e2e-smoke` against a real nooticr-server, and
-`npm run test:agentic-e2e`, a real model driving it), and for
+`docs/testing/agentic-e2e-testing.md` for that plus the tier above it
+(`npm run test:e2e-smoke` against a real nooticr-server). For a real model
+driving the server through whole journeys — asserting on the chain of tools
+it walks, not on one call — see `npm run test:quests` and
+`docs/testing/tool-chaining-quests.md`. And for
 `tests/e2e/agentic-visual*.e2e.ts` — every reachable widget view, driven by
 a real tool-call result, rendered in a real browser with every host-facing
 button actually clicked (`npx playwright test tests/e2e/agentic-visual.e2e.ts
