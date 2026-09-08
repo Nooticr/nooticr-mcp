@@ -57,7 +57,7 @@ import { registerHandoff } from "./handoff.js";
 import { registerCollabTools } from "./collab.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.31";
+export const MCP_SERVER_VERSION = "1.26.32";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
