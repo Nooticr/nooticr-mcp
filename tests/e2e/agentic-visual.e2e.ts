@@ -25,7 +25,10 @@ import { execSync, type ChildProcess, spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+// `test` comes from guarded-test.ts, not @playwright/test: it aborts every
+// request to a real nooticr host before it leaves the browser (#66).
+import { test, expect } from "./guarded-test.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 

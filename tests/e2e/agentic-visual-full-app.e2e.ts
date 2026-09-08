@@ -20,7 +20,10 @@
  *
  *   npx playwright test tests/e2e/agentic-visual-full-app.e2e.ts
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+// `test` comes from guarded-test.ts, not @playwright/test: it aborts every
+// request to a real nooticr host before it leaves the browser (#66).
+import { test, expect } from "./guarded-test.js";
 import {
   startMcpE2eSession,
   renderRealResult,

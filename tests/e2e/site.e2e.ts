@@ -12,7 +12,10 @@
  * The pages are pure functions of their inputs, so the suite serves them from
  * a throwaway static server instead of needing wrangler, a database or Stripe.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+// `test` comes from guarded-test.ts, not @playwright/test: it aborts every
+// request to a real nooticr host before it leaves the browser (#66).
+import { test, expect } from "./guarded-test.js";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { landingPage } from "../../cloudflare/src/site/landing.js";
