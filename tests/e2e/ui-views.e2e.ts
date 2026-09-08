@@ -14,7 +14,10 @@
  *
  *   npx playwright test tests/e2e/ui-views.e2e.ts
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+// `test` comes from guarded-test.ts, not @playwright/test: it aborts every
+// request to a real nooticr host before it leaves the browser (#66).
+import { test, expect } from "./guarded-test.js";
 import { uiTemplateFor } from "../../src/shared/tools.js";
 
 // The substituted view, not the raw template: the raw one still carries its
