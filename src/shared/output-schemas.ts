@@ -461,7 +461,7 @@ export const OUTPUT_SCHEMAS = {
   // thinking" (README) — but until these existed, the thinking had nowhere
   // to land except chat text. Free, and make no requests, same as
   // show_comment_review: they only draw what they're handed.
-  show_comparison: open({
+  show_compared_posts: open({
     posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_posts returned."),
     comparison: open({
       winner: scalar().describe("1-indexed position of the post that won, matching the posts array."),
@@ -472,7 +472,7 @@ export const OUTPUT_SCHEMAS = {
     }).nullish(),
     mcpCredits,
   }),
-  show_analysis: open({
+  show_post_analysis: open({
     url: scalar(),
     post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
     analysis: open({}).passthrough().nullish().describe(

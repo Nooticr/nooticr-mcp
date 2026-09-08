@@ -54,9 +54,9 @@ were cut to reach these counts are kept below rather than lost.
 
 Both were dropped for redundancy, not because they are wrong:
 
-- **`analyze_post` + `show_analysis`** — the visual read, where frames come
+- **`analyze_post` + `show_post_analysis`** — the visual read, where frames come
   back as real image content blocks. *"Look at the frames of this Reel and tell
-  me how the on-screen text is used."* It draws the same `show_analysis` widget
+  me how the on-screen text is used."* It draws the same `show_post_analysis` widget
   as the case that was kept, and repeats its intent.
 - **`answer_my_audience` + `show_audience_replies`** — triaging questions under
   the creator's own posts and drafting replies. Its distinctive point, that the

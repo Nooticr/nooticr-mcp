@@ -38,26 +38,26 @@ describe("chain assertions", () => {
     // A host that checks its credit balance on the way has still followed the
     // chain. Requiring an exact sequence would fail on behaviour nobody would
     // call a bug.
-    expect(isSubsequence(["analyze_post", "show_analysis"], ["check_nooticr_credits", "analyze_post", "get_post_comments", "show_analysis"])).toBe(true);
+    expect(isSubsequence(["analyze_post", "show_post_analysis"], ["check_nooticr_credits", "analyze_post", "get_post_comments", "show_post_analysis"])).toBe(true);
   });
 
   it("rejects a chain walked backwards", () => {
-    expect(isSubsequence(["analyze_post", "show_analysis"], ["show_analysis", "analyze_post"])).toBe(false);
+    expect(isSubsequence(["analyze_post", "show_post_analysis"], ["show_post_analysis", "analyze_post"])).toBe(false);
   });
 
   it("names where a chain stopped, not just that it did", () => {
-    const miss = firstMissingLink(["analyze_post", "show_analysis"], ["analyze_post"]);
-    expect(miss).toMatchObject({ tool: "show_analysis", reached: ["analyze_post"] });
+    const miss = firstMissingLink(["analyze_post", "show_post_analysis"], ["analyze_post"]);
+    expect(miss).toMatchObject({ tool: "show_post_analysis", reached: ["analyze_post"] });
   });
 
   it("reports the exact break for the failure this suite exists for", () => {
     const verdict = judgeRun(
-      { id: "x", expect: { chain: ["analyze_post", "show_analysis"] } },
+      { id: "x", expect: { chain: ["analyze_post", "show_post_analysis"] } },
       [call("analyze_post", { url: "u" })]
     );
     expect(verdict.ok).toBe(false);
     expect(verdict.failures[0]).toMatchObject({ kind: "chain-broken" });
-    expect(verdict.failures[0].detail).toContain("never called show_analysis");
+    expect(verdict.failures[0].detail).toContain("never called show_post_analysis");
   });
 
   it("does not report a missing call twice when args were also expected", () => {
@@ -101,8 +101,8 @@ describe("chain assertions", () => {
 
   it("supports the argument matchers a quest actually uses", () => {
     const verdict = judgeRun(
-      { id: "x", expect: { args: { show_analysis: { url: { contains: "e2e-stub" }, analysis: { present: true } } } } },
-      [call("show_analysis", { url: "https://e2e.nooticr.test/import/tiktok/e2e-stub", analysis: {} })]
+      { id: "x", expect: { args: { show_post_analysis: { url: { contains: "e2e-stub" }, analysis: { present: true } } } } },
+      [call("show_post_analysis", { url: "https://e2e.nooticr.test/import/tiktok/e2e-stub", analysis: {} })]
     );
     expect(verdict.ok).toBe(true);
   });
@@ -133,11 +133,11 @@ describe("the Claude Code transcript parser", () => {
       JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "ToolSearch", input: {} }] } }),
       JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__nooticr__analyze_post", input: { url: "u" } }] } }),
       JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "Read", input: {} }] } }),
-      JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__nooticr__show_analysis", input: { url: "u", analysis: {} } }] } }),
+      JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__nooticr__show_post_analysis", input: { url: "u", analysis: {} } }] } }),
       JSON.stringify({ type: "result", subtype: "success", result: "done" }),
     ].join("\n"));
     const parsed = parseTranscript(file, "nooticr");
-    expect(parsed.calls.map((c: { tool: string }) => c.tool)).toEqual(["analyze_post", "show_analysis"]);
+    expect(parsed.calls.map((c: { tool: string }) => c.tool)).toEqual(["analyze_post", "show_post_analysis"]);
     expect(parsed.toolSearches).toBe(1);
     expect(parsed.apiError).toBeNull();
     fs.rmSync(file);

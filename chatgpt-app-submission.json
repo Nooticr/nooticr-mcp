@@ -584,7 +584,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "show_analysis": {
+    "show_post_analysis": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false,
@@ -632,7 +632,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "show_comparison": {
+    "show_compared_posts": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false,
@@ -841,7 +841,7 @@
     {
       "description": "The default read. A single public post URL, analysed from its transcript, caption and stats without paying for frames, then drawn as a card.",
       "user_prompt": "What makes this TikTok work? https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
-      "tools_triggered": "analyze_post_fast, show_analysis",
+      "tools_triggered": "analyze_post_fast, show_post_analysis",
       "expected_output": "The hook, script structure, CTA and target audience, each cited to a line of the transcript or a stat, with an explicit note that the visuals were not seen. Ends with a rendered analysis card."
     },
     {

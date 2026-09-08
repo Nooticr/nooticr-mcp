@@ -128,8 +128,8 @@ describe("tool annotations", () => {
       "prepare_handoff",
       "review_post",
       // The show_* family: each draws what the caller already wrote/fetched
-      // and reaches nothing.
-      "show_analysis",
+      // and reaches nothing. Sorted, so the renames in #45 moved two of them.
+      //
       // Renders drafts the caller already wrote; fetches nothing, and cannot
       // send them either — no connection carries comment-write permission.
       "show_audience_replies",
@@ -139,8 +139,9 @@ describe("tool annotations", () => {
       "show_collab_shortlist",
       // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
-      "show_comparison",
+      "show_compared_posts",
       "show_hooks",
+      "show_post_analysis",
       "show_repurposed_post",
       // Draws the standings the caller read out of compare_creators. The two
       // tools that FETCH those standings are open-world and deliberately not

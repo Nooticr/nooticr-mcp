@@ -158,13 +158,13 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("The post the comments came from."), summary: z.string().optional(), title: z.string().optional(), comments: z.array(z.object({ id: z.string(), text: z.string(), author: z.string().optional(), likes: z.number().optional(), sentiment: z.string().optional(), category: z.string().optional(), note: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
  },
  {
- name: "show_comparison",
+ name: "show_compared_posts",
  title: "Show Comparison",
  description: "Display a comparison you wrote after compare_posts fetched the first post and you fetched the rest yourself. Free, and makes no requests — it only draws what you pass it: each post with a BEST badge on the winner, what differed, shared strengths and the next experiment worth running. Call this after you have done the comparing, not instead of it.",
  inputSchema: z.object({ posts: z.array(z.object({}).passthrough()).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
  },
  {
- name: "show_analysis",
+ name: "show_post_analysis",
  title: "Show Analysis",
  description: "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post handed you the material. Free, and makes no requests — it only draws what you pass it: hook strength, script structure, quotable lines, hashtags, target audience, viral triggers and more, whichever of these you actually produced. Call this after you have done the analysing, not instead of it.",
  inputSchema: z.object({ url: z.string(), post: z.object({}).passthrough().optional(), analysis: z.object({}).passthrough() }).strict(),

@@ -7,7 +7,7 @@
 // conformance steps drive the built server but only ask it about metadata;
 // the mechanical smoke tiers make tool calls that a script chose. None of
 // them can see the failure this exists for: the guidance a result carries
-// says "when you are done, call show_analysis" and the host never does, so
+// says "when you are done, call show_post_analysis" and the host never does, so
 // the analysis lands in chat, the view is never drawn, and every test stays
 // green because every individual call worked.
 //
@@ -147,6 +147,8 @@ for (const quest of quests) {
   verdict.prompt = quest.prompt;
   verdict.hostProfile = quest.host ?? ctx.host;
   verdict.toolSearches = mine.map((r) => r.toolSearches ?? 0);
+  verdict.retrieved = mine.map((r) => r.retrieved ?? []);
+  verdict.searches = mine.map((r) => r.searches ?? []);
   verdict.driverErrors = mine.filter((r) => r.error || r.apiError).map((r) => r.error ?? r.apiError);
   verdict.transcripts = mine.map((r) => r.transcript).filter(Boolean);
   verdicts.push(verdict);
@@ -165,6 +167,59 @@ for (const v of verdicts) {
       console.log(`        ${f.kind}: ${f.detail}`);
     }
     if (v.driverErrors.length) console.log(`        driver: ${v.driverErrors.join("; ")}`);
+  }
+}
+
+// The retrieval cross-tab (#45).
+//
+// With this many tools every one sits behind a ToolSearch, so a `show_*` is
+// callable only if a search RETURNED it. Reported here because it is the
+// number that decides whether a chain can hold at all — a well-written
+// description on a tool nobody retrieves steers nothing, and the pass rate
+// alone cannot tell those two apart.
+const SHOW = /^show_/;
+const retrievalRows = [];
+for (const quest of quests) {
+  const wanted = [...new Set([...(quest.expect?.chain ?? []), ...(quest.expect?.includes ?? [])])]
+    .filter((t) => SHOW.test(t));
+  if (!wanted.length) continue;
+  for (const run of runResults.filter((r) => r?.quest?.id === quest.id)) {
+    const chain = (run.calls ?? []).map((c) => c.tool);
+    const firstQuery = (run.searches ?? [])[0]?.query ?? "";
+    for (const tool of wanted) {
+      retrievalRows.push({
+        tool,
+        retrieved: (run.retrieved ?? []).includes(tool),
+        inFirstQuery: firstQuery.includes(tool),
+        called: chain.includes(tool),
+      });
+    }
+  }
+}
+if (retrievalRows.length) {
+  const tally = (rows) => `${rows.filter((r) => r.called).length}/${rows.length}`;
+  const never = retrievalRows.filter((r) => !r.retrieved);
+  const did = retrievalRows.filter((r) => r.retrieved);
+  const first = retrievalRows.filter((r) => r.inFirstQuery);
+  console.log("\nshow_* retrieval (called / opportunities):");
+  console.log(`  ToolSearch never returned it   ${tally(never)}`);
+  console.log(`  ToolSearch did return it       ${tally(did)}`);
+  console.log(`  named in the FIRST query       ${tally(first)}`);
+  const perTool = new Map();
+  for (const r of retrievalRows) {
+    const e = perTool.get(r.tool) ?? { called: 0, retrieved: 0, first: 0, n: 0 };
+    e.n += 1;
+    if (r.called) e.called += 1;
+    if (r.retrieved) e.retrieved += 1;
+    if (r.inFirstQuery) e.first += 1;
+    perTool.set(r.tool, e);
+  }
+  const w = Math.max(...[...perTool.keys()].map((k) => k.length));
+  console.log("  per tool           called  retrieved  in first query");
+  for (const [tool, e] of [...perTool].sort((a, b) => a[0].localeCompare(b[0]))) {
+    console.log(
+      `    ${tool.padEnd(w)}  ${`${e.called}/${e.n}`.padStart(6)}  ${`${e.retrieved}/${e.n}`.padStart(9)}  ${`${e.first}/${e.n}`.padStart(14)}`,
+    );
   }
 }
 
