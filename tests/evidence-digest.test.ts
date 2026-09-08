@@ -112,4 +112,32 @@ describe("the evidence a text-only host receives", () => {
     // silently covers half of what was asked reads as a complete one.
     expect(digest).toContain("could not be searched");
   });
+
+  it("renders the replies under a post, not just the post", () => {
+    // The place #59 could come back without the chain-map gate noticing:
+    // `posts` is rendered, so the check is satisfied, while the comment that
+    // was paid for stays one level down in the payload only.
+    const digest = evidenceDigest({
+      posts: [
+        {
+          caption: "Completely out of ideas",
+          externalUrl: "https://www.reddit.com/r/x/comments/1/",
+          commentsRead: 2,
+          commentSample: [
+            { id: "c1", author: "sam", text: "same here, this is exactly my problem" },
+            { id: "c2", author: "kim", text: "I gave up and hired someone" },
+          ],
+        },
+      ],
+    });
+    expect(digest).toContain("same here, this is exactly my problem");
+    expect(digest).toContain("@sam");
+  });
+
+  it("says a thread would not open rather than implying nobody replied", () => {
+    const digest = evidenceDigest({
+      posts: [{ caption: "a post", externalUrl: "https://example.test/1", commentsRead: 0 }],
+    });
+    expect(digest).toContain("would not open");
+  });
 });
