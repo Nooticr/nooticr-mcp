@@ -59,7 +59,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
-import { clamp, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
+import { clamp, complaintCore, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
 import { withEvidence } from "./evidence-digest.js";
 import {
   confirmSpend,
@@ -2520,10 +2520,23 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             .optional()
             .describe("Where to look (default reddit). Each one is a separate paid search."),
           limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."),
+          queries: z
+            .array(z.string())
+            .optional()
+            .describe(
+              "Search these exact phrasings instead of the ones derived from `problem` (max 4). " +
+                "You are better at this than a string template is: write how a person would " +
+                "actually word the complaint on the network being searched — a Reddit title, " +
+                "an X post — and keep each one short, because this is a keyword search and a " +
+                "long sentence matches on its commonest words.",
+            ),
         })
         .strict(),
     },
-    async (args: { problem: string; platforms?: string[]; limit?: number }, extra) => {
+    async (
+      args: { problem: string; platforms?: string[]; limit?: number; queries?: string[] },
+      extra,
+    ) => {
       const client = await makeClient({ ...extra, arguments: args });
       const spend = new Spend();
       const problem = args.problem.trim();
@@ -2533,11 +2546,27 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       // The shapes a complaint takes, rather than the topic it is about. Kept
       // to three: each is a paid call per platform, and past three they start
       // returning the same posts as each other.
-      const shapes = [
-        { shape: "plain", query: problem },
-        { shape: "shared", query: `anyone else ${problem}` },
-        { shape: "asking", query: `is there a way to ${problem}` },
-      ];
+      //
+      // Built from a stripped core rather than the raw sentence, and the two
+      // non-plain shapes no longer prefix a template onto whatever arrived.
+      // The old `is there a way to ${problem}` assumed a bare verb phrase
+      // while the schema's own example is a full sentence with a subject, so
+      // the documented input produced "is there a way to I have no idea what
+      // to post next, I'm out of content ideas for my page" — a string nobody
+      // has ever written, sent to a keyword search, three times, having been
+      // lengthened twice (#60).
+      const core = complaintCore(problem);
+      const shapes = args.queries?.length
+        ? args.queries.slice(0, 4).map((q, i) => ({ shape: `given:${i + 1}`, query: q.trim() }))
+        : [
+            { shape: "plain", query: core },
+            // Reddit's own idiom, and it reads as a sentence now that `core`
+            // has had its leading subject removed.
+            { shape: "shared", query: `anyone else ${core}` },
+            // A SUFFIX, not a prefix: appended keywords cannot be made
+            // ungrammatical by whatever shape the core turned out to be.
+            { shape: "asking", query: `${core} any recommendations` },
+          ];
 
       const seen = new Set<string>();
       const posts: Row[] = [];
@@ -2614,9 +2643,20 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             "and say how many you rejected and why — a shortlist with no reject count reads as if " +
             "the search was precise.",
           "",
-          "`foundBy` says which phrasing surfaced each post: `plain` the problem itself, `shared` " +
-            "the does-anyone-else form, `asking` the is-there-a-tool form. The last two skew " +
-            "towards genuine complaints and the first towards content about the topic.",
+          args.queries?.length
+            ? "`foundBy` says which of your own phrasings surfaced each post, in the order you " +
+              "gave them."
+            : "`foundBy` says which phrasing surfaced each post: `plain` the problem itself, " +
+              "`shared` the does-anyone-else form, `asking` the looking-for-a-tool form. The " +
+              "last two skew towards genuine complaints and the first towards content about " +
+              "the topic.",
+          "",
+          args.queries?.length
+            ? ""
+            : `These were searched as: ${shapes.map((sh) => `"${sh.query}"`).join(", ")}. That ` +
+              "is a keyword search, not intent matching. If those read wrong for where you are " +
+              "looking — a Reddit title is worded differently from an X post — call this again " +
+              "with `queries` set to phrasings you write yourself, and keep each one short.",
           "",
           unavailable.length
             ? `Note that ${unavailable.length} searches errored — tell the user which networks ` +

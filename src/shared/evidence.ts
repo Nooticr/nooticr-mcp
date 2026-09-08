@@ -618,3 +618,61 @@ export function fetchBillingNote(tool: string): string {
     "same debits."
   );
 }
+
+/**
+ * The searchable core of a complaint, with the speaker stripped out.
+ *
+ * `find_people_with_problem` widens a problem into the shapes a complaint
+ * takes. Those shapes were templated onto the raw argument, and the argument
+ * the schema asks for is a full sentence with a subject ("I waste an hour a
+ * day checking what competitors posted") — so "is there a way to " + that
+ * produced a string nobody has ever written, and sent it to a keyword search
+ * (#60).
+ *
+ * Two things happen here, and neither is intent matching — the backend is a
+ * keyword search and this does not pretend otherwise:
+ *
+ *  - The first-person subject and its auxiliary come off the front of each
+ *    clause. "I'm out of content ideas" is a sentence about a speaker;
+ *    "out of content ideas" is what the post being looked for actually says.
+ *  - The result is capped, because a long sentence matches on its commonest
+ *    words. That is the tool's own advice to its caller, and it was not
+ *    taking it.
+ *
+ * A caller who can do better should: `queries` overrides all of this.
+ */
+export function complaintCore(problem: string): string {
+  const MAX_WORDS = 12;
+  // The pronoun always goes. The verb after it goes ONLY if it is an
+  // auxiliary — "I have no idea" is about a speaker, but "I waste an hour a
+  // day" carries "waste", and stripping it leaves "an hour a day checking",
+  // which is a worse search than the one being fixed. That distinction is the
+  // whole of this function; getting it wrong trades one bad query for another.
+  const SUBJECT = /^\s*(?:i|we)\b['’]?(?:m\b)?[\s,]*/i;
+  const AUXILIARY =
+    /^\s*(?:am|are|is|was|were|have|has|had|do|does|did|don['’]?t|can['’]?t|cannot|been)\b[\s,]*/i;
+  // Never end on a word that was pointing at the one the cap removed.
+  const DANGLING = /(?:\s+(?:for|my|our|the|a|an|of|to|and|or|with|in|on|at|by|that|this))+$/i;
+
+  const cleaned = problem
+    .split(/[,;]+/)
+    .map((clause) => {
+      const withoutSubject = clause.trim().replace(SUBJECT, "");
+      // Only strip an auxiliary that actually followed a subject, so a clause
+      // opening with a real verb keeps it.
+      return (withoutSubject === clause.trim()
+        ? withoutSubject
+        : withoutSubject.replace(AUXILIARY, "")
+      ).trim();
+    })
+    .filter(Boolean)
+    .join(", ");
+
+  const words = (cleaned || problem.trim()).split(/\s+/).filter(Boolean);
+  return words
+    .slice(0, MAX_WORDS)
+    .join(" ")
+    .replace(/[,;]+$/, "")
+    .replace(DANGLING, "")
+    .trim();
+}
