@@ -78,6 +78,52 @@ export default {
       const token = env.OPENAI_APPS_VERIFICATION_TOKEN?.trim();
       return token ? textResponse(200, token) : textResponse(404, "not configured");
     }
+    // Registry descriptors we are asked for on a schedule, and deliberately do
+    // not publish (#67).
+    //
+    // Four paths were 404ing by omission: `/.well-known/agent.json` and
+    // `/.well-known/agent-card.json` (92 probes each in five days, from
+    // GolemreachTrustBot), `/.well-known/mcp/server-card.json` (15, from
+    // mcp-verify) and `/.well-known/glama.json` (15). Nothing breaks for a
+    // user, but the product is distributed through exactly these directories,
+    // so "we publish X and Y and deliberately not Z" is worth writing down —
+    // the same reasoning that already sits on `openai-apps-challenge` above.
+    //
+    // The decisions:
+    //
+    //   agent.json / agent-card.json — an A2A agent card. We do not speak
+    //   A2A: there is no `/a2a` endpoint, no A2A JSON-RPC methods, and no
+    //   skills document anywhere in this worker. Publishing a card would
+    //   advertise a protocol nothing here implements, which is the same
+    //   mistake as advertising a platform that cannot work — it costs the
+    //   caller a request to find out.
+    //
+    //   mcp/server-card.json and glama.json — third-party directory formats.
+    //   Both are plausible things to want, and neither schema has been read
+    //   by anyone here. Serving a document shaped from a guess is how a
+    //   listing fails silently instead of loudly, so these stay 404 until
+    //   someone wants the listing enough to check the format.
+    //
+    // What changes is that the 404 now says which server this is and where the
+    // descriptors we DO publish live, so a crawler author debugging a missing
+    // listing gets an answer instead of a blank.
+    if (UNPUBLISHED_DESCRIPTORS.has(path) && (method === "GET" || method === "HEAD")) {
+      return jsonResponse(404, {
+        error: "not_published",
+        server: "nooticr-mcp",
+        protocol: "Model Context Protocol",
+        version: MCP_SERVER_VERSION,
+        detail:
+          "This server does not publish this descriptor. It speaks MCP over Streamable HTTP " +
+          "at /mcp and is not an A2A agent.",
+        published: [
+          "/.well-known/oauth-authorization-server",
+          "/.well-known/oauth-protected-resource",
+          "/.well-known/openid-configuration",
+        ],
+        documentation: `${env.PUBLIC_URL}/documentation`,
+      });
+    }
     if (path === "/register" && method === "POST") {
       return handleRegister(request, env);
     }
@@ -661,6 +707,21 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
  * at the authorisation server through `www-authenticate`. With both invisible
  * a browser client can neither hold a session nor discover where to log in.
  */
+/**
+ * Descriptors probed on a schedule that this server deliberately does not
+ * publish. See the handler for the decision behind each one (#67).
+ *
+ * A set rather than a chain of `||` because the point is that this is a list
+ * someone can add to or remove from as a decision changes, not four
+ * conditions that grew one at a time.
+ */
+const UNPUBLISHED_DESCRIPTORS = new Set([
+  "/.well-known/agent.json",
+  "/.well-known/agent-card.json",
+  "/.well-known/mcp/server-card.json",
+  "/.well-known/glama.json",
+]);
+
 export const MCP_EXPOSED_HEADERS = "mcp-session-id, mcp-protocol-version, www-authenticate";
 
 async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
