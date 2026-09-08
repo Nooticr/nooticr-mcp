@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // Deterministic, no-LLM MCP protocol smoke test — see docs/testing/agentic-e2e-testing.md.
 //
-// scripts/run-agentic-evals.sh proves "does a real model call the right
-// tool"; this proves the layer underneath that, which the agentic path
-// can't isolate on its own: does the real built CLI (dist/index.js),
-// pointed at a real nooticr-server booted in test mode, actually speak MCP
-// correctly and get real answers back — tools/list count, a real credit
-// balance, a real workspace's app in list_own_apps, real media for the
-// E2E fixture URL. No API key, no model, nothing non-deterministic: this
-// is scripted assertions over the real MCP SDK Client/StdioClientTransport,
-// the same client library any real host embeds.
+// scripts/run-quests.sh proves "does a real model call the right tool, and
+// then the one it said to call next"; this proves the layer underneath
+// that, which the agentic path can't isolate on its own: does the real
+// built CLI (dist/index.js), pointed at a real nooticr-server booted in
+// test mode, actually speak MCP correctly and get real answers back —
+// tools/list count, a real credit balance, a real workspace's app in
+// list_own_apps, real media for the E2E fixture URL. No API key, no model,
+// nothing non-deterministic: this is scripted assertions over the real
+// MCP SDK Client/StdioClientTransport, the same client library any real
+// host embeds.
 //
 // Usage: node scripts/mcp-smoke-client.mjs
 // Env (all required, written by scripts/e2e-server-lib.sh):

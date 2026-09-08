@@ -19,10 +19,10 @@
 // What this is NOT for: it proves nothing about nooticr-server's real
 // behavior — no workspace-authz enforcement, no real credit ledger, no real
 // social-post fetching. Run scripts/run-mechanical-e2e-smoke.sh (default
-// mode) or scripts/run-agentic-evals.sh against a real nooticr-server
-// before trusting a change to either repo's backend-facing logic; this
-// fixture only earns confidence in the harness scripts and this repo's own
-// MCP-protocol wiring, not in nooticr-server.
+// mode) or scripts/run-quests.sh with NOOTICR_E2E_BACKEND=real against a
+// real nooticr-server before trusting a change to either repo's
+// backend-facing logic; this fixture only earns confidence in the harness
+// scripts and this repo's own MCP-protocol wiring, not in nooticr-server.
 //
 // Usage: node scripts/fixture-server.mjs [port]  (default 8080)
 
