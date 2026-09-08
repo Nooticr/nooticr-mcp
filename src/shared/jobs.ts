@@ -2520,6 +2520,17 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             .optional()
             .describe("Where to look (default reddit). Each one is a separate paid search."),
           limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."),
+          readComments: z
+            .boolean()
+            .optional()
+            .describe(
+              "Open the most promising results and read their comments too (default false). " +
+                "On Reddit especially, the person with the problem is at least as often replying " +
+                "under someone else's thread as posting their own, and a post-only search cannot " +
+                "see any of them. Costs 2 nooticr credits per post opened, up to 5 — and they are " +
+                "opened on the MERGED, deduped results, so it is five extra calls in total rather " +
+                "than five per query shape per platform.",
+            ),
           queries: z
             .array(z.string())
             .optional()
@@ -2534,7 +2545,13 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         .strict(),
     },
     async (
-      args: { problem: string; platforms?: string[]; limit?: number; queries?: string[] },
+      args: {
+        problem: string;
+        platforms?: string[];
+        limit?: number;
+        queries?: string[];
+        readComments?: boolean;
+      },
       extra,
     ) => {
       const client = await makeClient({ ...extra, arguments: args });
@@ -2596,6 +2613,40 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }
       }
 
+      // Read the comments under the most promising results, on the MERGED,
+      // deduped list rather than per search.
+      //
+      // That distinction is the whole reason this lives here and not in the
+      // backend's own `include_comments`: three query shapes across two
+      // platforms is six searches, and opening five posts under each would be
+      // thirty paid calls for a tool whose description promises a wide CHEAP
+      // net. On the merged list it is five, once.
+      //
+      // Why at all: on Reddit the person with the problem is at least as often
+      // replying under someone else's thread as posting their own, and a
+      // post-only search cannot see any of them (Nooticr/nooticr-server#63).
+      if (args.readComments && posts.length) {
+        const OPEN = 5;
+        for (const post of posts.slice(0, OPEN)) {
+          const url = String(post.externalUrl ?? post.url ?? "");
+          if (!url) continue;
+          try {
+            const res = await client.callTool("get_post_comments", { url, limit: 8 });
+            const structured = (res.structured ?? {}) as Row;
+            spend.record("get_post_comments", structured);
+            const comments = Array.isArray(structured.comments) ? structured.comments : [];
+            post.commentsRead = comments.length;
+            post.commentSample = comments;
+          } catch {
+            // A thread that will not open is not a failed sweep — the post's
+            // own text may carry the complaint, and this is the cheap net.
+            // Stated rather than left absent, so a reader can tell "no
+            // comments" from "not looked at".
+            post.commentsRead = 0;
+          }
+        }
+      }
+
       if (!posts.length) {
         return evidence(
           [
@@ -2642,6 +2693,17 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           "Report the ones that qualify with their permalink, so they can actually be replied to, " +
             "and say how many you rejected and why — a shortlist with no reject count reads as if " +
             "the search was precise.",
+          "",
+          args.readComments
+            ? "The first few posts carry `commentSample`: the replies underneath them. Judge those " +
+              "the same way — a person saying \"same here, this is exactly my problem\" under " +
+              "someone else's thread is a better find than the thread itself, and the permalink " +
+              "to quote is the post's. `commentsRead: 0` means the thread would not open, not " +
+              "that nobody replied."
+            : "Only the posts themselves were searched. On Reddit the person with the problem is " +
+              "at least as often replying under someone else's thread as posting their own — if " +
+              "these results look thin, call again with `readComments: true` to open the top few " +
+              "and read what is underneath.",
           "",
           args.queries?.length
             ? "`foundBy` says which of your own phrasings surfaced each post, in the order you " +

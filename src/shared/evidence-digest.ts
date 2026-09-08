@@ -100,7 +100,21 @@ function postLine(row: Row): string {
     .join(" · ");
   const text = clamp(str(row.caption) || str(row.title) || str(row.text));
   const url = str(row.externalUrl) || str(row.url);
-  return [head && `[${head}]`, text, url].filter(Boolean).join("\n  ");
+  // Replies under the post, when something opened it. Nested one level down,
+  // which is exactly where #59 could come back without the chain-map gate
+  // noticing: `posts` is rendered, so the check is satisfied while the thing
+  // that was paid for — the comment that says "same here, this is my problem"
+  // — stays in the payload only.
+  const replies = Array.isArray(row.commentSample) ? (row.commentSample as Row[]) : [];
+  const shown = replies.slice(0, 4).map((c) => `    - ${clamp(commentLine(c), 240)}`);
+  if (replies.length > shown.length) {
+    shown.push(`    - (${replies.length - shown.length} more under this post)`);
+  }
+  const readNothing =
+    row.commentsRead === 0 ? "    - (this thread would not open — not that nobody replied)" : "";
+  return [head && `[${head}]`, text, url, ...shown, readNothing]
+    .filter(Boolean)
+    .join("\n  ");
 }
 
 /**
