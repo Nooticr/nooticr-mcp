@@ -71,6 +71,25 @@ const SUPPORTED_PROTOCOL_VERSIONS = [
  * Exported for tests; the header format is `YYYY-MM-DD`, which compares
  * correctly as a string.
  */
+/**
+ * Whether a request needs this DO's own session id stamped onto it.
+ *
+ * See the call site for the full reasoning. In short: a request with no
+ * `mcp-session-id` is routed to a brand-new Durable Object, so the DO is cold,
+ * `reInitialize()` runs, and the transport ends up holding a session the
+ * client was never told about — which the SDK's own session validation then
+ * rejects with 400 (#68).
+ *
+ * `initialize` is the one method that legitimately arrives without a session:
+ * the SDK assigns one itself, and stamping would take that from it.
+ *
+ * Exported for tests.
+ */
+export function needsSessionStamp(sessionHeader: string | null, method: string | null): boolean {
+  if (sessionHeader) return false;
+  return method !== "initialize";
+}
+
 export function clampedProtocolVersion(asked: string | null): string | null {
   if (!asked) return null;
   if (SUPPORTED_PROTOCOL_VERSIONS.includes(asked)) return null;
@@ -280,16 +299,50 @@ export class McpEndpoint {
     // "Can't read from request stream after response has been sent". Handing
     // the transport a fresh Request built from text we already hold means
     // only one reader ever touches the stream.
+    const method = request.headers.get("mcp-method") ?? sniffMethod(bodyText);
+    const methodLabel = method || "unknown";
+
     // Negotiate a too-new protocol version down before the SDK sees it (#64).
     // This is the seam to do it at: the request is already being rebuilt from
     // text we hold, so nothing extra is read or copied for the common case.
     const clampTo = clampedProtocolVersion(request.headers.get("mcp-protocol-version"));
-    const workHeaders = clampTo ? new Headers(request.headers) : request.headers;
+
+    // Stamp the session this DO is going to hand the transport anyway (#68).
+    //
+    // A request with no `mcp-session-id` gets a brand-new Durable Object
+    // (index.ts routes it by a random name), so the DO is always cold and
+    // `reInitialize()` below runs — completing a real handshake and giving the
+    // transport a session the client was never told about. `wrapHandle()` then
+    // hands the SDK a non-initialize request with no session against a
+    // transport that has one, and session validation answers 400.
+    //
+    // Observed on `openai-mcp/1.0.0` sending `tools/call` with no session: the
+    // call is dropped at the transport layer, where the host cannot tell it
+    // apart from a malformed request of its own making. A dropped `tools/call`
+    // is a dropped METERED call.
+    //
+    // The session id is deterministic for this DO — the same expression
+    // `reInitialize()` and `sessionIdGenerator` both use — so stamping it here
+    // does not invent state, it stops the request contradicting state we are
+    // about to create. The response carries `mcp-session-id` (it is in
+    // MCP_EXPOSED_HEADERS), so a client that lost its session learns the new
+    // one instead of getting a 400 it cannot act on.
+    //
+    // `initialize` is excluded: it legitimately arrives without a session and
+    // the SDK assigns one itself.
+    const ownSessionId = this.ctx.id.name ?? this.ctx.id.toString();
+    const stampSession = needsSessionStamp(request.headers.get("mcp-session-id"), method);
+
+    const workHeaders = clampTo || stampSession ? new Headers(request.headers) : request.headers;
     if (clampTo) {
       workHeaders.set("mcp-protocol-version", clampTo);
       console.log(
         `[mcp] negotiated protocol ${request.headers.get("mcp-protocol-version")} down to ${clampTo}`
       );
+    }
+    if (stampSession) {
+      workHeaders.set("mcp-session-id", ownSessionId);
+      console.log(`[mcp] sessionless ${methodLabel}: stamped this DO's own session id`);
     }
 
     const workRequest = (
@@ -307,8 +360,6 @@ export class McpEndpoint {
           : request
     ) as unknown as McpRequest;
 
-    const method = request.headers.get("mcp-method") ?? sniffMethod(bodyText);
-    const methodLabel = method || "unknown";
     console.log(
       `[mcp] ${request.method} method=${methodLabel} len=${bodyText.length} initialized=${this.initialized}`
     );
