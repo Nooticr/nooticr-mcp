@@ -2617,7 +2617,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       // deduped list rather than per search.
       //
       // That distinction is the whole reason this lives here and not in the
-      // backend's own `include_comments`: three query shapes across two
+      // backend's own `includeComments`: three query shapes across two
       // platforms is six searches, and opening five posts under each would be
       // thirty paid calls for a tool whose description promises a wide CHEAP
       // net. On the merged list it is five, once.
