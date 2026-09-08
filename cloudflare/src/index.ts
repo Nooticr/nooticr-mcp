@@ -49,12 +49,32 @@ export default {
      const path = url.pathname.replace(/\/+$/, "") || "/";
      const method = request.method;
 
-    if ((path === "/.well-known/oauth-authorization-server" || path === "/.well-known/openid-configuration") && method === "GET") {
-      return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL, { registration: true }), {
-        "access-control-allow-origin": "*",
-      });
+    // Both RFCs tell a client to build the metadata URL by inserting the
+    // well-known segment BEFORE the resource path, not by appending it:
+    // a client that knows the resource is `https://mcp.nooticr.com/mcp` asks
+    // for `/.well-known/oauth-protected-resource/mcp` (RFC 9728 §3.1), and the
+    // authorisation-server document has the same rule in RFC 8414 §3.
+    //
+    // We matched the bare root form only, so the spec-constructed URL 404'd —
+    // 75 times in a week from `undici`, which is the MCP TypeScript SDK's own
+    // fetch (#65). It mostly went unnoticed because the 401 challenge carries a
+    // correct `WWW-Authenticate` pointing at the root form, so a client that
+    // hits the 401 first recovers. What does not recover is a client that
+    // discovers BEFORE it gets a challenge, or that follows the construction
+    // rule first.
+    //
+    // The document is identical either way: `resource` and `issuer` name the
+    // real URLs, which is what makes serving it at both paths correct rather
+    // than merely convenient.
+    if (isWellKnown(path, "/.well-known/oauth-authorization-server") ||
+        isWellKnown(path, "/.well-known/openid-configuration")) {
+      if (method === "GET") {
+        return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL, { registration: true }), {
+          "access-control-allow-origin": "*",
+        });
+      }
     }
-    if (path === "/.well-known/oauth-protected-resource" && method === "GET") {
+    if (isWellKnown(path, "/.well-known/oauth-protected-resource") && method === "GET") {
       return jsonResponse(200, protectedResourceMetadata(env.PUBLIC_URL), {
         "access-control-allow-origin": "*",
       });
@@ -661,6 +681,25 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
  * at the authorisation server through `www-authenticate`. With both invisible
  * a browser client can neither hold a session nor discover where to log in.
  */
+/**
+ * Does this path ask for a well-known document, in either form the RFCs allow?
+ *
+ * RFC 9728 §3.1 and RFC 8414 §3 both say a client inserts the well-known
+ * segment BEFORE the resource path — so a resource at `/mcp` is discovered at
+ * `/.well-known/oauth-protected-resource/mcp`, not at the bare root form. We
+ * only matched the root, so every spec-constructed request 404'd (#65).
+ *
+ * Matching a prefix rather than doing `startsWith` on its own: `startsWith`
+ * would also match `/.well-known/oauth-protected-resource-of-somebody-else`,
+ * which is a different document and should stay a 404. The path must be the
+ * base exactly, or the base followed by `/`.
+ *
+ * Exported for tests.
+ */
+export function isWellKnown(path: string, base: string): boolean {
+  return path === base || path.startsWith(`${base}/`);
+}
+
 export const MCP_EXPOSED_HEADERS = "mcp-session-id, mcp-protocol-version, www-authenticate";
 
 async function routeToEndpoint(request: Request, env: Env): Promise<Response> {
