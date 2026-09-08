@@ -199,8 +199,9 @@ re-run just one:
    approximation of it. Needs a `npm run build` first: it checks `dist/`, so a
    stale build checks a stale surface.
 4. `npm run chain:map` — boots the fixture backend, calls every tool for real,
-   and fails if a guidance edge would not reach a host or a `show_*` view has
-   nothing naming it. No model, so it is cheap and deterministic; see
+   and fails if a guidance edge would not reach a host, a `show_*` view has
+   nothing naming it, or a tool's **evidence** never reaches a host that shows
+   only text blocks. No model, so it is cheap and deterministic; see
    **Whether a chain holds is its own question** below for why it exists.
 5. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
    if you touched anything UI-shaped — a resource mime type, `_meta`, or the
@@ -233,20 +234,29 @@ plain-language requests against the fixture backend, asserting on the chain of
 tools it actually walked. `npm run chain:map` is its deterministic half: it
 calls every tool for real and reads back which other tools the guidance names,
 so a stale pointer or an orphaned `show_*` shows up without spending on a
-model. That one **is** in `npm run verify` and in CI, and it gates on the two
+model. That one **is** in `npm run verify` and in CI, and it gates on the three
 failures that are never acceptable — a guidance edge that lives only in a
-`content` text block, and a `show_*` view no tool's guidance names. Both of
-those shipped once, in the same week, past a fully green suite.
+`content` text block, a `show_*` view no tool's guidance names, and material a
+tool's guidance describes that lives only in `structuredContent`. All three
+shipped, past a fully green suite; the third one reached production.
 
 Two things to know before adding a quest, both learned the expensive way and
 written up in `docs/testing/tool-chaining-quests.md`:
 
-- **Guidance in a `content` text block does not reach Claude Code** when the
-  result also carries `structuredContent` — which is every tool here. Measured:
-  0 of 59 quest runs, across 175 tool results, contained a single guidance
-  phrase. Prose inside `structuredContent` does arrive (see
-  `who_should_i_work_with`'s `rubric`); a sentence added to a `guidance()`
-  builder expecting it to steer a Claude host is dead text today.
+- **Neither channel is safe on its own, and the host picks which one it drops.**
+  Claude Code discards every `content` text block when the result also carries
+  `structuredContent` — which is every tool here. Measured: 0 of 59 quest runs,
+  across 175 tool results, contained a single guidance phrase. A host rendering
+  a tool's UI view does the opposite: it hands the model the text blocks and
+  gives `structuredContent` to the widget.
+
+  So **both** channels have to be self-sufficient. Guidance goes in both (#44,
+  #51). Evidence goes in both too, via `evidence-digest.ts` (#59) — before
+  that, a real Claude.ai session got "3 posts that might be someone describing
+  ...", instructions to quote lines from them, and no posts. The guidance these
+  tools write is deictic — "Here are 4 comments", "8 runs" — so it counts and
+  describes material that has to be in the same block as the sentence
+  describing it. `npm run chain:map --gate` checks both directions.
 - **What decides whether a chain holds is retrieval, not wording.** With this
   many tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
   in a `show_*` tool, it was called 0/18 times when ToolSearch never returned

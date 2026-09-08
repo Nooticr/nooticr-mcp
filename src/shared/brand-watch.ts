@@ -16,6 +16,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
+import { withEvidence } from "./evidence-digest.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { BACKEND_CALL_CREDITS, confirmSpend, declinedResult, searchMentionsCost } from "./spend.js";
@@ -353,9 +354,17 @@ function trendGuidance(sc: Record<string, unknown>, runs: Array<Record<string, u
 
 function toResult(proxy: McpProxyResult) {
   const textBlock = proxy.contentBlocks.find((c) => c.type === "text");
+  const structured = proxy.structured as Record<string, unknown> | undefined;
+  // The backend's text block is a one-line summary — "1 active brand watch."
+  // — and the watches themselves are in `structuredContent`, which a host
+  // rendering the view keeps for the widget. A model asked which watch to stop
+  // could see the count and not the terms (#59).
+  const text = String(textBlock?.text ?? "");
   return {
-    content: textBlock ? [{ type: "text" as const, text: String(textBlock.text ?? "") }] : [],
-    structuredContent: proxy.structured as Record<string, unknown> | undefined,
+    content: [
+      { type: "text" as const, text: structured ? withEvidence(text, structured) : text },
+    ],
+    structuredContent: structured,
   };
 }
 
@@ -588,10 +597,17 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         // model reading two points as a trend, and reading the start of the
         // retention window as the moment a conversation began.
         const guidance = trendGuidance(sc, runs);
+        const payload = { guidance, ...sc };
         return {
           ...result,
-          content: [{ type: "text" as const, text: guidance }],
-          structuredContent: { guidance, ...sc },
+          // "8 runs of X, newest first" with the runs in the other channel is
+          // the same deictic failure as everywhere else (#59): a host that
+          // renders the view keeps `structuredContent` for the widget, and the
+          // model is left counting runs it cannot read.
+          content: [
+            { type: "text" as const, text: withEvidence(guidance, payload) },
+          ],
+          structuredContent: payload,
         };
       } catch (err) {
         return failed("mention_trend failed", err);

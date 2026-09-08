@@ -19,13 +19,20 @@
 //      string that names a tool that does not exist, or that no longer
 //      matches the argument the target actually takes, shows up here and
 //      nowhere else.
-//   3. DELIVERY — for each tool, WHERE that guidance lives in the result:
+//   3. GUIDANCE DELIVERY — for each tool, WHERE that guidance lives in the
+//      result:
 //      a `content` text block, `structuredContent`, or both. This is the
 //      pass that matters most and the one nobody would think to write:
 //      hosts that render structuredContent (Claude Code among them) replace
 //      the content text blocks with the serialised structuredContent, so
 //      guidance that lives only in a text block never reaches the model.
 //      See docs/testing/tool-chaining-quests.md for the measurement.
+//   4. EVIDENCE DELIVERY — the mirror of 3. A host rendering a UI view does
+//      the opposite of Claude Code: it hands the model the text blocks and
+//      gives structuredContent to the widget. So material that lives only in
+//      the payload reaches no model there, and a tool whose guidance says
+//      "here are 4 comments, classify each one" is describing something the
+//      model cannot see. See #59.
 //
 // Usage (needs a backend booted and NOOTICR_BASE_URL/NOOTICR_ACCESS_TOKEN
 // exported — scripts/run-quests.sh does that for you):
@@ -82,6 +89,8 @@ const edges = [];
 const delivery = [];
 const dangling = [];
 const probeFailures = [];
+// Tools whose material never reaches a host that shows only text blocks.
+const evidenceLost = [];
 
 for (const tool of tools) {
   for (const to of mentions(tool.description, names, tool.name)) {
@@ -118,6 +127,54 @@ for (const tool of tools) {
   // because the JSON form escapes them and the raw text does not — five
   // evidence tools looked like they had lost their guidance when they were
   // carrying it correctly.
+  // Pass 4: does the EVIDENCE survive a host that delivers only text blocks?
+  //
+  // The mirror of pass 3, and the failure it catches is the one that shipped:
+  // Claude Code drops these text blocks and reads `structuredContent`, so
+  // guidance had to go in the payload (#44/#51) — but a host rendering a UI
+  // view does the opposite, handing the model the text blocks and giving
+  // `structuredContent` to the widget. A tool whose guidance says "here are 4
+  // comments, classify each one" and whose comments live only in the payload
+  // asks a model to reason over material it was never shown (#59).
+  //
+  // Matched on an IDENTIFYING field rather than "any long string": a run is
+  // a date and two integers, an app is an id and a short name, and a
+  // length-based heuristic reports both as missing while they are rendered
+  // correctly.
+  const IDENTIFYING = [
+    "id", "externalUrl", "url", "permalink", "caption", "text", "title",
+    "username", "handle", "creatorHandle", "name", "term", "appId", "ranAt", "tag",
+  ];
+  for (const [key, rows] of Object.entries(structured ?? {})) {
+    if (!Array.isArray(rows) || rows.length === 0) continue;
+    const first = rows.find((r) => r && typeof r === "object");
+    if (!first) continue;
+    const marks = IDENTIFYING
+      .map((f) => first[f])
+      .filter((v) => typeof v === "string" || typeof v === "number")
+      .map((v) => String(v))
+      .filter((v) => v.length > 0);
+    if (!marks.length) continue;
+    // Normalised and prefix-matched on purpose: a rendering that collapses
+    // whitespace, or shows an ISO timestamp as its date, is still a rendering.
+    // Requiring the byte-identical value reported three tools as having lost
+    // material they were displaying correctly.
+    const flat = text.replace(/\s+/g, " ");
+    const shows = (m) => {
+      const norm = m.replace(/\s+/g, " ").trim();
+      if (!norm) return false;
+      // An ISO timestamp rendered as its date is rendered. `mention_trend`
+      // shows one point per run as `2026-09-08 · found 16 · reported 0`, and
+      // demanding the milliseconds back would be asking the digest to be
+      // less readable to satisfy the check.
+      if (/^\d{4}-\d{2}-\d{2}T/.test(norm) && flat.includes(norm.slice(0, 10))) return true;
+      return flat.includes(norm.length > 24 ? norm.slice(0, 24) : norm);
+    };
+    if (!marks.some(shows)) {
+      evidenceLost.push({ tool: tool.name, key, count: rows.length });
+    }
+  }
+
   const needle = text.slice(0, 60);
   const carriesGuidance = (value) => {
     if (typeof value === "string") return value.includes(needle);
@@ -168,6 +225,15 @@ say(`  ... of which survive on a structuredContent-rendering host: ${byKind("gui
 say(`tools whose guidance text is dropped by such a host: ${atRisk.length}/${delivery.length}`);
 say(`tools in no edge at all: ${isolated.length}${isolated.length ? ` (${isolated.join(", ")})` : ""}`);
 say(`show_* tools nothing points to: ${orphanShow.length}${orphanShow.length ? ` (${orphanShow.join(", ")})` : ""}`);
+// A `show_*` renders material the MODEL wrote and handed back, so its payload
+// echoing arguments is not evidence it fetched and must not be read as lost.
+const evidenceReallyLost = evidenceLost.filter((e) => !e.tool.startsWith("show_"));
+say(
+  `tools whose evidence a text-only host never sees: ${evidenceReallyLost.length}` +
+    (evidenceReallyLost.length
+      ? ` (${evidenceReallyLost.map((e) => `${e.tool}.${e.key}`).join(", ")})`
+      : ""),
+);
 say(`dangling tool-shaped pointers: ${dangling.length}${dangling.length ? ` (${[...new Set(dangling.map((d) => d.token))].join(", ")})` : ""}`);
 if (probeFailures.length) say(`tools that could not be probed: ${probeFailures.map((p) => p.tool).join(", ")}`);
 
@@ -178,7 +244,7 @@ if (!quiet) {
   }
 }
 
-const report = { toolCount: tools.length, edges, delivery, isolated, orphanShow, dangling, probeFailures };
+const report = { toolCount: tools.length, edges, delivery, isolated, orphanShow, evidenceLost, dangling, probeFailures };
 if (jsonOut) {
   fs.writeFileSync(jsonOut, JSON.stringify(report, null, 2));
   say(`\nwrote ${jsonOut}`);
@@ -194,6 +260,11 @@ if (gate) {
   }
   for (const n of orphanShow) {
     failures.push(`${n}: no tool's guidance names it, so nothing will ever steer a host to it`);
+  }
+  for (const e of evidenceReallyLost) {
+    failures.push(
+      `${e.tool}: ${e.count} ${e.key} live only in structuredContent, so a host that renders the view leaves the model with a description of material it cannot read`,
+    );
   }
   if (failures.length) {
     console.error(`\nchain-map --gate: ${failures.length} failure(s)`);
