@@ -29,6 +29,55 @@ import {
  */
 const PROTOCOL_VERSION = "2025-11-25";
 
+/**
+ * What the bundled SDK will accept in `MCP-Protocol-Version`, mirrored.
+ *
+ * Kept here rather than imported because the SDK does not export it, and a
+ * copy that can drift is still better than the alternative: the SDK's
+ * `validateProtocolVersion()` rejects an unlisted value with **HTTP 400
+ * before any method dispatch**, so a client on a version we do not list never
+ * reaches `tools/list` at all.
+ */
+const SUPPORTED_PROTOCOL_VERSIONS = [
+  PROTOCOL_VERSION,
+  "2025-06-18",
+  "2025-03-26",
+  "2024-11-05",
+  "2024-10-07",
+];
+
+/**
+ * Negotiate a too-new protocol version down instead of refusing the request.
+ *
+ * Claude's newer client asks for `2026-07-28`. `@modelcontextprotocol/sdk@1.30.0`
+ * — the latest published release, and the one we pin — stops at `2025-11-25`,
+ * so every such request came back 400: **26.1% of Claude's authenticated POSTs
+ * to `/mcp`**, a clean 100% failure rate on that header value, present every
+ * hour of every day (#64).
+ *
+ * The rejection is wrong on the spec's own terms. Version negotiation says a
+ * server that cannot speak what the client asked for answers with the newest
+ * version it *can* speak; refusing the connection is what you do when there is
+ * no overlap, and there is plenty of overlap here. We already implement parts
+ * of `2026-07-28` — CIMD in `src/shared/cimd.ts`, the `resources/read` caching
+ * rules — so the server was rejecting the header that names a spec it follows.
+ *
+ * Only NEWER unknown versions are clamped. An older unrecognised value is left
+ * exactly as it arrived so the SDK can refuse it honestly: quietly answering a
+ * client that asked for something ancient, in a dialect it did not ask for, is
+ * a worse failure than a clear 400 — it would look like a working session and
+ * break somewhere further in.
+ *
+ * Exported for tests; the header format is `YYYY-MM-DD`, which compares
+ * correctly as a string.
+ */
+export function clampedProtocolVersion(asked: string | null): string | null {
+  if (!asked) return null;
+  if (SUPPORTED_PROTOCOL_VERSIONS.includes(asked)) return null;
+  if (asked <= PROTOCOL_VERSION) return null;
+  return PROTOCOL_VERSION;
+}
+
 /** Refresh the nooticr JWT before it expires. The backend mints 15-minute
  * access tokens, so without renewal every login dies a quarter of an hour in
  * and the user must re-authorize. We renew proactively (decoding the JWT's
@@ -231,14 +280,31 @@ export class McpEndpoint {
     // "Can't read from request stream after response has been sent". Handing
     // the transport a fresh Request built from text we already hold means
     // only one reader ever touches the stream.
+    // Negotiate a too-new protocol version down before the SDK sees it (#64).
+    // This is the seam to do it at: the request is already being rebuilt from
+    // text we hold, so nothing extra is read or copied for the common case.
+    const clampTo = clampedProtocolVersion(request.headers.get("mcp-protocol-version"));
+    const workHeaders = clampTo ? new Headers(request.headers) : request.headers;
+    if (clampTo) {
+      workHeaders.set("mcp-protocol-version", clampTo);
+      console.log(
+        `[mcp] negotiated protocol ${request.headers.get("mcp-protocol-version")} down to ${clampTo}`
+      );
+    }
+
     const workRequest = (
       hasBody
         ? new Request(request.url, {
             method: request.method,
-            headers: request.headers,
+            headers: workHeaders,
             body: bodyText,
           })
-        : request
+        : clampTo
+          ? // A GET (the SSE stream) carries the header too, and has no body to
+            // rebuild from — so it needs its own copy rather than falling
+            // through to the original request with the original header on it.
+            new Request(request.url, { method: request.method, headers: workHeaders })
+          : request
     ) as unknown as McpRequest;
 
     const method = request.headers.get("mcp-method") ?? sniffMethod(bodyText);
