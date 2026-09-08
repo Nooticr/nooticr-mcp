@@ -54,6 +54,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
+import { withEvidence } from "./evidence-digest.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 
@@ -65,9 +66,18 @@ interface MakeClient {
 
 function toResult(proxy: McpProxyResult) {
   const textBlock = proxy.contentBlocks.find((c) => c.type === "text");
+  const structured = proxy.structured as Record<string, unknown> | undefined;
+  // The backend's summary line, plus the rows it summarises. `list_own_apps`
+  // said "You have 2 app(s) in this workspace" and kept the appIds in
+  // `structuredContent` — which a host rendering the view gives to the widget,
+  // leaving a model that needs an appId for draft_post with the count alone
+  // (#59).
+  const text = String(textBlock?.text ?? "");
   return {
-    content: textBlock ? [{ type: "text" as const, text: String(textBlock.text ?? "") }] : [],
-    structuredContent: proxy.structured as Record<string, unknown> | undefined,
+    content: [
+      { type: "text" as const, text: structured ? withEvidence(text, structured) : text },
+    ],
+    structuredContent: structured,
   };
 }
 

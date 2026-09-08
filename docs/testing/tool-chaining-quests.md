@@ -55,9 +55,21 @@ of the 64 tools that existed then carried their guidance in a text block and
 nowhere else.
 
 It is a gate as well as a map. `--gate` (which `npm run chain:map` passes)
-fails on the two findings that are never acceptable — a guidance edge that
-survives nowhere, and a `show_*` view no tool's guidance names — and it is in
-`npm run verify` and in CI, unlike the quests themselves. Both of those
+fails on the three findings that are never acceptable — a guidance edge that
+survives nowhere, a `show_*` view no tool's guidance names, and **material a
+tool's guidance describes that lives only in `structuredContent`** — and it is
+in `npm run verify` and in CI, unlike the quests themselves.
+
+That third one is the mirror of the first, and it is the one that reached
+production. Claude Code drops the `content` text blocks and reads
+`structuredContent`; a host rendering a tool's UI view does the opposite,
+handing the model the text blocks and giving `structuredContent` to the widget.
+So a tool whose guidance says *"Here are 4 comments … read them and classify
+each one"* while the comments live only in the payload is describing material
+the model was never shown. A real session got 17 posts' worth of instructions
+and no posts. `src/shared/evidence-digest.ts` is the fix: a compact rendering
+of the payload in the same block as the sentence describing it, capped, and
+honest about what it left out. Both of those
 failures shipped once, in the same week: `mention_trend` carried its guidance
 in a text block, and `show_standings` and `show_trend` were added with nothing
 naming either. Every other check was green for both.

@@ -33,6 +33,7 @@ import {
   KNOWN_PLATFORMS,
   platformFailureGuidance,
 } from "./evidence.js";
+import { evidenceDigest } from "./evidence-digest.js";
 import {
   confirmSpend,
   declinedResult,
@@ -529,6 +530,20 @@ async function runEvidence(
  // an empty object under a call's name reads as "the fetch came back empty"
  // rather than "no fetch was made".
  if (plan.also && !nothingToFetch) out[plan.also.via] = extra;
+
+ // The evidence has to ride in the text block too, and it is written last
+ // because `out` is what it renders — the fetched payload, plus whatever the
+ // `also` call added, minus the frames that became image blocks.
+ //
+ // Same reason the guidance is in both channels (#44/#51), pointed the other
+ // way: Claude Code drops these text blocks and reads `structuredContent`,
+ // while a host rendering a UI view hands the model the text blocks and gives
+ // `structuredContent` to the widget. A transcript that exists only in the
+ // second one is a transcript the model was told to read and never saw (#59).
+ const digest = evidenceDigest(out);
+ if (digest) {
+  content[0] = { type: "text", text: `${guidance}\n\n---\n\n${digest}` } as ToolContent;
+ }
 
  return { content, structuredContent: out };
 }
@@ -1423,9 +1438,12 @@ export function createMcpServer(
     const structured = (res.structured ?? {}) as Record<string, unknown>;
     const comments = toEvidence(args.url, structured.comments);
     const guidance = reviewGuidance(args.url, comments.length);
-    return {
-     content: [{ type: "text" as const, text: guidance }],
-     structuredContent: {
+    // "Here are 4 comments ... Read them and classify each one" was a false
+    // sentence in the channel it was written in: the comments were only ever
+    // in `structuredContent`, which a host rendering the view keeps for the
+    // widget. The model was asked to classify comments it could not see, and
+    // to return the `id` of each — so the digest renders ids too (#59).
+    const payload = {
       // See runEvidence: a text block alone reaches no host that renders
       // structuredContent, and this is the tool show_comment_review's whole
       // chain hangs off.
@@ -1439,7 +1457,12 @@ export function createMcpServer(
       // is evidence too, and it is already paid for.
       themes: structured.themes ?? [],
       mcpCredits: structured.mcpCredits ?? null,
-     },
+    };
+    return {
+     content: [
+      { type: "text" as const, text: `${guidance}\n\n---\n\n${evidenceDigest(payload)}` },
+     ],
+     structuredContent: payload,
     };
    } catch (err) {
     return toolError("analyze_comments failed", err);

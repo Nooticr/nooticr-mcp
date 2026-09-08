@@ -60,6 +60,7 @@ import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { platformFromUrl, postSlug } from "./comment-review.js";
 import { clamp, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
+import { withEvidence } from "./evidence-digest.js";
 import {
   confirmSpend,
   costOf,
@@ -772,14 +773,21 @@ const metricArg = z
   .describe("Which stat to rank on (default views).");
 
 export function registerJobTools(server: McpServer, makeClient: MakeClient, store: WatchStore): void {
-  /** Guidance in the text block, evidence in the structured one — as every tool here does. */
-  // Both channels, because only one of them arrives. A host that renders
-  // `structuredContent` replaces the content text blocks with the serialised
-  // JSON, so guidance kept only in a text block reaches no model — measured at
-  // 0 phrases across 175 tool results. See tools.ts's runEvidence for the full
-  // note, and docs/testing/tool-chaining-quests.md for the measurement.
+  /** Guidance AND evidence in both channels, because no host delivers both. */
+  // Neither channel is safe on its own, and which one is dropped depends on
+  // the host: Claude Code discards every `content` text block when a result
+  // carries `structuredContent` (#44, measured at 0 guidance phrases across
+  // 175 tool results), while Claude.ai routes `structuredContent` to the
+  // widget and hands the model only the text blocks (#59).
+  //
+  // #51 made the guidance survive both. The evidence did not, so a real
+  // session got "3 posts that might be someone describing ...", instructions
+  // to quote lines from them, and no posts. The guidance these tools write is
+  // deictic — it counts and describes material that used to be somewhere
+  // else — so `withEvidence` puts a rendering of that material in the same
+  // block as the sentence describing it.
   const evidence = (guidance: string, payload: Row) => ({
-    content: [{ type: "text" as const, text: guidance }],
+    content: [{ type: "text" as const, text: withEvidence(guidance, payload) }],
     structuredContent: { guidance, ...payload },
   });
 
