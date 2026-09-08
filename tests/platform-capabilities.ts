@@ -35,6 +35,25 @@ export type ServedCapability = {
   readonly note?: string;
   /** Swept, but with no comment endpoint — silence there is the API, not the audience. */
   readonly commentsUnavailable?: readonly string[];
+  /**
+   * Where `listIsCeiling` is false, what the fallback route actually reaches.
+   *
+   * "Falls through to speech-to-text" was true and not enough: the listening
+   * path byte-downloads the media, so an HLS-only platform (Reddit) and one
+   * that carries no media URL at all (Bilibili) are out even with a model
+   * configured, and the whole route is gated on an env var. This repo was
+   * inferring all three facts from reading the Rust, and got the pricing one
+   * backwards — `spend.ts` told hosts that listening was "a different tool at
+   * a different price" when it is the same tool at the same price.
+   */
+  readonly speechToText?: {
+    readonly platforms: readonly string[];
+    /** The env var a deployment must set. Unset, the route answers nothing. */
+    readonly requiresConfiguration?: string;
+    /** Platform → why the fallback cannot reach it, whatever the config. */
+    readonly unreachable?: Readonly<Record<string, string>>;
+    readonly note?: string;
+  };
 };
 
 export const SERVED: Readonly<Record<string, ServedCapability>> = manifest;
@@ -80,7 +99,12 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
       "find_hook_pattern",
       "watch_creator",
       "unwatch_creator",
-      "track_competitor",
+      "track_creator",
+      // Compares several creators through the same fetch. Its description
+      // carries PLATFORM_ARG, so it names the ten networks and needs a
+      // capability behind that claim; watchlist_standings takes no platform
+      // argument and names none, so it stays out.
+      "compare_creators",
       "catch_up_watchlist",
       "what_should_i_make_next",
       "why_did_this_underperform",
@@ -97,8 +121,12 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     enumerating: ["discover_sounds"],
   },
   discovery: {
-    enumerating: [],
-    quiet: ["discover_social_posts", "niche_report", "discover_hashtags", "find_people_with_problem"],
+    // discover_hashtags enumerates now. It used to be `quiet`, which is why
+    // nothing flagged that it named no platform at all while its capability
+    // served nine — "what should I tag?" was answerable on one network out of
+    // ten and no check could see it (issue #32).
+    enumerating: ["discover_hashtags"],
+    quiet: ["discover_social_posts", "niche_report", "find_people_with_problem"],
   },
   transcript: {
     enumerating: [],
@@ -163,6 +191,11 @@ export function listIsCeiling(name: string): boolean {
 /** Platforms it reaches but cannot read comments on. */
 export function commentsUnavailable(name: string): readonly string[] {
   return SERVED[name]?.commentsUnavailable ?? [];
+}
+
+/** What a capability's fallback route reaches, where it publishes one. */
+export function fallbackRoute(name: string): ServedCapability["speechToText"] {
+  return SERVED[name]?.speechToText;
 }
 
 /** Every platform name the checks know about. */

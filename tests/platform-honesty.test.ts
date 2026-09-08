@@ -95,7 +95,7 @@ describe("an empty lookup returns a next step, not a shrug", () => {
   });
 });
 
-describe("track_competitor wires both halves in", () => {
+describe("track_creator wires both halves in", () => {
   const jobs = src("jobs.ts");
 
   it("returns the miss guidance instead of scoring an empty feed", () => {

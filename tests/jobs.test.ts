@@ -377,7 +377,7 @@ describe("asking before a fan-out spends", () => {
       get_user_posts: () => feed([{ id: "1", platform: "tiktok", views: 10 }]),
       search_creators: () => ({ creators: [{ username: "x", followers: 10 }], mcpCredits: { cost: 2 } }),
     });
-    await client.callTool({ name: "track_competitor", arguments: { username: "a" } });
+    await client.callTool({ name: "track_creator", arguments: { username: "a" } });
     await client.callTool({ name: "who_should_i_work_with", arguments: { niche: "gym" } });
     expect(asked).toEqual([]);
   });
@@ -465,7 +465,7 @@ describe("addressable ids", () => {
   });
 });
 
-describe("track_competitor", () => {
+describe("track_creator", () => {
   // Written down rather than sampled: median 300, and every verdict band has a
   // post sitting in it.
   const known = [100, 200, 300, 400, 1000];
@@ -484,7 +484,7 @@ describe("track_competitor", () => {
 
   it("scores every post against the median of their own window", async () => {
     const { client, calls } = await connect(backend());
-    const res = await client.callTool({ name: "track_competitor", arguments: { username: "@rival" } });
+    const res = await client.callTool({ name: "track_creator", arguments: { username: "@rival" } });
     // One call. The insight is arithmetic over material already paid for.
     expect(calls.map((c) => c.name)).toEqual(["get_user_posts"]);
     const out = res.structuredContent as {
@@ -509,7 +509,7 @@ describe("track_competitor", () => {
 
   it("refuses to invent a baseline from two posts", async () => {
     const { client } = await connect(backend([100, 5000]));
-    const res = await client.callTool({ name: "track_competitor", arguments: { username: "r" } });
+    const res = await client.callTool({ name: "track_creator", arguments: { username: "r" } });
     const out = res.structuredContent as { baseline: null; posts: Array<{ standing: { verdict: string } }> };
     expect(out.baseline).toBeNull();
     // Two numbers are not a distribution, and calling one of them the median
@@ -524,7 +524,7 @@ describe("track_competitor", () => {
     const back = backend(posts);
     const { client } = await connect(back, { store });
 
-    const untracked = await client.callTool({ name: "track_competitor", arguments: { username: "rival" } });
+    const untracked = await client.callTool({ name: "track_creator", arguments: { username: "rival" } });
     const first = untracked.structuredContent as { tracked: boolean; newSincePreviousCheck: null };
     // Adding them here would be a side effect nobody asked for.
     expect(first.tracked).toBe(false);
@@ -532,10 +532,10 @@ describe("track_competitor", () => {
     expect(String((untracked.content as Array<{ text: string }>)[0].text)).toMatch(/watch_creator/);
 
     await client.callTool({ name: "watch_creator", arguments: { username: "rival" } });
-    await client.callTool({ name: "track_competitor", arguments: { username: "rival" } });
+    await client.callTool({ name: "track_creator", arguments: { username: "rival" } });
     // A sixth post lands between the two checks.
     posts.push(2000);
-    const again = await client.callTool({ name: "track_competitor", arguments: { username: "rival" } });
+    const again = await client.callTool({ name: "track_creator", arguments: { username: "rival" } });
     const out = again.structuredContent as {
       tracked: boolean;
       newSincePreviousCheck: number;
@@ -549,14 +549,14 @@ describe("track_competitor", () => {
   /**
    * Both tools answer "what has changed since I last looked" and both move a
    * marker when they do. One shared marker would mean each silently ate the
-   * other's answer — run a catch-up and track_competitor reports nothing new,
+   * other's answer — run a catch-up and track_creator reports nothing new,
    * which looks like the creator stopped posting.
    */
   it("does not consume the catch-up's baseline", async () => {
     const store = new MemoryWatchStore();
     const { client } = await connect(backend(), { store });
     await client.callTool({ name: "watch_creator", arguments: { username: "rival" } });
-    await client.callTool({ name: "track_competitor", arguments: { username: "rival" } });
+    await client.callTool({ name: "track_creator", arguments: { username: "rival" } });
     const [entry] = await store.list("u1");
     expect(entry.competitorBaseline?.postIds).toHaveLength(5);
     expect(entry.baseline, "the catch-up has still never run").toBeUndefined();
@@ -576,7 +576,7 @@ describe("track_competitor", () => {
       remove: async () => false,
     };
     const { client } = await connect(backend(), { store: broken as unknown as MemoryWatchStore });
-    const res = await client.callTool({ name: "track_competitor", arguments: { username: "rival" } });
+    const res = await client.callTool({ name: "track_creator", arguments: { username: "rival" } });
     expect(res.isError, "a store outage costs the diff, not the tool").toBeFalsy();
     expect((res.structuredContent as { baseline: { median: number } }).baseline.median).toBe(300);
   });
