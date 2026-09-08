@@ -21,6 +21,52 @@ import { z } from "zod";
 const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough();
 
 /**
+ * A union branch that renders as its own `type`, instead of being folded into
+ * a `type` array with its siblings.
+ *
+ * `z.union([z.string(), z.number(), z.boolean()])` renders as
+ * `{ type: ["string", "number", "boolean"] }`. That is legal JSON Schema and
+ * the wrong thing to send: a client that reads `type` as a single string
+ * either rejects the tool or drops the constraint, and both failures are
+ * invisible from here — a rejected tool just stops appearing in `tools/list`,
+ * with no error this repo would ever see. The whole surface emitted 1,286 of
+ * them, from this helper and `listOf` alone.
+ *
+ * The fold happens in zod-to-json-schema's union parser, which collapses a
+ * union whose every member is a bare primitive carrying no checks. There are
+ * only two ways out, and only one of them is free:
+ *
+ *   - Give a member a check. `z.number().finite()` renders as plain
+ *     `{ type: "number" }` and defeats the fold, but it also stops accepting
+ *     `Infinity` — which a ratio-to-baseline division by a zero median really
+ *     does produce, and which this file exists to keep from turning a working
+ *     call into a hard failure. Rejected for that reason, not on taste.
+ *   - Give a member a wrapper whose type name is not a primitive.
+ *     `.readonly()` is the one that costs nothing: on a primitive it is a
+ *     runtime no-op (`Object.freeze` of a string is that string), the parsed
+ *     value is discarded by the SDK's output validation anyway, and
+ *     `Readonly<string>` is `string`, so nothing downstream sees a new type.
+ *     It also happens to be true — these are output schemas.
+ *
+ * So the wrapper is load-bearing and is not about readonly-ness. Removing it
+ * silently reintroduces all 1,286, which is what
+ * `tests/output-schema-shape.test.ts` is there to catch.
+ */
+const oneType = <T extends z.ZodTypeAny>(branch: T) => branch.readonly();
+
+/**
+ * "This type, or null" — as `anyOf`, not as a two-element `type` array.
+ *
+ * `z.number().nullish()` renders as `{ type: ["number", "null"] }`, which is
+ * the same portability problem as `scalar()` in miniature. The three inline
+ * output schemas in `watchlist.ts` contributed 5 of the 1,286 this way, and
+ * they are the reason this is exported rather than kept private: a tool that
+ * declares its schema inline should not have to re-derive why.
+ */
+export const orNull = <T extends z.ZodTypeAny>(inner: T) =>
+  z.union([oneType(inner), z.null()]).optional();
+
+/**
  * One scalar type for every leaf, and it accepts null.
  *
  * The first version of this file typed each leaf from a sampled response —
@@ -35,10 +81,15 @@ const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough(
  * agent needs from this file is which keys exist and what they mean. So the
  * keys and their descriptions are the contract, and the types are deliberately
  * as wide as the data can be.
+ *
+ * Which is why the branches are wrapped in `oneType()` and null is a member of
+ * the union rather than a `.nullish()` around it. Both exist to control the
+ * JSON Schema this renders as, and neither changes what the schema accepts —
+ * see `oneType` below.
  */
-const scalar = () => z.union([z.string(), z.number(), z.boolean()]).nullish();
+const scalar = () => z.union([oneType(z.string()), oneType(z.number()), oneType(z.boolean()), z.null()]).optional();
 /** Same reasoning for lists: a null list, and a null element, must both pass. */
-const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.null()])).nullish();
+const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([oneType(item), z.null()])).nullish();
 /**
  * A list whose elements are not one shape — themes, fixes, failures.
  *
@@ -51,6 +102,24 @@ const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([item, z.nul
  * empty schema in item position, which accepts anything, which is the point.
  */
 const anyList = () => z.array(z.any()).nullish();
+
+/**
+ * "An object whose contents we are not constraining" — for input schemas.
+ *
+ * Exported from a file about output schemas because the concern is the same
+ * one documented above: what a zod type renders as on the wire. The natural
+ * spelling, `z.record(z.unknown())`, renders as
+ * `{ type: "object", additionalProperties: {} }`, and that `{}` carries no
+ * validation keyword at all — the object-literal spelling of a bare `true`,
+ * which reads to a strict client as an unvalidated schema rather than a
+ * deliberately open one. `z.object({}).passthrough()` accepts exactly the same
+ * values and says `additionalProperties: true`, which is the same permission
+ * stated in a keyword rather than by omission.
+ *
+ * The array counterpart needs no helper: `z.array(z.unknown())` emits
+ * `items: {}` for the same reason, and `z.array(z.any())` simply omits `items`.
+ */
+export const anyObject = () => z.object({}).passthrough();
 
 /** Every paid tool reports what it charged. */
 const mcpCredits = open({
@@ -522,7 +591,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  track_competitor: open({
+  track_creator: open({
     ...evidence,
     username: scalar(),
     platform: scalar(),
@@ -531,7 +600,7 @@ export const OUTPUT_SCHEMAS = {
     since: scalar(),
     sinceApplied: scalar(),
     tracked: scalar().describe("True when this creator is on the watchlist, which is what makes a diff possible."),
-    lastCheckedAt: scalar().describe("When track_competitor last looked, or null on a first look."),
+    lastCheckedAt: scalar().describe("When track_creator last looked, or null on a first look."),
     newSincePreviousCheck: scalar().describe("Posts not seen at the last check; null when there was none."),
     baseline: open({
       count: scalar(),
@@ -741,11 +810,107 @@ export const OUTPUT_SCHEMAS = {
       hashtag: scalar(),
       posts: scalar(),
       views: scalar(),
-      trend: scalar().describe("rising, cooling or steady."),
+      // Only the derived route computes these two: a trend board reports its
+      // own totals, a counted sample reports the middle post and one example
+      // so a claim about a tag can be checked against a real post.
+      medianViews: scalar().describe("Derived route only — views of the median post carrying it."),
+      example: scalar().describe("Derived route only — a post that used it."),
+      trend: scalar().describe("rising, cooling or steady. Trend board only; a sample has none."),
       url: scalar(),
     })).optional(),
+    // Which of the two routes answered, so a counted sample is not read as a
+    // trend board. Same marker as get_post_transcript's `source`.
+    source: scalar().describe('"trend-board" (tiktok) or "derived-from-sweep" (everywhere else).'),
+    platform: scalar(),
+    niche: scalar().describe("Derived route only — the sweep the tags were counted from."),
+    sweptPosts: scalar().describe("Derived route only — how many posts were counted."),
+    note: scalar().describe("Derived route only — the sample size and what it does not establish."),
+    available: scalar().describe("false when the network cannot be swept at all."),
+    billable: scalar(),
+    reason: scalar(),
     country: scalar(),
     days: scalar(),
+    mcpCredits,
+  }),
+
+  /**
+   * One row per creator, on the axis every creator shares. `window` sits
+   * beside every derived number on purpose — a hit rate whose denominator is
+   * invisible cannot be told apart from a hit rate that means something.
+   */
+  compare_creators: open({
+    creators: listOf(open({
+      handle: scalar(),
+      platform: scalar(),
+      window: scalar().describe("Posts scored — the denominator of hitRate and the baseline."),
+      baseline: open({
+        count: scalar(),
+        median: scalar(),
+        min: scalar(),
+        max: scalar(),
+        p25: scalar(),
+        p75: scalar(),
+      }).nullish(),
+      hitRate: scalar().describe("Share of the window at or above aboveRatio x their own median."),
+      medianWinRatio: scalar().describe("How hard they beat their median when they did."),
+      ratios: listOf(z.number()).describe("Every post's ratio to their own median, ascending."),
+      best: post.nullish(),
+      worst: post.nullish(),
+      unavailable: scalar().describe("Set when this creator could not be scored, and why."),
+    })).optional(),
+    platform: scalar(),
+    platformDefaulted: scalar(),
+    metric: scalar(),
+    thinWindow: scalar().describe("Below this many posts, a hit rate is one post either way."),
+    aboveRatio: scalar().describe("The ratio hitRate counts from."),
+    billable: scalar(),
+    mode: scalar(),
+    tool: scalar(),
+    evidenceFrom: listOf(z.string()),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  show_standings: open({
+    creators: listOf(anyObject()),
+    metric: scalar(),
+    ranking: scalar().describe("Which axis the order is on — 'how often' and 'how big' disagree."),
+    verdict: scalar(),
+    tooThin: listOf(z.string()).describe("Handles drawn unranked rather than bottom."),
+    // The discriminator the view keys on, since `creators` alone is ambiguous
+    // with the two fetching tools' payloads.
+    standings: scalar(),
+  }),
+
+  watchlist_standings: open({
+    creators: listOf(open({
+      handle: scalar(),
+      platform: scalar(),
+      window: scalar(),
+      baseline: open({
+        count: scalar(),
+        median: scalar(),
+        min: scalar(),
+        max: scalar(),
+        p25: scalar(),
+        p75: scalar(),
+      }).nullish(),
+      hitRate: scalar(),
+      medianWinRatio: scalar(),
+      ratios: listOf(z.number()),
+      best: post.nullish(),
+      worst: post.nullish(),
+      unavailable: scalar(),
+    })).optional(),
+    watching: scalar().describe("How many creators are on the watchlist."),
+    metric: scalar(),
+    thinWindow: scalar(),
+    aboveRatio: scalar(),
+    billable: scalar(),
+    mode: scalar(),
+    tool: scalar(),
+    evidenceFrom: listOf(z.string()),
+    creditsCharged: scalar(),
     mcpCredits,
   }),
 
@@ -824,12 +989,7 @@ export const OUTPUT_SCHEMAS = {
     // so the description is what steers a reader off it.
     firstFreeRemaining: listOf(z.string())
       .describe("Superseded by firstFreeTools, which carries the same value. Kept for backward compatibility — read firstFreeTools."),
-    billingUrl: scalar(),
     hint: scalar(),
-  }),
-  buy_nooticr_credits: open({
-    checkoutUrl: scalar(),
-    packs: listOf(open({})),
   }),
 
   nooticr_login: open({
@@ -877,6 +1037,57 @@ export const OUTPUT_SCHEMAS = {
     firstRun: scalar(),
     message: scalar(),
   }),
+  /**
+   * A run series. `runs` is newest first, and every derived number the caller
+   * might want is left underived on purpose — the model reads the series.
+   */
+  show_trend: open({
+    points: listOf(anyObject()),
+    term: scalar(),
+    metric: scalar(),
+    verdict: scalar(),
+    // Both caveats are fields rather than prose, so the view can draw them
+    // and cannot quietly omit them.
+    tooShort: scalar().describe("Too few points to call a direction."),
+    edgeIsRecordStart: scalar().describe("The left edge is the record's start, not the conversation's."),
+    trend: scalar().describe("The discriminator the view keys on."),
+  }),
+
+  mention_trend: open({
+    runs: listOf(open({
+      ranAt: scalar(),
+      found: scalar().describe("Everything that sweep saw."),
+      reported: scalar().describe("The subset that was new — a different question from found."),
+      perPlatform: anyObject().nullish().describe('{"tiktok":{"found":12,"reported":3},...}'),
+      medianViews: scalar().describe("Competitor watches only: the baseline that run measured."),
+      postsScored: scalar(),
+      costCredits: scalar(),
+    })).optional(),
+    watchId: scalar(),
+    kind: scalar(),
+    term: scalar(),
+    competitorHandle: scalar(),
+    platforms: listOf(z.string()),
+    windowDays: scalar(),
+    // Two numbers a caller cannot derive and will otherwise assume: how long
+    // anything is kept, and how long the watch has existed. A flat left edge
+    // is one of those, not a quiet period.
+    retainedDays: scalar(),
+    watchCreatedAt: scalar(),
+    runCount: scalar(),
+    found: anyObject().nullish().describe("newest and oldest in the window, so direction needs no array maths."),
+    medianViews: anyObject().nullish(),
+    recurring: listOf(open({
+      mentionKey: scalar().describe("A fingerprint. The text is deliberately not stored."),
+      timesSeen: scalar(),
+      firstReportedAt: scalar(),
+      lastSeenAt: scalar(),
+    })),
+    available: scalar(),
+    billable: scalar(),
+    mcpCredits,
+  }),
+
   list_brand_watches: open({
     watches: listOf(
       open({

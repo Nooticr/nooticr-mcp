@@ -35,6 +35,23 @@
  * documentation; it is the steering, and it lands in the model's context.
  */
 import { BACKEND_CALL_CREDITS, costOf } from "./spend.js";
+import { numberOf } from "./performance.js";
+
+/**
+ * Every fan-out is capped; the cap is an argument, and the argument is clamped.
+ *
+ * Lives here rather than beside its first caller in jobs.ts because the
+ * evidence plans need it too, and for a while did not have it: three of them
+ * documented a `max` in their zod schema and then passed the argument straight
+ * through, so the ceiling a host read was never enforced and `limit: 500`
+ * fetched 500. One clamp for both files, and the import already runs this way
+ * round — jobs.ts imports evidence.ts, never the reverse.
+ */
+export function clamp(value: unknown, fallback: number, min: number, max: number): number {
+  const n = Math.floor(numberOf(value ?? fallback));
+  if (!n) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
 
 /** Which cheap call stands in for each AI tool's expensive one. */
 export interface EvidencePlan {
@@ -306,18 +323,41 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     args: (a) => ({
       username: String(a.username ?? ""),
       platform: a.platform,
-      limit: Number(a.limit ?? 12),
+      limit: clamp(a.limit, 12, 1, 30),
     }),
-    guidance: (a) =>
-      [
+    guidance: (a) => {
+      const focus = String(a.focus ?? "").trim();
+      return [
         `Recent posts by ${a.username}, with their stats.`,
         "",
         "Work out this creator's niche, recurring themes, hook formula, what",
         "over- and under-performs for them, and who their audience is. Use the",
         "spread of the numbers, not just the best post. Name the posts you are",
         "reasoning from.",
+        ...(focus
+          ? [
+              "",
+              `Focus for this pass, as asked: ${focus}. Still cover the profile as a whole, but weight what you cover toward this.`,
+            ]
+          : []),
+        "",
+        // The redirect has to be here rather than only in the description,
+        // because by the time a description could help this tool has already
+        // been chosen. Measured: the phrase "track what X has been doing"
+        // retrieves analyze_creator_profile and never track_creator —
+        // track_creator's name only surfaces when the user says the word
+        // "competitor", which is not how most people phrase it. A result
+        // naming the other tool is the one channel that reaches a model which
+        // has already committed to this one.
+        "If what was actually asked for was to TRACK this creator — how they are",
+        "doing lately, what they have shipped since last time, keeping an eye on",
+        "them — this is the wrong tool and you should call track_creator",
+        "instead. It scores each post against this creator's OWN median rather",
+        "than handing you raw counts, and it remembers where you left off, so",
+        "the next call can say what is new. This one does neither.",
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   find_hook_pattern: {
@@ -325,7 +365,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     args: (a) => ({
       username: String(a.username ?? ""),
       platform: a.platform,
-      limit: Number(a.limit ?? 12),
+      limit: clamp(a.limit, 12, 1, 40),
     }),
     guidance: (a) =>
       [
@@ -344,7 +384,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     args: (a) => ({
       niche: String(a.niche ?? ""),
       platform: a.platform,
-      limit: Number(a.count ?? 12),
+      limit: clamp(a.count, 12, 1, 40),
     }),
     guidance: (a) =>
       [

@@ -1,0 +1,24 @@
+# Appearance in the ChatGPT desktop app's skill picker. `display_name` and
+# `short_description` are the two a person actually reads there, so they say
+# what the skill answers rather than restating the plugin's own pitch.
+interface:
+  display_name: "Social listening"
+  short_description: "Answer questions about social media from real posts, comments and transcripts — not from memory."
+  icon_small: "../../../assets/brand/nooticr-icon.svg"
+  icon_large: "../../../assets/brand/icon-512.png"
+  brand_color: "#FF4D23"
+  default_prompt: "What are people saying about this, and what is actually working right now?"
+
+policy:
+  # Implicit invocation left on deliberately. The failure this skill prevents —
+  # answering a question about current social content from memory instead of
+  # fetching — happens precisely when nobody thought to name a skill.
+  allow_implicit_invocation: true
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "nooticr"
+      description: "Nooticr MCP server — fetches posts, comments, transcripts and frames across ten social networks"
+      transport: "streamable_http"
+      url: "https://mcp.nooticr.com/mcp"

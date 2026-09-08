@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared boot/login/provision logic for the two agentic-E2E entry points
-# (scripts/run-agentic-evals.sh, scripts/run-mechanical-e2e-smoke.sh). One
+# (scripts/run-quests.sh, scripts/run-mechanical-e2e-smoke.sh). One
 # copy so the two never drift on how a test-mode nooticr-server gets booted
 # and logged into — see docs/testing/agentic-e2e-testing.md for the full
 # design.

@@ -17,6 +17,7 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { landingPage } from "../../cloudflare/src/site/landing.js";
 import { termsPage, privacyPage } from "../../cloudflare/src/site/legal.js";
+import { supportPage } from "../../cloudflare/src/site/support.js";
 import { dashboardPage, dashboardSignedOut } from "../../cloudflare/src/site/dashboard.js";
 
 const PUBLIC_URL = "https://mcp.nooticr.com";
@@ -42,6 +43,7 @@ const ROUTES: Record<string, () => string> = {
   "/": () => landingPage(PUBLIC_URL, API),
   "/terms": () => termsPage(PUBLIC_URL, API),
   "/privacy": () => privacyPage(PUBLIC_URL, API),
+  "/support": () => supportPage(PUBLIC_URL),
   "/dashboard": () => dashboardPage(PUBLIC_URL, { email: "e2e@nooticr.com", displayName: "E2E" }, USAGE, "secret-token"),
   "/signed-out": () => dashboardSignedOut(PUBLIC_URL),
 };
@@ -188,11 +190,118 @@ test.describe("dashboard", () => {
   });
 });
 
+/**
+ * The support page's composer is the only inline script on the marketing site
+ * that builds something from typed input, and a string test cannot see whether
+ * it runs. It got shipped broken once in exactly that way: an escape lost in
+ * an edit put a raw newline inside a JS string literal, so the emitted script
+ * was a syntax error, the button kept its bare `mailto:` and every field the
+ * visitor filled in was silently dropped. Nothing threw where anyone could see
+ * it. So this drives it in a browser.
+ */
+test.describe("support page", () => {
+  for (const width of [320, 375, 1280]) {
+    test(`fits the viewport at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/support`);
+      await expect(page.locator("h1")).toContainText("Get help");
+      await noOverflow(page);
+    });
+  }
+
+  test("composes a prefilled mail from what was typed", async ({ page }) => {
+    await page.goto(`${base}/support`);
+    await page.selectOption("#topic", "billing");
+    await page.fill("#summary", "Charged for an empty sweep");
+    await page.fill("#detail", "First line.\nSecond line.");
+    await page.fill("#tool", "search_mentions");
+    await page.fill("#client", "Claude Desktop");
+    await page.fill("#link", "https://www.tiktok.com/@a/video/1");
+    await page.fill("#account", "someone@example.com");
+
+    const href = decodeURIComponent((await page.getAttribute("#send", "href")) ?? "");
+    expect(href).toContain("mailto:support@nooticr.com");
+    // The topic is a category prefix on the subject, so a reply thread starts
+    // sorted; the summary is the subject itself.
+    expect(href).toContain("subject=[billing] Charged for an empty sweep");
+    // The narrative first, then the facts a first reply needs, each on its own
+    // line — a body of "undefined" or one collapsed line is the failure here.
+    expect(href).toContain("First line.\nSecond line.");
+    for (const line of [
+      "Tool: search_mentions",
+      "Post or profile URL: https://www.tiktok.com/@a/video/1",
+      "Account email: someone@example.com",
+      "AI client: Claude Desktop",
+    ]) {
+      expect(href, `body missing "${line}"`).toContain(line);
+    }
+    // And what it shows is what it will send.
+    await expect(page.locator("#preview")).toHaveText("[billing] Charged for an empty sweep");
+  });
+
+  test("an empty summary falls back to the topic, so the subject is never bare", async ({ page }) => {
+    await page.goto(`${base}/support`);
+    await page.selectOption("#topic", "security");
+    const href = decodeURIComponent((await page.getAttribute("#send", "href")) ?? "");
+    expect(href).toContain("subject=[security] Security or vulnerability report");
+  });
+
+  test("nothing on the page can be submitted to us", async ({ page }) => {
+    await page.goto(`${base}/support`);
+    // Not a stylistic point. A form with no action submits GET to the current
+    // URL, which would put everything typed into a request line for /support —
+    // the opposite of what the page promises directly above the fields.
+    expect(await page.locator("form").count()).toBe(0);
+    await page.fill("#summary", "typed then Enter");
+    await page.press("#summary", "Enter");
+    await page.waitForTimeout(150);
+    expect(new URL(page.url()).search).toBe("");
+    expect(page.url()).toBe(`${base}/support`);
+  });
+
+  test("the triage answers are links, and the links are visible", async ({ page }) => {
+    await page.goto(`${base}/support`);
+    // Every prose link was the same colour as the text it sat in until this
+    // page needed them; the legal pages had the same problem, unnoticed.
+    const link = page.locator('.prose a[href="/documentation#tools"]');
+    const [linkColour, textColour] = await Promise.all([
+      link.evaluate((el) => getComputedStyle(el).color),
+      page.locator(".prose p").first().evaluate((el) => getComputedStyle(el).color),
+    ]);
+    expect(linkColour).not.toBe(textColour);
+    // ...and the button is not a victim of that same rule.
+    const send = page.locator("#send");
+    const [fg, bg] = await send.evaluate((el) => [
+      getComputedStyle(el).color,
+      getComputedStyle(el).backgroundColor,
+    ]);
+    expect(fg, "button label is the same colour as its background").not.toBe(bg);
+    await expect(send).toBeVisible();
+  });
+
+  test("works with JavaScript off, by telling you what to do instead", async ({ browser }) => {
+    const ctx = await browser.newContext({ javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto(`${base}/support`);
+    // Asserted on the children, not the `noscript` element: Playwright reports
+    // SCRIPT/STYLE/NOSCRIPT as having no text at all, because it models what a
+    // visitor sees. With scripting off the browser parses those children into
+    // real DOM, so this checks the fallback is genuinely on screen rather than
+    // merely present in the markup.
+    const fallback = page.locator("noscript p");
+    await expect(fallback).toBeVisible();
+    await expect(fallback).toContainText("support@nooticr.com");
+    // The button still goes somewhere useful, just without the prefill.
+    expect(await page.getAttribute("#send", "href")).toBe("mailto:support@nooticr.com");
+    await ctx.close();
+  });
+});
+
 test("no page logs a console error", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  for (const path of ["/", "/terms", "/privacy", "/dashboard", "/signed-out"]) {
+  for (const path of ["/", "/terms", "/privacy", "/support", "/dashboard", "/signed-out"]) {
     await page.goto(base + path);
     await page.waitForTimeout(150);
   }
