@@ -19,10 +19,10 @@
 // What this is NOT for: it proves nothing about nooticr-server's real
 // behavior — no workspace-authz enforcement, no real credit ledger, no real
 // social-post fetching. Run scripts/run-mechanical-e2e-smoke.sh (default
-// mode) or scripts/run-agentic-evals.sh against a real nooticr-server
-// before trusting a change to either repo's backend-facing logic; this
-// fixture only earns confidence in the harness scripts and this repo's own
-// MCP-protocol wiring, not in nooticr-server.
+// mode) or scripts/run-quests.sh with NOOTICR_E2E_BACKEND=real against a
+// real nooticr-server before trusting a change to either repo's
+// backend-facing logic; this fixture only earns confidence in the harness
+// scripts and this repo's own MCP-protocol wiring, not in nooticr-server.
 //
 // Usage: node scripts/fixture-server.mjs [port]  (default 8080)
 
@@ -47,7 +47,7 @@ const STUB_URL = "https://e2e.nooticr.test/import/tiktok/e2e-stub";
 // anyone reading the code: the handle, the numbers and the URL are invented.
 // Captions for the multi-post cases. Three, so a set of posts has a spread to
 // reason about rather than one caption repeated with the index changed —
-// several tools (track_competitor, find_hook_pattern) exist to compare posts
+// several tools (track_creator, find_hook_pattern) exist to compare posts
 // against each other, and cannot be exercised by posts that differ only by a
 // number.
 const POST_CAPTIONS = [
@@ -224,9 +224,22 @@ function handleMcpCall(name, args, workspaceId) {
       // tests/e2e/agentic-visual.e2e.ts render and click real posts that
       // came from an actual tools/call, not a hand-crafted fixture.
       const niche = String(args?.niche ?? "demo");
-      const posts = [1, 2].map((i) => ({
-        platform: "tiktok",
-        caption: `${i === 1 ? "the" : "another"} ${niche} habit that actually stuck`,
+      const platform = String(args?.platform ?? "tiktok");
+      // Three posts, not two, and carrying tags — because `discover_hashtags`
+      // derives its answer for every network but TikTok by counting tags
+      // across this sweep, and it drops any tag only one post uses. Two
+      // untagged posts made that route return an empty list against the
+      // fixture, which proves the plumbing and nothing about the answer.
+      // The tags are split between the array and the caption on purpose: X,
+      // Reddit and LinkedIn routinely fill only the caption.
+      //
+      // The captions read like captions on purpose: a quest run is a real
+      // model reasoning over these, and one that can tell it is looking at
+      // a fixture stops and says so, which scores as a broken chain.
+      const posts = [1, 2, 3].map((i) => ({
+        platform,
+        caption: `${["the", "another", "one more"][i - 1]} ${niche} habit that actually stuck #${niche} ${i === 3 ? "#护肤" : "#fixturetag"}`,
+        hashtags: i === 1 ? [`#${niche}`, "#fixturetag"] : [],
         creatorHandle: `fixture_creator_${i}`,
         externalUrl: `https://www.tiktok.com/@fixture_creator_${i}/video/${i}`,
         videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
@@ -237,7 +250,7 @@ function handleMcpCall(name, args, workspaceId) {
       }));
       return {
         content: [{ type: "text", text: `Found ${posts.length} fixture posts about ${niche}.` }],
-        structuredContent: { platform: "tiktok", posts },
+        structuredContent: { platform, posts },
       };
     }
     case "get_social_media": {
@@ -305,16 +318,30 @@ function handleMcpCall(name, args, workspaceId) {
       // A handle that finds nothing is a real case with its own guidance path
       // (the competitor-on-the-wrong-network failure), and the generic empty
       // response cannot exercise it. Any handle starting `missing_` misses.
+      // Honour `limit` rather than always returning three. compare_creators
+      // and watchlist_standings score a window against its own median, and a
+      // three-post window is below the floor at which they will rank anything
+      // — so a fixture stuck at three could only ever exercise the "too thin
+      // to call" path. Three stays the default, so nothing that assumed it
+      // moves.
+      const count = Math.min(Math.max(1, Number(args?.limit) || 3), 30);
+      // Views vary by handle, not just by index. Identical distributions make
+      // every creator identical, and a comparison of identical columns
+      // demonstrates the plumbing and nothing about the comparison. Derived
+      // from the handle so it is deterministic across runs.
+      const seed = [...username].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 97, 7) + 3;
       const posts = username.startsWith("missing_")
         ? []
-        : [1, 2, 3].map((i) => ({
+        : Array.from({ length: count }, (_, k) => k + 1).map((i) => ({
             platform,
             caption: POST_CAPTIONS[(i - 1) % POST_CAPTIONS.length],
             creatorHandle: username,
             externalUrl: `https://www.tiktok.com/@${username}/video/${i}`,
             videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
             contentType: "video",
-            views: 1000 * i,
+            // One post per handle carries the outlier, so hit rates and win
+            // ratios differ between handles instead of lining up.
+            views: 1000 * i * (i === seed % count + 1 ? seed : 1),
             likes: 100 * i,
             comments: 10 * i,
           }));
@@ -479,21 +506,6 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
-    case "buy_nooticr_credits": {
-      // This raw URL is what the backend returns; tools.ts's proxyUrls()
-      // rewrites it into a /media/proxy?url=... link before it reaches this
-      // repo's client, since `checkoutUrl` is neither a RAW_URL_KEYS entry
-      // nor one of the fixed image-key names — see
-      // tests/e2e/agentic-visual-full-app.e2e.ts's buy_nooticr_credits test
-      // for why that's a real bug, not something to route around here.
-      return {
-        content: [{ type: "text", text: "Fixture checkout link." }],
-        structuredContent: {
-          checkoutUrl: "https://checkout.stripe.com/fixture-session",
-          packs: [{ name: "Starter", price: "$12.50", credits: 500 }],
-        },
-      };
-    }
     case "generate_captions": {
       // Real shape (own-account.ts passthrough): {ok, cues, transcript, cost,
       // provider} — no `available`/`wordCount`. See ui-template.ts's
@@ -625,6 +637,53 @@ function handleMcpCall(name, args, workspaceId) {
             runsAffordableAtCurrentBalance: Math.floor(500 / costPerRun),
           },
           instructions: "Call again with confirm: true and this confirmationToken to actually create the watch.",
+        },
+      };
+    }
+    case "brand_watch_history": {
+      // A real series, because the generic empty case cannot exercise the one
+      // thing mention_trend's guidance is for: telling a short series apart
+      // from a quiet one. Eight weekly points, a network that grows while the
+      // total holds, and a run that found plenty and mailed nothing.
+      const runs = [0, 1, 2, 3, 4, 5, 6, 7].map((w) => {
+        const ranAt = new Date(Date.now() - w * 7 * 864e5).toISOString();
+        const tiktok = 12 - w;
+        const reddit = 4 + w;
+        return {
+          ranAt,
+          found: tiktok + reddit,
+          reported: w === 0 ? 0 : Math.max(0, 5 - w),
+          perPlatform: {
+            tiktok: { found: tiktok, reported: w === 0 ? 0 : Math.max(0, 3 - w) },
+            reddit: { found: reddit, reported: w === 0 ? 0 : Math.min(2, w) },
+          },
+          medianViews: null,
+          postsScored: null,
+          costCredits: 4,
+        };
+      });
+      return {
+        content: [{ type: "text", text: `Fixture history: ${runs.length} runs.` }],
+        structuredContent: {
+          watchId: "11111111-2222-3333-4444-555555555555",
+          kind: "mentions",
+          term: String(args?.term ?? "nooticr"),
+          platforms: ["tiktok", "reddit"],
+          windowDays: 90,
+          retainedDays: 365,
+          watchCreatedAt: new Date(Date.now() - 8 * 7 * 864e5).toISOString(),
+          runs,
+          runCount: runs.length,
+          found: { newest: runs[0].found, oldest: runs[runs.length - 1].found },
+          medianViews: { newest: null, oldest: null },
+          recurring: [
+            {
+              mentionKey: "fixture-sticky-key",
+              timesSeen: 6,
+              firstReportedAt: runs[runs.length - 1].ranAt,
+              lastSeenAt: runs[0].ranAt,
+            },
+          ],
         },
       };
     }

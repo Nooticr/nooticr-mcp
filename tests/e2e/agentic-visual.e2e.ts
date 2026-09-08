@@ -3,7 +3,7 @@
  * of this repo's testing that don't otherwise touch: ui-template.e2e.ts
  * drives real clicks against the widget with hand-crafted fixture data
  * (thorough on widget logic, never touches the real MCP pipeline);
- * scripts/mcp-smoke-client.mjs and run-agentic-evals.sh drive a real
+ * scripts/mcp-smoke-client.mjs and run-quests.sh drive a real
  * tools/call round trip (thorough on the pipeline, never renders or clicks
  * anything). This spec does both, across two structurally different
  * clicks: boot a real backend (scripts/fixture-server.mjs by default — see

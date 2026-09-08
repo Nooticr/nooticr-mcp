@@ -46,17 +46,54 @@ export const SEARCH_PLATFORMS = [
 ] as const;
 
 /**
- * The only two networks `search_spoken_mentions` can reach.
+ * The networks `search_spoken_mentions` can reach on the caption-track route.
  *
- * Both publish a caption track their post detail already carries; everywhere
- * else the words would have to be inferred from the audio, which is a
- * different tool at a different price. Named here rather than inline because
- * three places have to agree on it — the tool's own enum, the filter it puts
- * every requested platform through, and the wait that prices the sweep. A
- * platform the filter drops but the price counts is a credit quoted for a
- * call that never happens.
+ * These three are the ones whose post detail already carries a caption track,
+ * so a transcript is one synchronous read at 1 credit —
+ * `TRANSCRIPT_CAPTION_PLATFORMS` in nooticr-server, mirrored here.
+ *
+ * This list is the *fast path*, not the boundary of what could be searched:
+ * `get_post_transcript`'s `_` arm transcribes any other platform's audio with
+ * whisper, behind the same tool at the same price. It stays a fast path rather
+ * than the whole story for two reasons that are about the deployment, not the
+ * network — speech-to-text is gated on a `WHISPER_MODEL` no environment sets
+ * yet, and the listening path byte-downloads the media, so an HLS-only
+ * platform (Reddit) and one that carries no media URL at all (Bilibili) cannot
+ * be reached even once it is configured. Widening past these three waits on
+ * nooticr-server#39 and #42; the earlier wording here claimed instead that
+ * listening was "a different tool at a different price", which was wrong on
+ * both halves and is why Douyin sat unreachable behind a two-network limit
+ * despite reading captions exactly like the other two.
+ *
+ * Named here rather than inline because three places have to agree on it — the
+ * tool's own enum, the filter it puts every requested platform through, and the
+ * wait that prices the sweep. A platform the filter drops but the price counts
+ * is a credit quoted for a call that never happens.
  */
-export const SPOKEN_PLATFORMS = ["tiktok", "youtube"] as const;
+export const SPOKEN_PLATFORMS = ["tiktok", "youtube", "douyin"] as const;
+
+/**
+ * Platforms a niche sweep can reach — the server's DISCOVERABLE_PLATFORMS.
+ *
+ * Named here for the same reason as the list above: more than one place has to
+ * agree on it. `discover_hashtags` counts tags across a sweep for every network
+ * but TikTok, so this list decides both which platforms it accepts and what its
+ * refusal names as the alternatives. LinkedIn is the one absentee — a post URL
+ * and a handle's feed both work there, discovery does not — and a tool that
+ * accepted it would spend a credit to return nothing, which then reads as "this
+ * niche has no tags".
+ */
+export const DISCOVERABLE_PLATFORMS = [
+  "youtube",
+  "tiktok",
+  "instagram",
+  "douyin",
+  "xiaohongshu",
+  "twitter",
+  "bilibili",
+  "reddit",
+  "weibo",
+] as const;
 
 /** Two per network, except the one that costs an order of magnitude more upstream. */
 export const CREDITS_PER_NETWORK = 2;

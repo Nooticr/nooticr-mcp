@@ -3,11 +3,11 @@
 # test mode, builds this repo's real CLI (dist/index.js), and drives it
 # with the real MCP SDK Client (scripts/mcp-smoke-client.mjs) — no model,
 # no API key, nothing non-deterministic. This is the plumbing check that
-# scripts/run-agentic-evals.sh can't isolate on its own: does the real
+# scripts/run-quests.sh can't isolate on its own: does the real
 # built CLI actually speak MCP correctly against a real test-mode server
 # and get real answers back. See docs/testing/agentic-e2e-testing.md.
 #
-# Needs no secret at all, so — unlike run-agentic-evals.sh — this is safe
+# Needs no model at all, so — unlike run-quests.sh — this is safe
 # to run on every push, not just workflow_dispatch.
 #
 # TEST ONLY. Never set these env vars against a real deployment: dev-login

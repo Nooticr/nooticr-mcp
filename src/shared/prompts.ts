@@ -491,7 +491,7 @@ export function registerPrompts(server: McpServer): void {
           `than the caption, because that is usually where a brand gets named. 2 credits per network ` +
           `swept, 5 for Xiaohongshu — a bare call with no platforms sweeps all nine for 21 credits, so ` +
           `say that number before you spend it if the user has not already narrowed it.\n` +
-          `2. search_spoken_mentions for "${brand}"${niche ? ` narrowed by "${niche}"` : ", narrowed by the niche you just found"} — the words said out loud on TikTok and ` +
+          `2. search_spoken_mentions for "${brand}"${niche ? ` narrowed by "${niche}"` : ", narrowed by the niche you just found"} — the words said out loud on TikTok, Douyin and ` +
           `YouTube that search_mentions cannot see, because it only reads text. 2 credits per platform ` +
           `the niche is searched on, 2 per named handle checked, 1 per transcript actually fetched up ` +
           `to maxTranscripts — pricier than search_mentions, which is why it runs second.\n` +

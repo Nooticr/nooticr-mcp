@@ -26,6 +26,7 @@ import {
   MAX_SPOKEN_TRANSCRIPTS,
   SEARCH_PLATFORMS,
   searchMentionsCost,
+  SPOKEN_PLATFORMS,
 } from "../src/shared/spend.js";
 
 async function shippedTools() {
@@ -138,10 +139,16 @@ describe("loading plans", () => {
     // spends anything. The two are shown to the same person minutes apart, so
     // a gap between them reads as one of them lying.
     //
-    // Both networks swept (2 each) + the default 8 transcripts at 1.
-    expect(creditsFor("search_spoken_mentions", { term: "n", niche: "skincare" })).toBe(12);
+    // Every caption-track network swept (2 each) + the default 8 transcripts
+    // at 1. Written against SPOKEN_PLATFORMS.length rather than a literal
+    // because the relation is "one sweep per swept network" — the literal was
+    // 12 for two networks and silently became wrong the day Douyin was added,
+    // which is exactly the drift this file exists to catch.
+    expect(creditsFor("search_spoken_mentions", { term: "n", niche: "skincare" })).toBe(
+      SPOKEN_PLATFORMS.length * 2 + 8,
+    );
     // A network the tool filters out is a network it never sweeps: the enum
-    // keeps tiktok and youtube and drops the rest, so this is one sweep.
+    // keeps the caption-track set and drops the rest, so this is one sweep.
     expect(
       creditsFor("search_spoken_mentions", {
         term: "n",
@@ -153,11 +160,11 @@ describe("loading plans", () => {
     // promised 200 credits for a call that can spend 20.
     expect(
       creditsFor("search_spoken_mentions", { term: "n", niche: "s", maxTranscripts: 200 }),
-    ).toBe(4 + MAX_SPOKEN_TRANSCRIPTS);
+    ).toBe(SPOKEN_PLATFORMS.length * 2 + MAX_SPOKEN_TRANSCRIPTS);
     // A named handle is checked once per network, not once.
     expect(
       creditsFor("search_spoken_mentions", { term: "n", usernames: ["@a", "@b"] }),
-    ).toBe(2 * 2 * 2 + 8);
+    ).toBe(2 * SPOKEN_PLATFORMS.length * 2 + 8);
     // The watchlist's length is not knowable from a sandboxed view, so the
     // answer is the ceiling the tool clamps to rather than the zero this
     // priced it at before.

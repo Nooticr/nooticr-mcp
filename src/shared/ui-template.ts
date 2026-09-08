@@ -43,7 +43,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Discover Sounds",
     understand_social_post:"Understand Social Post",
     check_nooticr_credits:"Check Credits",
-    buy_nooticr_credits:"Buy Credits",
     compose_sequence:"Compose Sequence",
     overlay_bake:"Overlay Bake",
     spawn_variants:"Spawn Variants",
@@ -67,7 +66,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
     understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
-    buy_nooticr_credits:"Purchase additional Nooticr credits.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
     spawn_variants:"Generate multiple content variants from a single seed.",
@@ -3664,6 +3662,64 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(d.posts&&Array.isArray(d.posts)){
       if(!d.posts.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🔍</div><div class="text">No posts found</div></div>';return;}
       app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false,true);}).join(""),d.posts.length)+pickBarHtml();initPicks();return;}
+    // Standings: creators on one normalised axis. A table, because the question
+    // is comparative — and every row carries the window it was scored over. A
+    // hit rate whose denominator is invisible cannot be told apart from one
+    // that means something, which is why these numbers were computed per
+    // creator and never put side by side before (issue #30).
+    if(Array.isArray(d.creators)&&(d.standings||d.tool==="compare_creators"||d.tool==="watchlist_standings")){
+      var thin=Array.isArray(d.tooThin)?d.tooThin:[];
+      var floor=typeof d.thinWindow==="number"?d.thinWindow:8;
+      var above=typeof d.aboveRatio==="number"?d.aboveRatio:1.25;
+      var met=esc(d.metric||"views");
+      var rows=d.creators.map(function(c){
+        var un=c.unavailable;
+        // A window shorter than the floor, or one the model flagged, is drawn
+        // unranked. Bottom of a table is a claim; unranked is the truth.
+        var short=!un&&(thin.indexOf(String(c.handle))>=0||(typeof c.window==="number"&&c.window<floor));
+        var med=c.baseline&&c.baseline.median!=null?fmtNum(c.baseline.median):"-";
+        var hit=c.hitRate!=null?Math.round(c.hitRate*100)+"%":"-";
+        var win=c.medianWinRatio!=null?(Math.round(c.medianWinRatio*100)/100)+"x":"-";
+        var best=c.best&&(c.best.title||c.best.caption)?String(c.best.title||c.best.caption):"";
+        return '<tr style="border-top:1px solid var(--border-soft)'+(un?";opacity:.6":"")+'">'
+          +'<td style="padding:9px 10px;font-weight:600;white-space:nowrap">@'+esc(c.handle)
+          +(c.platform?'<span style="font-weight:400;color:var(--muted)"> · '+esc(c.platform)+"</span>":"")
+          +(short?'<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--warn)">too thin to rank</span>':"")
+          +"</td>"
+          +(un
+            ?'<td colspan="4" style="padding:9px 10px;color:var(--muted);font-size:12.5px">'+esc(String(un))+"</td>"
+            :'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+fmtNum(c.window||0)+"</td>"
+              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+med+"</td>"
+              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+hit+"</td>"
+              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+win+"</td>")
+          +"</tr>"
+          +(best&&!un
+            ?'<tr><td colspan="5" style="padding:0 10px 9px 10px;color:var(--muted);font-size:12px">best: '+esc(best.slice(0,120))+"</td></tr>"
+            :"");
+      }).join("");
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700">Standings</div>'
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">'
+        +d.creators.length+" creator"+(d.creators.length===1?"":"s")+" · each against their OWN median "+met
+        +(d.watching!=null?" · watchlist of "+fmtNum(d.watching):"")+"</div>"
+        +(d.ranking?'<div style="font-size:12.5px;margin:0 0 8px">Ordered on: '+esc(String(d.ranking))+"</div>":"")
+        +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+        +'<thead><tr style="text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em">'
+        +'<th style="padding:0 10px 6px">Creator</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">Window</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">Their median</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">Beat it</th>'
+        +'<th style="padding:0 10px 6px;text-align:right">By</th>'
+        +"</tr></thead><tbody>"+rows+"</tbody></table></div>"
+        +(d.verdict?'<div style="font-size:13.5px;line-height:1.6;margin-top:12px">'+esc(String(d.verdict))+"</div>":"")
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">'
+        +'"Beat it" is the share of the window at or above '+above+"x that creator's own median. "
+        +"A raw view count mostly measures follower count, so nothing here compares raw numbers. "
+        +"A window under "+floor+" posts is one post either way, and no ratio here says whether a "
+        +"baseline is itself moving — that needs a second point in time."
+        +"</div></div></div>";
+      return;}
+
     // Creators
     if(d.creators&&Array.isArray(d.creators)){
       if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}
@@ -3692,20 +3748,85 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +"</div></div>";
       return;}
 
-    // Trending hashtags
+    // A run series. Drawn as bars rather than a line: the points are sweeps on
+    // a cadence, not a continuous signal, and a line between two sweeps
+    // asserts the shape of something nobody measured. Both caveats the tool
+    // computes are drawn — a chart that hides "too few points" or "this is
+    // where the record starts, not where the conversation did" is the view
+    // making a claim the tool refused to (issue #28).
+    if(Array.isArray(d.points)&&(d.trend||d.tool==="mention_trend")){
+      var metric=String(d.metric||"found");
+      var pts=d.points.slice().sort(function(a,b){return String(a.ranAt||"")<String(b.ranAt||"")?-1:1;});
+      var vals=pts.map(function(p){var v=p[metric];return typeof v==="number"?v:0;});
+      var top=Math.max.apply(null,vals.concat([1]));
+      var bars=pts.map(function(p,i){
+        var v=vals[i];
+        var h=Math.max(2,Math.round((v/top)*90));
+        var when=String(p.ranAt||"").slice(0,10);
+        var label=when+" — "+fmtNum(v)+" "+metric+(p.reported!=null?" ("+fmtNum(p.reported)+" new)":"");
+        return '<div style="flex:1;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px" title="'+esc(label)+'">'
+          +'<div style="width:100%;max-width:26px;height:'+h+'px;background:var(--brand);border-radius:3px 3px 0 0;opacity:'+(i===pts.length-1?"1":".62")+'"></div>'
+          +"</div>";
+      }).join("");
+      var first=pts.length?String(pts[0].ranAt||"").slice(0,10):"";
+      var last=pts.length?String(pts[pts.length-1].ranAt||"").slice(0,10):"";
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700">'+(d.term?esc(String(d.term)):"Trend")+"</div>"
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 12px">'
+        +pts.length+" run"+(pts.length===1?"":"s")+" · "+esc(metric)+" per sweep</div>"
+        +(d.tooShort
+          ?'<div style="font-size:12.5px;color:var(--warn);font-weight:600;margin-bottom:8px">Too few points to call a direction</div>'
+          :"")
+        +'<div style="display:flex;align-items:flex-end;gap:2px;height:100px;border-bottom:1px solid var(--border)">'+bars+"</div>"
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px">'
+        +"<span>"+esc(first)+(d.edgeIsRecordStart?" · record starts here":"")+"</span><span>"+esc(last)+"</span></div>"
+        +(d.verdict?'<div style="font-size:13.5px;line-height:1.6;margin-top:12px">'+esc(String(d.verdict))+"</div>":"")
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">'
+        +"Each bar is one sweep, not a day"
+        +(d.edgeIsRecordStart?" — and the earliest bar is where the kept record begins, not where the conversation did":"")
+        +". A flat run of bars is a conversation that has stopped moving, which is not the same as one that has stopped."
+        +"</div></div></div>";
+      return;}
+
+    // Trending hashtags. Two sources with different evidence behind them: the
+    // TikTok trend board, which measures direction over time, and a count
+    // across one niche sweep, which cannot. The header names which, and a
+    // counted row draws no trend arrow — an arrow for a direction nobody
+    // measured is the view asserting something the tool did not.
     if(d.hashtags&&Array.isArray(d.hashtags)){
-      if(!d.hashtags.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">#</div><div class="text">No trending hashtags found</div></div>';return;}
+      var derived=d.source==="derived-from-sweep";
+      var where=derived
+        ?esc(String(d.platform||"")||"this network")+" · counted across "+fmtNum(d.sweptPosts||0)+" post"+((d.sweptPosts===1)?"":"s")+(d.niche?' matching "'+esc(d.niche)+'"':"")
+        :"TikTok trend board · "+esc(d.country||"US")+" · last "+(d.days||7)+" days";
+      if(!d.hashtags.length){
+        app.innerHTML='<div class="empty-state fade-in"><div class="icon">#</div><div class="text">'
+          +esc(d.reason||(derived?"No tag was used by more than one post in that sweep":"No trending hashtags found"))
+          +'</div><div class="sub" style="font-size:11.5px;color:var(--muted);margin-top:6px">'+where+"</div></div>";
+        return;}
       var hr=d.hashtags.slice(0,30).map(function(t){
         var dir=t.trend==="rising"?["▲","var(--green)"]:t.trend==="cooling"?["▼","var(--red)"]:["▬","var(--muted)"];
-        return '<a href="'+esc(t.url||"#")+'" target="_blank" rel="noopener" class="comment-row" style="text-decoration:none">'
+        var stat=fmtNum(t.posts||0)+" post"+((t.posts===1)?"":"s");
+        // A counted sample reports the middle post, because one outlier in a
+        // 30-post sweep moves a total and not a median.
+        if(derived){if(t.medianViews!=null)stat+=" · median "+fmtNum(t.medianViews)+" views";}
+        else if(t.views!=null)stat+=" · "+fmtNum(t.views)+" views";
+        var href=t.url||t.example||"";
+        var open=href?'<a href="'+esc(href)+'" target="_blank" rel="noopener" class="comment-row" style="text-decoration:none">':'<div class="comment-row">';
+        return open
           +'<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">#'+esc(t.hashtag)+"</div>"
-          +'<div style="font-size:11.5px;color:var(--muted)">'+fmtNum(t.posts||0)+" posts · "+fmtNum(t.views||0)+" views</div></div>"
-          +'<span style="font-size:11px;font-weight:700;color:'+dir[1]+';white-space:nowrap">'+dir[0]+" "+esc(t.trend||"")+"</span></a>";
+          +'<div style="font-size:11.5px;color:var(--muted)">'+stat+"</div></div>"
+          +(t.trend?'<span style="font-size:11px;font-weight:700;color:'+dir[1]+';white-space:nowrap">'+dir[0]+" "+esc(t.trend)+"</span>":"")
+          +(href?"</a>":"</div>");
       }).join("");
       app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">#<span>Trending hashtags</span></div>'
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">TikTok · '+esc(d.country||"US")+" · last "+(d.days||7)+" days</div>"
-        +hr+"</div></div>";
+        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">#<span>'+(derived?"Tags in this niche":"Trending hashtags")+"</span></div>"
+        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">'+where+"</div>"
+        +hr
+        // The caveat goes in front of the person too, not only into the
+        // context handed to the model: a ranked list reads as a trend whatever
+        // the payload says, so the sentence saying it is not sits under it.
+        +(derived&&d.note?'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">'+esc(d.note)+"</div>":"")
+        +"</div></div>";
       return;}
 
     // Comment analysis
@@ -3816,32 +3937,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +(tier?'<span class="tier-badge">'+esc(tier)+"</span>":"")+"</div>"
         +'<div style="font-size:36px;font-weight:800;margin:10px 0;letter-spacing:-1px">'+bal+"</div>"
         +'<div style="font-size:13px;color:var(--muted)">credits remaining</div>'+freeHtml+"</div>";return;}
-    // Checkout. Real packs/prices, not the three hardcoded tiers this used
-    // to show regardless of what the backend actually returned — and each
-    // card is a real <a href> now, so the existing generic anchor handler
-    // (search this file for "cannot navigate the top-level window") opens
-    // the real checkoutUrl via ui/open-link. There was no click handler at
-    // all before this: .pack{cursor:pointer} in the CSS promised a click
-    // that did nothing.
-    if(d.checkoutUrl||d.packs){
-      var checkoutUrl=d.checkoutUrl||"#";
-      var packList=Array.isArray(d.packs)?d.packs:[];
-      var packHtml=function(p,featured){
-        var name=(p&&(p.name||p.label||p.title))||"Credits";
-        var price=(p&&(p.price||p.priceLabel||p.cost))||"";
-        var credits=p&&p.credits!=null?fmtNum(p.credits)+" credits":(p&&(p.description||p.credit))||"";
-        return '<a href="'+esc(checkoutUrl)+'" target="_blank" rel="noopener" class="'+(featured?"pack-featured":"pack")+'" style="text-decoration:none;color:inherit;display:block">'
-          +'<div class="text-sm font-semibold">'+esc(name)+'</div>'
-          +(price?'<div class="mt-2 text-2xl font-extrabold">'+esc(price)+"</div>":"")
-          +(credits?'<div class="mt-2 text-xs text-muted">'+esc(credits)+"</div>":"")+"</a>";
-      };
-      var cards=packList.length
-        ? packList.map(function(p,i){return packHtml(p,i===1);}).join("")
-        : packHtml({name:"Buy credits",description:"Opens Stripe Checkout"},true);
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div class="mb-3 text-base font-bold">🛒 Credit Packs</div>'
-        +'<div class="grid grid-cols-3 gap-2">'+cards
-        +"</div></div></div>";return;}
     // Hooks (show_hooks) — quote() gives each one its own Copy button.
     if(d.hooks&&Array.isArray(d.hooks)){
       if(!d.hooks.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">💬</div><div class="text">No hooks yet</div></div>';return;}

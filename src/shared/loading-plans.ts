@@ -351,6 +351,24 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     n: 3,
     steps: [step("get_user_posts")],
   },
+  // Both fan out one post-list fetch per creator, so the price is the size of
+  // the list and the wait is drawn per unit — same shape as catch_up_watchlist.
+  compare_creators: {
+    label: "Scoring each against their own median",
+    kind: "list",
+    n: 3,
+    steps: [],
+    perUnit: [CREATOR_UNIT],
+    note: "Priced per creator compared.",
+  },
+  watchlist_standings: {
+    label: "Reading the whole watchlist",
+    kind: "list",
+    n: 5,
+    steps: [],
+    perUnit: [CREATOR_UNIT],
+    note: "Priced per creator on the watchlist.",
+  },
   who_should_i_work_with: {
     label: "Building a shortlist",
     kind: "list",
@@ -403,6 +421,11 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   show_variants: { label: "Laying out the variants", kind: "list", n: 4, steps: [], free: true },
   show_repurposed_post: { label: "Laying out the rewrites", kind: "text", n: 1, steps: [], free: true },
   show_collab_shortlist: { label: "Drawing the shortlist", kind: "list", n: 5, steps: [], free: true },
+  show_standings: { label: "Drawing the standings", kind: "list", n: 4, steps: [], free: true },
+  show_trend: { label: "Drawing the trend", kind: "text", n: 1, steps: [], free: true },
+  // Reads stored aggregates the sweeps already paid for. Free, and no
+  // upstream step to wait on — the wait is a database read.
+  mention_trend: { label: "Reading the run history", kind: "text", n: 1, steps: [], free: true },
   prepare_handoff: { label: "Packaging the handoff", kind: "list", n: 4, steps: [], free: true },
 
   // ─── Own-account reads: nooticr's own stored rows ───
@@ -453,7 +476,6 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
 
   // ─── Account and own-account: free, and free at a zero balance ───
   check_nooticr_credits: { label: "Checking your balance", kind: "text", n: 1, steps: [], free: true },
-  buy_nooticr_credits: { label: "Opening checkout", kind: "text", n: 1, steps: [], free: true },
   nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
   watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },
   unwatch_creator: { label: "Removing from your watchlist", kind: "text", n: 1, steps: [], free: true },
