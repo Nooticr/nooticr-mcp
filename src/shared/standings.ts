@@ -205,6 +205,11 @@ export function standingsGuidance(a: {
       "baseline is itself moving — that needs a second point in time, which nothing stores yet " +
       "(issue #28). So do not read a high hit rate as 'improving'; it is 'consistent within this " +
       "window' and nothing more.",
+    "",
+    "When you have decided what the numbers say, call show_standings with the rows and the axis " +
+      "you ranked on. Free, and it is the one place the ranking is attributed to you rather than " +
+      "presented as a nooticr score — it also draws a creator with too thin a window as unranked " +
+      "rather than last, which is the mistake a plain table makes on your behalf.",
   );
   return lines.join("\n");
 }

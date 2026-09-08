@@ -98,6 +98,13 @@ export const ARG_OVERRIDES = {
   analyze_product_status: { jobId: "00000000-0000-0000-0000-000000000000" },
   create_brand_watch: { kind: "term", term: "nooticr", cadence: "daily" },
   draft_post: { topic: "morning routines" },
+  // Both of these branch to a "nothing to compare / nothing to read" reply
+  // when probed with required fields only, and that reply is not the guidance
+  // anyone ships. Probing them empty is how show_trend and show_standings sat
+  // in the surface as orphans: the pass that would have named them never got
+  // far enough into either tool to see the pointer.
+  mention_trend: { term: "nooticr", days: 90 },
+  compare_creators: { usernames: ["fixture_creator_1", "fixture_creator_2"], platform: "tiktok" },
 };
 
 const NAME_HINTS = [

@@ -47,11 +47,20 @@ a single guidance phrase.** Seven distinct probes ("when you are done", "so it
 is visible", "reason over this yourself", "chosen by scene change", "billed as
 the fetches", …) each appear in 0 of 59 transcripts.
 
-`node scripts/chain-map.mjs` reaches the same answer without spending on a
-model: it calls every tool for real, finds 31 guidance edges (one tool's
-result naming another tool), and reports that **0 of the 31** survive on a
-host that renders `structuredContent` — 57 of the 64 tools that existed when
-this was measured carried their guidance in a text block and nowhere else.
+`npm run chain:map` reaches the same answer without spending on a
+model: it calls every tool for real, finds the guidance edges (one tool's
+result naming another tool), and reports which survive on a host that renders
+`structuredContent`. On the run that found this: **0 of 31** survived, and 57
+of the 64 tools that existed then carried their guidance in a text block and
+nowhere else.
+
+It is a gate as well as a map. `--gate` (which `npm run chain:map` passes)
+fails on the two findings that are never acceptable — a guidance edge that
+survives nowhere, and a `show_*` view no tool's guidance names — and it is in
+`npm run verify` and in CI, unlike the quests themselves. Both of those
+failures shipped once, in the same week: `mention_trend` carried its guidance
+in a text block, and `show_standings` and `show_trend` were added with nothing
+naming either. Every other check was green for both.
 
 Say it precisely, because the absolute version is wrong: *text-block* guidance
 never arrives. Prose that lives **inside** `structuredContent` does — e.g.
@@ -394,6 +403,7 @@ suite file can only express `firstToolWas`, and ordered matching
 | `quests/quests.json` | the corpus — user requests and expected chains |
 | `scripts/run-quests.sh` | boots a backend, runs the chain map, then the quests |
 | `scripts/run-quests.mjs` | the runner: drives, judges, reports |
+| `scripts/run-chain-map.sh` | `npm run chain:map` — boots the fixture backend and gates on the map |
 | `scripts/chain-map.mjs` | what the server *says* should chain, read off the real built server |
 | `scripts/quest-lib/assert.mjs` | the verdict logic — pure, unit-tested |
 | `scripts/quest-lib/drivers/claude.mjs` | the Claude Code driver and its transcript parser |

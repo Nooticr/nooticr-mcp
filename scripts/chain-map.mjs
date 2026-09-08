@@ -29,7 +29,7 @@
 //
 // Usage (needs a backend booted and NOOTICR_BASE_URL/NOOTICR_ACCESS_TOKEN
 // exported — scripts/run-quests.sh does that for you):
-//   node scripts/chain-map.mjs [--json out.json] [--quiet]
+//   node scripts/chain-map.mjs [--json out.json] [--quiet] [--gate]
 import fs from "node:fs";
 import { connectBuiltServer, resultText } from "./quest-lib/mcp-client.mjs";
 import { argsFor } from "./quest-lib/probe-args.mjs";
@@ -37,6 +37,10 @@ import { argsFor } from "./quest-lib/probe-args.mjs";
 const argv = process.argv.slice(2);
 const jsonOut = argv.includes("--json") ? argv[argv.indexOf("--json") + 1] : null;
 const quiet = argv.includes("--quiet");
+// Off by default: this is a map first, and a map that exits 1 stops being read.
+// With --gate it is a check, for the two findings that are never acceptable —
+// a guidance edge no host will deliver, and a show_* view nothing names.
+const gate = argv.includes("--gate");
 const say = (...a) => { if (!quiet) console.log(...a); };
 
 /**
@@ -178,5 +182,24 @@ const report = { toolCount: tools.length, edges, delivery, isolated, orphanShow,
 if (jsonOut) {
   fs.writeFileSync(jsonOut, JSON.stringify(report, null, 2));
   say(`\nwrote ${jsonOut}`);
+}
+if (gate) {
+  // Both of these shipped once: main added show_standings and show_trend with
+  // no tool naming either, and mention_trend carried its guidance in a text
+  // block a structuredContent host drops. Each was locally correct, each
+  // passed every other check, and neither is visible in a single call.
+  const failures = [];
+  for (const e of lostGuidance) {
+    failures.push(`${e.from} -> ${e.to}: guidance lives only in a content text block, which a host rendering structuredContent drops`);
+  }
+  for (const n of orphanShow) {
+    failures.push(`${n}: no tool's guidance names it, so nothing will ever steer a host to it`);
+  }
+  if (failures.length) {
+    console.error(`\nchain-map --gate: ${failures.length} failure(s)`);
+    for (const f of failures) console.error(`  ${f}`);
+    process.exit(1);
+  }
+  say("\nchain-map --gate: every guidance edge survives, every show_* view is named.");
 }
 process.exit(0);

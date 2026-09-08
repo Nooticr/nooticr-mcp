@@ -1072,6 +1072,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   mention_trend: open({
+    guidance,
     runs: listOf(open({
       ranAt: scalar(),
       found: scalar().describe("Everything that sweep saw."),
