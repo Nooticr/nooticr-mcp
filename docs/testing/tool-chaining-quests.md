@@ -497,3 +497,52 @@ bigger decision than this measurement supports.
 `ToolSearch` returned, not just how many happened — the count alone cannot
 distinguish "retrieved and skipped" from "never retrieved", and that
 distinction is the whole finding.
+
+### Guidance cannot fix retrieval, and here is why
+
+The obvious next lever after renaming is to tell the model the view is
+deferred and it should search for it. That was tried, twice, and measured on
+the same nine opportunities:
+
+| | retrieved | called |
+|---|---|---|
+| rename only | 5/9 | 4/9 |
+| + "it is deferred, search for it by name, then call it" (long form) | 4/9 | 2/9 |
+| + the same instruction in one terse sentence | 5/9 | 2/9 |
+
+Retrieval does not move. It sits at 4–5 of 9 whatever the guidance says, and
+the mechanism explains why: **the instruction arrives too late.** A model must
+retrieve `show_X` before it can call it, and the guidance telling it to do so
+lives in the predecessor's result — which it only reads *after* its first tool
+search. Guidance can influence a second search. It cannot influence the first,
+and the first is the one that decides.
+
+So the only lever on retrieval is the **name**, because the name is the only
+thing about a deferred tool that is visible at first-search time.
+
+The three runs also show the limit of this corpus: called went 4, 2, 2 across
+runs that should be equivalent or better. At n=9 the standard error is about
+1.4 counts, so nothing under a swing of ~3 is distinguishable. Wording
+experiments are not measurable here without either far more runs or a change
+that removes the gamble instead of shortening the odds.
+
+### What a definite fix would have to look like
+
+Nothing in MCP lets a server put a tool into a host's context — there is no
+"always load this" flag, and `notifications/tools/list_changed` only makes the
+host re-list, still deferred. So a server has exactly two levers, and only one
+of them is deterministic:
+
+1. **Improve the odds per name.** Renaming does this, measurably (`show_analysis`
+   4/12 retrieved → `show_post_analysis` 5/9). It stays a gamble.
+2. **Reduce the number of gambles.** Eight views means eight independent
+   retrieval events, each with its own odds. One view tool named in every
+   guidance string is one retrieval per conversation, reused for every render
+   after it — and the corpus-wide repetition of a single name is worth more
+   than a good name used once.
+
+(2) is the only version that is definite, and it is a product decision rather
+than a testing one: it collapses eight typed schemas and eight views into one
+discriminated tool, changes the published surface, and is visible to every
+host. Recorded here rather than acted on, with the measurement that argues
+for it.
