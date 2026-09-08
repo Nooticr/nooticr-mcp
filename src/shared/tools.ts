@@ -492,9 +492,9 @@ async function runEvidence(
  //
  // Measured before changing it, over 59 real runs of the quest suite: 0
  // guidance phrases across 175 tool results. `analyze_post` handed back frames,
- // a transcript and 2,000 characters ending in "call show_analysis when you are
+ // a transcript and 2,000 characters ending in "call show_post_analysis when you are
  // done"; the model wrote the analysis and delivered it in chat, and
- // show_analysis was called in 1 run of 12.
+ // show_post_analysis was called in 1 run of 12.
  //
  // The text block stays for hosts that honour it (and for the images, which
  // must sit in `content`). `guidance` on the payload is what reaches the rest.
@@ -683,8 +683,8 @@ export function createMcpServer(
   // Close the loop the evidence-only tools open: your own analysis/hooks/
   // variants/repurposing/comparison, drawn — same shape as
   // show_comment_review, free and no requests.
-  "show_comparison",
-  "show_analysis",
+  "show_compared_posts",
+  "show_post_analysis",
   "show_hooks",
   "show_variants",
   "show_repurposed_post",
@@ -1675,8 +1675,8 @@ export function createMcpServer(
  // the plain post card it started on. Same shape as show_comment_review in
  // every way that matters: free, no requests, draws only what it is
  // handed. Each one's structuredContent is built to match an existing view
- // ui-template.ts already renders (show_comparison → the comparison
- // scoreboard, show_analysis → analysisCard) or a new one added alongside
+ // ui-template.ts already renders (show_compared_posts → the comparison
+ // scoreboard, show_post_analysis → analysisCard) or a new one added alongside
  // it (show_hooks, show_variants, show_repurposed_post).
  server.registerTool(
   "show_trend",
@@ -1836,7 +1836,7 @@ export function createMcpServer(
  );
 
  server.registerTool(
-  "show_comparison",
+  "show_compared_posts",
   {
    title: "Show Comparison",
    description:
@@ -1846,12 +1846,12 @@ export function createMcpServer(
     "strengths and the next experiment worth running. Call this after you have done the " +
     "comparing, not instead of it.",
    _meta: {
-    ui: { resourceUri: uiResource("show_comparison") },
-    "ui/resourceUri": uiResource("show_comparison"),
-    "openai/outputTemplate": appsSdkResource("show_comparison"),
+    ui: { resourceUri: uiResource("show_compared_posts") },
+    "ui/resourceUri": uiResource("show_compared_posts"),
+    "openai/outputTemplate": appsSdkResource("show_compared_posts"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-   outputSchema: OUTPUT_SCHEMAS.show_comparison,
+   outputSchema: OUTPUT_SCHEMAS.show_compared_posts,
    inputSchema: z
     .object({
      posts: z
@@ -1904,7 +1904,7 @@ export function createMcpServer(
  );
 
  server.registerTool(
-  "show_analysis",
+  "show_post_analysis",
   {
    title: "Show Analysis",
    description:
@@ -1914,12 +1914,12 @@ export function createMcpServer(
     "more, whichever of these you actually produced. Call this after you have done the analysing, " +
     "not instead of it.",
    _meta: {
-    ui: { resourceUri: uiResource("show_analysis") },
-    "ui/resourceUri": uiResource("show_analysis"),
-    "openai/outputTemplate": appsSdkResource("show_analysis"),
+    ui: { resourceUri: uiResource("show_post_analysis") },
+    "ui/resourceUri": uiResource("show_post_analysis"),
+    "openai/outputTemplate": appsSdkResource("show_post_analysis"),
    },
    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-   outputSchema: OUTPUT_SCHEMAS.show_analysis,
+   outputSchema: OUTPUT_SCHEMAS.show_post_analysis,
    inputSchema: z
     .object({
      url: z.string().describe("The post you analyzed."),

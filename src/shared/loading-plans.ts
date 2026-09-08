@@ -425,8 +425,8 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // The show_* family renders the model's own output. A wait here is brief
   // and free, but it still says which, because "nothing is happening" and
   // "this is free and instant" look identical on a blank screen.
-  show_analysis: { label: "Drawing the reading", kind: "text", n: 1, steps: [], free: true },
-  show_comparison: { label: "Drawing the comparison", kind: "strip", n: 2, steps: [], free: true },
+  show_post_analysis: { label: "Drawing the reading", kind: "text", n: 1, steps: [], free: true },
+  show_compared_posts: { label: "Drawing the comparison", kind: "strip", n: 2, steps: [], free: true },
   show_hooks: { label: "Laying out the hooks", kind: "list", n: 5, steps: [], free: true },
   show_variants: { label: "Laying out the variants", kind: "list", n: 4, steps: [], free: true },
   show_repurposed_post: { label: "Laying out the rewrites", kind: "text", n: 1, steps: [], free: true },

@@ -330,11 +330,11 @@ pricing model — these are priced at fetch-cost, not generation-cost), five
 new free, no-request tools close the loop the same way `show_comment_review`
 already did for `analyze_comments`:
 
-- **`show_comparison`** renders the (previously unreachable) comparison
+- **`show_compared_posts`** renders the (previously unreachable) comparison
   scoreboard — the model does the actual comparing across
   `get_social_media` calls, then calls this with the real posts + its
   comparison.
-- **`show_analysis`** renders the (previously unreachable) `analysisCard` —
+- **`show_post_analysis`** renders the (previously unreachable) `analysisCard` —
   same idea, for `analyze_post`/`analyze_post_fast`/`understand_social_post`.
 - **`show_hooks`**, **`show_variants`**, **`show_repurposed_post`** are new
   view code (this repo had no existing branch for a hooks list, a variants

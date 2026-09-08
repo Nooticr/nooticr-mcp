@@ -80,9 +80,9 @@ them caps that fan-out with an argument.
 | `understand_social_post` | 3 | The same two fetches, asked for a description of what physically happens on screen rather than why it works. Use when you need the events, not the strategy. |
 | `analyze_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. |
 | `show_comment_review` | free | Draws the classifications your model produced — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
-| `show_analysis` | free | Draws the analysis your model wrote from `analyze_post`/`analyze_post_fast`/`understand_social_post` — hook strength, script structure, quotable lines, suggested hashtags and more, whichever fields you produced. Makes no requests; it only renders what you pass it. |
+| `show_post_analysis` | free | Draws the analysis your model wrote from `analyze_post`/`analyze_post_fast`/`understand_social_post` — hook strength, script structure, quotable lines, suggested hashtags and more, whichever fields you produced. Makes no requests; it only renders what you pass it. |
 | `compare_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
-| `show_comparison` | free | Draws the comparison your model wrote from `compare_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
+| `show_compared_posts` | free | Draws the comparison your model wrote from `compare_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
 
 ### Research a niche or a creator
 

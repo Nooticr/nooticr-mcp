@@ -412,15 +412,15 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
   // The five below are new: they close the loop the evidence-only tools
   // open (see docs/testing/agentic-e2e-testing.md) by giving the host
   // model's own written analysis/hooks/variants/repurposing/comparison
-  // somewhere to render. show_comparison and show_analysis reuse existing
+  // somewhere to render. show_compared_posts and show_post_analysis reuse existing
   // view branches (the comparison scoreboard, analysisCard); show_hooks,
   // show_variants and show_repurposed_post are new view code, so these are
   // this file's only coverage of whether that new code actually renders in
   // a real browser at all, not just that it type-checks.
 
-  test("show_comparison renders the comparison scoreboard, winner marked", async ({ page }: { page: Page }) => {
+  test("show_compared_posts renders the comparison scoreboard, winner marked", async ({ page }: { page: Page }) => {
     const result = await session.client.callTool({
-      name: "show_comparison",
+      name: "show_compared_posts",
       arguments: {
         posts: [
           { platform: "tiktok", title: "Post A", views: 100, likes: 10 },
@@ -441,13 +441,13 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     await expect(page.getByText(/Try naming the audience/)).toBeVisible();
   });
 
-  test("show_analysis renders analysisCard, and its follow-up actions round-trip for real", async ({
+  test("show_post_analysis renders analysisCard, and its follow-up actions round-trip for real", async ({
     page,
   }: {
     page: Page;
   }) => {
     const result = await session.client.callTool({
-      name: "show_analysis",
+      name: "show_post_analysis",
       arguments: {
         url: STUB_URL,
         post: { platform: "tiktok", externalUrl: STUB_URL, contentType: "video", videoUrl: "https://e2e.nooticr.test/fixture/video.mp4" },

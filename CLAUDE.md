@@ -264,6 +264,14 @@ written up in `docs/testing/tool-chaining-quests.md`:
   show_repurposed_post`) was decided by the model's FIRST query naming both —
   a shared name stem — before any description was in context. So a `show_X`
   nobody searches for steers nothing, however well its description reads.
+
+  Re-measured after those fixes landed (#45): still 0/15 when never retrieved.
+  The rule turns out to be an **exact shared token**, not a stem — every view
+  sharing a whole word with its predecessor (`hooks`, `variants`, `post`,
+  `comment`) is retrieved every time, while `analyze`/`analysis` and
+  `compare`/`comparison` both fail. Renaming `show_analysis` to
+  `show_post_analysis` moved it from 1/12 called to 4/9. See
+  `docs/testing/tool-chaining-quests.md` for the table and the caveats.
 - **A fixture a model can tell is a fixture measures itself.** A caption
   saying "not real content" makes the model stop and say so, which reads in a
   chaining report as a broken chain. `FIXTURE_POST` in

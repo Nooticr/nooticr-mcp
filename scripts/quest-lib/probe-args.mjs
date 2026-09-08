@@ -23,7 +23,7 @@ export const STUB_URL = "https://www.tiktok.com/@lena.mornings/video/7318842211"
 
 /** Hand-written arguments where a synthesised value would be rejected or meaningless. */
 export const ARG_OVERRIDES = {
-  show_analysis: {
+  show_post_analysis: {
     url: STUB_URL,
     analysis: {
       summary: "A close-up open, a product beat at 2s, and a caption-card CTA at the end.",
@@ -34,7 +34,7 @@ export const ARG_OVERRIDES = {
       targetAudience: "people testing MCP harnesses",
     },
   },
-  show_comparison: {
+  show_compared_posts: {
     posts: [
       { platform: "tiktok", caption: "Fixture post 1", externalUrl: STUB_URL, views: 1000 },
       { platform: "tiktok", caption: "Fixture post 2", externalUrl: STUB_URL, views: 2000 },

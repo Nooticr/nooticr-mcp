@@ -423,3 +423,77 @@ suite file can only express `firstToolWas`, and ordered matching
 | `scripts/quest-lib/probe-args.mjs` | arguments that make every tool actually run, for the chain map |
 | `tests/quests.test.ts` | the harness's own tests — no model, runs on every push |
 | `quests/report/` | gitignored: transcripts, chain map, last run's report |
+
+
+## Retrieval, re-measured after the guidance and evidence fixes (#45)
+
+The original finding — retrieval is the gate, not wording — was measured
+before #44/#51 (guidance in both channels) and #59 (evidence in both). Both
+landed, so it was re-measured on the full corpus. It holds, and harder:
+
+| | baseline | after #44/#51/#59 |
+|---|---|---|
+| `ToolSearch` never returned it → called | 0/18 | **0/15** |
+| `ToolSearch` did return it → called | 14/18 | **16/21** |
+
+Never-retrieved is still an absolute zero. Nothing a description says can
+survive the tool not being in context.
+
+### The rule is an exact shared token, not a shared stem
+
+Lining the eight `show_*` tools up against the predecessor whose guidance names
+them makes the pattern sharper than "a distinctive stem":
+
+| predecessor | view | shared token | retrieved |
+|---|---|---|---|
+| `write_hooks` | `show_hooks` | `hooks` | 6/6 |
+| `create_variants` | `show_variants` | `variants` | 3/3 |
+| `repurpose_post` | `show_repurposed_post` | `post` | 3/3 |
+| `analyze_comments` | `show_comment_review` | `comment` | 3/3 |
+| `analyze_post` | `show_analysis` | — (`analyze`/`analysis`) | 4/12 |
+| `compare_posts` | `show_comparison` | — (`compare`/`comparison`) | 0/3 |
+| `who_should_i_work_with` | `show_collab_shortlist` | — (nothing) | 0/3 |
+
+`analyze`/`analysis` and `compare`/`comparison` are morphological relatives and
+both fail. Every tool that shares a whole token with its predecessor is
+retrieved every time.
+
+### What was renamed, and what it moved
+
+`show_analysis` → **`show_post_analysis`** (shares `post` with all three of its
+predecessors) and `show_comparison` → **`show_compared_posts`** (shares `posts`
+with `compare_posts`, mirroring `show_repurposed_post`).
+
+| | before | after |
+|---|---|---|
+| `show_post_analysis` retrieved | 4/12 | **5/9** |
+| `show_post_analysis` called | 1/12 | **4/9** |
+| `analyse-post-…-chat-host` | 0/3 | **3/3** |
+| `show_compared_posts` retrieved | 0/3 | 1/3 |
+| `show_compared_posts` called | 0/3 | 0/3 |
+
+Two honest caveats. The before/after populations differ — 12 opportunities in
+the full corpus, 9 in the filtered re-run, because `--filter analysis` misses
+`quick-read-picks-fast-and-shows-it`. And **the comparison rename is unproven**:
+1/3 against 0/3 is not a result at n=3. It was kept because the rule predicting
+it is well supported elsewhere and the old name violated it, not because this
+measurement defends it.
+
+The comparison quest also fails for a visibly different reason: all three runs
+walk `compare_posts -> get_social_media`, so the model is fetching the posts
+rather than reaching a view at all. That is a guidance question, not a
+retrieval one, and it is not what a rename can fix.
+
+### Not renamed
+
+`show_collab_shortlist` (0/3 retrieved). Its predecessor is
+`who_should_i_work_with`, which has no distinctive token to share — renaming
+only the view cannot create one. Fixing it means renaming the pair, which is a
+bigger decision than this measurement supports.
+
+### Measuring it yourself
+
+`npm run test:quests` prints the cross-tab. The harness records what each
+`ToolSearch` returned, not just how many happened — the count alone cannot
+distinguish "retrieved and skipped" from "never retrieved", and that
+distinction is the whole finding.
