@@ -1,7 +1,7 @@
 /**
  * Putting two creators side by side (issue #30).
  *
- * `track_competitor` already computed the only quantity that IS comparable
+ * `track_creator` already computed the only quantity that IS comparable
  * across creators of different sizes — a post's ratio to that creator's own
  * median — and then discarded the comparison, so "is their hit rate better
  * than mine?" was unanswerable at any price while every ingredient was

@@ -345,12 +345,22 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
       },
     ],
   },
-  track_competitor: {
+  track_creator: {
     label: "Reading what they shipped",
     kind: "strip",
     n: 3,
     steps: [step("get_user_posts")],
   },
+  find_people_with_problem: {
+    label: "Looking for people with this problem",
+    kind: "list",
+    n: 6,
+    // Three query shapes per platform, so the step repeats rather than
+    // representing one search — the wait is proportional to platforms asked
+    // for, and a single-step plan would under-report it badly.
+    steps: [step("discover_social_posts")],
+  },
+
   // Both fan out one post-list fetch per creator, so the price is the size of
   // the list and the wait is drawn per unit — same shape as catch_up_watchlist.
   compare_creators: {

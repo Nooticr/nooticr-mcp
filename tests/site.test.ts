@@ -478,8 +478,8 @@ describe("tool surface", () => {
     // the question rather than the endpoint.
     "answer_my_audience",
     "show_audience_replies",
-    "track_competitor",
-    // The comparison track_competitor computes and discards: two fetching
+    "track_creator",
+    // The comparison track_creator computes and discards: two fetching
     // tools on the same normalised axis, and the free view for the read.
     "compare_creators",
     "watchlist_standings",
@@ -488,6 +488,9 @@ describe("tool surface", () => {
     "why_did_this_underperform",
     "what_should_i_make_next",
     "search_spoken_mentions",
+    // The prospect search: the same keyword call as discover_social_posts,
+    // widened into the shapes a complaint takes rather than the topic.
+    "find_people_with_problem",
     // Neither fetches: one packages what the model classified for a tracker
     // on another server, the other draws the shortlist it scored.
     "prepare_handoff",

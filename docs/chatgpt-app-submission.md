@@ -64,7 +64,7 @@ Both were dropped for redundancy, not because they are wrong:
 
 The five kept cases are one per distinct widget, and together they trace the
 subtitle: `analyze_post_fast` → `search_mentions` → `search_spoken_mentions` →
-`track_competitor` → `create_variants`. Listening, then create.
+`track_creator` → `create_variants`. Listening, then create.
 
 ### The two negative cases that were cut
 

@@ -342,9 +342,11 @@ function trendGuidance(sc: Record<string, unknown>, runs: Array<Record<string, u
 
   lines.push(
     "",
-    "This is free because the sweeps were already billed. Nothing here needs a further call to " +
-      "interpret it — read the numbers and say what changed, including that nothing did, if that " +
-      "is what they show.",
+    "This is free because the sweeps were already billed. Read the numbers and say what changed, " +
+      "including that nothing did, if that is what they show. Then call show_trend with the " +
+      "series and your read of it — free, and it draws the chart with the two things a chart " +
+      "here can lie about marked: a series too short to call a direction, and a left edge that " +
+      "is where the record starts rather than where the conversation did.",
   );
   return lines.join("\n");
 }
@@ -564,7 +566,14 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
                 "`term` a watch was created for. Nothing was fetched and nothing was charged.",
             },
           ],
-          structuredContent: { available: false, billable: false, mcpCredits: { cost: 0 } },
+          structuredContent: {
+            guidance:
+              "This needs a watch to read: pass `watchId` (from list_brand_watches) or the " +
+              "`term` a watch was created for. Nothing was fetched and nothing was charged.",
+            available: false,
+            billable: false,
+            mcpCredits: { cost: 0 },
+          },
         };
       }
       try {
@@ -572,13 +581,17 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         const result = toResult(proxy);
         const sc = (result.structuredContent ?? {}) as Record<string, unknown>;
         const runs = Array.isArray(sc.runs) ? (sc.runs as Array<Record<string, unknown>>) : [];
-        // Guidance in the text block, evidence in the structured one — the
-        // pattern every reading tool here uses. What it has to prevent is a
+        // Guidance in BOTH places, not just the text block. A host that
+        // renders structuredContent drops every content text block and shows
+        // the model the serialised JSON instead, so a text-only copy reaches
+        // nobody — measured across 59 real runs. What it has to prevent is a
         // model reading two points as a trend, and reading the start of the
         // retention window as the moment a conversation began.
+        const guidance = trendGuidance(sc, runs);
         return {
           ...result,
-          content: [{ type: "text" as const, text: trendGuidance(sc, runs) }],
+          content: [{ type: "text" as const, text: guidance }],
+          structuredContent: { guidance, ...sc },
         };
       } catch (err) {
         return failed("mention_trend failed", err);

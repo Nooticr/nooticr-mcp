@@ -1,0 +1,309 @@
+{
+  "$comment": [
+    "Quests: multi-step journeys a real host is driven through, asserting on the CHAIN of tool",
+    "calls it actually makes rather than on any one call's result. The backend is a fixture, so",
+    "nothing here is a test of nooticr-server; what is under test is this repo's harness — tool",
+    "descriptions, the guidance text a result carries, and whether the two together get a host",
+    "from the user's request to the tool that finishes the job.",
+    "",
+    "{STUB} is substituted with the fixture post URL at run time (scripts/run-quests.mjs).",
+    "Every `why` names the edge from `node scripts/chain-map.mjs` that the quest defends."
+  ],
+  "quests": [
+    {
+      "id": "analyse-post-ends-in-show-analysis",
+      "title": "A full analysis ends up drawn, not only said in chat",
+      "why": "chain-map edge analyze_post -> show_analysis. evidence.ts's guidance closes with 'When you are done, call show_analysis with the url and your analysis'. If that never happens the analysisCard view is unreachable by any real conversation, which is the state it was in before show_analysis existed.",
+      "prompt": "Take a proper look at this TikTok post and give me your read on its hook and structure: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "analyze_post",
+          "show_analysis"
+        ]
+      }
+    },
+    {
+      "id": "quick-read-picks-fast-and-shows-it",
+      "title": "A quick read picks analyze_post_fast, and still ends up drawn",
+      "why": "Two edges at once: the selection edge (analyze_post_fast's description exists to keep frame-heavy analyze_post out of a cheap request) and the guidance edge analyze_post_fast -> show_analysis.",
+      "prompt": "Give me a quick read on this post's hook — no need for the actual video frames: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "analyze_post_fast",
+          "show_analysis"
+        ],
+        "forbid": [
+          "analyze_post"
+        ]
+      }
+    },
+    {
+      "id": "any-analysis-tool-ends-in-show-analysis",
+      "title": "Whichever analysis tool a host picks, the result gets drawn",
+      "why": "analyze_post, analyze_post_fast and understand_social_post all point at show_analysis. This quest deliberately does not care which one a host chooses — it cares that the loop closes. The report records which was picked, which is how the three descriptions' relative pull gets measured.",
+      "prompt": "Help me understand what is actually going on in this post and why it works: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "show_analysis"
+        ]
+      }
+    },
+    {
+      "id": "hooks-end-in-show-hooks",
+      "title": "Written hooks end up drawn",
+      "why": "chain-map edge write_hooks -> show_hooks. show_hooks is new view code with no other way to be reached.",
+      "prompt": "Write me five alternative opening hooks for this post: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "write_hooks",
+          "show_hooks"
+        ]
+      }
+    },
+    {
+      "id": "variants-end-in-show-variants",
+      "title": "Written variants end up drawn",
+      "why": "chain-map edge create_variants -> show_variants.",
+      "prompt": "Make me three variants of this post, each with a different angle: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "create_variants",
+          "show_variants"
+        ]
+      }
+    },
+    {
+      "id": "repurpose-ends-in-show-repurposed-post",
+      "title": "Repurposed copy ends up drawn",
+      "why": "chain-map edge repurpose_post -> show_repurposed_post.",
+      "prompt": "Turn this TikTok into a LinkedIn post and an X post: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "repurpose_post",
+          "show_repurposed_post"
+        ]
+      }
+    },
+    {
+      "id": "comparison-ends-in-show-comparison",
+      "title": "A comparison ends up drawn",
+      "why": "chain-map edge compare_posts -> show_comparison. The comparison scoreboard view was unreachable by any real call until show_comparison existed; if the chain does not hold it is unreachable again.",
+      "prompt": "Compare this post with https://www.tiktok.com/@fixture_creator_2/video/2 — which one won, and why? {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "show_comparison"
+        ]
+      }
+    },
+    {
+      "id": "comments-end-in-show-comment-review",
+      "title": "A comment triage ends up drawn",
+      "why": "chain-map edge analyze_comments -> show_comment_review — the oldest of these loops and the pattern the other five were modelled on.",
+      "prompt": "Go through the comments on this post and tell me which ones actually need a reply: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "analyze_comments",
+          "show_comment_review"
+        ]
+      }
+    },
+    {
+      "id": "audience-replies-end-in-show-audience-replies",
+      "title": "Drafted replies end up drawn",
+      "why": "chain-map edge answer_my_audience -> show_audience_replies.",
+      "prompt": "Draft replies to the questions my audience is asking @fixture_creator_1 on TikTok.",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "answer_my_audience",
+          "show_audience_replies"
+        ]
+      }
+    },
+    {
+      "id": "collab-shortlist-is-shown",
+      "title": "A collab shortlist ends up drawn",
+      "why": "chain-map edge who_should_i_work_with -> show_collab_shortlist.",
+      "prompt": "Who should I work with in the morning routines niche on TikTok?",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "who_should_i_work_with",
+          "show_collab_shortlist"
+        ]
+      }
+    },
+    {
+      "id": "bug-reports-reach-prepare-handoff",
+      "title": "A bug report found in comments gets prepared for filing",
+      "why": "docs/tool-call-strategies.md's worked example: analyze_comments surfaces a bug report with a stable id, prepare_handoff turns it into the exact title/body/labels to file. The fixture's comment set contains 'this stopped working for me after a week' precisely so this chain has something real to carry.",
+      "prompt": "Are there any bug reports in the comments on this post? If so, get them ready for me to file as issues: {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "analyze_comments",
+          "prepare_handoff"
+        ]
+      }
+    },
+    {
+      "id": "competitor-tracking-offers-to-watch",
+      "title": "Tracking a competitor leads to actually watching them",
+      "why": "chain-map edge track_creator -> watch_creator. The watchlist is what makes catch_up_watchlist worth anything later, and nothing else in the surface puts a creator on it. Asserted unordered on purpose: watching then tracking and tracking then watching are both correct, and pinning one order failed runs for a difference no user can perceive. What must not happen is the ask being answered with a profile teardown and neither tool called, which is what it did before.",
+      "prompt": "Track what @fixture_creator_1 has been doing on TikTok, and keep an eye on them from now on.",
+      "runs": 3,
+      "expect": {
+        "includes": [
+          "track_creator",
+          "watch_creator"
+        ]
+      }
+    },
+    {
+      "id": "underperformance-digs-into-the-post",
+      "title": "A why-did-this-flop question digs into the post itself",
+      "why": "chain-map edges why_did_this_underperform -> analyze_post and -> get_post_transcript: the tool returns the standing of a post against its own baseline and then asks for the material to explain it. Stopping at the number is the failure this defends against.",
+      "prompt": "Why did this post underperform? {STUB}",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "why_did_this_underperform"
+        ],
+        "maxCalls": 8
+      }
+    },
+    {
+      "id": "platform-is-not-silently-tiktok",
+      "title": "A question about LinkedIn is not answered with TikTok data",
+      "why": "PLATFORM_ARG in evidence.ts exists because of a real session where a question about X was silently answered with TikTok data and the empty result read as an absent account. The default cannot be removed (hosts already call without it), so the argument description carries the warning — and this is the only thing that checks a host reads it.",
+      "prompt": "What has @fixture_creator_1 been posting on LinkedIn lately?",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "get_user_posts"
+        ],
+        "args": {
+          "get_user_posts": {
+            "platform": "linkedin"
+          }
+        }
+      }
+    },
+    {
+      "id": "missing-handle-recovers-via-search",
+      "title": "A handle that finds nothing on TikTok leads to a search, not a guess",
+      "why": "handleMissGuidance() in evidence.ts: on a name-searchable platform an empty result is supposed to send the host to search_creators rather than to another guessed handle. The fixture returns nothing for any handle starting missing_.",
+      "prompt": "What has @missing_brand been posting on TikTok?",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "get_user_posts",
+          "search_creators"
+        ]
+      }
+    },
+    {
+      "id": "missing-handle-does-not-switch-network",
+      "title": "An empty result on X does not become a TikTok answer",
+      "why": "The other half of handleMissGuidance(): X cannot be searched by name here, and the guidance says so explicitly — 'Do NOT quietly switch to a network you can search instead'. A host that retries on TikTok produces a confident answer about the wrong network, which is the original incident.",
+      "prompt": "What has @missing_brand been posting on X lately?",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "get_user_posts"
+        ],
+        "args": {
+          "get_user_posts": {
+            "platform": "twitter"
+          }
+        },
+        "neverArgs": {
+          "get_user_posts": {
+            "platform": "tiktok"
+          }
+        }
+      }
+    },
+    {
+      "id": "drafting-resolves-the-app-first",
+      "title": "Drafting for a product resolves which product that is first",
+      "why": "Ported from .mcpjam/tests.json, which is the only multi-step case that existed before quests. draft_post takes an appId the host has to get from list_own_apps; inventing one is a cross-workspace authz probe against a real backend.",
+      "prompt": "I have exactly one product in my nooticr workspace. Draft me a post about morning routines for it.",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "list_own_apps",
+          "draft_post"
+        ]
+      }
+    },
+    {
+      "id": "brand-watch-degrades-without-elicitation",
+      "title": "A confirm-gated tool degrades instead of hanging",
+      "why": "create_brand_watch is spend-confirmed. A host with no elicitation capability must get a usable answer back rather than a stall — the driver used here declares no elicitation, which is the degrade path.",
+      "prompt": "Set up a daily watch on the term nooticr for me.",
+      "runs": 2,
+      "expect": {
+        "chain": [
+          "create_brand_watch"
+        ],
+        "maxCalls": 6
+      }
+    },
+    {
+      "id": "analyse-post-ends-in-show-analysis-chat-host",
+      "title": "The same analysis chain, under a plain chat host",
+      "why": "The same journey as analyse-post-ends-in-show-analysis, run with Claude Code's own system prompt replaced by a generic assistant one. A chain that holds under one host profile and not the other is a finding about the host, not about the guidance — and without both numbers there is no way to tell those two apart.",
+      "prompt": "Take a proper look at this TikTok post and give me your read on its hook and structure: {STUB}",
+      "host": "chat",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "analyze_post",
+          "show_analysis"
+        ]
+      }
+    },
+    {
+      "id": "hooks-end-in-show-hooks-chat-host",
+      "title": "The hooks chain, under a plain chat host",
+      "why": "Paired with hooks-end-in-show-hooks for the same reason as the analysis pair above.",
+      "prompt": "Write me five alternative opening hooks for this post: {STUB}",
+      "host": "chat",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "write_hooks",
+          "show_hooks"
+        ]
+      }
+    },
+    {
+      "id": "prospect-search-picks-the-prospect-tool",
+      "title": "Finding people with a problem picks the prospect search, not the topic search",
+      "why": "The failure this tool was built for: 'search X and Reddit for people that might see our product as a great use for their daily struggle' selected discover_social_posts and fed the pain point in as a `niche`, which is a keyword search over a topic. Seven of eight results were marketing content and the one on-target hit was a competitor's ad. If a host still reaches for discover_social_posts here, the new tool is not discoverable and the failure is unchanged.",
+      "prompt": "Find me people on Reddit who are complaining about wasting time manually checking what their competitors post — I want to know who might need our product.",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "find_people_with_problem"
+        ],
+        "args": {
+          "find_people_with_problem": {
+            "problem": {
+              "present": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

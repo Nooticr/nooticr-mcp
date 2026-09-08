@@ -139,6 +139,60 @@ export function handleMissGuidance(a: {
   return lines.filter((l, i, all) => !(l === "" && all[i - 1] === "")).join("\n");
 }
 
+/**
+ * Every network the surface can be asked for, for recognising one in an error.
+ *
+ * Deliberately a flat list rather than a per-capability one: this is used to
+ * spot a platform NAME in a failure message, and a platform that failed is a
+ * platform whatever it was capable of.
+ */
+export const KNOWN_PLATFORMS = [
+  "tiktok",
+  "instagram",
+  "youtube",
+  "douyin",
+  "xiaohongshu",
+  "twitter",
+  "bilibili",
+  "linkedin",
+  "reddit",
+  "weibo",
+] as const;
+
+/**
+ * What to say when a network ERRORED, as opposed to came back empty.
+ *
+ * Those want opposite responses and nothing distinguished them. An empty
+ * result means try a different query; an error means try a different network,
+ * or tell the user. Without that split a host does the one thing that cannot
+ * work: re-runs the same call with the words changed.
+ *
+ * From a real session. Reddit's discovery endpoint started failing, and the
+ * model read "The social data service could not complete this request" as a
+ * bad query — three more discover_social_posts calls with reworded niches,
+ * then a search_mentions, every one a paid upstream call against a network
+ * that was never going to answer. The user had asked for "X and Reddit"; they
+ * were told about X and never told Reddit had failed at all.
+ *
+ * So: name the network, say the failure is not about the query, forbid the
+ * reword loop explicitly, and say what to do instead. `handleMissGuidance`'s
+ * shape, for the other half of the same problem.
+ */
+export function platformFailureGuidance(a: { platform: string; message: string }): string {
+  return [
+    `${a.platform} could not be searched: ${a.message}`,
+    "",
+    "This is the network failing, not your query. Do NOT call this again with different " +
+      "wording, a different niche phrasing, or a different tool against the same network — " +
+      "each attempt is another paid upstream call that fails the same way.",
+    "",
+    `Carry on with any other networks the user asked for, and tell them plainly that ` +
+      `${a.platform} could not be searched this time. An answer that silently covers half of ` +
+      "what was asked for reads as a complete answer, which is worse than a short one that " +
+      "says what is missing.",
+  ].join("\n");
+}
+
 /** Closing line every guidance block shares. */
 export const ownIt =
   "Reason over this yourself rather than asking for an interpretation of it — " +
@@ -286,6 +340,21 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
               `Focus for this pass, as asked: ${focus}. Still cover the profile as a whole, but weight what you cover toward this.`,
             ]
           : []),
+        "",
+        // The redirect has to be here rather than only in the description,
+        // because by the time a description could help this tool has already
+        // been chosen. Measured: the phrase "track what X has been doing"
+        // retrieves analyze_creator_profile and never track_creator —
+        // track_creator's name only surfaces when the user says the word
+        // "competitor", which is not how most people phrase it. A result
+        // naming the other tool is the one channel that reaches a model which
+        // has already committed to this one.
+        "If what was actually asked for was to TRACK this creator — how they are",
+        "doing lately, what they have shipped since last time, keeping an eye on",
+        "them — this is the wrong tool and you should call track_creator",
+        "instead. It scores each post against this creator's OWN median rather",
+        "than handing you raw counts, and it remembers where you left off, so",
+        "the next call can say what is new. This one does neither.",
         ownIt,
       ].join("\n");
     },

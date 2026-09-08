@@ -19,24 +19,128 @@
 // What this is NOT for: it proves nothing about nooticr-server's real
 // behavior — no workspace-authz enforcement, no real credit ledger, no real
 // social-post fetching. Run scripts/run-mechanical-e2e-smoke.sh (default
-// mode) or scripts/run-agentic-evals.sh against a real nooticr-server
-// before trusting a change to either repo's backend-facing logic; this
-// fixture only earns confidence in the harness scripts and this repo's own
-// MCP-protocol wiring, not in nooticr-server.
+// mode) or scripts/run-quests.sh with NOOTICR_E2E_BACKEND=real against a
+// real nooticr-server before trusting a change to either repo's
+// backend-facing logic; this fixture only earns confidence in the harness
+// scripts and this repo's own MCP-protocol wiring, not in nooticr-server.
 //
 // Usage: node scripts/fixture-server.mjs [port]  (default 8080)
 
 import http from "node:http";
 import { randomUUID } from "node:crypto";
+import zlib from "node:zlib";
 
 const PORT = Number(process.argv[2] || 8080);
 const STUB_URL = "https://e2e.nooticr.test/import/tiktok/e2e-stub";
+
+// One post's worth of plausible content, shared by every case that returns a
+// post, a caption or a transcript.
+//
+// It reads like a real post on purpose, and that is a testing decision rather
+// than set dressing. The quest suite puts a real model in front of these
+// results and asks whether it follows the guidance to the next tool. A model
+// handed a caption that says "not real content" and a transcript that says
+// "this is a fixture" does the right thing — it tells the user it is looking
+// at test scaffolding and stops — and the chaining report then shows a broken
+// chain that says nothing about the guidance. Plausible content is what keeps
+// the measurement about the server. It is still obviously not a real post to
+// anyone reading the code: the handle, the numbers and the URL are invented.
+// Captions for the multi-post cases. Three, so a set of posts has a spread to
+// reason about rather than one caption repeated with the index changed —
+// several tools (track_creator, find_hook_pattern) exist to compare posts
+// against each other, and cannot be exercised by posts that differ only by a
+// number.
+const POST_CAPTIONS = [
+  "the 6am routine that actually stuck (after 3 that didn't)",
+  "I stopped setting 4 alarms and slept better immediately",
+  "3 things I quit before I found the one that worked",
+];
+
+const FIXTURE_POST = {
+  creatorHandle: "lena.mornings",
+  caption: "the 6am routine that actually stuck (after 3 that didn't) #morningroutine #5amclub",
+  transcript:
+    "I tried the 5am thing for two years and hated every second of it. What finally worked was " +
+    "moving one thing — the coffee — to the night before. I set it up at ten, and in the morning " +
+    "there is one less decision between me and being awake. That is the whole trick. You are not " +
+    "lazy, you are just deciding too much before you have had anything to drink. Try one thing " +
+    "tonight and tell me how it goes.",
+};
 
 /** @type {Map<string, { workspaceId?: string }>} */
 const tokens = new Map();
 /** @type {Map<string, { apps: Array<{ id: string; name: string }> }>} */
 const workspaces = new Map();
 let nextAppId = 1;
+
+// A real, decodable PNG with something actually in it.
+//
+// This used to be a 1x1 transparent pixel, which is a valid PNG and was
+// fine for the mechanical smoke tests: they check that a frame round-trips,
+// not what is in it. It stopped being fine the moment a real model was put
+// in front of these frames. A 1x1 image comes back from the API as
+// unprocessable, and the model reads three unprocessable frames as "this
+// post is broken or stub content" and abandons the rest of the job — which
+// is a verdict about the fixture, arriving in the middle of a test about
+// whether the server's guidance chains. A fixture that changes the
+// behaviour under test is measuring itself.
+//
+// So each frame is a small, distinct, describable image: a vertical
+// gradient that darkens frame by frame, with a solid block that moves
+// across it. Enough for a model to say something true and specific about
+// what it saw, and different enough between frames that "describe the
+// motion" has an honest answer. Pure zlib, no image library.
+function fixtureFramePng(index, total) {
+  const W = 96;
+  const H = 72;
+  const shift = total <= 1 ? 0 : index / (total - 1);
+  const raw = Buffer.alloc((W * 3 + 1) * H);
+  let o = 0;
+  for (let y = 0; y < H; y += 1) {
+    raw[o++] = 0; // filter: none
+    for (let x = 0; x < W; x += 1) {
+      const base = Math.round(230 - (y / H) * 120 - index * 40);
+      const inBlock = x > shift * (W - 28) && x < shift * (W - 28) + 28 && y > H * 0.35 && y < H * 0.75;
+      raw[o++] = inBlock ? 240 : Math.max(0, base);
+      raw[o++] = inBlock ? 80 : Math.max(0, base - 10);
+      raw[o++] = inBlock ? 60 : Math.max(0, base + 15);
+    }
+  }
+  const chunk = (type, body) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(body.length);
+    const typed = Buffer.concat([Buffer.from(type, "ascii"), body]);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(typed) >>> 0);
+    return Buffer.concat([len, typed, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0);
+  ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // colour type: truecolour
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", zlib.deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]).toString("base64");
+}
+
+let CRC_TABLE = null;
+function crc32(buf) {
+  if (!CRC_TABLE) {
+    CRC_TABLE = new Int32Array(256);
+    for (let n = 0; n < 256; n += 1) {
+      let c = n;
+      for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      CRC_TABLE[n] = c;
+    }
+  }
+  let c = -1;
+  for (let i = 0; i < buf.length; i += 1) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return c ^ -1;
+}
 
 function readJson(req) {
   return new Promise((resolve, reject) => {
@@ -128,9 +232,13 @@ function handleMcpCall(name, args, workspaceId) {
       // fixture, which proves the plumbing and nothing about the answer.
       // The tags are split between the array and the caption on purpose: X,
       // Reddit and LinkedIn routinely fill only the caption.
+      //
+      // The captions read like captions on purpose: a quest run is a real
+      // model reasoning over these, and one that can tell it is looking at
+      // a fixture stops and says so, which scores as a broken chain.
       const posts = [1, 2, 3].map((i) => ({
         platform,
-        caption: `Fixture post ${i} about ${niche} #${niche} ${i === 3 ? "#护肤" : "#fixturetag"}`,
+        caption: `${["the", "another", "one more"][i - 1]} ${niche} habit that actually stuck #${niche} ${i === 3 ? "#护肤" : "#fixturetag"}`,
         hashtags: i === 1 ? [`#${niche}`, "#fixturetag"] : [],
         creatorHandle: `fixture_creator_${i}`,
         externalUrl: `https://www.tiktok.com/@fixture_creator_${i}/video/${i}`,
@@ -146,8 +254,15 @@ function handleMcpCall(name, args, workspaceId) {
       };
     }
     case "get_social_media": {
-      if (args?.url !== STUB_URL) {
-        return { error: { code: -32602, message: `fixture only answers ${STUB_URL}` } };
+      // Any post-shaped URL, not only the E2E stub. The quest suite
+      // (scripts/run-quests.sh) drives a real model through these tools, and
+      // a model handed "e2e.nooticr.test/.../e2e-stub" correctly refuses to
+      // analyse it — it can see it is looking at test scaffolding, says so,
+      // and stops, which reads in a chaining report as a broken chain when
+      // nothing about the chain was broken. So the fixture answers a
+      // plausible URL too, and answers it with plausible content.
+      if (!/^https?:\/\//.test(String(args?.url ?? ""))) {
+        return { error: { code: -32602, message: `fixture wants a post URL, got ${args?.url}` } };
       }
       // Flat — ui-template.ts's renderView falls back `postCard(d.post||d,
       // true)`, and postCard() (ui-template.ts:2007-2018) reads
@@ -168,14 +283,14 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: {
           platform: "tiktok",
           contentType: "video",
-          caption: "A fixture caption for local harness validation — not real content.",
-          creatorHandle: "fixture-user",
-          externalUrl: STUB_URL,
+          caption: FIXTURE_POST.caption,
+          creatorHandle: FIXTURE_POST.creatorHandle,
+          externalUrl: String(args?.url ?? STUB_URL),
           videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
-          views: 100,
-          likes: 10,
-          comments: 2,
-          shares: 1,
+          views: 184300,
+          likes: 21400,
+          comments: 612,
+          shares: 1890,
           fetchedAt: new Date().toISOString(),
         },
       };
@@ -219,7 +334,7 @@ function handleMcpCall(name, args, workspaceId) {
         ? []
         : Array.from({ length: count }, (_, k) => k + 1).map((i) => ({
             platform,
-            caption: `Post ${i} by ${username}`,
+            caption: POST_CAPTIONS[(i - 1) % POST_CAPTIONS.length],
             creatorHandle: username,
             externalUrl: `https://www.tiktok.com/@${username}/video/${i}`,
             videoUrl: "https://e2e.nooticr.test/fixture/video.mp4",
@@ -249,16 +364,12 @@ function handleMcpCall(name, args, workspaceId) {
       };
     }
     case "get_post_frames": {
-      // A real 1x1 PNG — same fixture pixel used elsewhere in this repo's
-      // own Playwright suite (tests/e2e/ui-template.e2e.ts) — so
-      // framesToBlocks() (evidence.ts) gets a real, valid image to wrap.
-      const PIXEL =
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-      const frames = [0, 0.5, 1].map((atFraction, i) => ({
-        data: PIXEL,
+      const count = Math.max(1, Math.min(Number(args?.count ?? 3), 8));
+      const frames = Array.from({ length: count }, (_, i) => ({
+        data: fixtureFramePng(i, count),
         mimeType: "image/png",
         atSeconds: i * 2,
-        atFraction,
+        atFraction: count === 1 ? 0 : i / (count - 1),
       }));
       return {
         content: [{ type: "text", text: `Sampled ${frames.length} fixture frames.` }],
@@ -279,10 +390,10 @@ function handleMcpCall(name, args, workspaceId) {
         content: [{ type: "text", text: "Fetched fixture transcript." }],
         structuredContent: {
           available: true,
-          wordCount: 6,
+          wordCount: FIXTURE_POST.transcript.split(" ").length,
           language: "en",
           autoGenerated: true,
-          transcript: "This is a fixture transcript for testing.",
+          transcript: FIXTURE_POST.transcript,
         },
       };
     }
@@ -305,10 +416,18 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: {
           url: STUB_URL,
           platform: "tiktok",
-          summary: "Fixture comment summary.",
+          summary: "Mostly praise, one repeatable bug report, one question worth answering.",
           comments: [
-            { text: "This is a fixture comment, long enough to exercise the show-more/show-less toggle in the widget rather than staying under its truncation threshold the whole way through, which is the point of this sentence being unusually long.", author: "fixture_commenter_1", likes: 12 },
-            { text: "A short fixture comment.", author: "fixture_commenter_2", likes: 3 },
+            // Long on purpose: it is what exercises the widget's
+            // show-more/show-less toggle. It also has to read like a comment
+            // somebody actually left, for the reason FIXTURE_POST states.
+            { text: "ok the night-before coffee thing genuinely changed my mornings and I want to be annoyed about how simple it is, I have bought three alarm clocks and a sunrise lamp this year and the thing that worked was moving one jar six feet", author: "priya_makes", likes: 412 },
+            // A bug report, so the analyze_comments -> prepare_handoff chain
+            // has something real to carry (docs/tool-call-strategies.md's
+            // worked example). Kept in the taxonomy's own words.
+            { text: "this stopped working for me after the last update, the timer just never fires now", author: "d_almeida", likes: 88 },
+            { text: "does this work if you have kids though", author: "sam.h", likes: 47 },
+            { text: "first", author: "throwaway_2291", likes: 0 },
           ],
         },
       };

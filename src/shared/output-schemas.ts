@@ -210,7 +210,22 @@ const analysis = open({
  * marker, what it fetched, and where it came from. Optional throughout,
  * because the shape of the material itself differs per tool.
  */
+/**
+ * What to do with the material, carried where a host will actually deliver it.
+ *
+ * Every tool that returns guidance puts the same string in a `content` text
+ * block too. That block is the one the MCP spec points at and the one hosts
+ * drop: a host rendering `structuredContent` replaces the text blocks with the
+ * serialised JSON, so the text copy reaches no model. Declared here rather than
+ * left to `passthrough()` because a host reading the schema should be able to
+ * see that the field exists.
+ */
+const guidance = scalar().describe(
+  "What to do with this payload, in prose. Read it: it is the instruction, not a summary.",
+);
+
 const evidence = {
+  guidance,
   mode: scalar().describe('Always "evidence": this payload is material you have still to read.'),
   tool: scalar(),
   evidenceFrom: listOf(z.string()).describe("The cheap calls this was assembled from."),
@@ -339,6 +354,7 @@ export const OUTPUT_SCHEMAS = {
    * one should not find the key gone.
    */
   analyze_comments: open({
+    guidance,
     summary: scalar(),
     themes: anyList(),
     commentsAnalyzed: scalar(),
@@ -575,7 +591,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  track_competitor: open({
+  track_creator: open({
     ...evidence,
     username: scalar(),
     platform: scalar(),
@@ -584,7 +600,7 @@ export const OUTPUT_SCHEMAS = {
     since: scalar(),
     sinceApplied: scalar(),
     tracked: scalar().describe("True when this creator is on the watchlist, which is what makes a diff possible."),
-    lastCheckedAt: scalar().describe("When track_competitor last looked, or null on a first look."),
+    lastCheckedAt: scalar().describe("When track_creator last looked, or null on a first look."),
     newSincePreviousCheck: scalar().describe("Posts not seen at the last check; null when there was none."),
     baseline: open({
       count: scalar(),
@@ -609,6 +625,24 @@ export const OUTPUT_SCHEMAS = {
       }),
     ).describe("The window, best against their own median first."),
     unavailable: anyList(),
+    creditsCharged: scalar(),
+    mcpCredits,
+  }),
+
+  /**
+   * Prospect discovery. The unit is a POST that might be someone describing a
+   * problem — `posts` rather than a bespoke key, because the gallery view
+   * already draws that shape and a wide net does not need a view of its own.
+   */
+  find_people_with_problem: open({
+    ...evidence,
+    problem: scalar(),
+    platforms: listOf(z.string()),
+    posts: listOf(post),
+    searchedShapes: listOf(z.string()).describe(
+      "Which complaint phrasings were searched: plain, shared, asking.",
+    ),
+    unavailable: anyList().describe("Searches that errored, by platform and shape."),
     creditsCharged: scalar(),
     mcpCredits,
   }),
@@ -941,6 +975,7 @@ export const OUTPUT_SCHEMAS = {
    * documenting a field that never arrives is worse than omitting it.
    */
   score_draft: open({
+    guidance,
     draft: scalar(),
     platform: scalar(),
     mcpCredits,
@@ -1037,6 +1072,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   mention_trend: open({
+    guidance,
     runs: listOf(open({
       ranAt: scalar(),
       found: scalar().describe("Everything that sweep saw."),

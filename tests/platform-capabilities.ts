@@ -99,7 +99,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
       "find_hook_pattern",
       "watch_creator",
       "unwatch_creator",
-      "track_competitor",
+      "track_creator",
       // Compares several creators through the same fetch. Its description
       // carries PLATFORM_ARG, so it names the ten networks and needs a
       // capability behind that claim; watchlist_standings takes no platform
@@ -126,7 +126,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     // served nine — "what should I tag?" was answerable on one network out of
     // ten and no check could see it (issue #32).
     enumerating: ["discover_hashtags"],
-    quiet: ["discover_social_posts", "niche_report"],
+    quiet: ["discover_social_posts", "niche_report", "find_people_with_problem"],
   },
   transcript: {
     enumerating: [],

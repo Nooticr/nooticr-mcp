@@ -30,6 +30,8 @@ import {
  framesToBlocks,
  planCalls,
  scoreDraftGuidance,
+  KNOWN_PLATFORMS,
+  platformFailureGuidance,
 } from "./evidence.js";
 import {
   confirmSpend,
@@ -417,6 +419,23 @@ function toolError(prefix: string, err: unknown): {
    isError: true,
   };
  }
+ // A network that ERRORED is not a network that came back empty, and the two
+ // want opposite responses: an empty result means try a different query, an
+ // error means try a different network or tell the user. Nothing said which,
+ // so a host did the one thing that cannot work — re-ran the same call with
+ // the words changed, three times, each a paid upstream call. The backend
+ // names the platform in these messages ("... failed: reddit: ..."), so the
+ // split is recoverable here without every one of the 26 call sites having to
+ // pass its arguments down.
+ const platform = KNOWN_PLATFORMS.find((p) =>
+  new RegExp(`(^|[^a-z])${p}([^a-z]|$)`, "i").test(msg),
+ );
+ if (platform) {
+  return {
+   content: [{ type: "text", text: `${prefix}. ${platformFailureGuidance({ platform, message: msg })}` }],
+   isError: true,
+  };
+ }
  return { content: [{ type: "text", text: `${prefix}: ${msg}` }], isError: true };
 }
 
@@ -458,16 +477,34 @@ async function runEvidence(
   }
  }
 
- // The guidance leads. A model reads the first text block in a result, and
- // that is where the account of what to produce has to be — everything below
- // it is material with no instruction attached.
+ // The guidance rides in BOTH channels, and the structured one is the one
+ // that arrives.
+ //
+ // This used to say "the guidance leads: a model reads the first text block in
+ // a result, and that is where the account of what to produce has to be". That
+ // is what the MCP spec allows, and it is not what hosts do. Claude Code
+ // discards every `content` text block whenever a result carries
+ // `structuredContent`, keeps the non-text blocks, and shows the model the
+ // serialised JSON instead — unconditionally, with no setting, and without
+ // consulting `outputSchema`. Every tool here declares one, so every guidance
+ // string this file writes was landing nowhere.
+ //
+ // Measured before changing it, over 59 real runs of the quest suite: 0
+ // guidance phrases across 175 tool results. `analyze_post` handed back frames,
+ // a transcript and 2,000 characters ending in "call show_analysis when you are
+ // done"; the model wrote the analysis and delivered it in chat, and
+ // show_analysis was called in 1 run of 12.
+ //
+ // The text block stays for hosts that honour it (and for the images, which
+ // must sit in `content`). `guidance` on the payload is what reaches the rest.
+ // See docs/testing/tool-chaining-quests.md.
  const billing = nothingToFetch
   ? "Nothing was fetched for this call, so nothing was charged."
   : fetchBillingNote(tool);
- const content: ToolContent[] = [
-  { type: "text", text: `${plan.guidance(args)}\n\n${billing}` } as ToolContent,
- ];
+ const guidance = `${plan.guidance(args)}\n\n${billing}`;
+ const content: ToolContent[] = [{ type: "text", text: guidance } as ToolContent];
  const out: Record<string, unknown> = {
+  guidance,
   // Kept, and constant. It is not an echo of an argument — the job tools in
   // jobs.ts set the same key with no argument to echo — it marks a payload as
   // material the caller still has to read. Dropping it would break anything
@@ -642,8 +679,8 @@ export function createMcpServer(
   // a search_mentions result render in the monitoring view.
   "answer_my_audience",
   "show_audience_replies",
-  "track_competitor",
-  // The comparison track_competitor computes per creator and never puts side
+  "track_creator",
+  // The comparison track_creator computes per creator and never puts side
   // by side, plus the free view that draws the table once a read is written.
   "compare_creators",
   "watchlist_standings",
@@ -655,6 +692,10 @@ export function createMcpServer(
   // hits rather than comments, so it gets its own view rather than the
   // monitoring one.
   "search_spoken_mentions",
+  // Prospect discovery: the same keyword search as discover_social_posts, but
+  // widened into the shapes a complaint takes rather than the topic it is
+  // about. Returns `posts`, so the gallery view draws it.
+  "find_people_with_problem",
   // Own-account intelligence (own-account.ts). list_own_apps stays
   // view-less like watch_creator — it lists metadata, nothing to draw.
   // get_scheduled_posts and get_post_performance return a `posts` array
@@ -1078,7 +1119,11 @@ export function createMcpServer(
     "Work out their niche, recurring themes, hook formula, what over- and under-performs and who " +
     "their audience is, reading the spread of the numbers rather than only the best post, and " +
     `name the posts you reason from. ${costSentence("analyze_creator_profile")} ` +
-    "Use for the teardown itself; find_hook_pattern fetches the same posts and asks only for the formula.",
+    "Use for the teardown itself; find_hook_pattern fetches the same posts and asks only for the " +
+    "formula. NOT for keeping an eye on a rival over time: \"track X\", \"how are they doing " +
+    "lately\", \"what have they shipped since I last looked\" are track_creator, which scores " +
+    "each post against that creator's own median and remembers where you left off. This tool " +
+    "returns the posts and no verdict, and remembers nothing between calls.",
    _meta: {
     ui: { resourceUri: uiResource("analyze_creator_profile") },
     "ui/resourceUri": uiResource("analyze_creator_profile"),
@@ -1377,9 +1422,14 @@ export function createMcpServer(
     const res = await client.callTool("get_post_comments", { ...args });
     const structured = (res.structured ?? {}) as Record<string, unknown>;
     const comments = toEvidence(args.url, structured.comments);
+    const guidance = reviewGuidance(args.url, comments.length);
     return {
-     content: [{ type: "text" as const, text: reviewGuidance(args.url, comments.length) }],
+     content: [{ type: "text" as const, text: guidance }],
      structuredContent: {
+      // See runEvidence: a text block alone reaches no host that renders
+      // structuredContent, and this is the tool show_comment_review's whole
+      // chain hangs off.
+      guidance,
       mode: "evidence",
       url: args.url,
       platform: structured.platform ?? null,
@@ -2300,16 +2350,24 @@ export function createMcpServer(
   // argument: the draft is the caller's own text, so the backend was only ever
   // being paid to hold it up against a standard, and the standard is what
   // comes back instead. Nothing here can fail, which is why nothing is caught.
-  async (args: { draft: string; platform?: string }) => ({
-   content: [{ type: "text" as const, text: scoreDraftGuidance(args.draft, String(args.platform ?? "")) }],
+  async (args: { draft: string; platform?: string }) => {
+   const guidance = scoreDraftGuidance(args.draft, String(args.platform ?? ""));
+   return {
+   content: [{ type: "text" as const, text: guidance }],
    structuredContent: {
+    // The rubric IS this tool's answer — it fetches nothing and scores
+    // nothing itself. In a text block it reached no host that renders
+    // structuredContent, which made the tool return its own input and a
+    // credit note. See runEvidence.
+    guidance,
     draft: args.draft,
     platform: args.platform ?? "tiktok",
     // Same shape the free tools use, so a caller totting up a session's spend
     // does not have to special-case this one.
     mcpCredits: { cost: 0 },
    },
-  })
+   };
+  }
  );
 
  server.registerTool(
@@ -2676,7 +2734,7 @@ export function createMcpServer(
  );
 
  registerPrompts(server);
- // One store for both. track_competitor keeps its "since I last looked" marker
+ // One store for both. track_creator keeps its "since I last looked" marker
  // on the same watchlist entries, in its own field — two stores would mean a
  // creator you watch and a creator you track were different people.
  //

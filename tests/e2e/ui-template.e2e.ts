@@ -1692,7 +1692,7 @@ test.describe("collab shortlist", () => {
 });
 
 /**
- * track_competitor and why_did_this_underperform both compute a post's ratio
+ * track_creator and why_did_this_underperform both compute a post's ratio
  * to the creator's own baseline (see performance.ts's standing()) and attach
  * it to the post as `standing`. Before standingBadge() existed, postCard
  * rendered the same view/like/comment pills any gallery gets and the

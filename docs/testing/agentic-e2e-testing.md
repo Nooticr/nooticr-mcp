@@ -1,5 +1,29 @@
 # Agentic end-to-end testing
 
+> **The MCPJam evals tier this page described is gone**, and what replaced it
+> is [`tool-chaining-quests.md`](./tool-chaining-quests.md).
+>
+> `@mcpjam/cli` no longer has an `evals run` command (5.6.0: `unknown command
+> 'evals'`). Evals moved to `mcpjam cloud eval` — account-bound, paid, and only
+> able to target servers registered in an MCPJam Cloud project, so a local
+> stdio `node dist/index.js` is not a valid target. `.mcpjam/tests.json`'s
+> `expectedToolCalls` is not a key the current suite schema accepts either. The
+> tier had been un-runnable since the CLI moved and nothing said so, because it
+> was `workflow_dispatch`-only and soft-skipped without an API key.
+>
+> Its cases only ever asserted single calls anyway. `npm run test:quests`
+> asserts on the **chain**, drives the real Claude Code CLI rather than an agent
+> loop built for testing, and needs no MCPJam account. All six cases from
+> `.mcpjam/tests.json` are ported into `quests/quests.json`.
+>
+> The MCPJam path is still the only way to run this corpus against ChatGPT,
+> Cursor or Codex — `node scripts/run-quests.mjs --emit-mcpjam <file>` exports
+> it as a valid v1 suite for that.
+>
+> Everything else on this page — the two smoke tiers, the visual/click testing,
+> the bugs it surfaced — is still accurate. **`mcpjam conformance` and
+> `mcpjam apps` are unaffected**; `npm run conformance:mcpjam` still passes 5/5.
+
 What this repo's CI already checks, before this doc, is entirely **protocol
 and schema conformance**: `tests/*.test.ts` drive `createMcpServer` in-process
 against a stub `NooticrClient`; CI's Host contract / Host compatibility / MCP
@@ -45,7 +69,8 @@ different from production other than which server it talks to.
 
 Put together: boot `nooticr-server` in test mode, log in, run this repo's
 real built CLI against it, and let a real model drive it. That's the whole
-mechanism — `scripts/run-agentic-evals.sh` automates it end to end.
+mechanism — `scripts/run-quests.sh` automates it end to end (this section
+described `scripts/run-agentic-evals.sh`, now deleted; see the banner).
 
 ## What drives the conversation: MCPJam Evals
 
@@ -94,7 +119,7 @@ useful and independently blocked by something different:
 |---|---|---|---|
 | **Fixture smoke** | `npm run test:e2e-smoke:fixture` | Just Node | This repo's real built CLI actually speaks MCP correctly — connects over stdio, `tools/list`, `tools/call` round-trips a real JSON-RPC response — against `scripts/fixture-server.mjs`, a pure-Node stand-in for the three endpoints (`/auth/dev-login`, `/graphql`, `/mcp`) the harness and `NooticrClient` actually touch. |
 | **Real smoke** | `npm run test:e2e-smoke` | Rust + Postgres + FFmpeg/ONNX toolchain (no LLM key) | The same protocol round-trip against **real** `nooticr-server` behavior — real workspace-authz, real dev-login, real `NOOTICR_E2E_MODE` fixture-URL handling. |
-| **Agentic evals** | `npm run test:agentic-e2e` | Real smoke's requirements + `ANTHROPIC_API_KEY` | Does a real model call the *right* tool — the layer neither smoke tier can check, since both drive fixed, scripted tool calls. |
+| **Quests** | `npm run test:quests` | Node + the `claude` CLI (fixture backend by default) | Does a real host walk the right *chain* — the layer neither smoke tier can check, since both drive fixed, scripted tool calls. See [`tool-chaining-quests.md`](./tool-chaining-quests.md). |
 
 The fixture tier exists because building `nooticr-server` needs a real
 Rust/Postgres/FFmpeg/ONNX toolchain that isn't available everywhere — this
@@ -129,9 +154,9 @@ npm run test:e2e-smoke:fixture
 export DATABASE_URL=postgres://nooticr:nooticr@localhost:5432/nooticr
 npm run test:e2e-smoke
 
-# Real backend + a real model:
-export ANTHROPIC_API_KEY=sk-ant-...
-npm run test:agentic-e2e
+# A real model driving whole journeys. Needs the `claude` CLI; runs against
+# the fixture backend unless NOOTICR_E2E_BACKEND=real says otherwise:
+npm run test:quests
 ```
 
 What `scripts/e2e-server-lib.sh` actually does, in "real" mode (the fixture
@@ -146,13 +171,13 @@ mirrors the same sequence against its own in-memory state):
    something real to read.
 3. Exports `NOOTICR_BASE_URL`/`NOOTICR_ACCESS_TOKEN` for whichever caller
    sourced it — `scripts/mcp-smoke-client.mjs` (smoke tiers) or
-   `scripts/run-agentic-evals.sh`, which additionally generates
+   `scripts/run-quests.sh`, which additionally generates
    `.mcpjam/environment.generated.json` + `.mcpjam/llms.json` from those and
    runs `npx @mcpjam/cli evals run` against `.mcpjam/tests.json`.
 4. Tears the server down (`trap ... EXIT`) and exits with the underlying
    tool's exit code, so any of the three can gate CI once proven.
 
-`run-agentic-evals.sh` additionally skips cleanly (exit 0, clear message,
+`run-quests.sh` additionally skips cleanly (exit 0, clear message,
 pointing at `test:e2e-smoke`) if `ANTHROPIC_API_KEY` is unset — what makes
 it safe to land in CI before that secret exists.
 
@@ -339,7 +364,7 @@ building `nooticr-server` needs its FFmpeg/Rust toolchain
 (`.github/actions/rust-env`) and a Postgres service container that already
 exist there. So `nooticr-server/.github/workflows/agentic-e2e.yml` checks
 out both repos, boots the server the same way `test` does, checks out
-`nooticr-mcp` at a chosen ref, and runs `test:agentic-e2e`.
+`nooticr-mcp` at a chosen ref, and runs `test:quests` (see `Nooticr/nooticr-server#48`).
 
 That workflow is **`workflow_dispatch`-only** for now, on purpose: every run
 calls a real model once per test case, which costs real tokens, and there's

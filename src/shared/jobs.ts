@@ -773,9 +773,14 @@ const metricArg = z
 
 export function registerJobTools(server: McpServer, makeClient: MakeClient, store: WatchStore): void {
   /** Guidance in the text block, evidence in the structured one — as every tool here does. */
+  // Both channels, because only one of them arrives. A host that renders
+  // `structuredContent` replaces the content text blocks with the serialised
+  // JSON, so guidance kept only in a text block reaches no model — measured at
+  // 0 phrases across 175 tool results. See tools.ts's runEvidence for the full
+  // note, and docs/testing/tool-chaining-quests.md for the measurement.
   const evidence = (guidance: string, payload: Row) => ({
     content: [{ type: "text" as const, text: guidance }],
-    structuredContent: payload,
+    structuredContent: { guidance, ...payload },
   });
 
   const failed = (prefix: string, err: unknown) => ({
@@ -999,7 +1004,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 2. track_competitor
+  // 2. track_creator
   //
   // Writes, when the creator is on the watchlist: it moves a baseline forward
   // so the next call can say what is new. That baseline is deliberately not
@@ -1007,18 +1012,20 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // looked" means each silently consumes the other's answer.
   // ───────────────────────────────────────────────────────────────────────────
   server.registerTool(
-    "track_competitor",
+    "track_creator",
     {
       title: "Track Competitor",
-      _meta: viewMeta("track_competitor"),
+      _meta: viewMeta("track_creator"),
       description:
-        "What a creator shipped recently and which of it beat THEIR OWN baseline. Fetches their " +
-        "recent posts once and scores each against the median of that same window, because a raw " +
-        "view count mostly measures follower count — outperformance against themselves is the " +
-        "signal. If they are on your watchlist it also marks what is new since your last " +
-        "track_competitor call and moves that marker forward. " +
-        "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival you " +
-        "follow; analyze_creator_profile is the full teardown of one you do not.",
+        "Track a competitor, keep an eye on a rival, see how someone is doing lately, catch what " +
+        "they shipped since you last looked — this is the tool for all of those. What a creator " +
+        "shipped recently and which of it beat THEIR OWN baseline: fetches their recent posts " +
+        "once and scores each against the median of that same window, because a raw view count " +
+        "mostly measures follower count — outperformance against themselves is the signal. If " +
+        "they are on your watchlist it also marks what is new since your last track_creator " +
+        "call and moves that marker forward. " +
+        "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival " +
+        "you follow; analyze_creator_profile is the full teardown of one you do not.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -1027,7 +1034,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         idempotentHint: false,
         openWorldHint: true,
       },
-      outputSchema: OUTPUT_SCHEMAS.track_competitor,
+      outputSchema: OUTPUT_SCHEMAS.track_creator,
       inputSchema: z
         .object({
           username: z
@@ -1072,7 +1079,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         spend.record("get_user_posts", structured);
         feed = rowsOf(structured.posts);
       } catch (err) {
-        return failed("track_competitor could not list the posts", err);
+        return failed("track_creator could not list the posts", err);
       }
 
       // Nothing came back. Previously this fell through to the scoring path and
@@ -1081,7 +1088,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       if (feed.length === 0) {
         return evidence(handleMissGuidance({ handle, platform, defaulted: platformDefaulted }), {
           mode: "evidence",
-          tool: "track_competitor",
+          tool: "track_creator",
           evidenceFrom: ["get_user_posts"],
           username: handle,
           platform,
@@ -1156,7 +1163,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }),
         {
           mode: "evidence",
-          tool: "track_competitor",
+          tool: "track_creator",
           evidenceFrom: ["get_user_posts"],
           username: handle,
           platform,
@@ -1184,7 +1191,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // ───────────────────────────────────────────────────────────────────────────
   // 2b. compare_creators / watchlist_standings
   //
-  // The comparison track_competitor computes and discards. Both are pure
+  // The comparison track_creator computes and discards. Both are pure
   // compositions of get_user_posts — one fetch per creator, priced as the sum
   // — and both leave the reading to the caller, because a ranking hides the
   // window size that decides whether the ranking means anything.
@@ -1243,7 +1250,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "ranking is yours to make: 'how often' and 'how big' usually disagree, and a hit rate " +
         "over a short window is one post either way, so the window size travels with every " +
         "number. Fetches one post list per creator: 2 nooticr credits each, 4-10 in total. " +
-        "Use for 'is their hit rate better than mine'; track_competitor is one creator alone.",
+        "Use for 'is their hit rate better than mine'; track_creator is one creator alone.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.compare_creators,
       inputSchema: z
@@ -1374,10 +1381,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         summary:
           `Read the recent posts of all ${entries.length} creator${entries.length === 1 ? "" : "s"} ` +
           "on your watchlist and score each against their own median.",
-        cheaper: "Unwatch creators you no longer follow, or use track_competitor for just one.",
+        cheaper: "Unwatch creators you no longer follow, or use track_creator for just one.",
       });
       if (!decision.proceed) {
-        return declinedResult(credits, "Those standings", "Use track_competitor for a single creator.");
+        return declinedResult(credits, "Those standings", "Use track_creator for a single creator.");
       }
 
       const spend = new Spend();
@@ -2196,7 +2203,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
 
       // A watchlist handle already knows its own platform, so it is checked
       // once there rather than once per requested platform — the same
-      // precision track_competitor already applies when it reads this store.
+      // precision track_creator already applies when it reads this store.
       let watchlistUnits: Array<{ handle: string; platform: string }> = [];
       let watchlistTotal = 0;
       if (args.useWatchlist) {
@@ -2450,4 +2457,183 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       );
     },
   );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // find_people_with_problem — the prospect search this surface did not have.
+  //
+  // Every other discovery tool here is built around a TOPIC or a TERM:
+  // discover_social_posts takes a niche, search_mentions takes a brand,
+  // search_creators takes a keyword. None is built around a PROBLEM SOMEONE
+  // DESCRIBED, which is the shape of "find people who would want this".
+  //
+  // A user asked exactly that — "search X and Reddit for people that might see
+  // our product as a great use for their daily struggle" — and the model did
+  // the only thing available: fed the pain point into discover_social_posts as
+  // a `niche`. That argument is documented as "Niche/topic, e.g. 'fitness'",
+  // the backend runs it as a keyword search, and a seven-word sentence matched
+  // on its commonest words. Seven of eight results were marketing content; the
+  // one on-target result was a competitor's ad.
+  //
+  // What this does differently is not smarter matching — we run the same
+  // keyword search, because that is what the backend has. It is that the query
+  // is EXPANDED into the shapes a complaint actually takes, the platforms
+  // default to where people complain rather than where people market, and the
+  // result says plainly that it is a wide net the caller still has to sort.
+  // The judging is the host's, per this repo's whole design.
+  server.registerTool(
+    "find_people_with_problem",
+    {
+      title: "Find People With A Problem",
+      _meta: viewMeta("find_people_with_problem"),
+      description:
+        "Find people describing a problem in their own words — prospects, early users, anyone " +
+        "whose complaint your product answers. Say the problem the way a person would say it " +
+        "(\"I spend hours checking competitors by hand\") and this searches for posts shaped like " +
+        "that complaint, not for the topic it is about. That difference is the point: searching " +
+        "the TOPIC finds marketing about it, which is what discover_social_posts is for. " +
+        "Widens the query into the forms a complaint takes — the plain phrasing, the " +
+        "does-anyone-else question, the is-there-a-tool ask — and merges what each returns. " +
+        "It is a wide cheap net and NOT a filter: the posts come back for you to judge, and " +
+        "many will be off-target. Consumes 2 nooticr credits per platform searched. Defaults to " +
+        "reddit, where people describe workflow pain in sentences; add twitter for volume.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      outputSchema: OUTPUT_SCHEMAS.find_people_with_problem,
+      inputSchema: z
+        .object({
+          problem: z
+            .string()
+            .describe(
+              "The problem in a person's own words, not a topic. \"I waste an hour a day " +
+                "checking what competitors posted\" finds people; \"competitor analysis\" finds " +
+                "marketing about competitor analysis.",
+            ),
+          platforms: z
+            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram", "linkedin"]))
+            .optional()
+            .describe("Where to look (default reddit). Each one is a separate paid search."),
+          limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."),
+        })
+        .strict(),
+    },
+    async (args: { problem: string; platforms?: string[]; limit?: number }, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const spend = new Spend();
+      const problem = args.problem.trim();
+      const platforms = args.platforms?.length ? args.platforms : ["reddit"];
+      const cap = clamp(args.limit, 6, 1, 15);
+
+      // The shapes a complaint takes, rather than the topic it is about. Kept
+      // to three: each is a paid call per platform, and past three they start
+      // returning the same posts as each other.
+      const shapes = [
+        { shape: "plain", query: problem },
+        { shape: "shared", query: `anyone else ${problem}` },
+        { shape: "asking", query: `is there a way to ${problem}` },
+      ];
+
+      const seen = new Set<string>();
+      const posts: Row[] = [];
+      const unavailable: Row[] = [];
+      for (const platform of platforms) {
+        for (const { shape, query } of shapes) {
+          try {
+            const res = await client.callTool("discover_social_posts", { niche: query, platform, limit: cap });
+            const structured = (res.structured ?? {}) as Row;
+            spend.record("discover_social_posts", structured);
+            for (const raw of (structured.posts as Row[]) ?? []) {
+              const key = String(raw.externalUrl ?? raw.url ?? JSON.stringify(raw));
+              if (seen.has(key)) continue;
+              seen.add(key);
+              // `foundBy` is what makes the net inspectable: a post only the
+              // does-anyone-else phrasing found is a different kind of hit
+              // from one the plain phrasing found, and the caller judging
+              // these should be able to see which.
+              posts.push({ ...raw, foundBy: shape, platform: raw.platform ?? platform });
+            }
+          } catch (err) {
+            spend.attempted("discover_social_posts");
+            // A platform that failed is reported, not retried with different
+            // words — the failure is the network, not the phrasing. See #49.
+            unavailable.push({ platform, shape, reason: reason(err) });
+          }
+        }
+      }
+
+      if (!posts.length) {
+        return evidence(
+          [
+            `Nothing came back for "${problem}" on ${platforms.join(", ")}.`,
+            "",
+            unavailable.length
+              ? `${unavailable.length} of ${platforms.length * shapes.length} searches errored, so ` +
+                "this may be the network rather than the problem statement — say which networks " +
+                "could not be searched rather than reporting an empty result as a finding."
+              : "The searches worked and found nothing shaped like this complaint. Try the " +
+                "problem in fewer, plainer words — this is a keyword search underneath, so a " +
+                "long sentence matches on its commonest words.",
+            "",
+            ownIt,
+          ].join("\n"),
+          {
+            mode: "evidence",
+            tool: "find_people_with_problem",
+            problem,
+            platforms,
+            posts: [],
+            unavailable,
+            creditsCharged: spend.credits,
+            mcpCredits: spend.payload,
+          },
+        );
+      }
+
+      return evidence(
+        [
+          `${posts.length} posts that might be someone describing "${problem}", across ` +
+            `${platforms.join(", ")}.`,
+          "",
+          "This is a wide net, not a filter. It is a keyword search underneath, so a good number " +
+            "of these will be marketing ABOUT the problem rather than someone having it — that " +
+            "distinction is the whole job here and it is yours to make, not something the search " +
+            "could do.",
+          "",
+          "For each post decide: is this person describing this problem as THEIRS, right now? A " +
+            "complaint, a question, a workaround they are tired of, all count. An ad for a tool " +
+            "that solves it does not, and neither does a listicle. Quote the line that made you " +
+            "decide, and name the post you are reasoning from.",
+          "",
+          "Report the ones that qualify with their permalink, so they can actually be replied to, " +
+            "and say how many you rejected and why — a shortlist with no reject count reads as if " +
+            "the search was precise.",
+          "",
+          "`foundBy` says which phrasing surfaced each post: `plain` the problem itself, `shared` " +
+            "the does-anyone-else form, `asking` the is-there-a-tool form. The last two skew " +
+            "towards genuine complaints and the first towards content about the topic.",
+          "",
+          unavailable.length
+            ? `Note that ${unavailable.length} searches errored — tell the user which networks ` +
+              "could not be searched rather than presenting this as the whole picture.\n"
+            : "",
+          ownIt,
+        ]
+          .filter((l, i, all) => !(l === "" && all[i - 1] === ""))
+          .join("\n"),
+        {
+          mode: "evidence",
+          tool: "find_people_with_problem",
+          evidenceFrom: ["discover_social_posts"],
+          problem,
+          platforms,
+          // `posts` is the key the gallery view already draws, so this needs no
+          // view of its own.
+          posts,
+          searchedShapes: shapes.map((s) => s.shape),
+          unavailable,
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        },
+      );
+    },
+  );
+
 }

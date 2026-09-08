@@ -83,7 +83,7 @@ whenever you touch a tool's guidance text, a `show_*` view, or anything in
 `understand_social_post`'s `focus` argument, `create_variants`' `count`/
 `angle`, and `write_hooks`' `topic`/`count`/`tone` all being accepted by
 the zod schema and silently dropped by the guidance builder, and
-`track_competitor`/`why_did_this_underperform` computing a real
+`track_creator`/`why_did_this_underperform` computing a real
 ratio-to-baseline verdict per post that `postCard()` never rendered.
 
 **The rule, stated plainly: never mock the reasoning step.** A tool whose
@@ -198,24 +198,66 @@ re-run just one:
    CI runs this same script, so a local pass is the real thing rather than an
    approximation of it. Needs a `npm run build` first: it checks `dist/`, so a
    stale build checks a stale surface.
-4. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
+4. `npm run chain:map` — boots the fixture backend, calls every tool for real,
+   and fails if a guidance edge would not reach a host or a `show_*` view has
+   nothing naming it. No model, so it is cheap and deterministic; see
+   **Whether a chain holds is its own question** below for why it exists.
+5. `npm run conformance:mcpjam` (wraps `scripts/mcpjam-apps-conformance.sh`)
    if you touched anything UI-shaped — a resource mime type, `_meta`, or the
    dual-mime template. Same check CI's `MCP Apps conformance` job runs.
-5. `npx playwright test` — browser E2E for the view template. CI installs its
+6. `npx playwright test` — browser E2E for the view template. CI installs its
    own browser; `playwright.config.ts` also falls back to a preinstalled
    Chromium (`PLAYWRIGHT_CHROMIUM_EXECUTABLE`, else `/opt/pw-browsers/chromium`)
    for sandboxes that block `cdn.playwright.dev`, so the suite usually runs
    even where `npx playwright install` 403s. If it genuinely cannot launch a
    browser, say so rather than claiming the e2e suite passed.
-6. Never hand-bump `package.json`'s version — the `version` job in CI owns
+7. Never hand-bump `package.json`'s version — the `version` job in CI owns
    that (it also updates `.claude-plugin/plugin.json` and
    `MCP_SERVER_VERSION` together, see its comments for why the three drifted
    before this existed). Land your change and let CI decide the version.
 
-A note on what these check that the unit tests do not: steps 3 and 4 drive the
-**built** server over stdio as a host would. `tools/list` returning a tool the
+A note on what these check that the unit tests do not: steps 3, 4 and 5 drive
+the **built** server over stdio as a host would. `tools/list` returning a tool the
 template cannot draw, a `.html` twin that 404s, a resource on the wrong mime —
 none of that is visible to vitest, and all of it is visible to a user.
+
+## Whether a chain holds is its own question
+
+Everything in the section above tests one call. The failure that is invisible
+to all of it lives *between* two calls: a tool's guidance says "when you are
+done, call `show_analysis`", the host writes a good analysis, never calls it,
+and every test stays green because every individual call worked.
+
+`npm run test:quests` is that layer — a real host (`claude -p`) driven through
+plain-language requests against the fixture backend, asserting on the chain of
+tools it actually walked. `npm run chain:map` is its deterministic half: it
+calls every tool for real and reads back which other tools the guidance names,
+so a stale pointer or an orphaned `show_*` shows up without spending on a
+model. That one **is** in `npm run verify` and in CI, and it gates on the two
+failures that are never acceptable — a guidance edge that lives only in a
+`content` text block, and a `show_*` view no tool's guidance names. Both of
+those shipped once, in the same week, past a fully green suite.
+
+Two things to know before adding a quest, both learned the expensive way and
+written up in `docs/testing/tool-chaining-quests.md`:
+
+- **Guidance in a `content` text block does not reach Claude Code** when the
+  result also carries `structuredContent` — which is every tool here. Measured:
+  0 of 59 quest runs, across 175 tool results, contained a single guidance
+  phrase. Prose inside `structuredContent` does arrive (see
+  `who_should_i_work_with`'s `rubric`); a sentence added to a `guidance()`
+  builder expecting it to steer a Claude host is dead text today.
+- **What decides whether a chain holds is retrieval, not wording.** With this
+  many tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
+  in a `show_*` tool, it was called 0/18 times when ToolSearch never returned
+  it and 14/18 when it did. The 3/3 case (`repurpose_post ->
+  show_repurposed_post`) was decided by the model's FIRST query naming both —
+  a shared name stem — before any description was in context. So a `show_X`
+  nobody searches for steers nothing, however well its description reads.
+- **A fixture a model can tell is a fixture measures itself.** A caption
+  saying "not real content" makes the model stop and say so, which reads in a
+  chaining report as a broken chain. `FIXTURE_POST` in
+  `scripts/fixture-server.mjs` is plausible on purpose.
 
 ## Finding the bugs no single test can see
 

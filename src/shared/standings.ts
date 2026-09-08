@@ -2,7 +2,7 @@
  * Putting two creators side by side (issue #30).
  *
  * The surface had a strong and correct stance on baselines, applied in one
- * direction only. `track_competitor` scores each post against the median of
+ * direction only. `track_creator` scores each post against the median of
  * that creator's own window, "because a raw view count mostly measures
  * follower count — outperformance against themselves is the signal".
  * `why_did_this_underperform` does the same for a single post.
@@ -205,6 +205,11 @@ export function standingsGuidance(a: {
       "baseline is itself moving — that needs a second point in time, which nothing stores yet " +
       "(issue #28). So do not read a high hit rate as 'improving'; it is 'consistent within this " +
       "window' and nothing more.",
+    "",
+    "When you have decided what the numbers say, call show_standings with the rows and the axis " +
+      "you ranked on. Free, and it is the one place the ranking is attributed to you rather than " +
+      "presented as a nooticr score — it also draws a creator with too thin a window as unranked " +
+      "rather than last, which is the mistake a plain table makes on your behalf.",
   );
   return lines.join("\n");
 }

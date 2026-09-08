@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-64 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+68 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Seven of them — the ones under **Answer a question you actually have** — are not
@@ -115,10 +115,11 @@ them caps that fan-out with an argument.
 | `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
 | `show_standings` | free | Draws the standings your model read out of `compare_creators` or `watchlist_standings` — one row per creator, with the window and the median it was scored against. `ranking` records which axis you ordered on, and `tooThin` draws a creator with too short a window as unranked rather than last: missing from a comparison is not the same as losing it. Makes no requests. |
 | `show_trend` | free | Draws the trend your model read out of `mention_trend`. `tooShort` marks a series with too few points to call a direction, and `edgeIsRecordStart` marks a left edge that is where the record begins rather than where the conversation did — a chart hiding either is the mistake this view could otherwise make on your behalf. Makes no requests. |
-| `track_competitor` | 2 | What a creator shipped, and which of it beat **their own** median rather than a raw view count that mostly measures follower count. One post list, whatever the window. If they are on your watchlist it also marks what is new since your last check and moves that marker forward — its own marker, not the one `catch_up_watchlist` keeps. |
+| `track_creator` | 2 | What a creator shipped, and which of it beat **their own** median rather than a raw view count that mostly measures follower count. One post list, whatever the window. If they are on your watchlist it also marks what is new since your last check and moves that marker forward — its own marker, not the one `catch_up_watchlist` keeps. |
 | `compare_creators` | 2 per creator (4-10) | Two to five creators side by side on the one axis that compares: each post's ratio to **that creator's own** median. Per creator you get the window that was scored, their median, the share of it that beat that median, how hard they beat it when they did, every ratio, and their best and worst post. It does not rank them — "how often they land one" and "how big it is when they do" usually disagree, and a hit rate over a short window is one post either way, so the window travels with every number and the read is yours. |
 | `watchlist_standings` | 2 per watched creator | The same, across everyone on your watchlist: "who moved" in one call instead of one per creator. Reading the watchlist is free; the fetches are not, so it confirms the total before spending. `catch_up_watchlist` answers what is **new**; this answers how it **did**. |
 | `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. Every candidate also carries the **links pulled out of their bio**, typed and sorted by how much opening one will tell you — a repository to read the code in, their own site, a link hub that holds the real links — so vetting is reading the work rather than re-reading the follower count. Those links are never fetched here: they came out of a field the person being evaluated controls, so the host opens them, and the result says so. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
+| `find_people_with_problem` | 2 per platform | Find people **describing a problem in their own words** — prospects, early users, anyone whose complaint your product answers. Say the problem the way a person would say it and it searches for posts shaped like that complaint rather than for the topic it is about: searching the topic finds marketing about it, which is what `discover_social_posts` is for. Widens the query into the forms a complaint takes — the plain phrasing, the does-anyone-else question, the is-there-a-tool ask — and marks which one surfaced each post. A wide cheap net and **not** a filter: the posts come back for you to judge, and plenty will be off-target. Defaults to reddit, where people describe workflow pain in sentences. |
 | `show_collab_shortlist` | free | Draws the candidates you scored, ranked, and asks the user which to approach. The scores are attributed to your model, not presented as a nooticr rating, and a candidate scored without anything having been opened is marked unverified. Makes no requests. |
 | `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
@@ -529,9 +530,11 @@ Those are unit tests against a stub backend. For real MCP-protocol
 end-to-end tests — no Rust, no Postgres, no API key —
 `npm run test:e2e-smoke:fixture` spawns this repo's real built CLI and
 drives it over stdio against a pure-Node stand-in for nooticr-server. See
-`docs/testing/agentic-e2e-testing.md` for that plus the two tiers above it
-(`npm run test:e2e-smoke` against a real nooticr-server, and
-`npm run test:agentic-e2e`, a real model driving it), and for
+`docs/testing/agentic-e2e-testing.md` for that plus the tier above it
+(`npm run test:e2e-smoke` against a real nooticr-server). For a real model
+driving the server through whole journeys — asserting on the chain of tools
+it walks, not on one call — see `npm run test:quests` and
+`docs/testing/tool-chaining-quests.md`. And for
 `tests/e2e/agentic-visual*.e2e.ts` — every reachable widget view, driven by
 a real tool-call result, rendered in a real browser with every host-facing
 button actually clicked (`npx playwright test tests/e2e/agentic-visual.e2e.ts

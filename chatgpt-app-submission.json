@@ -123,7 +123,7 @@
         "destructiveHint": false
       },
       "justifications": {
-        "read_only_justification": "Read-only: it fetches each named creator's recent posts and scores them against that creator's own median. Nothing is written — it does not touch the watchlist, unlike track_competitor.",
+        "read_only_justification": "Read-only: it fetches each named creator's recent posts and scores them against that creator's own median. Nothing is written — it does not touch the watchlist, unlike track_creator.",
         "open_world_justification": "Reaches the public internet: one get_user_posts fetch per creator through nooticr's API to third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
@@ -208,6 +208,18 @@
       },
       "justifications": {
         "read_only_justification": "Read-only: it searches a niche for recent public posts. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "find_people_with_problem": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches for public posts shaped like a complaint. Nothing is written — no watchlist, no marker, no draft.",
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
@@ -704,7 +716,7 @@
         "destructive_justification": "Destructive: it halts a recurring watch. Nothing further is charged and the due run does not happen, which is deliberate — a user out of credits is exactly the user who needs to turn off what is spending them."
       }
     },
-    "track_competitor": {
+    "track_creator": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": true,
@@ -847,7 +859,7 @@
     {
       "description": "A competitor measured against their own baseline rather than a raw view count, because a raw count mostly measures follower size.",
       "user_prompt": "What has @zoundsapp shipped lately, and which of it actually beat their own average?",
-      "tools_triggered": "track_competitor",
+      "tools_triggered": "track_creator",
       "expected_output": "Their recent posts with each scored against the median of that same window, marking which beat it and by how much."
     },
     {
