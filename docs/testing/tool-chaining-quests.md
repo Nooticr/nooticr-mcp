@@ -33,8 +33,8 @@ npx vitest run tests/quests.test.ts         # the harness's own logic, no model
 
 When a tool result carries `structuredContent`, Claude Code drops **every**
 `content` text block, keeps the non-text blocks, and appends the serialised
-`structuredContent` as the only text the model sees. All 64 tools the built
-server publishes declare an `outputSchema` and therefore return
+`structuredContent` as the only text the model sees. Every tool the built
+server publishes declares an `outputSchema` and therefore returns
 `structuredContent`. So `evidence.ts`'s premise —
 
 > *"A tool result is the only channel to the calling model — prompts are
@@ -48,10 +48,10 @@ is visible", "reason over this yourself", "chosen by scene change", "billed as
 the fetches", …) each appear in 0 of 59 transcripts.
 
 `node scripts/chain-map.mjs` reaches the same answer without spending on a
-model: it calls all 64 tools for real, finds 31 guidance edges (one tool's
+model: it calls every tool for real, finds 31 guidance edges (one tool's
 result naming another tool), and reports that **0 of the 31** survive on a
-host that renders `structuredContent` — 57 of 64 tools carry their guidance in
-a text block and nowhere else.
+host that renders `structuredContent` — 57 of the 64 tools that existed when
+this was measured carried their guidance in a text block and nowhere else.
 
 Say it precisely, because the absolute version is wrong: *text-block* guidance
 never arrives. Prose that lives **inside** `structuredContent` does — e.g.
@@ -103,8 +103,8 @@ after you have done the analysing, not instead of it"* — the same template as
 `show_comparison` and `show_collab_shortlist` (both 0/3) name theirs too.
 The wording does not vary between the cases that pass and the cases that fail.
 
-What varies is whether the tool was ever **retrieved**. 64 tools is past the
-point where Claude Code keeps them all in context, so every one of them sits
+What varies is whether the tool was ever **retrieved**. This many tools is
+past the point where Claude Code keeps them all in context, so every one of them sits
 behind a `ToolSearch` and only enters context if a search returns it. Over the
 36 runs whose expected chain ends in a `show_*` tool:
 
@@ -227,7 +227,7 @@ The driver is the **Claude Code CLI** (`claude -p`), not an agent loop built
 for testing. Three things follow from that, and each of them is the point:
 
 - It is the same binary a user installs, with the same system prompt.
-- This server publishes 64 tools, which is past the point where Claude Code
+- This server publishes 68 tools, which is past the point where Claude Code
   stops putting them all in context and defers them behind a `ToolSearch`.
   A real chain here starts with the model having to *find the next tool by
   name* — which is exactly the condition under which a guidance sentence

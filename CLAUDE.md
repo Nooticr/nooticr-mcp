@@ -235,13 +235,13 @@ Two things to know before adding a quest, both learned the expensive way and
 written up in `docs/testing/tool-chaining-quests.md`:
 
 - **Guidance in a `content` text block does not reach Claude Code** when the
-  result also carries `structuredContent` — which is all 64 tools. Measured:
+  result also carries `structuredContent` — which is every tool here. Measured:
   0 of 59 quest runs, across 175 tool results, contained a single guidance
   phrase. Prose inside `structuredContent` does arrive (see
   `who_should_i_work_with`'s `rubric`); a sentence added to a `guidance()`
   builder expecting it to steer a Claude host is dead text today.
-- **What decides whether a chain holds is retrieval, not wording.** With 64
-  tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
+- **What decides whether a chain holds is retrieval, not wording.** With this
+  many tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
   in a `show_*` tool, it was called 0/18 times when ToolSearch never returned
   it and 14/18 when it did. The 3/3 case (`repurpose_post ->
   show_repurposed_post`) was decided by the model's FIRST query naming both —
