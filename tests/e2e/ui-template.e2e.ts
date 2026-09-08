@@ -1867,3 +1867,169 @@ test.describe("brand sweep shows the post, not just its comments", () => {
     await expect(page.locator(".mention")).toHaveCount(1);
   });
 });
+
+// Standings put creators on one axis, and the number that makes that legal is
+// the window each was scored over. A table that draws a hit rate without its
+// denominator, or a five-post creator in third place, is the view asserting
+// something the tool refused to (issue #30).
+test.describe("standings", () => {
+  const ROWS = {
+    tool: "compare_creators", metric: "views", thinWindow: 8, aboveRatio: 1.25,
+    ranking: "how hard they beat their own median, not how often",
+    verdict: "@small lands one less often but twice as hard.",
+    creators: [
+      { handle: "small", platform: "tiktok", window: 12, baseline: { median: 41000 }, hitRate: 0.25,
+        medianWinRatio: 3.4, best: { caption: "Launching on a Friday" } },
+      { handle: "large", platform: "tiktok", window: 12, baseline: { median: 380000 }, hitRate: 0.5,
+        medianWinRatio: 1.6, best: { title: "We rebuilt onboarding" } },
+      { handle: "brief", platform: "tiktok", window: 5, baseline: { median: 900 }, hitRate: 0.4,
+        medianWinRatio: 2.1, best: { caption: "day 1" } },
+      { handle: "gone", platform: "tiktok", window: 0, baseline: null, hitRate: null,
+        medianWinRatio: null, unavailable: "no posts came back for this handle" },
+    ],
+  };
+
+  test("draws each creator's own median, not a shared scale", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const body = page.locator(".card-body");
+    await expect(body).toContainText("each against their OWN median views");
+    await expect(body).toContainText("41.0K");
+    await expect(body).toContainText("380.0K");
+  });
+
+  test("every row carries the window it was scored over", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    // The denominator, on screen. Without it a hit rate cannot be judged.
+    const windows = await page.$$eval("tbody tr td:nth-child(2)", (c) => c.map((x) => x.textContent?.trim()));
+    expect(windows).toContain("12");
+    expect(windows).toContain("5");
+  });
+
+  test("a window too short to rank is badged, not placed", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const brief = page.locator("tbody tr", { hasText: "@brief" }).first();
+    await expect(brief).toContainText("too thin to rank");
+    // ...and a long enough one is not badged.
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).not.toContainText("too thin");
+  });
+
+  test("the model's own tooThin list badges a row the window alone would not", async ({ page }) => {
+    await renderTemplate(page, { ...ROWS, tooThin: ["large"] });
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).toContainText("too thin to rank");
+  });
+
+  test("a creator who could not be fetched shows the reason, not a zero", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const gone = page.locator("tbody tr", { hasText: "@gone" }).first();
+    await expect(gone).toContainText("no posts came back");
+    // Absent from the comparison, not bottom of it: no fabricated 0%.
+    await expect(gone).not.toContainText("0%");
+  });
+
+  test("it says which axis the order is on, since the two disagree", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    await expect(page.locator(".card-body")).toContainText("Ordered on: how hard they beat");
+  });
+
+  test("the caveats reach the person, not only the model", async ({ page }) => {
+    await renderTemplate(page, ROWS);
+    const body = page.locator(".card-body");
+    await expect(body).toContainText("mostly measures follower count");
+    await expect(body).toContainText("A window under 8 posts is one post either way");
+    await expect(body).toContainText("second point in time");
+  });
+
+  test("show_standings renders from its own discriminator", async ({ page }) => {
+    // The free view is called with no `tool` field, so `standings: true` is
+    // what routes it — and the creator gallery claims `creators` first.
+    await renderTemplate(page, {
+      standings: true, metric: "likes",
+      creators: [{ handle: "solo", platform: "tiktok", window: 10, baseline: { median: 5 }, hitRate: 0.1, medianWinRatio: 2 }],
+    });
+    await expect(page.locator(".card-body")).toContainText("Standings");
+    await expect(page.locator(".card-body")).toContainText("median likes");
+  });
+
+  test("a watchlist run says how many it is watching", async ({ page }) => {
+    await renderTemplate(page, { ...ROWS, tool: "watchlist_standings", watching: 4 });
+    await expect(page.locator(".card-body")).toContainText("watchlist of 4");
+  });
+});
+
+// The hashtag view served one source and hardcoded its label, so a Reddit
+// result read "TikTok · US · last 7 days" and every row drew a "▬ steady"
+// chip for a direction nobody measured — the exact shape of bug the repo's
+// own notes warn about: two artifacts locally correct, no test spanning them
+// (issue #32).
+test.describe("hashtags from a trend board and from a counted sweep", () => {
+  const BOARD = {
+    source: "trend-board", platform: "tiktok", country: "GB", days: 30,
+    hashtags: [
+      { hashtag: "skincare", posts: 128000, views: 9400000000, trend: "rising", url: "https://t.test/1" },
+      { hashtag: "glowup", posts: 900, views: 40000000, trend: "steady", url: "https://t.test/3" },
+    ],
+  };
+  const DERIVED = {
+    source: "derived-from-sweep", platform: "reddit", niche: "skincare", sweptPosts: 24,
+    note: "Counted across 24 recent reddit posts. This is a sample of one search, not a trend board.",
+    hashtags: [
+      { hashtag: "skincare", posts: 9, views: 41000, medianViews: 3800, example: "https://r.test/1" },
+      { hashtag: "护肤", posts: 4, views: 12000, medianViews: 2900, example: "https://r.test/2" },
+      { hashtag: "retinol", posts: 2, views: null, medianViews: null, example: null },
+    ],
+  };
+
+  test("the trend board keeps its arrows and says which board it is", async ({ page }) => {
+    await renderTemplate(page, BOARD);
+    await expect(page.locator(".card-body")).toContainText("TikTok trend board · GB · last 30 days");
+    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
+    expect(chips).toEqual(["▲ rising", "▬ steady"]);
+  });
+
+  test("a counted sweep names its own network, never TikTok", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    const body = page.locator(".card-body");
+    await expect(body).toContainText("reddit · counted across 24 posts");
+    await expect(body).toContainText('matching "skincare"');
+    await expect(body).not.toContainText("TikTok");
+  });
+
+  test("a counted sweep draws no trend arrow, because nothing measured one", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
+    expect(chips, "a steady chip asserts a direction the tool did not measure").toEqual([]);
+  });
+
+  test("it draws the median the tool computed, and the caveat under it", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    const body = page.locator(".card-body");
+    // The median, not the total: one outlier in a 30-post sweep moves a total.
+    await expect(body).toContainText("median 3.8K views");
+    await expect(body).not.toContainText("41.0K views");
+    // A row the network reports no views for still renders, with just a count.
+    await expect(body).toContainText("2 posts");
+    // The caveat reaches the person, not only the model's context.
+    await expect(body).toContainText("not a trend board");
+  });
+
+  test("a non-Latin tag survives to the screen", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    await expect(page.locator(".card-body")).toContainText("#护肤");
+  });
+
+  test("a row links the example post the tool supplied", async ({ page }) => {
+    await renderTemplate(page, DERIVED);
+    await expect(page.locator('a[href="https://r.test/2"]')).toHaveCount(1);
+    // ...and a row with no example is not a link to nowhere.
+    await expect(page.locator('a[href="#"]')).toHaveCount(0);
+  });
+
+  test("a network that cannot be swept says why, not 'none found'", async ({ page }) => {
+    await renderTemplate(page, {
+      source: "derived-from-sweep", platform: "linkedin", available: false, hashtags: [],
+      reason: "linkedin cannot be swept for posts, so there is no sample to count tags in.",
+    });
+    await expect(page.locator(".empty-state")).toContainText("linkedin cannot be swept");
+    await expect(page.locator(".empty-state")).not.toContainText("No trending hashtags found");
+  });
+});

@@ -231,12 +231,6 @@ export const TOOLS: Tool[] = [
     when: "Before a run of paid calls.",
   },
   {
-    name: "buy_nooticr_credits", cost: 0, group: "account",
-    args: "—",
-    desc: "A Stripe Checkout URL for a credit pack. Credits land automatically after payment.",
-    when: "The balance is short.",
-  },
-  {
     name: "nooticr_login", cost: 0, group: "account",
     args: "—",
     desc: "Re-link the account.",

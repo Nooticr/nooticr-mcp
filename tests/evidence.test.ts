@@ -276,3 +276,114 @@ describe("get_post_frames on its own", () => {
     expect((res.structuredContent as Record<string, unknown>).frames).toBeUndefined();
   });
 });
+
+/**
+ * A documented optional argument the guidance builder never reads.
+ *
+ * This is the one bug class in this file that no schema check can see: the zod
+ * field is present, the handler types it, `tools/list` advertises it, and the
+ * guidance comes back byte-identical whether it was passed or not. It has
+ * happened five times — `understand_social_post`'s `focus`, `create_variants`'
+ * `count` and `angle`, `write_hooks`' `topic`, `count` and `tone`, and then
+ * `analyze_creator_profile`'s `focus`, which was missed by the pass that fixed
+ * the other four because that pass was a person calling tools by hand.
+ *
+ * So it is a table now. Every argument here shapes what the calling model is
+ * asked to produce rather than what is fetched upstream, which is precisely
+ * why dropping one is invisible: the fetch still happens and the answer still
+ * arrives, just not the answer that was asked for.
+ */
+const GUIDANCE_ARGS: Array<{ tool: string; arg: string; value: unknown }> = [
+  { tool: "analyze_creator_profile", arg: "focus", value: "their pinned comments" },
+  { tool: "understand_social_post", arg: "focus", value: "the on-screen text" },
+  { tool: "create_variants", arg: "angle", value: "a cheaper production" },
+  { tool: "create_variants", arg: "count", value: 5 },
+  { tool: "write_hooks", arg: "tone", value: "deadpan" },
+  { tool: "write_hooks", arg: "count", value: 4 },
+];
+
+describe("an argument a tool documents is an argument it reads", () => {
+  const guidanceOf = async (
+    client: Awaited<ReturnType<typeof connect>>["client"],
+    tool: string,
+    args: Record<string, unknown>,
+  ) => {
+    const res = await client.callTool({ name: tool, arguments: args }, undefined, {
+      timeout: 30_000,
+    });
+    return (res.content as Array<{ type: string; text?: string }>)
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("\n");
+  };
+
+  for (const { tool, arg, value } of GUIDANCE_ARGS) {
+    it(`${tool} changes what it asks for when given ${arg}`, async () => {
+      const { client } = await connect();
+      const base = await guidanceOf(client, tool, ARGS[tool]);
+      const withArg = await guidanceOf(client, tool, { ...ARGS[tool], [arg]: value });
+      expect(base, `${tool} returned no guidance at all`).not.toBe("");
+      expect(
+        withArg,
+        `${tool} accepts "${arg}" and its guidance is identical without it — the builder never reads it`,
+      ).not.toBe(base);
+    });
+  }
+
+  it("covers every guidance-shaping argument the plans declare", async () => {
+    // The table above is only as good as its coverage, and the way it rots is
+    // a new optional argument nobody adds a row for. Anything a plan's
+    // `guidance` reads off its arguments belongs here; `url`/`username`/
+    // `niche`/`urls`/`targets` are the required inputs the fetch itself needs.
+    const FETCH_ARGS = new Set([
+      "url", "urls", "username", "niche", "topic", "platform", "limit", "count", "targets",
+    ]);
+    const covered = new Set(GUIDANCE_ARGS.map((g) => `${g.tool}.${g.arg}`));
+    const uncovered: string[] = [];
+    for (const tool of TOOLS) {
+      const source = EVIDENCE_PLANS[tool].guidance.toString();
+      for (const m of source.matchAll(/\ba\.([a-zA-Z]+)/g)) {
+        const arg = m[1];
+        if (FETCH_ARGS.has(arg)) continue;
+        if (!covered.has(`${tool}.${arg}`)) uncovered.push(`${tool}.${arg}`);
+      }
+    }
+    expect([...new Set(uncovered)], "guidance reads these arguments and nothing pins them").toEqual(
+      [],
+    );
+  });
+});
+
+describe("a stated maximum is a maximum", () => {
+  /**
+   * Three plans documented `max 40` / `max 30` and passed the argument through
+   * unclamped, so `limit: 500` asked the backend for 500 posts. The ceiling
+   * was real in the description a host reads and nowhere else.
+   */
+  const CLAMPED: Array<{ tool: string; arg: string; max: number }> = [
+    { tool: "analyze_creator_profile", arg: "limit", max: 30 },
+    { tool: "find_hook_pattern", arg: "limit", max: 40 },
+    { tool: "niche_report", arg: "count", max: 40 },
+  ];
+
+  for (const { tool, arg, max } of CLAMPED) {
+    it(`${tool} clamps ${arg} to ${max} however large the argument`, async () => {
+      const { client, calls } = await connect();
+      await client.callTool(
+        { name: tool, arguments: { ...ARGS[tool], [arg]: 500 } },
+        undefined,
+        { timeout: 30_000 },
+      );
+      const fetched = calls.find((c) => c.name === EVIDENCE_PLANS[tool].via);
+      expect(fetched, `${tool} made no ${EVIDENCE_PLANS[tool].via} call`).toBeTruthy();
+      expect(Number(fetched!.args.limit)).toBe(max);
+    });
+
+    it(`${tool} keeps its documented default when ${arg} is absent`, async () => {
+      const { client, calls } = await connect();
+      await client.callTool({ name: tool, arguments: ARGS[tool] }, undefined, { timeout: 30_000 });
+      const fetched = calls.find((c) => c.name === EVIDENCE_PLANS[tool].via);
+      expect(Number(fetched!.args.limit)).toBe(12);
+    });
+  }
+});

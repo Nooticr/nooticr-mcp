@@ -35,6 +35,23 @@
  * documentation; it is the steering, and it lands in the model's context.
  */
 import { BACKEND_CALL_CREDITS, costOf } from "./spend.js";
+import { numberOf } from "./performance.js";
+
+/**
+ * Every fan-out is capped; the cap is an argument, and the argument is clamped.
+ *
+ * Lives here rather than beside its first caller in jobs.ts because the
+ * evidence plans need it too, and for a while did not have it: three of them
+ * documented a `max` in their zod schema and then passed the argument straight
+ * through, so the ceiling a host read was never enforced and `limit: 500`
+ * fetched 500. One clamp for both files, and the import already runs this way
+ * round — jobs.ts imports evidence.ts, never the reverse.
+ */
+export function clamp(value: unknown, fallback: number, min: number, max: number): number {
+  const n = Math.floor(numberOf(value ?? fallback));
+  if (!n) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
 
 /** Which cheap call stands in for each AI tool's expensive one. */
 export interface EvidencePlan {
@@ -252,18 +269,26 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     args: (a) => ({
       username: String(a.username ?? ""),
       platform: a.platform,
-      limit: Number(a.limit ?? 12),
+      limit: clamp(a.limit, 12, 1, 30),
     }),
-    guidance: (a) =>
-      [
+    guidance: (a) => {
+      const focus = String(a.focus ?? "").trim();
+      return [
         `Recent posts by ${a.username}, with their stats.`,
         "",
         "Work out this creator's niche, recurring themes, hook formula, what",
         "over- and under-performs for them, and who their audience is. Use the",
         "spread of the numbers, not just the best post. Name the posts you are",
         "reasoning from.",
+        ...(focus
+          ? [
+              "",
+              `Focus for this pass, as asked: ${focus}. Still cover the profile as a whole, but weight what you cover toward this.`,
+            ]
+          : []),
         ownIt,
-      ].join("\n"),
+      ].join("\n");
+    },
   },
 
   find_hook_pattern: {
@@ -271,7 +296,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     args: (a) => ({
       username: String(a.username ?? ""),
       platform: a.platform,
-      limit: Number(a.limit ?? 12),
+      limit: clamp(a.limit, 12, 1, 40),
     }),
     guidance: (a) =>
       [
@@ -290,7 +315,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     args: (a) => ({
       niche: String(a.niche ?? ""),
       platform: a.platform,
-      limit: Number(a.count ?? 12),
+      limit: clamp(a.count, 12, 1, 40),
     }),
     guidance: (a) =>
       [

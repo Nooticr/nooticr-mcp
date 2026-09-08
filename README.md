@@ -14,8 +14,8 @@ model of ours for an opinion first. You pay for the fetch and nothing else.
 
 It also **monitors a name**: `search_mentions` sweeps nine of those networks for
 every comment that says your brand, inside a date window you choose, and
-`search_spoken_mentions` reads the words actually said out loud in TikTok and
-YouTube videos for the mentions that were never typed anywhere.
+`search_spoken_mentions` reads the words actually said out loud in TikTok,
+YouTube and Douyin videos for the mentions that were never typed anywhere.
 
 Runs over stdio locally or as a hosted connector at `https://mcp.nooticr.com/mcp`.
 Billed against your nooticr credits; new accounts get 20 free.
@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-49 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+64 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Seven of them — the ones under **Answer a question you actually have** — are not
@@ -67,7 +67,7 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
-| `get_post_transcript` | 1 | The words actually spoken, read from the post's caption track (TikTok and YouTube). Exact rather than inferred, and far cheaper than watching the video. Use before any analysis when the wording matters. |
+| `get_post_transcript` | 1 | The words actually spoken. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is — exact rather than inferred, and far cheaper than watching the video; everywhere else the post's own audio is transcribed, which needs speech-to-text configured on the server. Use before any analysis when the wording matters. |
 | `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
@@ -93,14 +93,15 @@ them caps that fan-out with an argument.
 | `search_creators` | 2 | People by what they make — designers, developers, photographers, anyone with an audience — found by craft, niche or keyword. Use when you know the kind of person but not their names. Searches TikTok, Instagram and Xiaohongshu; **not** YouTube, Douyin, X, Reddit or LinkedIn, which cannot be creator-searched upstream. |
 | `get_similar_creators` | 2 | Lookalikes for a creator that already works. |
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
-| `discover_hashtags` | 2 | Trending hashtags with volumes and whether each is rising, cooling or steady. |
+| `discover_hashtags` | 2 | What to tag with. TikTok comes from the Creative Center trend board — volumes plus rising/cooling/steady. The other eight searchable networks have no trend board upstream, so tags are counted across a live sweep of a niche you name: real and current, but a single sample, so no rising/cooling signal. `source` says which you got. LinkedIn cannot be swept. |
 | `find_hook_pattern` | 2 | A creator's recent posts, so their opening lines can be read as a set and turned into fill-in-the-blank templates. One `get_user_posts` call. |
-| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok and YouTube. |
+| `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok, YouTube and Douyin. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
 | `create_brand_watch` | free to call | Schedule a recurring sweep and get emailed only what is new. `kind: "mentions"` (default) is a recurring `search_mentions` sweep for `term`/`platforms`; `kind: "competitor"` is a recurring `get_user_posts` check on one creator (`handle`/`platform`), mailing only what beats their own recent median. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling the matching tool yourself — 2 credits per network (5 for Xiaohongshu) for mentions, a flat 2 credits for competitor. |
 | `list_brand_watches` | free | Every watch you have scheduled: term, networks, cadence, cost per run, credits spent so far, runs made, and when the next one is due. |
+| `mention_trend` | free | **What a watch has seen over time**, which nothing else here answers — every other read is about now. One point per run: when it ran, how many mentions it found, how many were new, and both counts per network, so "which network is growing" and "did it go quiet or did we stop looking" come apart. On a competitor watch each point carries the median that run measured, which turns "they beat their own median" into "and that median has doubled". Plus the mentions more than one run has seen. Free because the sweeps were billed when they ran; charging again to read what was already paid for is the thing it fixes. |
 | `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
 | `analyze_creator_profile` | 2 | A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms, who the audience is. One `get_user_posts` call. |
@@ -112,12 +113,16 @@ them caps that fan-out with an argument.
 | `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply, because no nooticr connection carries comment-write permission on any network. `limit` caps how many posts are opened, which is the price. |
 | `prepare_handoff` | free | **The hand-off to your tracker.** Turns items you classified — a bug report in a comment, a complaint said out loud in a video — into the exact `title`, `body` and `labels` to file through whichever GitHub, Jira or Linear MCP server the host also has connected. nooticr files nothing and holds no tracker credential. The body carries the quote fenced and framed as a third-party report rather than as instructions, because the issue is read next by a coding agent; contact details are redacted, `@handles` and `#numbers` are defanged so filing notifies nobody by accident, and a `searchFirst` string dedupes a second sweep against the first. Makes no requests. |
 | `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
+| `show_standings` | free | Draws the standings your model read out of `compare_creators` or `watchlist_standings` — one row per creator, with the window and the median it was scored against. `ranking` records which axis you ordered on, and `tooThin` draws a creator with too short a window as unranked rather than last: missing from a comparison is not the same as losing it. Makes no requests. |
+| `show_trend` | free | Draws the trend your model read out of `mention_trend`. `tooShort` marks a series with too few points to call a direction, and `edgeIsRecordStart` marks a left edge that is where the record begins rather than where the conversation did — a chart hiding either is the mistake this view could otherwise make on your behalf. Makes no requests. |
 | `track_competitor` | 2 | What a creator shipped, and which of it beat **their own** median rather than a raw view count that mostly measures follower count. One post list, whatever the window. If they are on your watchlist it also marks what is new since your last check and moves that marker forward — its own marker, not the one `catch_up_watchlist` keeps. |
+| `compare_creators` | 2 per creator (4-10) | Two to five creators side by side on the one axis that compares: each post's ratio to **that creator's own** median. Per creator you get the window that was scored, their median, the share of it that beat that median, how hard they beat it when they did, every ratio, and their best and worst post. It does not rank them — "how often they land one" and "how big it is when they do" usually disagree, and a hit rate over a short window is one post either way, so the window travels with every number and the read is yours. |
+| `watchlist_standings` | 2 per watched creator | The same, across everyone on your watchlist: "who moved" in one call instead of one per creator. Reading the watchlist is free; the fetches are not, so it confirms the total before spending. `catch_up_watchlist` answers what is **new**; this answers how it **did**. |
 | `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. Every candidate also carries the **links pulled out of their bio**, typed and sorted by how much opening one will tell you — a repository to read the code in, their own site, a link hub that holds the real links — so vetting is reading the work rather than re-reading the follower count. Those links are never fetched here: they came out of a field the person being evaluated controls, so the host opens them, and the result says so. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
 | `show_collab_shortlist` | free | Draws the candidates you scored, ranked, and asks the user which to approach. The scores are attributed to your model, not presented as a nooticr rating, and a candidate scored without anything having been opened is marked unverified. Makes no requests. |
 | `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
-| `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok and YouTube only, and only where the platform actually supplies a caption track. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
+| `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok, YouTube and Douyin, and only where the creator actually enabled captions. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
 
 ### Make something
 
@@ -136,7 +141,6 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `check_nooticr_credits` | free | Balance and billing URL. |
-| `buy_nooticr_credits` | free | A Stripe Checkout URL for a credit pack. Credits land automatically after payment. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 | `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
 | `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
@@ -254,17 +258,31 @@ selectable. Free, and it makes no requests.
 ## Before an expensive call, it asks
 
 Most tools print their price in their own description, so a call costs what you
-already read. Two do not, because their price is set by an argument:
+already read. Six do not, because their price is set by an argument — or by a
+list the request never mentions:
 
 - `search_mentions` bills **per network swept**, so a bare "monitor my brand"
   sweeps all nine for 21 credits.
-- `catch_up_watchlist` bills **per creator**, so the price is the length of a
-  list the request never mentions.
+- `catch_up_watchlist` bills **per creator**, so the price is the length of your
+  watchlist.
+- `answer_my_audience` and `what_should_i_make_next` bill **per post opened**
+  (14 and 12 credits at their defaults), so they ask once the real post count is
+  known rather than on a worst case.
+- `search_spoken_mentions` bills per network, per handle and per transcript, so
+  it asks on the worst case it could reach.
+- `create_brand_watch` asks **however small the number is**, because what is
+  being agreed to is a recurring charge rather than one run.
 
-Above 6 credits those two ask first, over MCP `elicitation` — the client shows
-the number and you accept or decline. Declining spends nothing and is not an
-error. A client that does not support elicitation is not blocked; the call runs
-as it always did.
+Above 6 credits those first five ask first, over MCP `elicitation` — the client
+shows the number and you accept or decline. Declining spends nothing and is not
+an error. A client that does not support elicitation is not blocked; the call
+runs as it always did.
+
+Two rules go further than the threshold. A scheduled watch always asks, because
+the standing arrangement is the thing being approved. And a watch that emails a
+digest refuses to accept a `deliverTo` address unless a person actually saw the
+dialog and said yes — "nobody could be asked" is a fine answer for a spend and
+the wrong one for an address.
 
 ## Prerequisites
 
@@ -471,7 +489,7 @@ and text** posts.
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
   for the two that fetch frames *and* transcript. Every tool bills from the
   first call. Top up via
-  `buy_nooticr_credits`, `check_nooticr_credits`, or the nooticr dashboard at
+  `check_nooticr_credits`, or the nooticr dashboard at
   `https://nooticr.com/settings?tab=billing`.
 - **Expired refresh token**: the stored refresh token was rejected by the
   nooticr server. Run `npx @nooticr/mcp login` again to re-authenticate.

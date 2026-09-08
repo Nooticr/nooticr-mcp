@@ -4,7 +4,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "analyze_post",
  title: "Analyze Post",
- description: "Frames sampled evenly across a social post (video, image, carousel/slideshow), returned as real images you can look at, together with the post's transcript, caption and stats. It hands you the material rather than a verdict: read the frames and the words, then work out the hook, the structure, the visual style, the CTA and the audience yourself, citing the frame or line behind each claim. Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Use when the visuals are the point — framing, editing, on-screen text; analyze_post_fast reads the same post without the frames for one credit less. Fans out to get_post_frames and get_post_transcript: 3 nooticr credits, 2 for the frames plus 1 for the transcript.",
+ description: "Frames sampled evenly across a social post (video, image, carousel/slideshow), returned as real images you can look at, together with the post's transcript, caption and stats. It hands you the material rather than a verdict: read the frames and the words, then work out the hook, the structure, the visual style, the CTA and the audience yourself, citing the frame or line behind each claim. Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili and LinkedIn. Use when the visuals are the point — framing, editing, on-screen text; analyze_post_fast reads the same post without the frames for one credit less. Fans out to get_post_frames and get_post_transcript: 3 nooticr credits, 2 for the frames plus 1 for the transcript.",
  inputSchema: z.object({ url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Xiaohongshu/Weibo/Bilibili/LinkedIn).") }).strict(),
  },
  {
@@ -58,13 +58,13 @@ export const TOOL_DEFINITIONS = [
  {
  name: "understand_social_post",
  title: "Understand Social Post",
- description: "The same frames and transcript analyze_post returns, asked a different question: describe what physically happens on screen, in order, with every observation anchored to a frame. Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo and Bilibili. Use when you need the events rather than the strategy; analyze_post puts the strategic question to the same material. Fans out to get_post_frames and get_post_transcript: 3 nooticr credits, 2 for the frames plus 1 for the transcript.",
+ description: "The same frames and transcript analyze_post returns, asked a different question: describe what physically happens on screen, in order, with every observation anchored to a frame. Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili and LinkedIn. Use when you need the events rather than the strategy; analyze_post puts the strategic question to the same material. Fans out to get_post_frames and get_post_transcript: 3 nooticr credits, 2 for the frames plus 1 for the transcript.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Xiaohongshu/Weibo/Bilibili/LinkedIn)."), focus: z.string().optional().describe("Extra instruction, e.g. 'focus on the CTA'.") }).strict(),
  },
  {
  name: "get_post_transcript",
  title: "Get Post Transcript",
- description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason when the post has no captions. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",
+ description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason. A poll costs nothing, and neither does a call that comes back with no transcript. The listening route needs speech-to-text configured on the server and cannot reach Reddit or Bilibili at all. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",
  inputSchema: z.object({ url: z.string().describe("Post URL (TikTok or YouTube)."), language: z.string().optional().describe("Preferred language code, e.g. 'en'.") }).strict(),
  },
  {
@@ -82,8 +82,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "discover_hashtags",
  title: "Discover Hashtags",
- description: "Trending TikTok hashtags from the Creative Center trend board, with post counts, view counts and whether each is rising, cooling or steady. Filter by country and time window. Use to find what to tag, or to spot a wave early. Consumes 2 nooticr credits.",
- inputSchema: z.object({ country: z.string().optional().describe("2-letter country code (default US)."), days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7)."), count: z.number().int().optional().describe("Max hashtags (default 20)."), industryId: z.string().optional().describe("Optional TikTok industry id to filter by.") }).strict(),
+ description: "What to tag a post with, on any network that can be searched. TikTok is read from the Creative Center trend board: post counts, view counts, and whether each tag is rising, cooling or steady. The other eight — instagram, youtube, douyin, xiaohongshu, twitter, bilibili, reddit, weibo — have no trend board upstream, so the tags are counted across a live sweep of the niche you name, which needs `niche` set and returns no rising/cooling signal because there is no earlier sample to compare against. The result says which of the two it is in `source`; do not present a counted sample as a trend board. One network cannot be swept at all: linkedin. Filter by country and time window on TikTok. Consumes 2 nooticr credits either way. Use to find what to tag, or to spot a wave early.",
+ inputSchema: z.object({ platform: z.string().optional().describe("Network to tag for. Defaults to tiktok, the only one with a real trend board. Anything else counts tags across a sweep and needs `niche`. linkedin cannot be swept."), niche: z.string().optional().describe("Topic to sweep, required for every platform but tiktok — the tags are counted from the posts a search for this returns, so without it there is nothing to count."), country: z.string().optional().describe("2-letter country code (default US). TikTok only."), days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7). TikTok only."), count: z.number().int().optional().describe("Max hashtags (default 20)."), industryId: z.string().optional().describe("Optional TikTok industry id to filter by.") }).strict(),
  },
  {
  name: "analyze_post_fast",
@@ -161,13 +161,13 @@ export const TOOL_DEFINITIONS = [
  name: "show_comparison",
  title: "Show Comparison",
  description: "Display a comparison you wrote after compare_posts fetched the first post and you fetched the rest yourself. Free, and makes no requests — it only draws what you pass it: each post with a BEST badge on the winner, what differed, shared strengths and the next experiment worth running. Call this after you have done the comparing, not instead of it.",
- inputSchema: z.object({ posts: z.array(z.record(z.unknown())).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
+ inputSchema: z.object({ posts: z.array(z.object({}).passthrough()).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
  },
  {
  name: "show_analysis",
  title: "Show Analysis",
  description: "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post handed you the material. Free, and makes no requests — it only draws what you pass it: hook strength, script structure, quotable lines, hashtags, target audience, viral triggers and more, whichever of these you actually produced. Call this after you have done the analysing, not instead of it.",
- inputSchema: z.object({ url: z.string(), post: z.record(z.unknown()).optional(), analysis: z.record(z.unknown()) }).strict(),
+ inputSchema: z.object({ url: z.string(), post: z.object({}).passthrough().optional(), analysis: z.object({}).passthrough() }).strict(),
  },
  {
  name: "show_hooks",
@@ -179,7 +179,7 @@ export const TOOL_DEFINITIONS = [
  name: "show_variants",
  title: "Show Variants",
  description: "Display the post variants you wrote after create_variants handed you the original post's material. Free, and makes no requests — it only draws what you pass it: each variant's hook, the angle that changes, its shot beats and its call to action. Call this after you have written the variants, not instead of writing them.",
- inputSchema: z.object({ sourceUrl: z.string(), post: z.record(z.unknown()).optional(), variants: z.array(z.object({ title: z.string(), hook: z.string(), angle: z.string().optional(), beats: z.array(z.string()).optional(), cta: z.string().optional(), whyItCouldWork: z.string().optional() })).min(1) }).strict(),
+ inputSchema: z.object({ sourceUrl: z.string(), post: z.object({}).passthrough().optional(), variants: z.array(z.object({ title: z.string(), hook: z.string(), angle: z.string().optional(), beats: z.array(z.string()).optional(), cta: z.string().optional(), whyItCouldWork: z.string().optional() })).min(1) }).strict(),
  },
  {
  name: "show_repurposed_post",
@@ -190,13 +190,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "check_nooticr_credits",
  title: "Check Nooticr Credits",
- description: "Check your MCP credit balance, billing URL and pack size. New users get 20 free credits. No cost — call anytime to see remaining credits before running other tools. Use before a run of paid calls to confirm the balance covers it.",
- inputSchema: z.object({}).strict(),
- },
- {
- name: "buy_nooticr_credits",
- title: "Buy Nooticr Credits",
- description: "Buy an MCP credit pack via Stripe Checkout. Returns a secure checkout URL — open it in your browser to pay. Credits are added automatically after payment. Use when the balance is short and the user has agreed to top up. No cost to call.",
+ description: "Check your nooticr credit balance. No cost to call — call anytime to see remaining credits before running other tools. Nothing here sells or tops up credits: this server offers no purchase of any kind, so when the balance is short, say that it is and that topping up happens on the nooticr website, and do not offer a link or a price. Use before a run of paid calls to confirm the balance covers it.",
  inputSchema: z.object({}).strict(),
  },
  {
@@ -234,6 +228,18 @@ export const TOOL_DEFINITIONS = [
  title: "List Brand Watches",
  description: "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
  inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "mention_trend",
+ title: "Mention Trend",
+ description: "What a watch has SEEN OVER TIME, which no other tool here can answer — every read on this surface answers about now, and until the backend started keeping run history each sweep threw its numbers away. Takes `watchId` (or `term`) and an optional `days`. Returns one point per run: when it ran, how many mentions it found, how many were new, and both counts per network. On a competitor watch each point also carries the median that run measured. Also returns the mentions more than one run has seen. FREE: the sweeps were billed when they ran. Read the series yourself and say what changed.",
+ inputSchema: z.object({ watchId: z.string().optional(), term: z.string().optional(), days: z.number().int().optional() }).strict(),
+ },
+ {
+ name: "show_trend",
+ title: "Show Trend",
+ description: "Draw the trend you read out of mention_trend. Free, and makes no requests — it renders what you pass it: the series as a chart, per-network lines where you supply them, and your own read of what changed. Pass `tooShort` when the series has too few points to call a direction, and `edgeIsRecordStart` when the left edge is where the record begins rather than where the conversation did. Call this after you have decided what the numbers mean.",
+ inputSchema: z.object({ points: z.array(z.object({}).passthrough()).min(1).max(400), term: z.string().optional(), metric: z.string().optional(), verdict: z.string().optional(), tooShort: z.boolean().optional(), edgeIsRecordStart: z.boolean().optional() }).strict(),
  },
  {
  name: "stop_brand_watch",
@@ -293,7 +299,7 @@ export const TOOL_DEFINITIONS = [
  name: "review_post",
  title: "Review Post",
  description: "Score a post before you publish it: hook strength, an optional A-vs-B hook comparison, aesthetic and storytelling notes, and rewritten hook/caption suggestions. Pass postId for something already in your pipeline, or appId plus draft fields otherwise. Nothing is published. Free — nothing is billed for this, same as the dashboard's own pre-publish review.",
- inputSchema: z.object({ postId: z.number().int().optional(), appId: z.number().int().optional(), title: z.string().optional(), titleB: z.string().optional(), caption: z.string().optional(), contentType: z.string().optional(), thumbnailUrl: z.string().optional(), mediaItems: z.array(z.unknown()).optional(), platform: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
+ inputSchema: z.object({ postId: z.number().int().optional(), appId: z.number().int().optional(), title: z.string().optional(), titleB: z.string().optional(), caption: z.string().optional(), contentType: z.string().optional(), thumbnailUrl: z.string().optional(), mediaItems: z.array(z.any()).optional(), platform: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
  },
  {
  name: "draft_post",
@@ -350,6 +356,24 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts in the window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to rank on (default views)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD.") }).strict(),
  },
  {
+ name: "compare_creators",
+ title: "Compare Creators",
+ description: "Two to five creators side by side, each scored against THEIR OWN recent median rather than against each other's raw numbers — which is the only way the comparison means anything, because a raw view count mostly measures follower count. Returns per creator: how many posts were scored, their own median, the share of the window that beat it, how hard they beat it when they did, every post's ratio, and their best and worst post. The ranking is yours to make: 'how often' and 'how big' usually disagree, and a hit rate over a short window is one post either way, so the window size travels with every number. Fetches one post list per creator: 2 nooticr credits each, 4-10 in total. Use for 'is their hit rate better than mine'; track_competitor is one creator alone.",
+ inputSchema: z.object({ usernames: z.array(z.string()).min(2).max(5), platform: z.string().optional(), limit: z.number().int().optional(), metric: z.string().optional() }).strict(),
+ },
+ {
+ name: "watchlist_standings",
+ title: "Watchlist Standings",
+ description: "The same comparison across everyone on your watchlist, answering 'who moved' in one call instead of one per creator. Each is scored against their own recent median, so the numbers are comparable between accounts of different sizes; the window size travels with each so a short one is not ranked as if it were a season. Reads the watchlist itself for free and fetches one post list per creator on it: 2 nooticr credits each, so the price is the size of your watchlist — it confirms before spending. Use for the weekly 'who is accelerating'; catch_up_watchlist is what is NEW rather than how it did.",
+ inputSchema: z.object({ limit: z.number().int().optional(), metric: z.string().optional() }).strict(),
+ },
+ {
+ name: "show_standings",
+ title: "Show Standings",
+ description: "Draw the standings you read out of compare_creators or watchlist_standings. Free, and makes no requests — it only renders what you pass it: one row per creator with their window, their own median, how often they beat it and how hard, and the post that did best. Pass `ranking` to say which axis you ordered on, and `tooThin` for the creators whose window was too short to rank — a table that hides that is the one mistake this view can make on your behalf. Call this after you have decided what the numbers mean, not instead of deciding.",
+ inputSchema: z.object({ creators: z.array(z.object({}).passthrough()).min(1).max(25), metric: z.string().optional(), ranking: z.string().optional(), verdict: z.string().optional(), tooThin: z.array(z.string()).optional() }).strict(),
+ },
+ {
  name: "who_should_i_work_with",
  title: "Who Should I Work With",
  description: "A shortlist of people to work with \u2014 collaborators, or anyone to hire or commission: designers, developers, photographers, editors. Searches creators by craft or keyword and, when you name someone who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. Every candidate carries the links pulled out of their bio, so vetting is reading the work. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist instead of faking it. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",
@@ -370,7 +394,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "search_spoken_mentions",
  title: "Search Spoken Mentions",
- description: "Brand mentions people SAY but never type. search_mentions reads captions, post bodies and comments — text — so a video that names a brand only out loud is invisible to it. This reads the words actually spoken, from the platform's own caption track, and searches them for a term. Narrows to candidate posts first (a niche sweep, named creator handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling you set, and returns the matched line with surrounding context. TikTok and YouTube only — the only two networks whose posts carry a caption track this cheaply — and even there a video with no captions is invisible to this tool; the result says how many candidates were found, transcribed and matched. Use when a term might be spoken on camera but not written anywhere. Consumes 2 nooticr credits per platform a niche is searched on, 2 per creator handle checked, and 1 per transcript actually fetched, capped by maxTranscripts.",
+ description: "Brand mentions people SAY but never type. search_mentions reads captions, post bodies and comments — text — so a video that names a brand only out loud is invisible to it. This reads the words actually spoken, from the platform's own caption track, and searches them for a term. Narrows to candidate posts first (a niche sweep, named creator handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling you set, and returns the matched line with surrounding context. TikTok, YouTube and Douyin — the networks whose post detail already carries a caption track; every other network's audio can be transcribed at the same price but not yet from here, and even on these three a video whose creator disabled captions is invisible to this tool; the result says how many candidates were found, transcribed and matched. Use when a term might be spoken on camera but not written anywhere. Consumes 2 nooticr credits per platform a niche is searched on, 2 per creator handle checked, and 1 per transcript actually fetched, capped by maxTranscripts.",
  inputSchema: z.object({ term: z.string().describe("Brand, product or person to listen for, e.g. 'nooticr'."), platforms: z.array(z.enum(["tiktok", "youtube"])).optional().describe("Which networks to check (default: both)."), niche: z.string().optional().describe("Niche or keyword for a candidate sweep. Provide this, usernames, useWatchlist, or any combination."), usernames: z.array(z.string()).optional().describe("Specific creator handles to check."), useWatchlist: z.boolean().optional().describe("Also check your watchlisted creators on tiktok or youtube."), candidateLimit: z.number().int().optional().describe("Posts pulled per narrowing call (default 15, max 25)."), maxTranscripts: z.number().int().optional().describe("Hard ceiling on transcripts fetched (default 8, max 20).") }).strict(),
  },
  {

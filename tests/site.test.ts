@@ -8,12 +8,15 @@
  * nobody updates the page, that is a billing surprise, so it fails here first.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { landingPage } from "../cloudflare/src/site/landing.js";
 import { termsPage, privacyPage, LEGAL_EFFECTIVE } from "../cloudflare/src/site/legal.js";
+import { supportPage } from "../cloudflare/src/site/support.js";
 import { dashboardPage, dashboardSignedOut } from "../cloudflare/src/site/dashboard.js";
 import { TOOLS } from "../cloudflare/src/site/catalogue.js";
 import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
+import { BRAND } from "../cloudflare/src/site/layout.js";
 import { EVIDENCE_PLANS, planCost } from "../src/shared/evidence.js";
 
 const URL = "https://mcp.nooticr.com";
@@ -135,6 +138,187 @@ describe("legal pages", () => {
   });
 });
 
+/**
+ * The support page is a submission requirement — ChatGPT and Claude both ask
+ * for a support URL — so the things that make it one are asserted rather than
+ * eyeballed: it names the same address the legal pages do, it reaches the
+ * pages a reviewer follows next, and it is actually routed and indexed rather
+ * than existing only as a function nothing calls.
+ */
+describe("support page", () => {
+  const html = supportPage(URL);
+  const worker = readFileSync("cloudflare/src/index.ts", "utf8");
+
+  it("gives one contact address, and it is the one the rest of the site gives", () => {
+    // A support page quoting a different address from the Privacy Policy is
+    // worse than no support page: one of them is wrong and neither says which.
+    expect(BRAND.supportEmail).toBe("support@nooticr.com");
+    expect(html).toContain(`mailto:${BRAND.supportEmail}`);
+    for (const other of [termsPage(URL, API), privacyPage(URL, API)]) {
+      expect(other).toContain(`mailto:${BRAND.supportEmail}`);
+    }
+  });
+
+  it("is routed, redirected to from the obvious spellings, and in the sitemap", () => {
+    // The page function existing proves nothing — this is the wiring.
+    expect(worker).toContain('path === "/support"');
+    expect(worker).toContain("supportPage(env.PUBLIC_URL)");
+    expect(worker).toMatch(/path === "\/contact" \|\| path === "\/help"/);
+    expect(worker).toContain('const pages = ["/", "/documentation", "/support", "/terms", "/privacy"]');
+  });
+
+  it("is linked from every page's footer, not buried", () => {
+    for (const [name, page] of [
+      ["landing", landingPage(URL, API)],
+      ["terms", termsPage(URL, API)],
+      ["privacy", privacyPage(URL, API)],
+      ["support", html],
+    ] as const) {
+      expect(page, `${name} does not link /support`).toContain('href="/support"');
+    }
+  });
+
+  it("answers the four questions it claims to answer", () => {
+    // Each of these has a real answer elsewhere in the product, and a support
+    // page that collects a message instead of giving it wastes both sides' time.
+    for (const claim of [
+      "Creator search covers TikTok, Instagram and Xiaohongshu",
+      "cannot reach Reddit or Bilibili",
+      "is not billed",
+      "render no widgets at all",
+      "within 30 days",
+    ]) {
+      expect(html, `support page omits "${claim}"`).toContain(claim);
+    }
+    expect(html).toContain('href="/documentation#tools"');
+    expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain('href="/terms"');
+  });
+
+  it("collects nothing: no form, and the button is a mailto", () => {
+    // A form with no action submits GET to the current URL, so with scripting
+    // off everything typed would land in a request line for /support — which
+    // would make the page's own promise false. There is no form at all.
+    expect(html).not.toContain("<form");
+    expect(html).not.toContain("onsubmit");
+    expect(html).toMatch(/id="send" href="mailto:/);
+    expect(html).toContain("Nothing is submitted to us from this page");
+  });
+
+  it("emits a composer script that actually parses", () => {
+    // It did not, once. An escape lost in an edit put a literal newline inside
+    // a JS string, so the emitted script was a syntax error: the button kept
+    // its bare mailto and every field was silently dropped, with nothing
+    // thrown anywhere a person would look. `new Function` is the cheapest
+    // thing that would have caught it.
+    const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+    expect(script, "no composer script in the page").toBeTruthy();
+    expect(() => new Function(script as string)).not.toThrow();
+    // And it must still be building the body from the fields.
+    for (const id of ["summary", "detail", "tool", "client", "link", "account", "topic"]) {
+      expect(script, `composer never reads #${id}`).toContain(`'${id}'`);
+    }
+  });
+
+  it("escapes interpolated values", () => {
+    expect(supportPage('https://x.test/"><script>alert(1)</script>')).not.toContain("<script>alert(1)");
+  });
+});
+
+/**
+ * The submission checklist is filled in by a person under time pressure, so
+ * anything in it that CI moves on its own must be a pointer rather than a
+ * copy. The version was a copy, and went stale the first time a release
+ * landed while the branch was open — 1.26.23 in the doc against 1.26.24 in
+ * `package.json`.
+ */
+/**
+ * The ChatGPT submission file lists every tool with its three annotations and
+ * a justification for each. Nothing checked it against the server.
+ *
+ * So adding a tool left the file describing a surface that no longer existed,
+ * silently: `npm run check:submission` validates the file's shape against the
+ * schema and has no idea what the server ships. That happened the first time a
+ * tool was added after the file was written — three tools in, and the only
+ * symptom would have been a reviewer reading annotations for 64 of 67 tools.
+ */
+describe("the submission file against the server", () => {
+  const doc = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8")) as {
+    tools: Record<string, { annotations: Record<string, boolean>; justifications: Record<string, string> }>;
+  };
+
+  /** The real registration over a real transport, as the surface tests do. */
+  async function connectServer() {
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    return client;
+  }
+
+  it("covers every tool the server ships, and no tool it does not", async () => {
+    const { tools } = await (await connectServer()).listTools();
+    const shipped = tools.map((t) => t.name).sort();
+    expect(Object.keys(doc.tools).sort()).toEqual(shipped);
+  });
+
+  it("quotes the annotations the server actually sends", async () => {
+    // Read off the server rather than authored, which is the property that
+    // makes them worth submitting. A hand-edit that disagrees is a
+    // misrepresentation of the tool, which is the one thing the form asks
+    // reviewers to check.
+    const { tools } = await (await connectServer()).listTools();
+    const wrong: string[] = [];
+    for (const tool of tools) {
+      const declared = doc.tools[tool.name]?.annotations ?? {};
+      for (const hint of ["readOnlyHint", "openWorldHint", "destructiveHint"] as const) {
+        const live = tool.annotations?.[hint];
+        if (declared[hint] !== live) wrong.push(`${tool.name}.${hint}: file=${declared[hint]} server=${live}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it("justifies each hint in terms of that specific tool", async () => {
+    // The form's own words: "give enough detail for us to confirm it doesn't
+    // misrepresent what the tool does". A blank or a placeholder fails that,
+    // and so does a read-only justification identical to another tool's.
+    const readOnly = Object.entries(doc.tools).map(([name, t]) => [name, t.justifications.read_only_justification] as const);
+    for (const [name, text] of readOnly) {
+      expect(text, `${name} has no read-only justification`).toMatch(/\S/);
+    }
+    const distinct = new Set(readOnly.map(([, text]) => text));
+    expect(distinct.size, "every tool needs its own read-only reason, not a shared line").toBe(readOnly.length);
+  });
+});
+
+describe("submission checklist", () => {
+  const doc = readFileSync("docs/chatgpt-app-submission.md", "utf8");
+
+  it("quotes no version number of its own", () => {
+    const pinned = doc.match(/\b\d+\.\d+\.\d+\b/g) ?? [];
+    expect(pinned, `hardcoded version(s) in the doc: ${pinned.join(", ")}`).toEqual([]);
+  });
+
+  it("names the four things only a human can supply, and their values", () => {
+    for (const value of [
+      "https://mcp.nooticr.com/support",
+      "https://mcp.nooticr.com/terms",
+      "https://mcp.nooticr.com/privacy",
+      BRAND.supportEmail,
+      BRAND.company,
+    ]) {
+      expect(doc, `checklist omits ${value}`).toContain(value);
+    }
+  });
+});
+
 describe("dashboard", () => {
   const usage = {
     balance: 42,
@@ -234,6 +418,9 @@ describe("UI template dual-host safety", () => {
 describe("tool surface", () => {
   const EXPECTED = [
     "search_mentions",
+    // The series a watch keeps, and the free view of it.
+    "mention_trend",
+    "show_trend",
     "watch_creator",
     "unwatch_creator",
     "catch_up_watchlist",
@@ -279,7 +466,6 @@ describe("tool surface", () => {
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
-    "buy_nooticr_credits",
     "nooticr_login",
     "show_comment_review",
     "show_comparison",
@@ -293,6 +479,11 @@ describe("tool surface", () => {
     "answer_my_audience",
     "show_audience_replies",
     "track_competitor",
+    // The comparison track_competitor computes and discards: two fetching
+    // tools on the same normalised axis, and the free view for the read.
+    "compare_creators",
+    "watchlist_standings",
+    "show_standings",
     "who_should_i_work_with",
     "why_did_this_underperform",
     "what_should_i_make_next",
@@ -353,7 +544,6 @@ describe("tool surface", () => {
     // here — it fetches per creator, and says so.
     const free = [
       "check_nooticr_credits",
-      "buy_nooticr_credits",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",
@@ -366,6 +556,12 @@ describe("tool surface", () => {
       "show_repurposed_post",
       // The same, for the replies a model drafted from answer_my_audience.
       "show_audience_replies",
+      // ...and for the standings a model read out of compare_creators.
+      "show_standings",
+      // ...and the trend a model read out of mention_trend. Both free: the
+      // sweeps behind the series were billed when they ran.
+      "show_trend",
+      "mention_trend",
       // Own-account reads: nooticr's own already-stored data, never billed.
       "list_own_apps",
       "get_scheduled_posts",
@@ -474,6 +670,123 @@ describe("README", () => {
  * server. A mismatch here means a customer is charged one thing and told
  * another, so pin the set.
  */
+/**
+ * No commerce on the tool surface.
+ *
+ * ChatGPT's Commerce & Purchasing policy supports physical goods only, and
+ * nooticr credits are a digital good. `buy_nooticr_credits` opened a Stripe
+ * Checkout session from inside a conversation, which is squarely an in-app
+ * purchase, so it is gone — and `check_nooticr_credits` strips the billing URL
+ * the backend still returns, because a link to buy a digital good is still
+ * offering one.
+ *
+ * The website selling credits is untouched and fine: the policy is about what
+ * the plugin offers, which is why the `credit packs` block below still checks
+ * the dashboard's prices. This block is about the tool surface only.
+ *
+ * A policy answer is worth only as much as the thing keeping it true. This is
+ * that thing: a purchase path added back by anyone, for any host, fails here.
+ */
+describe("nothing on the tool surface sells anything", () => {
+  async function shipped() {
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    return (await client.listTools()).tools;
+  }
+
+  it("registers no tool that transacts", async () => {
+    const names = (await shipped()).map((t) => t.name);
+    for (const banned of ["buy_nooticr_credits", "purchase_credits", "checkout", "buy_credits"]) {
+      expect(names, `${banned} would be a purchase of a digital good`).not.toContain(banned);
+    }
+    // And nothing new shaped like one, whatever it ends up called.
+    const transacting = names.filter((n) => /^(buy|purchase|checkout|subscribe|order)_/.test(n));
+    expect(transacting, "a tool whose name starts like a transaction").toEqual([]);
+  });
+
+  it("offers no purchase in any description a host reads", async () => {
+    // The description is what reaches a model and a reviewer. "credits" and
+    // "cost" are fine and necessary — every tool states its price. Offering
+    // to SELL is what must not appear.
+    const offending: string[] = [];
+    for (const tool of await shipped()) {
+      const prose = String(tool.description ?? "");
+      // The balance tool says the opposite, in those words, and must not trip.
+      if (/nothing here sells/i.test(prose)) continue;
+      for (const phrase of [/stripe/i, /checkout/i, /\bbuy\b/i, /credit pack/i, /top[- ]up/i]) {
+        if (phrase.test(prose)) offending.push(`${tool.name}: ${String(phrase)}`);
+      }
+    }
+    expect(offending, "a tool description offering a purchase").toEqual([]);
+  });
+
+  it("returns no billing URL, even when the backend sends one", async () => {
+    // check_nooticr_credits proxies a backend that still holds a billing URL,
+    // because the dashboard needs it. The edge is what must drop it.
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () =>
+        ({
+          callTool: async () => ({
+            contentBlocks: [{ type: "text", text: "{}" }],
+            structured: {
+              balance: 12,
+              billingUrl: "https://billing.stripe.com/p/session_should_not_pass_through",
+              packSize: 500,
+            },
+          }),
+        }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    await client.listTools();
+    const res = await client.callTool(
+      { name: "check_nooticr_credits", arguments: {} },
+      undefined,
+      { timeout: 30_000 },
+    );
+    const structured = (res.structuredContent ?? {}) as Record<string, unknown>;
+    expect(structured.balance, "the balance itself must still come through").toBe(12);
+    expect(structured).not.toHaveProperty("billingUrl");
+    expect(JSON.stringify(res)).not.toContain("billing.stripe.com");
+  });
+
+  it("declares no output field that would carry a purchase link", async () => {
+    const { OUTPUT_SCHEMAS } = await import("../src/shared/output-schemas.js");
+    expect(Object.keys(OUTPUT_SCHEMAS)).not.toContain("buy_nooticr_credits");
+    const { toJsonSchemaCompat } = await import(
+      "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js"
+    );
+    const shapes = JSON.stringify(
+      Object.entries(OUTPUT_SCHEMAS).map(([name, schema]) => [
+        name,
+        toJsonSchemaCompat(schema as never, { strictUnions: true }),
+      ]),
+    );
+    for (const field of ["checkoutUrl", "billingUrl", "priceId"]) {
+      expect(shapes, `an output schema still declares ${field}`).not.toContain(`"${field}"`);
+    }
+  });
+
+  it("says so in the submission file and in the checklist", () => {
+    const submission = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8")) as {
+      tools: Record<string, unknown>;
+    };
+    expect(Object.keys(submission.tools)).not.toContain("buy_nooticr_credits");
+    expect(readFileSync("docs/chatgpt-app-submission.md", "utf8")).toMatch(/Nothing here\s+sells anything/);
+  });
+});
+
 describe("credit packs", () => {
   const PACKS = [
     { id: "starter", price: "$15", credits: 600 },
@@ -598,7 +911,6 @@ describe("documentation", () => {
     }
     for (const free of [
       "check_nooticr_credits",
-      "buy_nooticr_credits",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",
