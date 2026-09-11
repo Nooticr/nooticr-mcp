@@ -2036,3 +2036,222 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
     await expect(page.locator(".empty-state")).not.toContainText("No trending hashtags found");
   });
 });
+
+/**
+ * The marketplace screen.
+ *
+ * Its whole reason for existing is that the model's read and the reviews it
+ * rests on are on one screen, so a person can click a claim and land on the
+ * text behind it. That is an interaction, not markup — a view that renders
+ * every driver beautifully and drops the jump is exactly as useless as one
+ * that renders nothing, and neither vitest nor the host contract can see the
+ * difference.
+ *
+ * The payloads below are the shape src/shared/amazon.ts emits after
+ * normalising (camelCase, ids per review), not the scraper's snake_case.
+ */
+const AMZ_PRODUCTS = [
+  {
+    asin: "B0C4KNW2T1",
+    url: "https://www.amazon.com/dp/B0C4KNW2T1",
+    title: "Goli Ashwagandha & Vitamin D Gummies — KSM-66, Mixed Berry, 60 Count",
+    brand: "Goli",
+    price: "$18.98",
+    priceValue: 18.98,
+    rating: 4.3,
+    ratingCount: 31544,
+    ratingHistogram: { "1": "6%", "2": "4%", "3": "9%", "4": "16%", "5": "65%" },
+    reviewSummary: "Customers like the taste and say gummies are easier to keep taking than capsules.",
+    aspects: [
+      { name: "Taste", mentions: 2210, sentiment: "positive" },
+      { name: "Dosage strength", mentions: 640, sentiment: "negative" },
+    ],
+    reviewsGated: false,
+    features: ["300mg KSM-66 per 2-gummy serving"],
+    reviews: [
+      {
+        id: "review:B0C4KNW2T1:1",
+        asin: "B0C4KNW2T1",
+        brand: "Goli",
+        author: "R. Okafor",
+        rating: 2,
+        title: "300mg is a third of what the studies used",
+        body: "The trials everyone cites use 600mg of KSM-66. Do the maths before you buy.",
+        date: "July 28, 2026",
+        verified: true,
+      },
+      {
+        id: "review:B0C4KNW2T1:0",
+        asin: "B0C4KNW2T1",
+        brand: "Goli",
+        author: "Sam",
+        rating: 5,
+        title: "The only supplement I have ever finished a bottle of",
+        body: "These taste like a berry chew so I actually take them.",
+        date: "August 9, 2026",
+        verified: true,
+      },
+    ],
+  },
+  {
+    asin: "B0BN4VQ7HG",
+    url: "https://www.amazon.com/dp/B0BN4VQ7HG",
+    title: "Double Wood Ashwagandha KSM-66 600mg, 150 Capsules",
+    brand: "Double Wood",
+    price: "$19.95",
+    priceValue: 19.95,
+    rating: 4.6,
+    ratingCount: 12750,
+    ratingHistogram: { "1": "3%", "2": "2%", "3": "6%", "4": "14%", "5": "75%" },
+    aspects: [{ name: "Value for money", mentions: 1340, sentiment: "positive" }],
+    reviewsGated: false,
+    reviews: [],
+  },
+];
+
+const AMZ_ROLLUP = {
+  products: 2,
+  brands: ["Double Wood", "Goli"],
+  reviewsCollected: 2,
+  ratingsRepresented: 44294,
+  price: { min: 18.98, max: 19.95, median: 19.46 },
+  rating: { min: 4.3, max: 4.6, mean: 4.45 },
+  negativeStarShareMean: 7.5,
+  aspects: [
+    { name: "Taste", mentions: 2210, brands: 1, positiveBrands: 1, negativeBrands: 0, mixedBrands: 0 },
+    { name: "Value for money", mentions: 1340, brands: 1, positiveBrands: 1, negativeBrands: 0, mixedBrands: 0 },
+    { name: "Dosage strength", mentions: 640, brands: 1, positiveBrands: 0, negativeBrands: 1, mixedBrands: 0 },
+  ],
+  perProduct: [
+    { asin: "B0C4KNW2T1", brand: "Goli", negativeStarShare: 10 },
+    { asin: "B0BN4VQ7HG", brand: "Double Wood", negativeStarShare: 5 },
+  ],
+};
+
+const AMZ_SCAN = {
+  marketplace: "amazon",
+  scanId: "scan_e2e",
+  status: "done",
+  complete: true,
+  query: "ashwagandha",
+  domain: "www.amazon.com",
+  progress: { done: 2, total: 2 },
+  rollup: AMZ_ROLLUP,
+  products: AMZ_PRODUCTS,
+  errors: [],
+};
+
+const AMZ_INSIGHTS = {
+  marketplace: "amazon",
+  view: "insights",
+  category: "Ashwagandha supplements (US)",
+  summary: "Two listings around $19, and the argument in the reviews is dose rather than efficacy.",
+  drivers: [
+    {
+      label: "The clinical dose, arithmetic done in public",
+      detail: "Buyers know the trials used 600mg and price the bottle per effective milligram.",
+      evidence: ["review:B0C4KNW2T1:0"],
+      strength: "strong",
+    },
+  ],
+  barriers: [
+    {
+      label: "Underdosing, once the buyer checks",
+      detail: "The gummy delivers 300mg against the 600mg the studies used.",
+      evidence: ["review:B0C4KNW2T1:1"],
+      strength: "strong",
+    },
+  ],
+  strengths: [{ brand: "Double Wood", detail: "Dose honesty as the whole proposition." }],
+  gaps: [{ label: "A high-dose format that is not a pill", detail: "Nobody serves both at once." }],
+  positioning: [{ angle: "The full study dose, in a chew.", who: "The label-reader who cannot swallow capsules." }],
+  products: AMZ_PRODUCTS,
+  rollup: AMZ_ROLLUP,
+  scanId: "scan_e2e",
+};
+
+test.describe("the marketplace view", () => {
+  test("draws the listings, the marketplace mark and the price spread", async ({ page }) => {
+    await renderTemplate(page, AMZ_SCAN);
+    await expect(page.locator(".amz-tile")).toHaveCount(2);
+    // The mark is inline SVG rather than an <img>: the view is sandboxed with
+    // no remote fetches, so a logo loaded over the network would never paint.
+    await expect(page.locator('.amz-mark svg[aria-label="Amazon"]')).toHaveCount(1);
+    await expect(page.locator(".amz-strip")).toContainText("median");
+    await expect(page.locator(".amz-tile").first()).toContainText("10% at 1-2");
+  });
+
+  test("opening a listing shows its histogram and its review bodies", async ({ page }) => {
+    await renderTemplate(page, AMZ_SCAN);
+    await page.click('[data-amz-open="B0C4KNW2T1"]');
+    const detail = page.locator(".amz-detail");
+    await expect(detail).toContainText("300mg is a third of what the studies used");
+    // Five bars, not one average: a 4.3 with 6% at one star and a 4.3 with 1%
+    // are different products and the average hides which you are looking at.
+    await expect(detail.locator(".amz-hrow")).toHaveCount(5);
+    await expect(detail).toContainText("Customers like the taste");
+  });
+
+  test("the reviews tab filters by star and keeps the worst first", async ({ page }) => {
+    await renderTemplate(page, AMZ_SCAN);
+    await page.click('[data-amz-tab="reviews"]');
+    await expect(page.locator(".amz-rev").first()).toContainText("300mg is a third");
+    await page.click('[data-amz-star="5"]');
+    await expect(page.locator(".amz-rev")).toHaveCount(1);
+    await expect(page.locator(".amz-rev").first()).toContainText("finished a bottle");
+  });
+
+  test("a claim in the read jumps to the review it rests on", async ({ page }) => {
+    await renderTemplate(page, AMZ_INSIGHTS);
+    await expect(page.locator(".amz-find-barrier")).toContainText("Underdosing");
+    // The interaction the whole two-pane screen exists for. A driver nobody
+    // can check against the text is an assertion, not a finding.
+    await page.click('[data-amz-ev="review:B0C4KNW2T1:1"]');
+    const focused = page.locator(".amz-rev-focus");
+    await expect(focused).toHaveCount(1);
+    await expect(focused).toContainText("300mg is a third");
+  });
+
+  test("an evidence entry that is a quote rather than an id is not a dead button", async ({ page }) => {
+    await renderTemplate(page, {
+      ...AMZ_INSIGHTS,
+      drivers: [{ label: "Calm", evidence: ["it just takes the edge off"] }],
+    });
+    await expect(page.locator(".amz-ev-quote")).toContainText("takes the edge off");
+    await expect(page.locator('.amz-ev-quote[data-amz-ev]')).toHaveCount(0);
+  });
+
+  test("a read passed without its listings keeps the ones already on screen", async ({ page }) => {
+    // The model is allowed to call show_* with conclusions alone. Blanking the
+    // listings would leave every evidence link pointing at nothing.
+    //
+    // Both results are posted into ONE document, which is what a host does:
+    // re-running renderTemplate would reload the page and test a fresh view
+    // rather than the carry-forward this is about.
+    await renderTemplate(page, AMZ_SCAN);
+    await page.evaluate(
+      (d) => window.postMessage(
+        { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+      { ...AMZ_INSIGHTS, products: [], rollup: {} },
+    );
+    await page.waitForTimeout(400);
+    await expect(page.locator(".amz-find-barrier")).toContainText("Underdosing");
+    await page.click('[data-amz-tab="listings"]');
+    await expect(page.locator(".amz-tile")).toHaveCount(2);
+  });
+
+  test("a scan still collecting says so instead of looking finished", async ({ page }) => {
+    await renderTemplate(page, { ...AMZ_SCAN, complete: false, progress: { done: 2, total: 10 } });
+    await expect(page.locator(".amz-running")).toContainText("2/10");
+  });
+
+  test("a listing whose reviews are gated says which half is missing", async ({ page }) => {
+    await renderTemplate(page, {
+      ...AMZ_SCAN,
+      products: [{ ...AMZ_PRODUCTS[0], reviews: [], reviewsGated: true }],
+    });
+    await expect(page.locator(".amz-tile").first()).toContainText("behind sign-in");
+    await page.click('[data-amz-open="B0C4KNW2T1"]');
+    await expect(page.locator(".amz-note")).toContainText("still public");
+  });
+});

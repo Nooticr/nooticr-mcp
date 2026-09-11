@@ -80,7 +80,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(69);
+    expect(tools).toHaveLength(73);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -130,6 +130,10 @@ describe("tool annotations", () => {
       // The show_* family: each draws what the caller already wrote/fetched
       // and reaches nothing. Sorted, so the renames in #45 moved two of them.
       //
+      // Draws the category read the caller wrote out of scan_amazon_category.
+      // The three collection tools are open-world and deliberately not here:
+      // every one of them reaches Amazon through the scraper service.
+      "show_amazon_category_insights",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
       // send them either — no connection carries comment-write permission.
       "show_audience_replies",

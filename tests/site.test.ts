@@ -495,6 +495,12 @@ describe("tool surface", () => {
     // on another server, the other draws the shortlist it scored.
     "prepare_handoff",
     "show_collab_shortlist",
+    // Marketplace: collect an Amazon category, pick a running collection back
+    // up, read one listing, and draw the read.
+    "scan_amazon_category",
+    "amazon_scan_status",
+    "get_amazon_product",
+    "show_amazon_category_insights",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -590,6 +596,12 @@ describe("tool surface", () => {
       // Draws the shortlist the caller scored; the fetches that produced the
       // score were the host's own, not ours.
       "show_collab_shortlist",
+      // Draws the category read the caller wrote; the collection it reads was
+      // billed when scan_amazon_category ran.
+      "show_amazon_category_insights",
+      // Polls a collection already paid for — charging for the second half of
+      // one answer would bill a wait the server chose.
+      "amazon_scan_status",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

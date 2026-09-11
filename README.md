@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-68 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+72 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 Seven of them — the ones under **Answer a question you actually have** — are not
@@ -124,6 +124,28 @@ them caps that fan-out with an argument.
 | `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
 | `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok, YouTube and Douyin, and only where the creator actually enabled captions. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
+
+### Study a market on Amazon
+
+Everything above reads social content. These read a **marketplace** — the place
+where the same audience says what it actually bought and why it sent it back.
+The question they exist for is a category decision: *we are considering
+ashwagandha — what makes people buy, what stops them, what are the incumbents
+good at, and where is the gap?* Every one of those answers lives in review text,
+so the unit of work is a scan of the category rather than a lookup of a product.
+
+Collection is genuinely slow, and honestly so: each listing is a real browser
+render behind Amazon's bot defences, and the pace between them is set by what
+Amazon tolerates rather than by what the machine can do. Ten listings with their
+reviews is minutes, not seconds — so a scan returns what is ready and hands back
+a `scanId` for the rest.
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `scan_amazon_category` | 3 per listing collected (30 by default) | The category, collected: listings with prices, star histograms, Amazon's own review-aspect counts and the review text itself, plus the arithmetic over them — price spread, rating spread, which aspects recur across how many brands, and the share of each listing's ratings sitting at 1-2 stars, read from the histogram rather than from the handful of reviews a scrape returns. Pass `query` to search the category, `asins` to pin the competitors a customer named, or both; named competitors keep their place at the front. Because the price is set by an argument, it confirms the total before spending it. |
+| `amazon_scan_status` | free | Picks a running collection back up by `scanId` — the listings collected since, with the same rollup. Free: it is the poll `scan_amazon_category` asked for, and billing the second half of one answer would charge for a wait the server chose. |
+| `get_amazon_product` | 3 | One listing by ASIN or URL: price, rating, the full star histogram, features, specs, Amazon's review digest and aspect breakdown, and the reviews. |
+| `show_amazon_category_insights` | free | Draws the read **your model** wrote — purchase drivers, barriers, what each brand does well, the gaps, the positioning angles — beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. The conclusions are attributed to your model, never presented as a nooticr rating of anyone's product. Makes no requests. |
 
 ### Make something
 

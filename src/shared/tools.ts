@@ -55,6 +55,7 @@ import { registerConnectionTools } from "./connections.js";
 import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
 import { registerCollabTools } from "./collab.js";
+import { registerAmazonTools } from "./amazon.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.33";
@@ -749,6 +750,12 @@ export function createMcpServer(
   // grant each connection carries is a table, which is what a view is for.
   "list_social_connections",
   "connect_social_account",
+  // Marketplace. All four draw: the three collection tools render the
+  // listings and their reviews, and the view draws the read on top of them.
+  "scan_amazon_category",
+  "amazon_scan_status",
+  "get_amazon_product",
+  "show_amazon_category_insights",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -831,6 +838,12 @@ export function createMcpServer(
   // LinkedIn
   "https://*.licdn.com",
   "https://*.linkedin.com",
+  // Amazon product images. Listings serve from m.media-amazon.com and, on
+  // older listings, images-na.ssl-images-amazon.com — a listing whose picture
+  // is blocked draws as a brand initial, which is a worse comparison screen
+  // than the one the scan paid for.
+  "https://*.media-amazon.com",
+  "https://*.ssl-images-amazon.com",
  ];
  const apiUrl = process.env.NOOTICR_API_URL || process.env.NOOTICR_BASE_URL;
  if (apiUrl && apiUrl.trim()) {
@@ -2786,6 +2799,10 @@ export function createMcpServer(
  // classified for a tracker on another server, the other draws what it scored.
  registerHandoff(server);
  registerCollabTools(server);
+ // Marketplace intelligence (amazon.ts): the category collection, the poll
+ // that picks it back up, a single listing, and the free view for the read
+ // the model writes out of them.
+ registerAmazonTools(server, makeClient);
 
  return server;
 }

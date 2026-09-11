@@ -67,6 +67,456 @@ const FIXTURE_POST = {
     "tonight and tell me how it goes.",
 };
 
+// The marketplace fixture: a real-shaped Amazon category, three listings deep.
+//
+// Same reasoning as FIXTURE_POST above — a model asked to read purchase
+// drivers out of reviews that say "review one, review two" reports that it is
+// looking at scaffolding, and the chaining measurement then says nothing about
+// the guidance. These are invented brands' worth of plausible review text, in
+// the exact shape `amazon_scrap_rs` returns (snake_case, `review_aspects`,
+// `rating_histogram`), so the normaliser in src/shared/amazon.ts is exercised
+// rather than bypassed.
+const FIXTURE_AMAZON_PRODUCTS = [
+  {
+    "asin": "B07VJ5KFXZ",
+    "url": "https://www.amazon.com/dp/B07VJ5KFXZ",
+    "domain": "www.amazon.com",
+    "title": "NutriRise Ashwagandha 1300mg with Black Pepper \u2014 Organic KSM-66 Root Extract, 120 Veggie Capsules",
+    "brand": "NutriRise",
+    "price": "$21.95",
+    "price_value": 21.95,
+    "currency": "$",
+    "list_price": "$29.95",
+    "availability": "In Stock",
+    "rating": 4.5,
+    "rating_count": 48213,
+    "image": null,
+    "images": [],
+    "features": [
+      "1300mg organic ashwagandha root per serving with 10mg organic black pepper for absorption",
+      "USDA Organic, non-GMO, vegan, gluten free \u2014 third-party tested"
+    ],
+    "categories": [
+      "Health & Household",
+      "Vitamins & Dietary Supplements",
+      "Herbal Supplements",
+      "Ashwagandha"
+    ],
+    "specs": {
+      "Brand": "NutriRise",
+      "Item Form": "Capsule",
+      "Unit Count": "120 Count",
+      "Primary Supplement Type": "Ashwagandha",
+      "Diet Type": "Vegan"
+    },
+    "rating_histogram": {
+      "1": "4%",
+      "2": "3%",
+      "3": "7%",
+      "4": "13%",
+      "5": "73%"
+    },
+    "reviews": [
+      {
+        "author": "Danielle R.",
+        "rating": 5.0,
+        "title": "The 3am wake-ups stopped",
+        "body": "I was waking up at 3am every night with my brain already running. Two weeks on this and that stopped. I am not claiming it is magic \u2014 I still get stressed \u2014 but I fall back asleep instead of lying there doing math about work. Started with one capsule at night because two made me groggy the first morning.",
+        "date": "August 2, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Marcus T.",
+        "rating": 5.0,
+        "title": "Cheaper than the one my naturopath sells and it is the same KSM-66",
+        "body": "Paid $60 for a bottle of 60 from a clinic. This is 120 for twenty-two dollars and the label says the same standardised extract. Been through three bottles.",
+        "date": "July 19, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "K. Whitfield",
+        "rating": 4.0,
+        "title": "Works, but these capsules are horse pills",
+        "body": "No complaints about the effect \u2014 steadier through the afternoon, less of the wired feeling after meetings. But the capsules are genuinely large and I have to take them one at a time with a full glass of water. My mother gave up on them for that reason alone.",
+        "date": "July 3, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Angela",
+        "rating": 2.0,
+        "title": "Upset stomach every time",
+        "body": "Wanted this to work. Every time I take it on an empty stomach I get about an hour of nausea. With food it is better but then I forget to take it. Returned the second bottle.",
+        "date": "June 22, 2026",
+        "verified": true,
+        "source": "pdp"
+      }
+    ],
+    "reviews_gated": false,
+    "review_summary": "Customers find this ashwagandha helps with stress and sleep, with many noticing a calmer baseline within two weeks. They appreciate the organic certification and the value at two capsules a day. Some mention the capsules are large and a few report stomach upset when taken without food.",
+    "review_aspects": [
+      {
+        "name": "Stress relief",
+        "mentions": 1840,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Sleep quality",
+        "mentions": 1122,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Value for money",
+        "mentions": 903,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Capsule size",
+        "mentions": 411,
+        "sentiment": "negative",
+        "summary": null
+      },
+      {
+        "name": "Stomach comfort",
+        "mentions": 288,
+        "sentiment": "mixed",
+        "summary": null
+      },
+      {
+        "name": "Taste",
+        "mentions": 176,
+        "sentiment": "mixed",
+        "summary": null
+      }
+    ],
+    "fetched_at": "2026-09-11T09:12:44Z",
+    "fetch_meta": {
+      "attempts": 1,
+      "profile": "Chrome144",
+      "url_form": "https://www.amazon.com/dp/B07VJ5KFXZ",
+      "status": 200,
+      "bytes": 1482003,
+      "elapsed_ms": 8140,
+      "attempt_log": []
+    }
+  },
+  {
+    "asin": "B0C4KNW2T1",
+    "url": "https://www.amazon.com/dp/B0C4KNW2T1",
+    "domain": "www.amazon.com",
+    "title": "Goli Ashwagandha & Vitamin D Gummies \u2014 KSM-66, Mixed Berry, 60 Count",
+    "brand": "Goli",
+    "price": "$18.98",
+    "price_value": 18.98,
+    "currency": "$",
+    "list_price": "$21.99",
+    "availability": "In Stock",
+    "rating": 4.3,
+    "rating_count": 31544,
+    "image": null,
+    "images": [],
+    "features": [
+      "300mg KSM-66 ashwagandha root extract plus vitamin D per 2-gummy serving",
+      "Vegan, gluten free, no gelatin \u2014 mixed berry flavour"
+    ],
+    "categories": [
+      "Health & Household",
+      "Vitamins & Dietary Supplements",
+      "Herbal Supplements",
+      "Ashwagandha"
+    ],
+    "specs": {
+      "Brand": "Goli",
+      "Item Form": "Gummy",
+      "Unit Count": "60 Count",
+      "Flavor": "Mixed Berry",
+      "Diet Type": "Vegan"
+    },
+    "rating_histogram": {
+      "1": "6%",
+      "2": "4%",
+      "3": "9%",
+      "4": "16%",
+      "5": "65%"
+    },
+    "reviews": [
+      {
+        "author": "Sam",
+        "rating": 5.0,
+        "title": "The only supplement I have ever finished a bottle of",
+        "body": "I have a graveyard of half-full capsule bottles. These taste like a berry chew so I actually take them. Six weeks in and the low-grade hum of anxiety I carry around is quieter. That is worth more to me than a higher dose I would not take.",
+        "date": "August 9, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "R. Okafor",
+        "rating": 2.0,
+        "title": "300mg is a third of what the studies used",
+        "body": "Taste is great, marketing is great, but the trials everyone cites use 600mg of KSM-66. You would need four gummies and then you are eating a lot of sugar and paying twice as much per month as capsules. Do the maths before you buy.",
+        "date": "July 28, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Jenna M.",
+        "rating": 5.0,
+        "title": "Husband actually takes these",
+        "body": "He will not swallow a pill. Will eat a gummy. That is the whole review. He says he is less snappy after work and I agree.",
+        "date": "July 14, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Curtis",
+        "rating": 1.0,
+        "title": "Arrived as one solid brick",
+        "body": "Shipped in July, sat in a hot truck, arrived fused into a single lump I had to cut with a knife. Second bottle same thing. Amazon refunded but I am not ordering gummies in summer again.",
+        "date": "July 6, 2026",
+        "verified": true,
+        "source": "pdp"
+      }
+    ],
+    "reviews_gated": false,
+    "review_summary": "Customers like the taste and say gummies are far easier to keep taking than capsules. Many report feeling calmer and sleeping better. Some find the dose low compared with capsules and several mention the gummies arriving melted together in warm weather.",
+    "review_aspects": [
+      {
+        "name": "Taste",
+        "mentions": 2210,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Ease of use",
+        "mentions": 1408,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Stress relief",
+        "mentions": 1190,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Dosage strength",
+        "mentions": 640,
+        "sentiment": "negative",
+        "summary": null
+      },
+      {
+        "name": "Packaging",
+        "mentions": 520,
+        "sentiment": "negative",
+        "summary": null
+      },
+      {
+        "name": "Value for money",
+        "mentions": 486,
+        "sentiment": "mixed",
+        "summary": null
+      }
+    ],
+    "fetched_at": "2026-09-11T09:12:44Z",
+    "fetch_meta": {
+      "attempts": 1,
+      "profile": "Chrome144",
+      "url_form": "https://www.amazon.com/dp/B0C4KNW2T1",
+      "status": 200,
+      "bytes": 1482003,
+      "elapsed_ms": 8140,
+      "attempt_log": []
+    }
+  },
+  {
+    "asin": "B0BN4VQ7HG",
+    "url": "https://www.amazon.com/dp/B0BN4VQ7HG",
+    "domain": "www.amazon.com",
+    "title": "Double Wood Supplements Ashwagandha KSM-66 600mg, 150 Capsules",
+    "brand": "Double Wood",
+    "price": "$19.95",
+    "price_value": 19.95,
+    "currency": "$",
+    "list_price": "$24.95",
+    "availability": "In Stock",
+    "rating": 4.6,
+    "rating_count": 12750,
+    "image": null,
+    "images": [],
+    "features": [
+      "600mg KSM-66 per capsule \u2014 the dose used in most published trials",
+      "150 capsules, a 5-month supply at one per day"
+    ],
+    "categories": [
+      "Health & Household",
+      "Vitamins & Dietary Supplements",
+      "Herbal Supplements",
+      "Ashwagandha"
+    ],
+    "specs": {
+      "Brand": "Double Wood",
+      "Item Form": "Capsule",
+      "Unit Count": "150 Count",
+      "Primary Supplement Type": "Ashwagandha"
+    },
+    "rating_histogram": {
+      "1": "3%",
+      "2": "2%",
+      "3": "6%",
+      "4": "14%",
+      "5": "75%"
+    },
+    "reviews": [
+      {
+        "author": "Owen H.",
+        "rating": 5.0,
+        "title": "600mg KSM-66, one capsule, 13 cents a day",
+        "body": "Every study I could find used 600mg of KSM-66. This gives exactly that in one capsule and the bottle lasts five months. The 1300mg 'proprietary blend' bottles are marketing at twice the price per effective milligram.",
+        "date": "August 7, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Carmen",
+        "rating": 4.0,
+        "title": "Extremely vivid dreams",
+        "body": "Not bad dreams, just extremely detailed ones, every night since I started. Sleep itself is deeper. Mentioning it because nothing on the label warns you.",
+        "date": "July 24, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Ty",
+        "rating": 5.0,
+        "title": "Replaced a $45 bottle with this",
+        "body": "Same active ingredient at the same dose. The expensive one had a nicer label.",
+        "date": "July 9, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Renee W.",
+        "rating": 3.0,
+        "title": "Worked for six weeks then plateaued",
+        "body": "Great first six weeks. Then it felt like nothing again. Took two weeks off and it came back. Wish the industry would just say whether you are supposed to cycle it.",
+        "date": "June 20, 2026",
+        "verified": true,
+        "source": "pdp"
+      }
+    ],
+    "reviews_gated": false,
+    "review_summary": "Customers highlight the dose matching clinical studies and the very low cost per day. Many mention it is a single capsule rather than two. Some report vivid dreams and a few say the effect faded after a couple of months.",
+    "review_aspects": [
+      {
+        "name": "Value for money",
+        "mentions": 1340,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Dosage strength",
+        "mentions": 1120,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Sleep quality",
+        "mentions": 690,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Vivid dreams",
+        "mentions": 385,
+        "sentiment": "mixed",
+        "summary": null
+      },
+      {
+        "name": "Effect over time",
+        "mentions": 302,
+        "sentiment": "mixed",
+        "summary": null
+      }
+    ],
+    "fetched_at": "2026-09-11T09:12:44Z",
+    "fetch_meta": {
+      "attempts": 1,
+      "profile": "Chrome144",
+      "url_form": "https://www.amazon.com/dp/B0BN4VQ7HG",
+      "status": 200,
+      "bytes": 1482003,
+      "elapsed_ms": 8140,
+      "attempt_log": []
+    }
+  }
+];
+
+/** The scan envelope the backend wraps those listings in. */
+function fixtureAmazonScan(args, scanId) {
+  const asked = Number(args?.limit) || FIXTURE_AMAZON_PRODUCTS.length;
+  const products = FIXTURE_AMAZON_PRODUCTS.slice(0, Math.max(1, Math.min(asked, FIXTURE_AMAZON_PRODUCTS.length)));
+  const reviews = products.reduce((n, p) => n + (p.reviews?.length ?? 0), 0);
+  const aspects = new Map();
+  for (const p of products) {
+    for (const a of p.review_aspects ?? []) {
+      const key = a.name.toLowerCase();
+      const row = aspects.get(key) ?? {
+        name: a.name, mentions: 0, brands: 0, brandNames: [],
+        positiveBrands: 0, negativeBrands: 0, mixedBrands: 0,
+      };
+      row.mentions += a.mentions ?? 0;
+      if (!row.brandNames.includes(p.brand)) { row.brandNames.push(p.brand); row.brands += 1; }
+      if (a.sentiment === "positive") row.positiveBrands += 1;
+      else if (a.sentiment === "negative") row.negativeBrands += 1;
+      else row.mixedBrands += 1;
+      aspects.set(key, row);
+    }
+  }
+  const prices = products.map((p) => p.price_value).sort((a, b) => a - b);
+  const ratings = products.map((p) => p.rating);
+  const lowShare = (p) =>
+    Math.round((parseFloat(p.rating_histogram["1"]) + parseFloat(p.rating_histogram["2"])) * 10) / 10;
+  return {
+    marketplace: "amazon",
+    scanId,
+    status: "done",
+    complete: true,
+    query: args?.query ?? null,
+    domain: args?.domain ?? "www.amazon.com",
+    progress: { done: products.length, total: products.length, message: `${products.length} listing(s)`, elapsedMs: 41230, fromCache: 0 },
+    rollup: {
+      products: products.length,
+      brands: products.map((p) => p.brand).sort(),
+      reviewsCollected: reviews,
+      ratingsRepresented: products.reduce((n, p) => n + p.rating_count, 0),
+      reviewsGatedProducts: 0,
+      price: { min: prices[0], max: prices[prices.length - 1], median: prices[Math.floor(prices.length / 2)] },
+      rating: {
+        min: Math.min(...ratings),
+        max: Math.max(...ratings),
+        mean: Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 100) / 100,
+      },
+      negativeStarShareMean:
+        Math.round((products.reduce((n, p) => n + lowShare(p), 0) / products.length) * 10) / 10,
+      aspects: [...aspects.values()].sort((a, b) => b.mentions - a.mentions),
+      perProduct: products.map((p) => ({
+        asin: p.asin, brand: p.brand, title: p.title, price: p.price, priceValue: p.price_value,
+        rating: p.rating, ratingCount: p.rating_count, reviewsCollected: p.reviews?.length ?? 0,
+        negativeStarShare: lowShare(p), reviewsGated: false,
+      })),
+      productsScanned: products.length,
+    },
+    products,
+    errors: [],
+    billable: true,
+  };
+}
+
 /** @type {Map<string, { workspaceId?: string }>} */
 const tokens = new Map();
 /** @type {Map<string, { apps: Array<{ id: string; name: string }> }>} */
@@ -725,6 +1175,24 @@ function handleMcpCall(name, args, workspaceId) {
           stoppedBecause: "user requested",
           message: `Stopped watching "${args.term ?? args.watchId}".`,
         },
+      };
+    }
+    case "scan_amazon_category":
+    case "amazon_scan_status":
+    case "get_amazon_product": {
+      const scanId = String(args?.scanId ?? "scan_fixture_1");
+      const single = name === "get_amazon_product";
+      const scan = fixtureAmazonScan(single ? { ...args, limit: 1 } : args, scanId);
+      if (single) scan.product = scan.products[0] ?? null;
+      if (name === "amazon_scan_status") scan.billable = false;
+      return {
+        content: [
+          {
+            type: "text",
+            text: `${scan.products.length} Amazon listing(s) collected, ${scan.rollup.reviewsCollected} review(s) (fixture).`,
+          },
+        ],
+        structuredContent: scan,
       };
     }
     default:

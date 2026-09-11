@@ -2042,5 +2042,245 @@
     margin-bottom: 12px;
   }
   .empty-state .text { font-size: 14px; }
+
+  /* ─── Marketplace (Amazon) ───
+     A listing is not a post: the reader is comparing price, star mass and
+     what reviews argue about, so the tile leads with those rather than with a
+     thumbnail. Colours are the marketplace's own only in the mark; everything
+     else stays on the shared tokens so a second marketplace needs no new
+     palette. */
+  .amz-head {
+    @apply flex items-center gap-3;
+    padding: 2px 2px 12px;
+  }
+  .amz-mark {
+    @apply inline-flex items-center justify-center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: #232f3e;
+    flex: none;
+  }
+  .mkt-generic { color: #fff; font-weight: 700; }
+  .amz-head-text { min-width: 0; flex: 1; }
+  .amz-head-title {
+    font-size: 15px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .amz-head-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .amz-running { flex: none; }
+
+  .amz-strip {
+    @apply flex flex-wrap gap-2;
+    margin-bottom: 12px;
+  }
+  .amz-stat {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    background: var(--card);
+    flex: 1 1 130px;
+  }
+  .amz-stat-k {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .amz-stat-v { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  .amz-stat-d { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .amz-grid {
+    @apply grid gap-2;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+  .amz-tile {
+    @apply flex gap-3 text-left;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: 10px;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+  }
+  .amz-tile:hover { background: var(--card-hover); }
+  .amz-tile-open { border-color: #ff9900; }
+  .amz-tile-body { @apply flex flex-col; min-width: 0; gap: 2px; }
+  .amz-brand {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .amz-title {
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 600;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .amz-title-lg { font-size: 14px; -webkit-line-clamp: 4; }
+  .amz-line { @apply flex items-center flex-wrap; gap: 6px; margin-top: 2px; }
+  .amz-stars { color: #ff9900; font-size: 12px; letter-spacing: 0.5px; }
+  .amz-rating { font-size: 12px; font-weight: 700; }
+  .amz-count { font-size: 11px; color: var(--muted); }
+  .amz-price { font-size: 14px; font-weight: 700; }
+  .amz-list { font-size: 11px; color: var(--muted); text-decoration: line-through; }
+  .amz-neg {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0 6px;
+  }
+  .amz-sub { font-size: 11px; color: var(--muted); }
+
+  .amz-thumb {
+    @apply inline-flex items-center justify-center;
+    width: 64px;
+    height: 64px;
+    flex: none;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .amz-thumb img { width: 100%; height: 100%; object-fit: contain; }
+  .amz-thumb-empty {
+    background: var(--tag);
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .amz-detail {
+    border: 1px solid var(--border);
+    border-top: 3px solid #ff9900;
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .amz-detail-head { @apply flex gap-3; margin-bottom: 12px; }
+  .amz-detail-facts { min-width: 0; flex: 1; }
+  .amz-open { margin-top: 8px; }
+  .amz-block { margin-top: 14px; }
+  .amz-blocknote { font-size: 11.5px; color: var(--muted); margin: -4px 0 8px; }
+  .amz-feats { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+  .amz-feats li { margin: 3px 0; }
+  .amz-summary {
+    margin-top: 12px;
+    border-left: 3px solid #ff9900;
+    padding-left: 10px;
+  }
+  .amz-note {
+    font-size: 11.5px;
+    color: var(--muted);
+    background: var(--tag);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    margin-top: 10px;
+  }
+
+  .amz-hist { margin-top: 10px; }
+  .amz-hrow { @apply flex items-center gap-2; margin: 3px 0; }
+  .amz-hstar { font-size: 11px; color: var(--muted); width: 26px; flex: none; }
+  .amz-htrack {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--tag);
+    overflow: hidden;
+  }
+  .amz-hfill { display: block; height: 100%; border-radius: 999px; }
+  .amz-hpct { font-size: 11px; color: var(--muted); width: 34px; text-align: right; flex: none; }
+  .amz-bar-good { background: var(--green); }
+  .amz-bar-mid { background: var(--amber); }
+  .amz-bar-bad { background: var(--red); }
+
+  .amz-rev {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 11px;
+    margin: 6px 0;
+    background: var(--card);
+  }
+  .amz-rev-good { border-left-color: var(--green); }
+  .amz-rev-mid { border-left-color: var(--amber); }
+  .amz-rev-bad { border-left-color: var(--red); }
+  .amz-rev-focus { border-color: #ff9900; background: var(--card-hover); }
+  .amz-rev-head { @apply flex items-center flex-wrap gap-2; }
+  .amz-rev-title { font-size: 12.5px; font-weight: 700; }
+  .amz-rev-body { font-size: 12.5px; line-height: 1.5; margin-top: 4px; }
+  .amz-rev-meta { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  /* Not the shared .verified: that one is an 18px round badge sized for a
+     glyph, and a phrase inside it renders white on nothing. */
+  .amz-verified { color: var(--green); font-weight: 600; }
+
+  .amz-arow { @apply flex items-center gap-3; margin: 7px 0; }
+  .amz-aname { flex: 1 1 40%; min-width: 0; font-size: 12.5px; font-weight: 600; }
+  .amz-abrands { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+  .amz-atrack {
+    flex: 1 1 40%;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--tag);
+    overflow: hidden;
+  }
+  .amz-afill { display: block; height: 100%; border-radius: 999px; }
+  .amz-amentions { font-size: 11.5px; color: var(--muted); width: 48px; text-align: right; flex: none; }
+
+  .amz-find {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin: 7px 0;
+    background: var(--card);
+  }
+  .amz-find-driver { border-left-color: var(--green); }
+  .amz-find-barrier { border-left-color: var(--red); }
+  .amz-find-gap { border-left-color: var(--blue); }
+  .amz-find-head { @apply flex items-center flex-wrap gap-2; }
+  .amz-find-label { font-size: 13px; font-weight: 700; }
+  .amz-find-detail { font-size: 12.5px; line-height: 1.5; margin-top: 4px; color: var(--muted); }
+  .amz-evrow { @apply flex flex-wrap gap-1; margin-top: 7px; }
+  .amz-ev {
+    font-size: 10.5px;
+    font-family: "SF Mono", Monaco, monospace;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 8px;
+    background: var(--tag);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .amz-ev:hover { border-color: #ff9900; color: var(--fg); }
+  .amz-ev-quote { cursor: default; font-family: inherit; }
+
+  .amz-strength { @apply flex gap-2; margin: 6px 0; font-size: 12.5px; }
+  .amz-strength-brand { font-weight: 700; flex: none; min-width: 110px; }
+  .amz-strength-detail { color: var(--muted); }
+  .amz-angle {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin: 7px 0;
+    background: var(--card);
+  }
+  .amz-angle-claim { font-size: 13px; font-weight: 700; }
+  .amz-angle-row { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .amz-angle-risk { color: var(--amber); }
+
 }
 ...[truncated 30111 chars]
