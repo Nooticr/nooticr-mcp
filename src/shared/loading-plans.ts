@@ -437,6 +437,59 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // upstream step to wait on — the wait is a database read.
   mention_trend: { label: "Reading the run history", kind: "text", n: 1, steps: [], free: true },
   prepare_handoff: { label: "Packaging the handoff", kind: "list", n: 4, steps: [], free: true },
+  show_amazon_category_insights: {
+    label: "Drawing the category read",
+    kind: "list",
+    n: 5,
+    steps: [],
+    free: true,
+  },
+
+  // ─── Marketplace ───
+  //
+  // The wait here is genuinely long and the reason is worth showing rather
+  // than hiding behind a spinner: each listing is a browser render behind
+  // Amazon's bot defences, and the politeness delay between them is set by
+  // what Amazon tolerates rather than by what the machine can do. A plan that
+  // said "Working" for four minutes would read as a hang.
+  scan_amazon_category: {
+    label: "Collecting the category",
+    kind: "list",
+    n: 6,
+    steps: [],
+    perUnit: [
+      {
+        via: "scan_amazon_category",
+        label: "Collecting a listing",
+        detail: "price, stars, aspects and its reviews",
+        credits: 3,
+        arg: "limit",
+        defaultCount: 10,
+      },
+    ],
+    note: "Amazon is collected politely, so this is minutes rather than seconds. Partial results come back either way.",
+  },
+  // Free: the poll of a collection already paid for.
+  amazon_scan_status: {
+    label: "Checking the collection",
+    kind: "list",
+    n: 6,
+    steps: [],
+    free: true,
+  },
+  get_amazon_product: {
+    label: "Reading the listing",
+    kind: "text",
+    n: 1,
+    steps: [
+      {
+        via: "get_amazon_product",
+        label: "Fetching the listing",
+        detail: "price, stars, aspects and its reviews",
+        credits: 3,
+      },
+    ],
+  },
 
   // ─── Own-account reads: nooticr's own stored rows ───
   get_scheduled_posts: { label: "Reading your pipeline", kind: "list", n: 5, steps: [], free: true },

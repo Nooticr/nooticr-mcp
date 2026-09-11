@@ -242,6 +242,69 @@ const analyzed = { ...singlePost, analysis, analyzed: scalar() };
  * One entry per tool. A tool missing from here declares nothing, which is the
  * honest option when the shape has not been checked against a real response.
  */
+/**
+ * One Amazon listing, as the scan hands it over.
+ *
+ * `aspects` and `reviewSummary` are Amazon's own, not ours, and they are the
+ * half of a listing that survives the sign-in gate which withholds review
+ * bodies — so they are declared beside `reviews` rather than folded into it.
+ */
+const amazonProduct = open({
+  asin: scalar(),
+  url: scalar(),
+  title: scalar(),
+  brand: scalar(),
+  price: scalar(),
+  priceValue: scalar(),
+  listPrice: scalar(),
+  availability: scalar(),
+  rating: scalar(),
+  ratingCount: scalar(),
+  image: scalar(),
+  images: listOf(z.string()),
+  features: listOf(z.string()),
+  categories: listOf(z.string()),
+  specs: open({}).nullish(),
+  ratingHistogram: open({}).nullish().describe("Star bucket to share, e.g. {\"5\": \"73%\"}."),
+  reviewSummary: scalar().describe("Amazon's own digest of the reviews."),
+  aspects: listOf(open({ name: scalar(), mentions: scalar(), sentiment: scalar() })),
+  reviewsGated: scalar().describe("True when Amazon withheld the review bodies behind sign-in."),
+  reviews: anyList(),
+});
+
+/** One thing you concluded, with what it rests on. */
+const amazonFinding = open({
+  label: scalar(),
+  detail: scalar(),
+  evidence: listOf(z.string()).describe("Review ids or short quotes."),
+  strength: scalar().describe("strong / moderate / thin — how well the collected text supports it."),
+});
+
+const amazonScanShape = {
+  guidance: scalar(),
+  mode: scalar(),
+  marketplace: scalar(),
+  scanId: scalar().describe("Pass to amazon_scan_status to pick a running collection back up."),
+  status: scalar(),
+  complete: scalar().describe("False means more listings are still coming."),
+  query: scalar(),
+  domain: scalar(),
+  progress: open({
+    done: scalar(),
+    total: scalar(),
+    message: scalar(),
+    elapsedMs: scalar(),
+    fromCache: scalar(),
+  }).nullish(),
+  rollup: open({}).nullish().describe("The arithmetic over the set: price and rating spread, aspects by brand, 1-2 star share."),
+  products: listOf(amazonProduct),
+  reviews: anyList().describe("Every review across the scan, worst-rated first — the barriers are the half a summary drops."),
+  errors: anyList(),
+  mcpCredits,
+};
+
+const amazonScan = open(amazonScanShape);
+
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
   analyze_post_fast: open({ ...evidence, ...analyzed }),
@@ -1415,6 +1478,34 @@ export const OUTPUT_SCHEMAS = {
     influencerId: scalar(),
     connectUrl: scalar().describe("Open this in a browser to approve the connection."),
     message: scalar(),
+  }),
+
+  // Marketplace. One shape for all three collection tools: a status poll
+  // returns exactly what the scan that started it returns, and a single
+  // product is a scan of one — describing them differently would be three
+  // names for one payload and three places for the view to drift.
+  scan_amazon_category: amazonScan,
+  amazon_scan_status: amazonScan,
+  get_amazon_product: open({
+    ...amazonScanShape,
+    product: amazonProduct.nullish().describe("The single listing, also present as products[0]."),
+  }),
+  show_amazon_category_insights: open({
+    marketplace: scalar(),
+    view: scalar(),
+    category: scalar(),
+    summary: scalar(),
+    drivers: listOf(amazonFinding).describe("What makes someone buy, as you read it."),
+    barriers: listOf(amazonFinding).describe("What stops them, or makes them return it."),
+    strengths: listOf(open({ brand: scalar(), detail: scalar(), asin: scalar() })),
+    gaps: listOf(amazonFinding),
+    positioning: listOf(
+      open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
+    ),
+    products: listOf(amazonProduct).describe("The listings, passed through so the view can draw them."),
+    rollup: open({}).nullish(),
+    scanId: scalar(),
+    mcpCredits,
   }),
 } as const;
 

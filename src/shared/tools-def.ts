@@ -415,6 +415,30 @@ export const TOOL_DEFINITIONS = [
  description: "Patch your own product's fields \u2014 omitted arguments leave their column unchanged, so this cannot blank a field by not mentioning it. Takes appId, optional when your workspace has exactly one product; every other field is snake_case, the same names create_product takes and read the same way. The result lists which fields were actually written, so a name you spelled wrong shows up as a field that did not change rather than as a silent no-op. Free \u2014 no AI call, just a row.",
  inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-product workspace."), name: z.string().optional(), slug: z.string().optional(), description: z.string().optional(), website_url: z.string().optional(), niche: z.string().optional(), product_type: z.string().optional(), icon_url: z.string().optional(), primary_cta_label: z.string().optional(), primary_cta_url: z.string().optional(), external_listing_id: z.string().optional(), ios_bundle_id: z.string().optional(), android_package: z.string().optional() }).strict(),
  },
+ {
+ name: "scan_amazon_category",
+ title: "Scan Amazon Category",
+ description: "Collect an Amazon category and read it: listings with prices, star histograms, Amazon's own review-aspect counts and the review text itself, plus the arithmetic over them (price spread, rating spread, which aspects recur across how many brands, and the share of each listing's ratings sitting at 1-2 stars). Pass query to search the category, asins to pin named competitors, or both \u2014 named competitors keep their place at the front. You write the read: purchase drivers, barriers, what the incumbents do well, the gaps, and how a new entrant could position; show_amazon_category_insights draws it for free afterwards. Collection runs in the background, so this returns everything ready within waitSeconds plus a scanId to continue with amazon_scan_status. Consumes 3 nooticr credits per listing collected \u2014 a listing with reviews is a real browser render behind Amazon's bot defences.",
+ inputSchema: z.object({ query: z.string().optional().describe("Category or keyword to search on Amazon, e.g. 'ashwagandha gummies'."), asins: z.array(z.string()).optional().describe("Named competitors: ASINs or any Amazon product URL. Kept at the front of the set."), limit: z.number().int().optional().describe("Listings to collect (default 10, max 50)."), reviews: z.boolean().optional().describe("Collect review text too (default true)."), domain: z.string().optional().describe("Marketplace host, e.g. www.amazon.co.uk (default www.amazon.com)."), waitSeconds: z.number().int().optional().describe("How long to wait before returning partial results (default 90, max 240)."), focus: z.string().optional().describe("An extra question to answer from the reviews.") }).strict(),
+ },
+ {
+ name: "amazon_scan_status",
+ title: "Amazon Scan Status",
+ description: "Pick up a scan_amazon_category collection that was still running, by scanId \u2014 the listings and reviews collected since, with the same rollup and the same instructions for reading them. Free: it is the poll scan_amazon_category asked for, and charging for the second half of one answer would bill a wait this server chose. Call it when a scan came back incomplete, then write your read from the full set.",
+ inputSchema: z.object({ scanId: z.string().describe("The scanId scan_amazon_category returned."), waitSeconds: z.number().int().optional().describe("How long to wait for more listings before answering (default 30, max 240)."), focus: z.string().optional().describe("Same optional steer as scan_amazon_category.") }).strict(),
+ },
+ {
+ name: "get_amazon_product",
+ title: "Get Amazon Product",
+ description: "Fetch one Amazon listing by ASIN or URL: price, rating, the full star histogram, features, specs, Amazon's review digest and aspect breakdown, and the review text. Use for a single product; for a category or a competitive set, scan_amazon_category collects many in one job and rolls them up. Consumes 3 nooticr credits.",
+ inputSchema: z.object({ asin: z.string().optional().describe("ASIN, or a full Amazon product URL."), url: z.string().optional().describe("Full Amazon product URL, if you have that instead."), reviews: z.boolean().optional().describe("Collect review text too (default true)."), domain: z.string().optional().describe("Marketplace host (default www.amazon.com).") }).strict(),
+ },
+ {
+ name: "show_amazon_category_insights",
+ title: "Show Amazon Category Insights",
+ description: "Display the category read you produced from scan_amazon_category: purchase drivers, barriers, what each brand does well, the gaps, and the positioning angles \u2014 drawn beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. Free, and makes no requests: it only draws what you pass it, attributed to you rather than presented as a nooticr rating of anyone's product. Call this after you have read the reviews, not instead of reading them.",
+ inputSchema: z.object({ category: z.string().describe("The category this is a read of."), summary: z.string().optional(), drivers: z.array(z.any()).optional().describe("What makes someone buy, each with the review evidence behind it."), barriers: z.array(z.any()).optional().describe("What stops them buying, or makes them return it."), strengths: z.array(z.any()).optional().describe("What each incumbent does well."), gaps: z.array(z.any()).optional().describe("What buyers keep asking for that nobody serves."), positioning: z.array(z.any()).optional().describe("Angles a new entrant could take."), products: z.array(z.any()).optional().describe("The listings from the scan, passed straight through."), rollup: z.record(z.unknown()).optional().describe("The rollup from the scan, passed straight through."), scanId: z.string().optional() }).passthrough(),
+ },
 ] as const;
 
 export type ToolName = typeof TOOL_DEFINITIONS[number]["name"];
