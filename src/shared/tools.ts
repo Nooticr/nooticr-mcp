@@ -58,7 +58,7 @@ import { registerCollabTools } from "./collab.js";
 import { registerAmazonTools } from "./amazon.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.33";
+export const MCP_SERVER_VERSION = "1.26.34";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
