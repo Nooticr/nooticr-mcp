@@ -2255,3 +2255,105 @@ test.describe("the marketplace view", () => {
     await expect(page.locator(".amz-note")).toContainText("still public");
   });
 });
+
+// ── Replies under a prospect post (#78) ────────────────────────────────────
+//
+// find_people_with_problem buys these at 2 credits a post, up to 10, and its
+// own guidance calls a reply the better find. They reached the text digest and
+// this view drew the post cards only, so a host rendering the widget dropped
+// exactly the half that cost the most. Asserting on the rendered text rather
+// than on the payload, because the payload was always right.
+test("replies bought under a prospect post are actually drawn", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        title: "Spending my whole morning checking competitor posts",
+        externalUrl: "https://reddit.com/r/marketing/comments/abc",
+        commentsRead: 2,
+        commentSample: [
+          { username: "same_boat", text: "same here, this is exactly my problem", likes: 12 },
+          { username: "tired_pm", text: "I built a spreadsheet for it and it still takes an hour" },
+        ],
+      },
+    ],
+  });
+  await expect(page.locator(".replies-strip")).toBeVisible();
+  await expect(page.locator(".reply-text").first()).toContainText("same here, this is exactly my problem");
+  await expect(page.locator(".reply-who").first()).toContainText("same_boat");
+  await expect(page.locator(".replies-head")).toContainText("2 replies");
+});
+
+// The card a real prospect search actually produces.
+//
+// postCard returns early for anything playable, and a Reddit/TikTok/X result
+// carries a videoUrl far more often than not — so the first version of the
+// strip rendered in the test above and in none of the three posts a real
+// find_people_with_problem call returned. Found by rendering the fixture
+// backend's own payload rather than a synthetic one, which is the whole reason
+// CLAUDE.md asks for that step. This pins the media path specifically.
+test("replies are drawn on a playable post, not only on a plain one", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        caption: "The waste-an-hour-a-day checking competitors habit",
+        externalUrl: "https://reddit.com/r/marketing/comments/vid",
+        videoUrl: "https://example.invalid/clip.mp4",
+        contentType: "video",
+        commentsRead: 1,
+        commentSample: [{ username: "same_boat", text: "this stopped working for me after the last update" }],
+      },
+    ],
+  });
+  await expect(page.locator(".replies-strip")).toBeVisible();
+  await expect(page.locator(".reply-text").first()).toContainText("stopped working for me");
+});
+
+// `commentsRead: 0` is a statement about the THREAD, not the audience. The
+// digest already words it that way; if the view said "no replies" the two
+// channels would tell a reader opposite things about the same prospect.
+test("a thread that would not open says so, rather than reading as no replies", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        title: "Anyone else drowning in competitor research",
+        externalUrl: "https://reddit.com/r/marketing/comments/def",
+        commentsRead: 0,
+      },
+    ],
+  });
+  await expect(page.locator(".replies-none")).toContainText("would not open");
+  await expect(page.locator(".replies-none")).not.toContainText("no replies");
+});
+
+// A post nothing tried to open draws no strip at all — silence about a thread
+// nobody looked at is correct, and an empty strip on every gallery card would
+// be noise on the tools that never fetch comments.
+test("a post nothing opened draws no replies strip", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [{ platform: "reddit", title: "A post", externalUrl: "https://reddit.com/r/x/comments/g" }],
+  });
+  await expect(page.locator(".replies-strip")).toHaveCount(0);
+});
+
+// The label a host adds under #79 has to land on the reply it belongs to —
+// the chip markup is shared with the sweep view, so this is the check that it
+// is actually reached from a prospect card.
+test("a classified reply carries its category chip", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        title: "Competitor tracking is eating my week",
+        externalUrl: "https://reddit.com/r/marketing/comments/hij",
+        commentsRead: 1,
+        commentSample: [
+          { username: "dev_anna", text: "the export silently drops rows", category: "bug_report", sentiment: "negative" },
+        ],
+      },
+    ],
+  });
+  await expect(page.locator(".reply-row .chip-cat")).toContainText("bug report");
+});

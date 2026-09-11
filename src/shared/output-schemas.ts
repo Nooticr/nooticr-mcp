@@ -150,6 +150,20 @@ const post = open({
   comments: scalar(),
   shares: scalar(),
   engagementRate: scalar(),
+  // The replies under the post, when a tool opened it — find_people_with_problem's
+  // `readComments`. Declared rather than left to `open()` to pass through: a host
+  // reading the schema had no way to know these could be here, so the field that
+  // costs the most in that call was the one field it could not plan for (#78).
+  //
+  // `commentsRead: 0` means the thread would not open, NOT that nobody replied.
+  // The two read as opposite findings about a prospect, so the distinction is
+  // stated here as well as in the digest and the view.
+  commentsRead: scalar().describe(
+    "How many replies were read under this post. 0 means the thread would not open — not that nobody replied. Absent when nothing tried.",
+  ),
+  commentSample: anyList().describe(
+    "The replies themselves, when they were read. Someone answering \"same here, this is exactly my problem\" under another person's thread is a better find than the thread — the permalink to quote is still this post's.",
+  ),
   hashtags: listOf(z.string()),
   // Media comes in threes: the platform URL, an nooticr proxy, and a resolver
   // that re-fetches when a signed link has expired.
@@ -343,10 +357,25 @@ export const OUTPUT_SCHEMAS = {
             replies: scalar().describe("How many people replied to this comment."),
             postedAt: scalar(),
             hits: scalar().describe("How many times this comment names the term."),
+            // Not returned by the sweep — there is nothing in the payload that
+            // could decide them, and a keyword guess would be confidently
+            // wrong about the exact thing being monitored. Declared because
+            // the view draws a chip from `category` and a counted filter from
+            // `byCategory`, and both were inert on this path until the
+            // guidance asked a host to fill them in (#79). This says what the
+            // shape is when it hands its own labels back through
+            // show_comment_review.
+            sentiment: scalar().describe("Set by the reading model, not by the sweep."),
+            category: scalar().describe(
+              "Set by the reading model, not by the sweep. One of the comment taxonomy values; drives the filter chips.",
+            ),
           }),
         ),
       }),
     ).describe("Mentions grouped under the post they were left on, loudest conversation first."),
+    byCategory: open({})
+      .nullish()
+      .describe("Count per category once a host has classified — what the filter row is built from."),
     posts: listOf(post).describe("The posts of this page, flattened for the card view."),
     offset: scalar(),
     nextOffset: scalar().describe("Pass back as `offset` to load the next page; null when done."),

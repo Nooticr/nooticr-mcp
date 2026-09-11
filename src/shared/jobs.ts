@@ -58,7 +58,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
-import { platformFromUrl, postSlug } from "./comment-review.js";
+import { classifyGuidance, platformFromUrl, postSlug } from "./comment-review.js";
 import { clamp, complaintCore, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
 import { withEvidence } from "./evidence-digest.js";
 import {
@@ -2502,8 +2502,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Widens the query into the forms a complaint takes — the plain phrasing, the " +
         "does-anyone-else question, the is-there-a-tool ask — and merges what each returns. " +
         "It is a wide cheap net and NOT a filter: the posts come back for you to judge, and " +
-        "many will be off-target. Consumes 2 nooticr credits per platform searched. Defaults to " +
-        "reddit, where people describe workflow pain in sentences; add twitter for volume.",
+        "many will be off-target. Consumes 2 nooticr credits per search, and each platform is searched once per query shape — three by default, so 6 credits per platform. Defaults to " +
+        "reddit, where people describe workflow pain in sentences; add twitter for volume. Not searchable here: linkedin.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.find_people_with_problem,
       inputSchema: z
@@ -2516,9 +2516,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "marketing about competitor analysis.",
             ),
           platforms: z
-            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram", "linkedin"]))
+            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram"]))
             .optional()
-            .describe("Where to look (default reddit). Each one is a separate paid search."),
+            .describe("Where to look (default reddit). Each one is a separate paid search per query shape. Not searchable here: linkedin — no keyword post search exists for it upstream, so asking for it could only ever return nothing, which is why it is absent from this list rather than merely untested."),
           limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."),
           readComments: z
             .boolean()
@@ -2724,6 +2724,25 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             ? `Note that ${unavailable.length} searches errored — tell the user which networks ` +
               "could not be searched rather than presenting this as the whole picture.\n"
             : "",
+          // A prospect list is a judgement with nowhere to land unless the
+          // labels come back in a shape the view can draw. `bug_report` and
+          // `complaint` are exactly what makes this list actionable — one goes
+          // to engineering, one to positioning — and the chips, counts and
+          // filter that would show them have always been built and never been
+          // asked for on this path (#79).
+          ...(args.readComments && posts.some((p) => Array.isArray(p.commentSample))
+            ? [
+                "",
+                classifyGuidance(
+                  "The replies you were handed under these posts are unclassified, and labelling " +
+                    "them is what turns this list into something sortable.",
+                  posts.reduce(
+                    (n, p) => n + (Array.isArray(p.commentSample) ? p.commentSample.length : 0),
+                    0,
+                  ),
+                ),
+              ]
+            : []),
           ownIt,
         ]
           .filter((l, i, all) => !(l === "" && all[i - 1] === ""))
