@@ -58,7 +58,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
-import { platformFromUrl, postSlug } from "./comment-review.js";
+import { classifyGuidance, platformFromUrl, postSlug } from "./comment-review.js";
 import { clamp, complaintCore, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
 import { withEvidence } from "./evidence-digest.js";
 import {
@@ -1486,19 +1486,31 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           if (already && already !== source) existing.foundBy = "both";
           return;
         }
+        // null only when neither spelling arrived; "" when one did and was
+        // blank. `?? null` rather than `?? ""` is the whole distinction.
+        const rawBio = raw.signature ?? raw.bio;
+        const bio = typeof rawBio === "string" ? rawBio : null;
         bySource.set(key, {
           ...raw,
           id: `creator:${platform}:${key}`,
           username,
           followers: numberOf(raw.followers ?? raw.followerCount),
           foundBy: source,
+          // Three states, not two. The server distinguishes "this creator
+          // wrote no bio" (empty string) from "the endpoint did not send one"
+          // (null) — Nooticr/nooticr-server#82, where `signature` came back
+          // empty for 55 of 55 results across two platforms. Collapsing the
+          // null back to "" here would undo that fix at its most important
+          // consumer: `links` is this tool's headline differentiator, and an
+          // empty array reads as "this creator published nothing" whichever
+          // reason produced it.
+          bioRead: bio !== null,
           // What the host should go and read. Pulled out of the bio here
           // rather than left for the model to spot inside prose — see
           // collab.ts for why they are typed and why we do not open them.
-          links: extractLinks(
-            String(raw.signature ?? raw.bio ?? ""),
-            typeof raw.externalUrl === "string" ? raw.externalUrl : undefined,
-          ),
+          links: bio === null
+            ? []
+            : extractLinks(bio, typeof raw.externalUrl === "string" ? raw.externalUrl : undefined),
         });
       };
 
@@ -1538,18 +1550,23 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       const withLinks = creators.filter(
         (c) => Array.isArray(c.links) && (c.links as unknown[]).length > 0,
       ).length;
+      // Candidates whose bio never arrived. Counted rather than inferred from
+      // an empty `links`, because the two are different claims and this tool
+      // is built entirely on the one it cannot make when the bio is missing.
+      const bioUnread = creators.filter((c) => c.bioRead === false).length;
 
       return evidence(
         [
           collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
           "",
-          vettingGuidance(creators.length, withLinks),
+          vettingGuidance(creators.length, withLinks, bioUnread),
         ].join("\n"),
         {
           mode: "evidence",
           tool: "who_should_i_work_with",
           rubric: COLLAB_RUBRIC,
           withLinks,
+          bioUnread,
           evidenceFrom: args.seed ? ["search_creators", "get_similar_creators"] : ["search_creators"],
           niche: args.niche,
           platform,
@@ -2502,8 +2519,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Widens the query into the forms a complaint takes — the plain phrasing, the " +
         "does-anyone-else question, the is-there-a-tool ask — and merges what each returns. " +
         "It is a wide cheap net and NOT a filter: the posts come back for you to judge, and " +
-        "many will be off-target. Consumes 2 nooticr credits per platform searched. Defaults to " +
-        "reddit, where people describe workflow pain in sentences; add twitter for volume.",
+        "many will be off-target. Consumes 2 nooticr credits per search, and each platform is searched once per query shape — three by default, so 6 credits per platform. Defaults to " +
+        "reddit, where people describe workflow pain in sentences; add twitter for volume. Not searchable here: linkedin.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.find_people_with_problem,
       inputSchema: z
@@ -2516,9 +2533,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "marketing about competitor analysis.",
             ),
           platforms: z
-            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram", "linkedin"]))
+            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram"]))
             .optional()
-            .describe("Where to look (default reddit). Each one is a separate paid search."),
+            .describe("Where to look (default reddit). Each one is a separate paid search per query shape. Not searchable here: linkedin — no keyword post search exists for it upstream, so asking for it could only ever return nothing, which is why it is absent from this list rather than merely untested."),
           limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."),
           readComments: z
             .boolean()
@@ -2724,6 +2741,25 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             ? `Note that ${unavailable.length} searches errored — tell the user which networks ` +
               "could not be searched rather than presenting this as the whole picture.\n"
             : "",
+          // A prospect list is a judgement with nowhere to land unless the
+          // labels come back in a shape the view can draw. `bug_report` and
+          // `complaint` are exactly what makes this list actionable — one goes
+          // to engineering, one to positioning — and the chips, counts and
+          // filter that would show them have always been built and never been
+          // asked for on this path (#79).
+          ...(args.readComments && posts.some((p) => Array.isArray(p.commentSample))
+            ? [
+                "",
+                classifyGuidance(
+                  "The replies you were handed under these posts are unclassified, and labelling " +
+                    "them is what turns this list into something sortable.",
+                  posts.reduce(
+                    (n, p) => n + (Array.isArray(p.commentSample) ? p.commentSample.length : 0),
+                    0,
+                  ),
+                ),
+              ]
+            : []),
           ownIt,
         ]
           .filter((l, i, all) => !(l === "" && all[i - 1] === ""))

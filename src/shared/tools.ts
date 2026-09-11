@@ -18,6 +18,7 @@ import { createTaskStore, registerSlowTool } from "./tasks.js";
 import {
   COMMENT_CATEGORIES,
   COMMENT_SENTIMENTS,
+  classifyGuidance,
   platformFromUrl,
   reviewGuidance,
   toEvidence,
@@ -349,7 +350,17 @@ function withSource(
  return { ...result, structuredContent: { ...result.structuredContent, source, platform } };
 }
 
-async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolContent[]; structuredContent?: Record<string, unknown> }> {
+/**
+ * `guidance`, when given, is steering this repo adds to a backend passthrough
+ * — and it goes into BOTH channels deliberately.
+ *
+ * Claude Code drops every text block when a result also carries
+ * structuredContent, and a host rendering the UI view does the reverse: it
+ * hands the model the text and gives structuredContent to the widget. So a
+ * guidance string in one place only reaches roughly half the hosts, which is
+ * the failure #44/#51 were and the reason chain:map gates on it.
+ */
+async function toToolResult(proxy: McpProxyResult, guidance?: string): Promise<{ content: ToolContent[]; structuredContent?: Record<string, unknown> }> {
  // MCP Apps views (ChatGPT & Claude) render the interactive HTML card, which
  // already embeds all thumbnails/videos. Claude's Apps bridge rejects a tool
  // result that mixes raw `image` blocks with an app view ("could not be
@@ -375,10 +386,11 @@ async function toToolResult(proxy: McpProxyResult): Promise<{ content: ToolConte
  const textJson = JSON.stringify(forHosts, null, 2);
  // Replace image URLs in HTML with proxied versions
  const proxiedHtml = htmlPrefix ? proxyImageUrlsInHtml(htmlPrefix) : "";
- const text = proxiedHtml ? `${proxiedHtml}\n\n${textJson}` : textJson;
+ const body = proxiedHtml ? `${proxiedHtml}\n\n${textJson}` : textJson;
+ const text = guidance ? `${guidance}\n\n${body}` : body;
  return {
   content: [{ type: "text", text }],
-  structuredContent: forHosts,
+  structuredContent: guidance ? { ...forHosts, guidance } : forHosts,
  };
 }
 
@@ -2600,7 +2612,21 @@ export function createMcpServer(
    if (!decision.proceed) return declinedResult(credits, "That sweep");
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("search_mentions", { ...args }));
+    const proxy = await client.callTool("search_mentions", { ...args });
+    // Ask for the labels the view is already built to draw. Everything on the
+    // receiving end has existed for as long as the chips have — the per-row
+    // chip, the counted filter, the click-to-filter — and this sweep is the
+    // most expensive call in the product, so it drew all three empty every
+    // time for want of one instruction (#79).
+    const structured = (proxy.structured ?? {}) as Record<string, unknown>;
+    const groups = Array.isArray(structured.threads) ? structured.threads.length : 0;
+    return await toToolResult(
+     proxy,
+     classifyGuidance(
+      `They are comments naming "${args.term}", grouped under the ${groups} posts they were left on.`,
+      groups,
+     ),
+    );
    } catch (err) {
     return toolError("search_mentions failed", err);
    }

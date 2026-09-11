@@ -304,6 +304,19 @@
           }
         }
       }
+    },
+    {
+      "id": "a-brand-sweep-ends-in-show-comment-review",
+      "title": "A nine-network sweep ends up classified and drawn",
+      "why": "chain-map edge search_mentions -> show_comment_review, added with #79. The view has always drawn a category chip per row and a counted filter across the top, and only analyze_comments ever handed a host the taxonomy \u2014 so the most expensive call in the product rendered all three inert every time. This is the quest half of that fix, and the one measurement worth watching: the two names share no exact token, which docs/testing/tool-chaining-quests.md measured as what decides whether a show_* gets retrieved at all. If this sits at 0/3 while the chain-map edge is green, the edge is real and the retrieval is not \u2014 and the answer is a name, not more wording.",
+      "prompt": "What are people saying about {STUB} across social right now, and which of it needs answering?",
+      "runs": 3,
+      "expect": {
+        "chain": [
+          "search_mentions",
+          "show_comment_review"
+        ]
+      }
     }
   ]
 }

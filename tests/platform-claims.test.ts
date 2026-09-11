@@ -41,6 +41,16 @@ async function shippedTools() {
 /** "x" is how a description spells the network the API calls "twitter". */
 const ALIASES: Record<string, string> = { x: "twitter" };
 
+/**
+ * Enum values that are not a network at all.
+ *
+ * `discover_social_posts` takes `any` to mean "search across everything"
+ * rather than to name a tenth platform, so it has no entry in the served list
+ * and must not read as one. Kept as a named set rather than a skipped test so
+ * that a genuinely unservable platform cannot hide behind the exception.
+ */
+const PLATFORM_SENTINELS = new Set(["any"]);
+
 /** Text a tool puts in front of a host: its description plus every describe(). */
 function proseOf(tool: { description?: string; inputSchema?: unknown }): string {
   const props = (tool.inputSchema as { properties?: Record<string, { description?: string }> })
@@ -193,6 +203,50 @@ describe("platform claims match what the server serves", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  /**
+   * The enum, not the prose.
+   *
+   * Every check above reads what a description *says*. A platform can also be
+   * offered by the input schema alone, and that is the half nothing looked at:
+   * `find_people_with_problem` accepted `linkedin` in its `platforms` enum
+   * while its dispatcher has no LinkedIn arm at all, so every LinkedIn search
+   * it issued returned `unsupported discover platform` — not intermittently,
+   * on every code path (#77). The prose never named LinkedIn, so the prose
+   * checks were all green and correct.
+   *
+   * A schema is a stronger claim than prose, too: a host picks arguments from
+   * the enum without reading a word, so an unservable value there is an
+   * offer nobody had to misread to accept.
+   */
+  it("no tool offers a platform in its schema that its capability cannot reach", async () => {
+    const offered: string[] = [];
+    for (const tool of await shippedTools()) {
+      const cap = capabilityOf(tool.name);
+      if (!cap) continue;
+      const [capName] = cap;
+      const served = platformsFor(capName);
+      // Capabilities with no upstream fetch (a publish target, a configured
+      // link) have no served list to check against.
+      if (!served.length) continue;
+      const props = (tool.inputSchema as { properties?: Record<string, unknown> })?.properties ?? {};
+      for (const [arg, schema] of Object.entries(props)) {
+        if (!/^platforms?$/.test(arg)) continue;
+        const s = schema as { enum?: unknown[]; items?: { enum?: unknown[] } };
+        const values = (s.enum ?? s.items?.enum ?? []).filter(
+          (v): v is string => typeof v === "string",
+        );
+        for (const value of values) {
+          if (PLATFORM_SENTINELS.has(value)) continue;
+          const real = ALIASES[value] ?? value;
+          if (!served.includes(real)) {
+            offered.push(`${tool.name}.${arg} offers ${value}, which ${capName} cannot reach`);
+          }
+        }
+      }
+    }
+    expect(offered).toEqual([]);
   });
 
   it("a tool that talks about platforms declares which capability it uses", async () => {
