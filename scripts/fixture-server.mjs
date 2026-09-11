@@ -751,9 +751,34 @@ function handleMcpCall(name, args, workspaceId) {
         username: `fixture_creator_${i}`,
         nickname: `Fixture Creator ${i}`,
         followers: 10000 * i,
-        signature: `Fixture bio ${i} — not a real creator.`,
+        signature: `Fixture bio ${i} — portfolio at studio${i}.example and github.com/fixture${i}.`,
         verified: i === 1,
       }));
+      // The two states a bio has besides "present", both of which the server
+      // now sends and neither of which this fixture could produce before.
+      //
+      // Worth having here rather than only in a unit test: a fixture that
+      // always sends a bio cannot tell a consumer that handles the absent case
+      // from one that collapses it, and collapsing it is exactly what
+      // who_should_i_work_with did (Nooticr/nooticr-server#82) — an empty
+      // `links` array for every candidate, reading as "published nothing".
+      creators.push({
+        platform: "tiktok",
+        username: "fixture_creator_3",
+        nickname: "Fixture Creator 3",
+        followers: 30000,
+        // No `signature` key at all: the endpoint did not send one.
+        verified: false,
+      });
+      creators.push({
+        platform: "tiktok",
+        username: "fixture_creator_4",
+        nickname: "Fixture Creator 4",
+        followers: 40000,
+        // Sent, and empty: this creator wrote no bio.
+        signature: "",
+        verified: false,
+      });
       return {
         content: [{ type: "text", text: `Found ${creators.length} fixture creators.` }],
         structuredContent: { platform: "tiktok", creators },

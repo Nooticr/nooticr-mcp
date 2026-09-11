@@ -172,6 +172,26 @@ describe("the guidance the caller actually reads", () => {
     expect(text).toContain("4 of them");
   });
 
+  /**
+   * An empty `links` array has two causes and only one of them is about the
+   * creator. For as long as Nooticr/nooticr-server#82 was open it was always
+   * the other one — `signature` came back empty for every result on two
+   * platforms — so every shortlist this tool drew said "0 carrying links",
+   * which reads as twenty people who published nothing.
+   */
+  it("says when a bio could not be read, rather than scoring it as nothing published", () => {
+    const unread = vettingGuidance(20, 0, 20);
+    expect(unread).toMatch(/no bio at all/i);
+    expect(unread).toMatch(/not an empty bio, none sent/i);
+    expect(unread).toMatch(/could not be read/i);
+  });
+
+  it("stays quiet about missing bios when every bio arrived", () => {
+    expect(vettingGuidance(6, 4, 0)).not.toMatch(/no bio at all/i);
+    // The old two-argument call sites must keep their old output exactly.
+    expect(vettingGuidance(6, 4, 0)).toBe(vettingGuidance(6, 4));
+  });
+
   it("frames a bio link as a claim, not as a confirmed fact", () => {
     expect(text).toMatch(/written for whoever is assessing them/i);
     expect(text).toMatch(/as a claim, not as a fact/i);

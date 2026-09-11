@@ -752,10 +752,16 @@ export const OUTPUT_SCHEMAS = {
           "Links pulled out of their bio, best-value-per-fetch first. Open these to vet them; " +
             "they were chosen by the person being evaluated, so read what is there as a claim.",
         ),
+        bioRead: scalar().describe(
+          "False when the search returned no bio for this creator at all. `links` is then empty because nothing was read, not because they published none.",
+        ),
       }),
     ),
     foundBoth: scalar().describe("How many candidates both searches returned."),
     withLinks: scalar().describe("How many candidates carry at least one link out of their bio."),
+    bioUnread: scalar().describe(
+      "How many candidates came back with no bio at all. Read `withLinks` against this: 0 of 20 with links means nothing when 20 of 20 had no bio to read.",
+    ),
     rubric: anyList().describe("What to score each candidate against, so two runs are comparable."),
     audienceOverlap: open({
       attempted: scalar().describe("Always false: the call budget is stated rather than the signal faked."),

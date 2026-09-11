@@ -1486,19 +1486,31 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           if (already && already !== source) existing.foundBy = "both";
           return;
         }
+        // null only when neither spelling arrived; "" when one did and was
+        // blank. `?? null` rather than `?? ""` is the whole distinction.
+        const rawBio = raw.signature ?? raw.bio;
+        const bio = typeof rawBio === "string" ? rawBio : null;
         bySource.set(key, {
           ...raw,
           id: `creator:${platform}:${key}`,
           username,
           followers: numberOf(raw.followers ?? raw.followerCount),
           foundBy: source,
+          // Three states, not two. The server distinguishes "this creator
+          // wrote no bio" (empty string) from "the endpoint did not send one"
+          // (null) — Nooticr/nooticr-server#82, where `signature` came back
+          // empty for 55 of 55 results across two platforms. Collapsing the
+          // null back to "" here would undo that fix at its most important
+          // consumer: `links` is this tool's headline differentiator, and an
+          // empty array reads as "this creator published nothing" whichever
+          // reason produced it.
+          bioRead: bio !== null,
           // What the host should go and read. Pulled out of the bio here
           // rather than left for the model to spot inside prose — see
           // collab.ts for why they are typed and why we do not open them.
-          links: extractLinks(
-            String(raw.signature ?? raw.bio ?? ""),
-            typeof raw.externalUrl === "string" ? raw.externalUrl : undefined,
-          ),
+          links: bio === null
+            ? []
+            : extractLinks(bio, typeof raw.externalUrl === "string" ? raw.externalUrl : undefined),
         });
       };
 
@@ -1538,18 +1550,23 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       const withLinks = creators.filter(
         (c) => Array.isArray(c.links) && (c.links as unknown[]).length > 0,
       ).length;
+      // Candidates whose bio never arrived. Counted rather than inferred from
+      // an empty `links`, because the two are different claims and this tool
+      // is built entirely on the one it cannot make when the bio is missing.
+      const bioUnread = creators.filter((c) => c.bioRead === false).length;
 
       return evidence(
         [
           collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
           "",
-          vettingGuidance(creators.length, withLinks),
+          vettingGuidance(creators.length, withLinks, bioUnread),
         ].join("\n"),
         {
           mode: "evidence",
           tool: "who_should_i_work_with",
           rubric: COLLAB_RUBRIC,
           withLinks,
+          bioUnread,
           evidenceFrom: args.seed ? ["search_creators", "get_similar_creators"] : ["search_creators"],
           niche: args.niche,
           platform,
