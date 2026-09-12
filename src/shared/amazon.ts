@@ -257,7 +257,9 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "Costs 3 nooticr credits per listing collected — a listing with reviews is a real browser " +
         "render behind Amazon's bot defences. " +
         "Collection runs in the background: this returns everything ready within `waitSeconds` " +
-        "plus a scanId to continue with amazon_scan_status. " +
+        "plus a scanId to continue with amazon_scan_status. A live scan of ten listings takes " +
+        "minutes, so expect the first call to come back incomplete and poll amazon_scan_status " +
+        "until it is done — that is free, and repeating it is how a scan gets more time. " +
         "Use for a category or a competitive set; for one listing, get_amazon_product is cheaper.",
       annotations: {
         readOnlyHint: true,
@@ -289,7 +291,12 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
             .number()
             .int()
             .optional()
-            .describe("How long to wait before returning partial results (default 90, max 240)."),
+            .describe(
+              "How long to wait before returning partial results (default 45, max 55). " +
+                "Capped under the 60s at which hosts abandon a tool call — asking for longer " +
+                "returns nothing and loses the scanId, not a bigger answer. " +
+                "Poll amazon_scan_status for the rest instead; it is free and repeatable.",
+            ),
           focus: z
             .string()
             .optional()
@@ -358,7 +365,10 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
             .number()
             .int()
             .optional()
-            .describe("How long to wait for more listings before answering (default 30, max 240)."),
+            .describe(
+              "How long to wait for more listings before answering (default 30, max 55). " +
+                "Call it again as often as you need rather than asking for one long wait.",
+            ),
           focus: z.string().optional().describe("Same optional steer as scan_amazon_category."),
         })
         .strict(),
