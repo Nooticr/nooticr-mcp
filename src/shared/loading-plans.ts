@@ -491,6 +491,49 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     ],
   },
 
+  // The same three jobs on the other ten sites. Priced identically because
+  // they are the same work — a real browser render behind the site's bot
+  // defences — and the note does not name Amazon, because ten of the eleven
+  // are not it.
+  scan_marketplace_category: {
+    label: "Collecting the category",
+    kind: "list",
+    n: 6,
+    steps: [],
+    perUnit: [
+      {
+        via: "scan_marketplace_category",
+        label: "Collecting a product",
+        detail: "price, stars and its reviews",
+        credits: 3,
+        arg: "limit",
+        defaultCount: 10,
+      },
+    ],
+    note: "Each site is collected politely, so this is minutes rather than seconds. Partial results come back either way.",
+  },
+  // Free: the poll of a collection already paid for.
+  marketplace_scan_status: {
+    label: "Checking the collection",
+    kind: "list",
+    n: 6,
+    steps: [],
+    free: true,
+  },
+  get_marketplace_product: {
+    label: "Reading the product",
+    kind: "text",
+    n: 1,
+    steps: [
+      {
+        via: "get_marketplace_product",
+        label: "Fetching the product",
+        detail: "price, stars and its reviews",
+        credits: 3,
+      },
+    ],
+  },
+
   // ─── Own-account reads: nooticr's own stored rows ───
   get_scheduled_posts: { label: "Reading your pipeline", kind: "list", n: 5, steps: [], free: true },
   get_post_performance: { label: "Reading your numbers", kind: "list", n: 5, steps: [], free: true },

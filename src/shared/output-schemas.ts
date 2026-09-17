@@ -317,6 +317,18 @@ const amazonScanShape = {
   mcpCredits,
 };
 
+
+/**
+ * A marketplace scan: the Amazon shape with the storefront reported under one
+ * name. `domain` is Amazon's word for it and the others each have their own,
+ * so the generic tools answer with `market` whichever site ran.
+ */
+const marketplaceScanShape = {
+  ...amazonScanShape,
+  market: scalar().describe("The storefront this ran against, however the site names it."),
+};
+const marketplaceScan = open(marketplaceScanShape);
+
 const amazonScan = open(amazonScanShape);
 
 export const OUTPUT_SCHEMAS = {
@@ -1521,6 +1533,17 @@ export const OUTPUT_SCHEMAS = {
   // names for one payload and three places for the view to drift.
   scan_amazon_category: amazonScan,
   amazon_scan_status: amazonScan,
+  // The same shape on ten more sites. `marketplace` says which one and
+  // `market` which of its storefronts — the Amazon pair reports the storefront
+  // as `domain`, because that is what Amazon calls it, and every other
+  // collector names it differently again. One key here, so a caller reading
+  // the result does not have to know which site it asked.
+  scan_marketplace_category: marketplaceScan,
+  marketplace_scan_status: marketplaceScan,
+  get_marketplace_product: open({
+    ...marketplaceScanShape,
+    product: amazonProduct.nullish().describe("The single product, also present as products[0]."),
+  }),
   get_amazon_product: open({
     ...amazonScanShape,
     product: amazonProduct.nullish().describe("The single listing, also present as products[0]."),

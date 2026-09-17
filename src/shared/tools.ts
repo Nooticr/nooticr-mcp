@@ -57,6 +57,7 @@ import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
 import { registerCollabTools } from "./collab.js";
 import { registerAmazonTools } from "./amazon.js";
+import { registerMarketplaceTools } from "./marketplace.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.36";
@@ -768,6 +769,12 @@ export function createMcpServer(
   "amazon_scan_status",
   "get_amazon_product",
   "show_amazon_category_insights",
+  // The marketplace-agnostic trio. Every name here gets a ui://nooticr/<tool>
+  // resource, which is what gives a tool its card — a tool missing from this
+  // list is one the host is told to render and then 404s on.
+  "scan_marketplace_category",
+  "marketplace_scan_status",
+  "get_marketplace_product",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -2829,6 +2836,11 @@ export function createMcpServer(
  // that picks it back up, a single listing, and the free view for the read
  // the model writes out of them.
  registerAmazonTools(server, makeClient);
+ // The same three jobs on the other ten sites (marketplace.ts). Registered
+ // separately because Amazon's collector returns its own review-aspect counts
+ // and the generic one cannot, so the two descriptions are not the same
+ // promise — not because the question differs.
+ registerMarketplaceTools(server, makeClient);
 
  return server;
 }

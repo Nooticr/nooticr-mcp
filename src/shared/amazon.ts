@@ -162,10 +162,24 @@ export function categoryGuidance(opts: {
   scanId: string;
   pending: number;
   focus?: string;
+  /**
+   * The site this set came from, and the tools that continue and draw it.
+   *
+   * Defaulted to Amazon so every existing caller reads exactly as it did. They
+   * exist because the same collection now runs against eleven marketplaces,
+   * and a read that opens "Here are 8 Amazon listings" over a Lazada scan is
+   * wrong in the one sentence the model is most likely to repeat back.
+   */
+  site?: string;
+  statusTool?: string;
+  insightsTool?: string | null;
 }): string {
+  const site = opts.site ?? "Amazon";
+  const statusTool = opts.statusTool ?? "amazon_scan_status";
+  const insightsTool = opts.insightsTool === undefined ? "show_amazon_category_insights" : opts.insightsTool;
   const lines: string[] = [];
   lines.push(
-    `Here are ${opts.products} Amazon listing${opts.products === 1 ? "" : "s"} for ${opts.label}` +
+    `Here are ${opts.products} ${site} listing${opts.products === 1 ? "" : "s"} for ${opts.label}` +
       `, carrying ${opts.reviews} review${opts.reviews === 1 ? "" : "s"}` +
       (opts.ratingsRepresented
         ? ` and the star histograms behind ${opts.ratingsRepresented.toLocaleString("en-US")} ratings.`
@@ -175,7 +189,7 @@ export function categoryGuidance(opts: {
   if (!opts.complete) {
     lines.push(
       `Collection is still running — ${opts.pending} listing${opts.pending === 1 ? "" : "s"} to go. ` +
-        `Everything below is real and usable now; call amazon_scan_status with scanId "${opts.scanId}" ` +
+        `Everything below is real and usable now; call ${statusTool} with scanId "${opts.scanId}" ` +
         `for the rest before you write a final read.`,
     );
   }
@@ -208,12 +222,14 @@ export function categoryGuidance(opts: {
     "basis is worse than a short one. Prices, ratings and mention counts are in the payload;",
     "do not re-derive them by hand.",
   );
-  lines.push("");
-  lines.push(
-    "To show the result in the conversation — products, their reviews, and your read side by",
-    "side — call show_amazon_category_insights with what you concluded. It costs nothing and",
-    "makes no further requests.",
-  );
+  if (insightsTool) {
+    lines.push("");
+    lines.push(
+      "To show the result in the conversation — products, their reviews, and your read side by",
+      `side — call ${insightsTool} with what you concluded. It costs nothing and`,
+      "makes no further requests.",
+    );
+  }
   return lines.join("\n");
 }
 

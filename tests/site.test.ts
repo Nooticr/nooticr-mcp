@@ -501,6 +501,11 @@ describe("tool surface", () => {
     "amazon_scan_status",
     "get_amazon_product",
     "show_amazon_category_insights",
+    // The same three jobs on the other ten sites, through one tool with a
+    // `marketplace` argument rather than thirty near-identical registrations.
+    "scan_marketplace_category",
+    "marketplace_scan_status",
+    "get_marketplace_product",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -602,6 +607,8 @@ describe("tool surface", () => {
       // Polls a collection already paid for — charging for the second half of
       // one answer would bill a wait the server chose.
       "amazon_scan_status",
+      // The same poll, for the other ten sites.
+      "marketplace_scan_status",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;
