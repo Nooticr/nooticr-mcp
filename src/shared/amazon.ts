@@ -75,11 +75,24 @@ export function normaliseProducts(raw: unknown): Array<Record<string, unknown>> 
   if (!Array.isArray(raw)) return [];
   return raw.map((entry) => {
     const p = (entry ?? {}) as Record<string, unknown>;
+    // Resolved once: the reviews below are addressed by it too, and reading the
+    // raw `p.asin` there gave every review on every non-Amazon product the id
+    // "review::0", "review::1" — colliding across products, so a model citing
+    // one could not be pointed back at the right listing.
+    const id = String(p.asin ?? p.id ?? p.item_id ?? p.sku ?? p.product_id ?? "");
     const histogram = (p.rating_histogram ?? {}) as Record<string, unknown>;
     const reviews = Array.isArray(p.reviews) ? p.reviews : [];
     const aspects = Array.isArray(p.review_aspects) ? p.review_aspects : [];
     return {
-      asin: String(p.asin ?? ""),
+      // The id this product is addressed by, whatever the site calls it.
+      //
+      // The field is named `asin` because Amazon was first and the view keys
+      // tiles, the review drill-down and the `perProduct` match on it. Left at
+      // "" for the other ten sites — which is what it was — every product in a
+      // Lazada or Otto scan shared one blank key: the tiles rendered, and not
+      // one of them could open its reviews, because the click looked up a
+      // product by an id every product had.
+      asin: id,
       url: String(p.url ?? (p.asin ? `https://www.amazon.com/dp/${p.asin}` : "")),
       title: String(p.title ?? ""),
       brand: String(p.brand ?? ""),
@@ -114,8 +127,8 @@ export function normaliseProducts(raw: unknown): Array<Record<string, unknown>> 
           // Addressable, so the model's analysis can point back at the exact
           // review it read a driver or a barrier out of. Same shape
           // analyze_comments mints for a comment.
-          id: String(row.id ?? `review:${String(p.asin ?? "")}:${i}`),
-          asin: String(p.asin ?? ""),
+          id: String(row.id ?? `review:${id}:${i}`),
+          asin: id,
           brand: String(p.brand ?? ""),
           author: String(row.author ?? ""),
           rating: num(row.rating),

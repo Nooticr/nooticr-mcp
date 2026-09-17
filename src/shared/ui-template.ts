@@ -3617,16 +3617,59 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +'<path fill="#FF9900" d="'+d+'"></path></svg>';
   }
 
-  /** The mark for whichever marketplace a payload came from. */
-  function marketplaceMark(name,size){
-    if(String(name||"").toLowerCase()==="amazon")return amazonMark(size);
-    return '<span class="mkt-generic" style="font-size:'+Math.round(size*0.7)+'px">'
-      +esc(String(name||"market").slice(0,2).toUpperCase())+"</span>";
+  /**
+   * Each site's own colours, for the mark beside the header.
+   *
+   * Initials on the brand's colour rather than its logo. Amazon's mark is here
+   * because Font Awesome publishes the path under CC BY 4.0; the other ten do
+   * not have one to hand, and drawing a brand's wordmark from memory produces
+   * a wrong logo rather than no logo. An <img> is not an option either: this
+   * view is one self-contained file in a sandboxed iframe with no remote
+   * fetches, so every asset is inline or it does not render.
+   */
+  var MARKET_BRAND={
+    amazon:{label:"Amazon",color:"#FF9900",on:"#111"},
+    aliexpress:{label:"AliExpress",color:"#E62E04",on:"#fff"},
+    cdiscount:{label:"Cdiscount",color:"#C4161C",on:"#fff"},
+    flipkart:{label:"Flipkart",color:"#2874F0",on:"#fff"},
+    mercadolibre:{label:"Mercado Libre",color:"#FFE600",on:"#111"},
+    lazada:{label:"Lazada",color:"#0F146D",on:"#fff"},
+    otto:{label:"Otto",color:"#E4001B",on:"#fff"},
+    rakuten:{label:"Rakuten",color:"#BF0000",on:"#fff"},
+    trendyol:{label:"Trendyol",color:"#F27A1A",on:"#fff"},
+    jumia:{label:"Jumia",color:"#F68B1E",on:"#111"},
+    temu:{label:"Temu",color:"#FB7701",on:"#fff"}
+  };
+
+  /** What to call the site a payload came from. */
+  function marketLabel(name){
+    var b=MARKET_BRAND[String(name||"").toLowerCase()];
+    return b?b.label:(name?String(name):"Marketplace");
   }
 
-  /** "www.amazon.co.uk" reads as a hostname; "amazon.co.uk" reads as a market. */
+  /** The mark for whichever marketplace a payload came from. */
+  function marketplaceMark(name,size){
+    var key=String(name||"").toLowerCase();
+    if(key==="amazon")return amazonMark(size);
+    var b=MARKET_BRAND[key];
+    var initials=(b?b.label:String(name||"market")).replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase();
+    return '<span class="mkt-generic" style="display:inline-flex;align-items:center;justify-content:center;'
+      +"width:"+size+"px;height:"+size+"px;border-radius:5px;font-weight:800;line-height:1;"
+      +"background:"+(b?b.color:"#6B7280")+";color:"+(b?b.on:"#fff")+";"
+      +'font-size:'+Math.round(size*0.44)+'px" aria-label="'+esc(marketLabel(name))+'" role="img">'
+      +esc(initials)+"</span>";
+  }
+
+  /**
+   * "www.amazon.co.uk" reads as a hostname; "amazon.co.uk" reads as a market.
+   *
+   * Empty rather than "amazon.com" when a site did not report one: printing
+   * Amazon's default under a Lazada scan states a storefront the scan never
+   * ran against.
+   */
   function marketDomain(domain){
-    var d=String(domain||"www.amazon.com");
+    var d=String(domain||"");
+    if(!d)return "";
     return d.indexOf("www.")===0?d.slice(4):d;
   }
 
@@ -3714,7 +3757,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var open=amazonState.open===String(p.asin||"");
     var neg=null;
     (((amazonState.rollup||{}).perProduct)||[]).forEach(function(r){
-      if(String(r.asin||"")===String(p.asin||""))neg=r.negativeStarShare;
+      // The Amazon rollup keys each row by "asin" and the generic one by "id";
+      // reading only the first left every other site without its 1-2 star share.
+      if(String(r.asin||r.id||"")===String(p.asin||""))neg=r.negativeStarShare;
     });
     return '<button type="button" class="amz-tile'+(open?" amz-tile-open":"")+'" data-amz-open="'+esc(p.asin||"")+'">'
       +productThumb(p)
@@ -4034,7 +4079,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       :((insights&&amazonState)?(amazonState.rollup||{}):{});
     amazonState={
       marketplace:String(d.marketplace||"amazon"),
-      domain:String(d.domain||(amazonState&&amazonState.domain)||"www.amazon.com"),
+      // "domain" is Amazon's word for the storefront and "market" is what the
+      // generic collectors answer with. Defaulting to www.amazon.com meant a
+      // Lazada scan's header read "amazon.com".
+      domain:String(d.domain||d.market||(amazonState&&amazonState.domain)||""),
       title:insights?String(d.category||"Category read"):String(d.query||"Category scan"),
       products:carried,
       rollup:rollup,
@@ -4050,148 +4098,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     renderAmazon();
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Marketplaces                                                        */
-  /* ------------------------------------------------------------------ */
-
-  /* Eleven sites reach these tools through one contract, so one view draws
-     them all; the slug only decides what the header is called. Before this
-     every marketplace result fell through to the JSON dump at the bottom of
-     renderView — the tools were callable from Claude and ChatGPT and had no
-     interactive view at all. */
-  var MARKET_LABELS={amazon:"Amazon",aliexpress:"AliExpress",cdiscount:"Cdiscount",
-    flipkart:"Flipkart",mercadolibre:"Mercado Libre",lazada:"Lazada",otto:"Otto",
-    rakuten:"Rakuten",trendyol:"Trendyol",jumia:"Jumia",temu:"Temu"};
-  function mLabel(slug){return MARKET_LABELS[String(slug||"").toLowerCase()]||(slug?String(slug):"Marketplace");}
-
-  /* The raw scraper record is snake_case and the rollup's copy is camelCase.
-     Both reach this view, so both spellings are read rather than picking one
-     and quietly dropping half the fields. */
-  function mGet(p,a,b){var v=p[a];if(v===undefined||v===null)v=p[b];return v;}
-
-  /* Display price. The "price" field is already formatted by the collector
-     ("EUR 19.99",
-     "19,99 TL"), so it wins; the number is only formatted when there is no
-     string. A product whose price was not scraped says so rather than
-     printing a zero, which reads as free. */
-  function mPrice(p){
-    var s=mGet(p,"price","price");
-    if(typeof s==="string"&&s.trim())return s.trim();
-    var v=mGet(p,"price_value","priceValue");
-    if(v===undefined||v===null||!isFinite(Number(v)))return "";
-    var c=mGet(p,"currency","currency")||"";
-    return (c?c+" ":"")+Number(v).toFixed(2);
-  }
-
-  function mStars(r){
-    r=Number(r)||0;
-    if(!r)return "";
-    return '<span style="color:var(--amber,#F59E0B);font-weight:700">'+r.toFixed(1)+"</span>";
-  }
-
-  /* One product tile. The image is the reason this view exists rather than a
-     table: a category reads as a shelf, and the collectors already return
-     "images". */
-  function mTile(p){
-    var imgs=p.images;
-    var img=(Array.isArray(imgs)&&imgs.length?imgs[0]:"")||p.image||p.imageUrl||p.image_url||"";
-    var title=String(p.title||p.name||"").slice(0,120);
-    var price=mPrice(p);
-    var rating=Number(mGet(p,"rating","rating"))||0;
-    var count=Number(mGet(p,"rating_count","ratingCount"))||0;
-    var url=String(p.url||"");
-    var seller=String(mGet(p,"brand","seller")||mGet(p,"seller","brand")||"");
-    var media=img
-      ? '<img src="'+esc(img)+'" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:110px;object-fit:contain;background:var(--tag);display:block"/>'
-      : '<div style="width:100%;height:110px;background:var(--tag)"></div>';
-    var body='<div style="padding:8px 9px">'
-      +'<div style="font-size:12px;line-height:1.35;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em">'+esc(title)+"</div>"
-      +(seller?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+esc(seller)+"</div>":"")
-      +'<div style="display:flex;align-items:baseline;gap:6px;margin-top:6px">'
-      +(price?'<span style="font-size:13.5px;font-weight:700">'+esc(price)+"</span>":'<span style="font-size:12px;color:var(--muted)">no price</span>')
-      +"</div>"
-      +(rating?'<div style="font-size:11.5px;color:var(--muted);margin-top:3px">'+mStars(rating)+(count?" · "+fmtNum(count)+" ratings":"")+"</div>":"")
-      +"</div>";
-    var inner=media+body;
-    return '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg-surface,transparent)">'
-      +(url?'<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:block">'+inner+"</a>":inner)
-      +"</div>";
-  }
-
-  /* An aspect is coloured by whichever way its brands actually lean. A chip
-     with no lean stays neutral rather than being guessed at, for the same
-     reason the monitor view refuses a sentiment badge. */
-  function mAspect(a){
-    var pos=Number(a.positiveBrands)||0,neg=Number(a.negativeBrands)||0;
-    var cls=pos>neg?"chip-positive":neg>pos?"chip-negative":"chip-neutral";
-    return '<span class="chip '+cls+'">'+esc(String(a.name||""))+' <b>'+fmtNum(a.mentions||0)+"</b></span>";
-  }
-
-  function mStat(label,value){
-    if(value===""||value===undefined||value===null)return "";
-    return '<div><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">'+esc(label)+"</div>"
-      +'<div style="font-size:15px;font-weight:700;margin-top:2px">'+value+"</div></div>";
-  }
-
-  function marketCard(d){
-    var r=d.rollup||{};
-    var single=d.product&&!Array.isArray(d.products&&d.products.length>1?d.products:null);
-    /* Prefer the raw records: they carry the images, and the rollup's copy of
-       each product exists for the arithmetic rather than for drawing. */
-    var rows=(Array.isArray(d.products)&&d.products.length?d.products:(r.perProduct||[])).slice(0,24);
-    var running=d.complete===false;
-    var prog=d.progress||{};
-    var done=Number(prog.done)||0,total=Number(prog.total)||0;
-    var pct=total>0?Math.min(100,Math.round(done/total*100)):0;
-
-    var head='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-      +'<span style="font-size:16px;font-weight:700">'+esc(mLabel(d.marketplace))+"</span>"
-      +(d.query?'<span style="font-size:13px;color:var(--muted)">'+esc(String(d.query))+"</span>":"")
-      +(d.market?'<span class="chip chip-neutral">'+esc(String(d.market))+"</span>":"")
-      +(running?'<span class="chip chip-neutral">collecting</span>':"")
-      +"</div>";
-
-    var bar=running&&total>0
-      ? '<div style="margin-top:8px"><div style="height:4px;border-radius:999px;background:var(--tag);overflow:hidden">'
-        +'<div style="height:100%;width:'+pct+'%;background:var(--green,#16A34A)"></div></div>'
-        +'<div style="font-size:11.5px;color:var(--muted);margin-top:4px">'+done+" of "+total
-        +(prog.message?" · "+esc(String(prog.message)):"")+"</div></div>"
-      : "";
-
-    var price=r.price||{},rating=r.rating||{};
-    var money=function(v){return (v===undefined||v===null)?"":Number(v).toFixed(2);};
-    var stats='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px">'
-      +mStat("Products",fmtNum(r.products||rows.length||0))
-      +mStat("Median price",money(price.median))
-      +mStat("Rating",rating.mean?Number(rating.mean).toFixed(2):"")
-      +mStat("Ratings behind it",r.ratingsRepresented?fmtNum(r.ratingsRepresented):"")
-      +"</div>";
-
-    /* Both numbers, because they are not the same claim: a scrape reads a few
-       dozen review texts while the stars average tens of thousands, and
-       showing only the first invites reading it as the category's whole
-       voice. */
-    var reviews=r.reviewsCollected
-      ? '<div style="font-size:11.5px;color:var(--muted);margin-top:8px">'
-        +fmtNum(r.reviewsCollected)+" review texts read"
-        +(r.reviewsGatedProducts?" · "+r.reviewsGatedProducts+" products gated":"")+"</div>"
-      : "";
-
-    var aspects=(r.aspects||[]).slice(0,10);
-    var aspectHtml=aspects.length
-      ? '<div style="margin-top:14px"><div class="sec-label">What reviewers raise</div>'
-        +'<div class="chiprow">'+aspects.map(mAspect).join("")+"</div></div>"
-      : "";
-
-    var grid=rows.length
-      ? '<div style="margin-top:14px"><div class="sec-label">'+(single?"Product":"Products")+"</div>"
-        +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">'
-        +rows.map(mTile).join("")+"</div></div>"
-      : '<div style="font-size:12.5px;color:var(--muted);margin-top:12px">Nothing collected yet.</div>';
-
-    return '<div class="card card-wide fade-in"><div class="card-body">'+head+bar+stats+reviews+aspectHtml+grid+"</div></div>";
-  }
-
   function renderView(result){
     var app=document.getElementById("app");if(!app)return;
     var d=extractResult(result);
@@ -4203,7 +4109,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // distinctive — it names its marketplace — and because an insights payload
     // carries a products array of listings, not posts, which the gallery below
     // would happily draw as blank cards.
-    if(String(d.marketplace||"").toLowerCase()==="amazon"){renderMarketplace(d);return;}
+    if(d.marketplace){renderMarketplace(d);return;}
 
     // Own account. Checked before the feeds below because all three shapes are
     // distinctive and none of them carries posts, threads or an analysis.
@@ -4653,12 +4559,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:10px">'+mpIcon("share",16)+"<span>Repurposed</span></div>"
         +versionsHtml+"</div></div>";return;}
 
-    // A marketplace scan or a single product. Matched on "marketplace", which
-    // every one of these results carries and nothing else here does — the
-    // check has to come before the "d.platform" one below, because a scan's
-    // raw product records carry a platform of their own.
-    if(d.marketplace&&(d.rollup||d.product||Array.isArray(d.products))){
-      app.innerHTML=marketCard(d);setTimeout(reportSize,50);return;}
     // Single post
     if(d.post||d.platform){app.innerHTML=postCard(d.post||d,true);return;}
     // Fallback. The guidance field is prose written for the model, not data —
