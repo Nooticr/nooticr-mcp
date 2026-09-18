@@ -79,7 +79,29 @@ export function normaliseProducts(raw: unknown): Array<Record<string, unknown>> 
     // raw `p.asin` there gave every review on every non-Amazon product the id
     // "review::0", "review::1" — colliding across products, so a model citing
     // one could not be pointed back at the right listing.
-    const id = String(p.asin ?? p.id ?? p.item_id ?? p.sku ?? p.product_id ?? "");
+    //
+    // This list must stay equal to `ID_KEYS` in nooticr-server's
+    // `crates/server/src/marketplace.rs`. The server computes `rollup.perProduct[].id`
+    // from its copy and the view joins those rows onto the tiles by the id
+    // resolved here, so a key in one list and not the other does not read as a
+    // missing id — it reads as a tile with no `negativeStarShare`, which looks
+    // like a site that publishes no histogram.
+    //
+    // `pid` and `goods_id` were the two missing, which is Flipkart and Temu:
+    // each collector publishes exactly one id field and those are theirs, so
+    // every product in a scan of either site resolved to "" and shared one
+    // blank key — the failure the comment below says was fixed for the others.
+    //
+    // Found by hand rather than by a test, and `??` is why it could be: it
+    // falls through null and undefined but not "", so a site that sends an
+    // empty id under an earlier key would stop the chain on the empty value
+    // rather than continue past it. Matching on a non-empty string closes
+    // both.
+    const id = String(
+      [p.asin, p.sku, p.pid, p.goods_id, p.item_id, p.product_id, p.id].find(
+        (v) => typeof v === "string" && v.trim() !== "",
+      ) ?? "",
+    );
     const histogram = (p.rating_histogram ?? {}) as Record<string, unknown>;
     const reviews = Array.isArray(p.reviews) ? p.reviews : [];
     const aspects = Array.isArray(p.review_aspects) ? p.review_aspects : [];

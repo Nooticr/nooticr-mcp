@@ -13,6 +13,7 @@ import { type Page } from "@playwright/test";
 // `test` comes from guarded-test.ts, not @playwright/test: it aborts every
 // request to a real nooticr host before it leaves the browser (#66).
 import { test, expect } from "./guarded-test.js";
+import { normaliseProducts } from "../../src/shared/amazon.js";
 import { uiTemplateFor } from "../../src/shared/tools.js";
 
 // The substituted view, not the raw template: the raw one still carries its
@@ -2238,6 +2239,58 @@ test.describe("the marketplace view", () => {
     await expect(page.locator(".amz-find-barrier")).toContainText("Underdosing");
     await page.click('[data-amz-tab="listings"]');
     await expect(page.locator(".amz-tile")).toHaveCount(2);
+  });
+
+  /**
+   * Flipkart and Temu name their product id `pid` and `goods_id`, and neither
+   * was in `normaliseProducts`' list, so every product in a scan of either
+   * site came back with `asin: ""`. The tiles still drew — which is why this
+   * survived a green suite — but they all carried the same blank key, so
+   * `[data-amz-open=""]` matched every one of them and no click could reach
+   * the reviews of the product it was on.
+   *
+   * Driven through `normaliseProducts` rather than a hand-written payload:
+   * the resolver is the thing under test, and a fixture written in its output
+   * shape would assert nothing about it.
+   */
+  test("a scan of a site that does not call its id an asin opens its listings", async ({ page }) => {
+    const products = normaliseProducts([
+      {
+        pid: "SHOHGXZ4CNHPKMSK",
+        title: "Skechers Go Run Consistent 2.0",
+        brand: "Skechers",
+        price: "Rs. 2,799", price_value: 2799, currency: "INR",
+        rating: 4.2, rating_count: 18452,
+        rating_histogram: { "1": 900, "2": 700, "3": 1800, "4": 5000, "5": 10052 },
+        reviews: [{ rating: 2, title: "Sole wore through", body: "Outsole gave out inside three months of road running." }],
+      },
+      {
+        goods_id: "601099512345678",
+        title: "Running shoes, mesh upper",
+        price: "$21.98", price_value: 21.98, currency: "USD",
+        rating: 4.6, rating_count: 3120,
+      },
+    ]);
+    await renderTemplate(page, {
+      marketplace: "flipkart",
+      scanId: "scan_e2e_pid",
+      status: "done",
+      complete: true,
+      query: "running shoes",
+      market: "www.flipkart.com",
+      progress: { done: 2, total: 2 },
+      rollup: { products: 2, perProduct: products.map((p) => ({ id: p.asin, negativeStarShare: 8.6 })) },
+      products,
+      errors: [],
+    });
+    await expect(page.locator(".amz-tile")).toHaveCount(2);
+    // One key per product rather than one key for all of them.
+    await expect(page.locator('[data-amz-open="SHOHGXZ4CNHPKMSK"]')).toHaveCount(1);
+    await expect(page.locator('[data-amz-open="601099512345678"]')).toHaveCount(1);
+    await expect(page.locator('[data-amz-open=""]')).toHaveCount(0);
+    // And the click actually reaches that product's reviews.
+    await page.click('[data-amz-open="SHOHGXZ4CNHPKMSK"]');
+    await expect(page.locator(".amz-detail")).toContainText("Outsole gave out");
   });
 
   test("a scan still collecting says so instead of looking finished", async ({ page }) => {
