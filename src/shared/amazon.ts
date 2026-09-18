@@ -102,7 +102,17 @@ export function normaliseProducts(raw: unknown): Array<Record<string, unknown>> 
       availability: p.availability ?? null,
       rating: num(p.rating),
       ratingCount: num(p.rating_count),
-      image: p.image ?? (Array.isArray(p.images) ? p.images[0] ?? null : null),
+      // `image_proxy_url` first. Collecting a product and displaying its photo
+      // are different requests: the collector is a real browser render with
+      // the site's cookies and Referer, the card's <img> an anonymous
+      // cross-origin GET from a sandboxed frame. Cdiscount serves its images
+      // off www.cdiscount.com — the host carrying its bot defences — so every
+      // tile drew a broken glyph under a scan that had succeeded.
+      image:
+        p.image_proxy_url ??
+        p.imageProxyUrl ??
+        p.image ??
+        (Array.isArray(p.images) ? p.images[0] ?? null : null),
       images: Array.isArray(p.images) ? p.images : [],
       features: Array.isArray(p.features) ? p.features : [],
       categories: Array.isArray(p.categories) ? p.categories : [],
