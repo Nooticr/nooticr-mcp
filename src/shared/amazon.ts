@@ -246,6 +246,23 @@ export function categoryGuidance(opts: {
         : "."),
   );
   if (opts.brands.length) lines.push(`Brands in the set: ${opts.brands.join(", ")}.`);
+  // Nothing came back, which is the one outcome where the next step is not
+  // "read the set" and the guidance above says nothing useful. Without this a
+  // model reports an empty category as a finding — the category is empty —
+  // when what actually happened is a search that found nothing, and the
+  // commonest reason is a query in a language that storefront does not sell
+  // in. Said here rather than only in the tool description because by the time
+  // this is read the description is long out of the model's attention.
+  if (opts.products === 0 && opts.complete) {
+    lines.push(
+      `No listings came back. This is not a finding about the category — it is a search that ` +
+        `matched nothing. Before reporting it: check the query is in the language that ` +
+        `storefront sells in, try the common shopper's word for the thing rather than a ` +
+        `category or brand-family name, and drop any quotes or operators. If a second query ` +
+        `also returns nothing, say the search found nothing rather than that the category ` +
+        `is empty.`,
+    );
+  }
   // Before the "still running" line and before the analysis prompt: a model
   // that has already started composing a read is past the point where a
   // caveat changes what it writes.

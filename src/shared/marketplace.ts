@@ -56,6 +56,16 @@ export type Market = {
   label: string;
   /** What a product id looks like here — the answer to "what do I pass?". */
   idLabel: string;
+  /**
+   * The language a `query` has to be written in to find anything.
+   *
+   * Mirrors `search_lang` in nooticr-server's `MARKETPLACES`. A field rather
+   * than prose for the same reason the site list is one: a query in the wrong
+   * language does not error, it returns a few imported listings — which reads
+   * as a thin category and is really a bad search, and nothing downstream can
+   * tell the two apart.
+   */
+  searchLang: string;
   region?: Region;
 };
 
@@ -78,21 +88,25 @@ export const MARKETS: Market[] = [
         "a country code or host — com (US), co.uk, de, fr, it, es, ca, co.jp, in, com.br, " +
         "com.mx, com.au, nl, se, pl, com.be, com.tr, ae, sa, eg, sg, cn. Default www.amazon.com",
     },
+    searchLang: "the storefront's own — English on com, co.uk, ca, in, com.au and sg, otherwise the country's",
   },
   {
     slug: "aliexpress",
     label: "AliExpress",
     idLabel: "the numeric id from /item/<id>.html, or a full AliExpress product URL",
+    searchLang: "English",
   },
   {
     slug: "cdiscount",
     label: "Cdiscount",
     idLabel: "the SKU from a product URL's /f-<category>-<sku>.html, or the full URL",
+    searchLang: "French",
   },
   {
     slug: "flipkart",
     label: "Flipkart",
     idLabel: "the 16-character PID from a product URL's pid= parameter, or the full URL",
+    searchLang: "English",
   },
   {
     slug: "mercadolibre",
@@ -105,6 +119,7 @@ export const MARKETS: Market[] = [
         "mercadolivre.com.br. Inferred from the ids when omitted, and a job runs against one " +
         "market: an id from another is refused rather than mis-filed",
     },
+    searchLang: "Spanish, except Brazil (MLB), which is Portuguese",
   },
   {
     slug: "lazada",
@@ -118,6 +133,7 @@ export const MARKETS: Market[] = [
         "sg, my, th, vn, ph or id. An item id is scoped to one of them — the same id on another " +
         "Lazada host is a different product or nothing at all",
     },
+    searchLang: "English on sg and ph; Thai, Vietnamese, Indonesian or Malay on th, vn, id and my",
   },
   {
     slug: "otto",
@@ -131,6 +147,7 @@ export const MARKETS: Market[] = [
         "de or at. The two are not interchangeable: an id from one does not address a product " +
         "on the other",
     },
+    searchLang: "German, on both storefronts",
   },
   {
     slug: "rakuten",
@@ -144,6 +161,7 @@ export const MARKETS: Market[] = [
         "jp (Ichiba) or tw. Taiwan publishes no review text, so a category study there reads on " +
         "price and rating alone",
     },
+    searchLang: "Japanese on jp, Traditional Chinese on tw",
   },
   {
     slug: "trendyol",
@@ -156,6 +174,7 @@ export const MARKETS: Market[] = [
         "one of 47 storefronts — tr, de, ae, sa, at, be, fr, it, nl, pl, ro and the rest. An id " +
         "is scoped to one: the same number 404s on another country's",
     },
+    searchLang: "Turkish on tr; the storefront's own language elsewhere",
   },
   {
     slug: "jumia",
@@ -164,6 +183,7 @@ export const MARKETS: Market[] = [
       "a SKU such as OR537EA86PWGTNAFAMZ. A product URL does NOT contain it — the number at the " +
       "end of a product path is a different handle — so reach a product through `query` instead",
     region: { field: "market", hint: "ng, eg, ke, ma, ci, gh, sn, tn, ug or dz" },
+    searchLang: "English on ng, ke, gh and ug; French on ci, sn, ma, tn and dz; Arabic or French on eg",
   },
   // The one resale site here. Its `rating` describes the seller rather than the
   // product, because a Vinted listing is a unique second-hand item with no
@@ -181,11 +201,13 @@ export const MARKETS: Market[] = [
         "rest. A listing belongs to exactly one: the same item id does not exist on another " +
         "country's Vinted",
     },
+    searchLang: "the storefront's own — French on fr, German on de, Polish on pl, and so on",
   },
   {
     slug: "temu",
     label: "Temu",
     idLabel: "the goods id after -g- in a product URL, or the full URL",
+    searchLang: "English",
   },
 ];
 
@@ -212,6 +234,9 @@ const MARKET_HINT =
     .join(" · ") +
   ` · ${MARKETS.filter((m) => !m.region).map((m) => m.label).join(", ")} have one storefront each ` +
   "and take no market argument.";
+
+/** Which language a query has to be in, site by site. */
+const LANG_HINT = MARKETS.map((m) => `${m.label}: ${m.searchLang}`).join(" · ");
 
 /** The product ids each site addresses by, for `items`. */
 const ID_HINT = MARKETS.map((m) => `${m.label}: ${m.idLabel}`).join(" · ");
@@ -332,7 +357,19 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       inputSchema: z
         .object({
           marketplace: marketplaceArg,
-          query: z.string().optional().describe("Category or keyword to search, e.g. 'cast iron skillet'."),
+          query: z
+            .string()
+            .optional()
+            .describe(
+              "Category or keyword to search, e.g. 'cast iron skillet'. Two to four words, " +
+                "the common name a shopper would type rather than a catalogue description, " +
+                "and no quotes or AND/OR — none of these sites read them as operators, they " +
+                "search for them and narrow to nothing. It has to be in the storefront's " +
+                `language — ${LANG_HINT}. A query in the wrong language does not fail: it ` +
+                "returns a few imported listings, which reads as a thin category and is " +
+                "really a bad search. Brand names are not translated. A scan that came back " +
+                "with no products is a reason to change the query, not to raise the limit.",
+            ),
           items: z
             .array(z.string())
             .optional()
