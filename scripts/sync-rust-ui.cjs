@@ -1,5 +1,14 @@
 #!/usr/bin/env node
-// Sync the HTML template from the npm package to the Rust ui.rs file
+// Sync the HTML template, and the marketplace marks it is built from, to
+// nooticr-server.
+//
+// The template goes to crates/mcp/src/ui.rs; the SVGs go to
+// crates/mcp/assets/marketplaces, where the server's own HTML card reads them
+// with include_str!. The card and the view have to draw one logo from one
+// asset — Claude Code mounts neither the ui:// view nor anything else
+// interactive, so it sees the card and every other host sees the view, and a
+// brand that rebrands in one copy and not the other is a bug nobody looks at
+// twice.
 const { NOOTICR_UI_TEMPLATE } = require('../dist/shared/ui-template.js');
 const fs = require('fs');
 const path = require('path');
@@ -57,3 +66,15 @@ if (!tests) {
 fs.writeFileSync(RUST_FILE, content + tests);
 console.log('Written', (content + tests).length, 'bytes to', RUST_FILE,
   '(template + ' + tests.length + ' bytes of tests carried over)');
+
+// The marks, beside the template. include_str! fails the Rust build on a
+// missing file, so a mark deleted here is a compile error there rather than a
+// blank tile in production.
+const MARKS_SRC = path.resolve(__dirname, '../assets/brand/marketplaces');
+const MARKS_DST = path.resolve(path.dirname(RUST_FILE), '../assets/marketplaces');
+fs.mkdirSync(MARKS_DST, { recursive: true });
+const marks = fs.readdirSync(MARKS_SRC).filter((f) => f.endsWith('.svg'));
+for (const f of marks) {
+  fs.copyFileSync(path.join(MARKS_SRC, f), path.join(MARKS_DST, f));
+}
+console.log('Copied', marks.length, 'marketplace marks to', MARKS_DST);

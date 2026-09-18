@@ -431,3 +431,59 @@ describe("structured content is not padded with rendered HTML", () => {
     expect(json).not.toContain("_htmlCards");
   });
 });
+
+// The view told a Temu scan apart from a Trendyol one by two letters on a
+// coloured square, for seven of the eleven sites. The marks are now assets,
+// and an asset that is in the folder but not in the built template is the
+// failure this guards: build-ui.mjs writes them, so a template committed
+// without a rebuild ships last week's set.
+describe("marketplace marks", () => {
+  const MARKS = new URL("../assets/brand/marketplaces", import.meta.url);
+
+  it("inlines every asset in the folder, and each one only once", async () => {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    const files = readdirSync(MARKS).filter((f) => f.endsWith(".svg"));
+    expect(files.length).toBeGreaterThan(0);
+    for (const f of files) {
+      const slug = f.slice(0, -4);
+      const svg = readFileSync(new URL(`${MARKS.pathname}/${f}`, "file:"), "utf8")
+        .trim()
+        .replace(/\n\s*/g, "");
+      expect(
+        NOOTICR_UI_TEMPLATE.includes(`${slug}:'${svg}'`),
+        `${f} is not in the built template — run npm run build:ui`,
+      ).toBe(true);
+    }
+  });
+
+  // Ids are document-global. Two marks that both call a clipPath "a" clip the
+  // wrong logo, and only one of them, and only once both are on screen.
+  it("gives every mark its own id namespace", async () => {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const seen = new Set<string>();
+    for (const f of readdirSync(MARKS).filter((x) => x.endsWith(".svg"))) {
+      const slug = f.slice(0, -4);
+      const svg = readFileSync(new URL(`${MARKS.pathname}/${f}`, "file:"), "utf8");
+      for (const m of svg.matchAll(/id="([^"]+)"/g)) {
+        expect(m[1].startsWith(`${slug}-`), `${f} has id="${m[1]}"`).toBe(true);
+        expect(seen.has(m[1]), `id="${m[1]}" appears in two marks`).toBe(false);
+        seen.add(m[1]);
+      }
+    }
+  });
+
+  // Every site the tools accept draws something. The list is MARKETS in
+  // src/shared/marketplace.ts; a twelfth site added there with no mark and no
+  // MARKET_BRAND entry would render as "MA" for "Marketplace".
+  it("names every marketplace the tools accept", async () => {
+    const { MARKETS } = await import("../src/shared/marketplace.js");
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    for (const m of MARKETS) {
+      expect(
+        NOOTICR_UI_TEMPLATE.includes(`${m.slug}:{label:"${m.label}"`),
+        `${m.slug} has no MARKET_BRAND entry, so its mark would be two letters of "Marketplace"`,
+      ).toBe(true);
+    }
+  });
+});
