@@ -218,6 +218,21 @@ export function categoryGuidance(opts: {
   site?: string;
   statusTool?: string;
   insightsTool?: string | null;
+  /**
+   * How old the figures are, when they came from nooticr's store rather than
+   * from a fresh visit to the site.
+   *
+   * The server sends this on a stored answer and omits it on a live one. It is
+   * repeated here, in the guidance, even though the same sentence is already a
+   * field on the payload — because the two channels are not both delivered.
+   * Claude Code drops every `content` text block when a result also carries
+   * `structuredContent`, and a host rendering the UI view does the opposite:
+   * the widget gets the structured payload and the model gets the text. A
+   * freshness warning that reaches only one of them is a warning that half the
+   * hosts never show, and the half that miss it state a stored price as
+   * current.
+   */
+  freshness?: string;
 }): string {
   const site = opts.site ?? "Amazon";
   const statusTool = opts.statusTool ?? "amazon_scan_status";
@@ -231,6 +246,10 @@ export function categoryGuidance(opts: {
         : "."),
   );
   if (opts.brands.length) lines.push(`Brands in the set: ${opts.brands.join(", ")}.`);
+  // Before the "still running" line and before the analysis prompt: a model
+  // that has already started composing a read is past the point where a
+  // caveat changes what it writes.
+  if (opts.freshness) lines.push(opts.freshness);
   if (!opts.complete) {
     lines.push(
       `Collection is still running — ${opts.pending} listing${opts.pending === 1 ? "" : "s"} to go. ` +

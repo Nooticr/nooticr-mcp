@@ -238,6 +238,9 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     scanId: String(payload.scanId ?? ""),
     pending: Math.max(0, total - done),
     focus,
+    // Present only when the server answered from its own store. See the field's
+    // comment in `categoryGuidance` for why it is repeated in both channels.
+    freshness: typeof payload.freshness === "string" ? payload.freshness : undefined,
     site: m.label,
     statusTool: "marketplace_scan_status",
     // There is no free insights view for these sites yet, and pointing a model
@@ -255,6 +258,12 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     complete: payload.complete !== false,
     query: payload.query ?? null,
     market: payload.market ?? payload.domain ?? null,
+    // Where this answer came from, and when the figures in it were measured.
+    // `collectedAt` is when the result was assembled, which on a stored answer
+    // is now and says nothing about the price's age; `observedAt` is the age.
+    servedFrom: payload.servedFrom ?? "live",
+    observedAt: payload.observedAt ?? null,
+    freshness: payload.freshness ?? null,
     progress,
     rollup,
     products,
