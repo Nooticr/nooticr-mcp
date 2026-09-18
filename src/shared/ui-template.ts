@@ -3620,22 +3620,32 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   /**
    * Each site's own colours, for the mark beside the header.
    *
-   * Initials on the brand's colour rather than its logo. Amazon's mark is here
-   * because Font Awesome publishes the path under CC BY 4.0; the other ten do
-   * not have one to hand, and drawing a brand's wordmark from memory produces
-   * a wrong logo rather than no logo. An <img> is not an option either: this
-   * view is one self-contained file in a sandboxed iframe with no remote
-   * fetches, so every asset is inline or it does not render.
+   * Four of the eleven carry their real mark, as an inline path: Amazon from
+   * Font Awesome (CC BY 4.0), and AliExpress, Otto and Rakuten from Simple
+   * Icons (CC0). Those are the only ones with a source to copy from — a sweep
+   * of all 3,460 Simple Icons found nothing for Cdiscount, Flipkart, Mercado
+   * Libre, Lazada, Trendyol, Jumia or Temu, and Mercado *Pago* is a different
+   * company's logo, not a stand-in for Mercado Libre.
+   *
+   * The remaining seven keep initials on the brand's colour, because drawing a
+   * wordmark from memory produces a wrong logo rather than no logo, and a
+   * wrong one is worse: it misattributes a real company's identity. Drop a
+   * site's official SVG path into the "path" key here and it renders instead
+   * — that is the whole change needed per brand.
+   *
+   * An <img> is not an option for any of them: this view is one
+   * self-contained file in a sandboxed iframe with no remote fetches, so every
+   * asset is inline or it does not render.
    */
   var MARKET_BRAND={
     amazon:{label:"Amazon",color:"#FF9900",on:"#111"},
-    aliexpress:{label:"AliExpress",color:"#E62E04",on:"#fff"},
+    aliexpress:{label:"AliExpress",color:"#FF4747",on:"#fff",path:"M5.166 9.096a.022.022 0 0 0-.022.021c0 .396-.32.717-.713.717a.021.021 0 0 0-.021.022c0 .012.01.021.021.021.394 0 .713.322.713.718 0 .012.01.021.022.021.011 0 .021-.01.021-.021A.717.717 0 0 1 5.9 9.88a.021.021 0 0 0 0-.043.716.716 0 0 1-.713-.718v-.002a.021.021 0 0 0-.006-.015.022.022 0 0 0-.015-.006zm-3.693.526L0 13.462h.48l.355-.922h1.782l.354.922h.481L1.98 9.622zm2.264.002v3.838h.491V9.624zm2.375 0v3.838h2.413v-.502H6.613v-1.19H8.19v-.477H6.613v-1.166h1.773v-.502zm-4.386.592l.698 1.82H1.028zm14.689.402a1.466 1.466 0 0 0-.966.366V10.7h-.491v2.763h.49c.002-.477 0-.955.002-1.433a.969.969 0 0 1 .965-.918zm4.18.007c-.053 0-.105.003-.158.01-.315.031-.606.175-.753.377a.689.689 0 0 0-.14.465c.007.2.066.357.233.496.184.147.42.2.657.259.311.067.426.095.546.186.08.07.133.127.136.27 0 .25-.221.372-.42.41a.89.89 0 0 1-.894-.344l-.371.288c.33.382.777.505 1.09.5.54-.01.891-.217 1.029-.534.066-.153.063-.309.063-.38a.677.677 0 0 0-.267-.545c-.228-.177-.583-.228-.636-.242-.437-.078-.658-.196-.697-.341-.043-.192.102-.35.297-.411a.76.76 0 0 1 .857.277l.367-.247a1.166 1.166 0 0 0-.939-.494zm2.387 0c-.052 0-.105.003-.157.01-.316.031-.607.175-.753.377a.689.689 0 0 0-.14.465c.006.2.065.357.233.496.183.147.42.2.657.259.31.067.426.095.545.186.081.07.134.127.136.27.001.25-.221.372-.42.41a.89.89 0 0 1-.894-.344l-.371.288c.33.382.777.505 1.09.5.541-.01.891-.217 1.03-.534.065-.153.062-.309.062-.38a.677.677 0 0 0-.267-.545c-.227-.177-.583-.228-.636-.242-.437-.078-.658-.196-.696-.341-.043-.192.101-.35.297-.411a.76.76 0 0 1 .857.277l.367-.247a1.167 1.167 0 0 0-.94-.494zm-9.84.002a1.461 1.461 0 0 0-1.42 1.117 1.305 1.305 0 0 0-.041.327v2.833h.491v-1.813c.17.18.487.42.96.454a1.447 1.447 0 0 0 1.208-.627 1.457 1.457 0 0 0-1.199-2.292zm4.804 0a1.448 1.448 0 0 0-1.288 2.08c.255.53.811.87 1.412.833a1.452 1.452 0 0 0 1.012-.51l-.363-.291a.968.968 0 0 1-1.106.273 1.01 1.01 0 0 1-.602-.69h2.239l.002-.427a1.295 1.295 0 0 0-1.306-1.268zm-9.2.08l1.062 1.377-1.062 1.378h.581l.779-1.01.778 1.01h.581l-1.062-1.378 1.062-1.378h-.581l-.778 1.01-.779-1.01zm-3.825.015v2.74h.49v-2.74zm8.233.37a.96.96 0 0 1 .95.993.963.963 0 0 1-.863.998.962.962 0 0 1-1.034-.739c-.074-.382 0-.746.307-1.019a.959.959 0 0 1 .64-.233zm4.79.015a.823.823 0 0 1 .819.755h-1.76a.964.964 0 0 1 .94-.755z"},
     cdiscount:{label:"Cdiscount",color:"#C4161C",on:"#fff"},
     flipkart:{label:"Flipkart",color:"#2874F0",on:"#fff"},
     mercadolibre:{label:"Mercado Libre",color:"#FFE600",on:"#111"},
     lazada:{label:"Lazada",color:"#0F146D",on:"#fff"},
-    otto:{label:"Otto",color:"#E4001B",on:"#fff"},
-    rakuten:{label:"Rakuten",color:"#BF0000",on:"#fff"},
+    otto:{label:"Otto",color:"#D4021D",on:"#fff",path:"M20.893 7.95c-1.195 0-2.168.37-2.855 1.132.097-.265.149-.588.156-.968h-4.191c-.914 0-1.437.402-1.796 1.437l.185-1.437H8.157c-.775 0-1.307.37-1.5 1.096-.524-.84-1.457-1.26-2.636-1.26C1.779 7.95.32 9.246.059 12.01l-.033.35c-.228 2.47 1.067 3.69 3.08 3.69 2.243 0 3.702-1.307 3.963-4.072l.033-.348c.059-.634.015-1.185-.114-1.655h1.899l-.545 4.66c-.108.925.392 1.35 1.23 1.35.512 0 .686-.034.882-.066l.675-5.944h2.21l-.544 4.66c-.11.925.392 1.35 1.23 1.35.511 0 .685-.034.881-.066l.675-5.944h1.089c.376 0 .68-.087.915-.26-.342.604-.566 1.366-.654 2.296l-.032.348c-.229 2.471 1.066 3.69 3.08 3.69 2.243 0 3.701-1.306 3.962-4.07l.033-.349c.229-2.46-1.067-3.68-3.08-3.68zM4.86 11.477l-.022.262c-.152 1.872-.762 2.449-1.513 2.449-.675 0-1.153-.457-1.055-1.676l.021-.272c.153-1.862.762-2.45 1.513-2.45.664 0 1.154.468 1.056 1.687zm16.873 0-.022.262c-.153 1.872-.762 2.449-1.513 2.449-.675 0-1.154-.457-1.056-1.676l.022-.272c.152-1.862.762-2.45 1.513-2.45.664 0 1.154.468 1.056 1.687z"},
+    rakuten:{label:"Rakuten",color:"#BF0000",on:"#fff",path:"M23.277 21.3L3.939 24 .722 21.3h22.555zM7.6 19.276H3.939V0h6.052a6.653 6.653 0 0 1 6.65 6.646c0 2.234-1.108 4.204-2.799 5.418l5.418 7.211h-4.585l-4.486-5.979H7.6v5.98zm0-9.64h2.392a2.992 2.992 0 0 0 2.989-2.989 2.994 2.994 0 0 0-2.989-2.986H7.6v5.975z"},
     trendyol:{label:"Trendyol",color:"#F27A1A",on:"#fff"},
     jumia:{label:"Jumia",color:"#F68B1E",on:"#111"},
     temu:{label:"Temu",color:"#FB7701",on:"#fff"}
@@ -3652,6 +3662,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var key=String(name||"").toLowerCase();
     if(key==="amazon")return amazonMark(size);
     var b=MARKET_BRAND[key];
+    if(b&&b.path){
+      return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" aria-label="'+esc(b.label)+'" role="img">'
+        +'<path fill="'+b.color+'" d="'+b.path+'"></path></svg>';
+    }
     var initials=(b?b.label:String(name||"market")).replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase();
     return '<span class="mkt-generic" style="display:inline-flex;align-items:center;justify-content:center;'
       +"width:"+size+"px;height:"+size+"px;border-radius:5px;font-weight:800;line-height:1;"
@@ -3680,11 +3694,59 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     return '<span class="amz-stars">'+out+"</span>";
   }
 
+  /**
+   * What this scan is priced in.
+   *
+   * Read off the products rather than assumed. A live amazon.de scan drew
+   * "EUR 19.99" on the tile, because the collector sends a formatted price
+   * string, and "$19.99" two inches above it in the rollup, because that one
+   * formats the raw number. Same product, two currencies, one of them wrong —
+   * and wrong on every storefront that is not the US, which is ten of the
+   * eleven sites plus most of Amazon.
+   */
+  function marketCurrency(){
+    var ps=(amazonState&&amazonState.products)||[];
+    for(var i=0;i<ps.length;i++){
+      var c=String(ps[i].currency||"").trim();
+      if(c)return c.length<=3?c:"";
+    }
+    // Deliberately not a regex. This template is embedded in a Rust raw string
+    // AND in a TS template literal, and the literal eats a backslash — so
+    // "[^\d\s.,]" arrives as "[^ds.,]", which does not exclude digits and
+    // matched "EUR19" out of "EUR19.99", printing "median EUR1919.99". The
+    // file already carries one comment about this trap; this is the second
+    // time it has been paid for.
+    for(var j=0;j<ps.length;j++){
+      var t=String(ps[j].price||"").replace(/^ +/,"");
+      var sym="";
+      for(var k=0;k<t.length&&sym.length<3;k++){
+        var ch=t.charAt(k);
+        if(ch>="0"&&ch<="9")break;
+        if(ch===" "||ch==="."||ch===",")break;
+        sym+=ch;
+      }
+      if(sym)return sym;
+    }
+    return "$";
+  }
+
+  /**
+   * A symbol butts against its number and a code does not: "€19.99", but
+   * "SGD 49.90". Getting this one wrong is what made the rollup read
+   * "€ 19.99" two inches under a tile saying "€19.99".
+   */
+  function joinPrice(cur,v){
+    var n=Number(v).toFixed(2);
+    return /^[A-Za-z]{2,3}$/.test(cur)?(cur+" "+n):(cur+n);
+  }
+
+  /** A price, preferring the string the collector already formatted. */
   function money(p){
     var t=String(p.price||"");
     if(t)return t;
     var v=Number(p.priceValue);
-    return v?("$"+v.toFixed(2)):"";
+    if(!v)return "";
+    return joinPrice(marketCurrency(),v);
   }
 
   /** A percent string ("73%") as a number, or null. */
@@ -3897,8 +3959,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var rating=r.rating||{};
     var cells=[];
     if(price.min!=null&&price.max!=null){
-      cells.push(["Price", "$"+Number(price.min).toFixed(2)+" – $"+Number(price.max).toFixed(2),
-        price.median!=null?("median $"+Number(price.median).toFixed(2)):""]);
+      var cur=marketCurrency();
+      var amt=function(v){return joinPrice(cur,v);};
+      cells.push(["Price", amt(price.min)+" – "+amt(price.max),
+        price.median!=null?("median "+amt(price.median)):""]);
     }
     if(rating.mean!=null){
       cells.push(["Rating", String(rating.mean),
