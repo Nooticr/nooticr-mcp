@@ -4,17 +4,17 @@
  * `amazon.ts` answers one question — what buyers want and what stops them
  * buying — out of listings, star histograms and review text. Nothing in that
  * question is Amazon's. The server grew a marketplace-agnostic collector for
- * eleven sites and registered three tools over it; this file is the half that
+ * twelve sites and registered three tools over it; this file is the half that
  * was missing, and without it those tools existed, were billed, and could not
  * be called from Claude or ChatGPT at all.
  *
- * ## Why a registry rather than eleven tools
+ * ## Why a registry rather than twelve tools
  *
  * One tool with a `marketplace` argument, not `scan_lazada_category` and ten
  * siblings. The sites differ in two data-shaped ways and nothing else: what a
  * product id looks like, and whether the site has storefronts a scan must pick
  * between. Both are text in a schema, so they belong in a table rather than in
- * eleven near-identical registrations a model has to choose between.
+ * twelve near-identical registrations a model has to choose between.
  *
  * ## Why the storefront parameter is per-site
  *
@@ -60,7 +60,7 @@ export type Market = {
 };
 
 /**
- * The eleven sites, mirroring `MARKETPLACES` in nooticr-server.
+ * The twelve sites, mirroring `MARKETPLACES` in nooticr-server.
  *
  * Kept in the same order and the same words deliberately: a model reads this
  * text to decide what to send, and the server refuses on the same terms. Two
@@ -165,6 +165,23 @@ export const MARKETS: Market[] = [
       "end of a product path is a different handle — so reach a product through `query` instead",
     region: { field: "market", hint: "ng, eg, ke, ma, ci, gh, sn, tn, ug or dz" },
   },
+  // The one resale site here. Its `rating` describes the seller rather than the
+  // product, because a Vinted listing is a unique second-hand item with no
+  // reviews of its own — the server says so in `ratingScope`/`ratingNote` on
+  // every scan of it, and those are worth passing on rather than summarising
+  // away.
+  {
+    slug: "vinted",
+    label: "Vinted",
+    idLabel: "the numeric id from /items/<id>, or a full Vinted item URL",
+    region: {
+      field: "market",
+      hint:
+        "one of 27 European storefronts — fr, de, es, it, pl, co.uk, com (US), com.au and the " +
+        "rest. A listing belongs to exactly one: the same item id does not exist on another " +
+        "country's Vinted",
+    },
+  },
   {
     slug: "temu",
     label: "Temu",
@@ -184,7 +201,7 @@ const SLUGS = MARKETS.map((m) => m.slug).join(", ");
 /**
  * The storefront argument, described site by site.
  *
- * One string rather than eleven schemas, because a tool takes one `marketplace`
+ * One string rather than twelve schemas, because a tool takes one `marketplace`
  * per call and the host shows the whole description whichever it picks. Sites
  * with a single storefront are named as taking none, so a model does not
  * invent one for Temu.
@@ -290,7 +307,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       title: "Scan Marketplace Category",
       _meta: viewMeta("scan_marketplace_category"),
       description:
-        "Collect a category from any of eleven marketplaces and read it: products with prices, " +
+        "Collect a category from any of twelve marketplaces and read it: products with prices, " +
         "star histograms, the review text itself, and the arithmetic over them (price spread, " +
         "rating spread, which aspects recur across how many brands, and the share of each " +
         "product's ratings sitting at 1-2 stars). `marketplace` picks the site — one of " +
@@ -441,7 +458,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       title: "Get Marketplace Product",
       _meta: viewMeta("get_marketplace_product"),
       description:
-        "Fetch one product from any of eleven marketplaces by id or URL: price, rating, the full " +
+        "Fetch one product from any of twelve marketplaces by id or URL: price, rating, the full " +
         "star histogram, specs, and the review text. `marketplace` picks the site — one of " +
         `${SLUGS}. ` +
         "Costs 3 nooticr credits. " +
