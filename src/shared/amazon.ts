@@ -79,7 +79,29 @@ export function normaliseProducts(raw: unknown): Array<Record<string, unknown>> 
     // raw `p.asin` there gave every review on every non-Amazon product the id
     // "review::0", "review::1" — colliding across products, so a model citing
     // one could not be pointed back at the right listing.
-    const id = String(p.asin ?? p.id ?? p.item_id ?? p.sku ?? p.product_id ?? "");
+    //
+    // This list must stay equal to `ID_KEYS` in nooticr-server's
+    // `crates/server/src/marketplace.rs`. The server computes `rollup.perProduct[].id`
+    // from its copy and the view joins those rows onto the tiles by the id
+    // resolved here, so a key in one list and not the other does not read as a
+    // missing id — it reads as a tile with no `negativeStarShare`, which looks
+    // like a site that publishes no histogram.
+    //
+    // `pid` and `goods_id` were the two missing, which is Flipkart and Temu:
+    // each collector publishes exactly one id field and those are theirs, so
+    // every product in a scan of either site resolved to "" and shared one
+    // blank key — the failure the comment below says was fixed for the others.
+    //
+    // Found by hand rather than by a test, and `??` is why it could be: it
+    // falls through null and undefined but not "", so a site that sends an
+    // empty id under an earlier key would stop the chain on the empty value
+    // rather than continue past it. Matching on a non-empty string closes
+    // both.
+    const id = String(
+      [p.asin, p.sku, p.pid, p.goods_id, p.item_id, p.product_id, p.id].find(
+        (v) => typeof v === "string" && v.trim() !== "",
+      ) ?? "",
+    );
     const histogram = (p.rating_histogram ?? {}) as Record<string, unknown>;
     const reviews = Array.isArray(p.reviews) ? p.reviews : [];
     const aspects = Array.isArray(p.review_aspects) ? p.review_aspects : [];
@@ -196,6 +218,21 @@ export function categoryGuidance(opts: {
   site?: string;
   statusTool?: string;
   insightsTool?: string | null;
+  /**
+   * How old the figures are, when they came from nooticr's store rather than
+   * from a fresh visit to the site.
+   *
+   * The server sends this on a stored answer and omits it on a live one. It is
+   * repeated here, in the guidance, even though the same sentence is already a
+   * field on the payload — because the two channels are not both delivered.
+   * Claude Code drops every `content` text block when a result also carries
+   * `structuredContent`, and a host rendering the UI view does the opposite:
+   * the widget gets the structured payload and the model gets the text. A
+   * freshness warning that reaches only one of them is a warning that half the
+   * hosts never show, and the half that miss it state a stored price as
+   * current.
+   */
+  freshness?: string;
 }): string {
   const site = opts.site ?? "Amazon";
   const statusTool = opts.statusTool ?? "amazon_scan_status";
@@ -209,6 +246,27 @@ export function categoryGuidance(opts: {
         : "."),
   );
   if (opts.brands.length) lines.push(`Brands in the set: ${opts.brands.join(", ")}.`);
+  // Nothing came back, which is the one outcome where the next step is not
+  // "read the set" and the guidance above says nothing useful. Without this a
+  // model reports an empty category as a finding — the category is empty —
+  // when what actually happened is a search that found nothing, and the
+  // commonest reason is a query in a language that storefront does not sell
+  // in. Said here rather than only in the tool description because by the time
+  // this is read the description is long out of the model's attention.
+  if (opts.products === 0 && opts.complete) {
+    lines.push(
+      `No listings came back. This is not a finding about the category — it is a search that ` +
+        `matched nothing. Before reporting it: check the query is in the language that ` +
+        `storefront sells in, try the common shopper's word for the thing rather than a ` +
+        `category or brand-family name, and drop any quotes or operators. If a second query ` +
+        `also returns nothing, say the search found nothing rather than that the category ` +
+        `is empty.`,
+    );
+  }
+  // Before the "still running" line and before the analysis prompt: a model
+  // that has already started composing a read is past the point where a
+  // caveat changes what it writes.
+  if (opts.freshness) lines.push(opts.freshness);
   if (!opts.complete) {
     lines.push(
       `Collection is still running — ${opts.pending} listing${opts.pending === 1 ? "" : "s"} to go. ` +

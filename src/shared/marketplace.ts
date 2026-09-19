@@ -4,17 +4,17 @@
  * `amazon.ts` answers one question — what buyers want and what stops them
  * buying — out of listings, star histograms and review text. Nothing in that
  * question is Amazon's. The server grew a marketplace-agnostic collector for
- * eleven sites and registered three tools over it; this file is the half that
+ * twelve sites and registered three tools over it; this file is the half that
  * was missing, and without it those tools existed, were billed, and could not
  * be called from Claude or ChatGPT at all.
  *
- * ## Why a registry rather than eleven tools
+ * ## Why a registry rather than twelve tools
  *
  * One tool with a `marketplace` argument, not `scan_lazada_category` and ten
  * siblings. The sites differ in two data-shaped ways and nothing else: what a
  * product id looks like, and whether the site has storefronts a scan must pick
  * between. Both are text in a schema, so they belong in a table rather than in
- * eleven near-identical registrations a model has to choose between.
+ * twelve near-identical registrations a model has to choose between.
  *
  * ## Why the storefront parameter is per-site
  *
@@ -56,11 +56,21 @@ export type Market = {
   label: string;
   /** What a product id looks like here — the answer to "what do I pass?". */
   idLabel: string;
+  /**
+   * The language a `query` has to be written in to find anything.
+   *
+   * Mirrors `search_lang` in nooticr-server's `MARKETPLACES`. A field rather
+   * than prose for the same reason the site list is one: a query in the wrong
+   * language does not error, it returns a few imported listings — which reads
+   * as a thin category and is really a bad search, and nothing downstream can
+   * tell the two apart.
+   */
+  searchLang: string;
   region?: Region;
 };
 
 /**
- * The eleven sites, mirroring `MARKETPLACES` in nooticr-server.
+ * The twelve sites, mirroring `MARKETPLACES` in nooticr-server.
  *
  * Kept in the same order and the same words deliberately: a model reads this
  * text to decide what to send, and the server refuses on the same terms. Two
@@ -78,21 +88,25 @@ export const MARKETS: Market[] = [
         "a country code or host — com (US), co.uk, de, fr, it, es, ca, co.jp, in, com.br, " +
         "com.mx, com.au, nl, se, pl, com.be, com.tr, ae, sa, eg, sg, cn. Default www.amazon.com",
     },
+    searchLang: "the storefront's own — English on com, co.uk, ca, in, com.au and sg, otherwise the country's",
   },
   {
     slug: "aliexpress",
     label: "AliExpress",
     idLabel: "the numeric id from /item/<id>.html, or a full AliExpress product URL",
+    searchLang: "English",
   },
   {
     slug: "cdiscount",
     label: "Cdiscount",
     idLabel: "the SKU from a product URL's /f-<category>-<sku>.html, or the full URL",
+    searchLang: "French",
   },
   {
     slug: "flipkart",
     label: "Flipkart",
     idLabel: "the 16-character PID from a product URL's pid= parameter, or the full URL",
+    searchLang: "English",
   },
   {
     slug: "mercadolibre",
@@ -105,6 +119,7 @@ export const MARKETS: Market[] = [
         "mercadolivre.com.br. Inferred from the ids when omitted, and a job runs against one " +
         "market: an id from another is refused rather than mis-filed",
     },
+    searchLang: "Spanish, except Brazil (MLB), which is Portuguese",
   },
   {
     slug: "lazada",
@@ -118,6 +133,7 @@ export const MARKETS: Market[] = [
         "sg, my, th, vn, ph or id. An item id is scoped to one of them — the same id on another " +
         "Lazada host is a different product or nothing at all",
     },
+    searchLang: "English on sg and ph; Thai, Vietnamese, Indonesian or Malay on th, vn, id and my",
   },
   {
     slug: "otto",
@@ -131,6 +147,7 @@ export const MARKETS: Market[] = [
         "de or at. The two are not interchangeable: an id from one does not address a product " +
         "on the other",
     },
+    searchLang: "German, on both storefronts",
   },
   {
     slug: "rakuten",
@@ -144,6 +161,7 @@ export const MARKETS: Market[] = [
         "jp (Ichiba) or tw. Taiwan publishes no review text, so a category study there reads on " +
         "price and rating alone",
     },
+    searchLang: "Japanese on jp, Traditional Chinese on tw",
   },
   {
     slug: "trendyol",
@@ -156,6 +174,7 @@ export const MARKETS: Market[] = [
         "one of 47 storefronts — tr, de, ae, sa, at, be, fr, it, nl, pl, ro and the rest. An id " +
         "is scoped to one: the same number 404s on another country's",
     },
+    searchLang: "Turkish on tr; the storefront's own language elsewhere",
   },
   {
     slug: "jumia",
@@ -164,11 +183,31 @@ export const MARKETS: Market[] = [
       "a SKU such as OR537EA86PWGTNAFAMZ. A product URL does NOT contain it — the number at the " +
       "end of a product path is a different handle — so reach a product through `query` instead",
     region: { field: "market", hint: "ng, eg, ke, ma, ci, gh, sn, tn, ug or dz" },
+    searchLang: "English on ng, ke, gh and ug; French on ci, sn, ma, tn and dz; Arabic or French on eg",
+  },
+  // The one resale site here. Its `rating` describes the seller rather than the
+  // product, because a Vinted listing is a unique second-hand item with no
+  // reviews of its own — the server says so in `ratingScope`/`ratingNote` on
+  // every scan of it, and those are worth passing on rather than summarising
+  // away.
+  {
+    slug: "vinted",
+    label: "Vinted",
+    idLabel: "the numeric id from /items/<id>, or a full Vinted item URL",
+    region: {
+      field: "market",
+      hint:
+        "one of 27 European storefronts — fr, de, es, it, pl, co.uk, com (US), com.au and the " +
+        "rest. A listing belongs to exactly one: the same item id does not exist on another " +
+        "country's Vinted",
+    },
+    searchLang: "the storefront's own — French on fr, German on de, Polish on pl, and so on",
   },
   {
     slug: "temu",
     label: "Temu",
     idLabel: "the goods id after -g- in a product URL, or the full URL",
+    searchLang: "English",
   },
 ];
 
@@ -184,7 +223,7 @@ const SLUGS = MARKETS.map((m) => m.slug).join(", ");
 /**
  * The storefront argument, described site by site.
  *
- * One string rather than eleven schemas, because a tool takes one `marketplace`
+ * One string rather than twelve schemas, because a tool takes one `marketplace`
  * per call and the host shows the whole description whichever it picks. Sites
  * with a single storefront are named as taking none, so a model does not
  * invent one for Temu.
@@ -195,6 +234,9 @@ const MARKET_HINT =
     .join(" · ") +
   ` · ${MARKETS.filter((m) => !m.region).map((m) => m.label).join(", ")} have one storefront each ` +
   "and take no market argument.";
+
+/** Which language a query has to be in, site by site. */
+const LANG_HINT = MARKETS.map((m) => `${m.label}: ${m.searchLang}`).join(" · ");
 
 /** The product ids each site addresses by, for `items`. */
 const ID_HINT = MARKETS.map((m) => `${m.label}: ${m.idLabel}`).join(" · ");
@@ -238,6 +280,9 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     scanId: String(payload.scanId ?? ""),
     pending: Math.max(0, total - done),
     focus,
+    // Present only when the server answered from its own store. See the field's
+    // comment in `categoryGuidance` for why it is repeated in both channels.
+    freshness: typeof payload.freshness === "string" ? payload.freshness : undefined,
     site: m.label,
     statusTool: "marketplace_scan_status",
     // There is no free insights view for these sites yet, and pointing a model
@@ -255,6 +300,12 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     complete: payload.complete !== false,
     query: payload.query ?? null,
     market: payload.market ?? payload.domain ?? null,
+    // Where this answer came from, and when the figures in it were measured.
+    // `collectedAt` is when the result was assembled, which on a stored answer
+    // is now and says nothing about the price's age; `observedAt` is the age.
+    servedFrom: payload.servedFrom ?? "live",
+    observedAt: payload.observedAt ?? null,
+    freshness: payload.freshness ?? null,
     progress,
     rollup,
     products,
@@ -281,7 +332,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       title: "Scan Marketplace Category",
       _meta: viewMeta("scan_marketplace_category"),
       description:
-        "Collect a category from any of eleven marketplaces and read it: products with prices, " +
+        "Collect a category from any of twelve marketplaces and read it: products with prices, " +
         "star histograms, the review text itself, and the arithmetic over them (price spread, " +
         "rating spread, which aspects recur across how many brands, and the share of each " +
         "product's ratings sitting at 1-2 stars). `marketplace` picks the site — one of " +
@@ -306,7 +357,19 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       inputSchema: z
         .object({
           marketplace: marketplaceArg,
-          query: z.string().optional().describe("Category or keyword to search, e.g. 'cast iron skillet'."),
+          query: z
+            .string()
+            .optional()
+            .describe(
+              "Category or keyword to search, e.g. 'cast iron skillet'. Two to four words, " +
+                "the common name a shopper would type rather than a catalogue description, " +
+                "and no quotes or AND/OR — none of these sites read them as operators, they " +
+                "search for them and narrow to nothing. It has to be in the storefront's " +
+                `language — ${LANG_HINT}. A query in the wrong language does not fail: it ` +
+                "returns a few imported listings, which reads as a thin category and is " +
+                "really a bad search. Brand names are not translated. A scan that came back " +
+                "with no products is a reason to change the query, not to raise the limit.",
+            ),
           items: z
             .array(z.string())
             .optional()
@@ -432,7 +495,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       title: "Get Marketplace Product",
       _meta: viewMeta("get_marketplace_product"),
       description:
-        "Fetch one product from any of eleven marketplaces by id or URL: price, rating, the full " +
+        "Fetch one product from any of twelve marketplaces by id or URL: price, rating, the full " +
         "star histogram, specs, and the review text. `marketplace` picks the site — one of " +
         `${SLUGS}. ` +
         "Costs 3 nooticr credits. " +
