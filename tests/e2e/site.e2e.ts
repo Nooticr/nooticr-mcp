@@ -22,6 +22,7 @@ import { landingPage } from "../../cloudflare/src/site/landing.js";
 import { termsPage, privacyPage } from "../../cloudflare/src/site/legal.js";
 import { supportPage } from "../../cloudflare/src/site/support.js";
 import { dashboardPage, dashboardSignedOut } from "../../cloudflare/src/site/dashboard.js";
+import { documentationPage } from "../../cloudflare/src/site/documentation.js";
 
 const PUBLIC_URL = "https://mcp.nooticr.com";
 const API = "https://api.nooticr.com";
@@ -67,6 +68,7 @@ const ROUTES: Record<string, () => string> = {
   "/terms": () => termsPage(PUBLIC_URL, API),
   "/privacy": () => privacyPage(PUBLIC_URL, API),
   "/support": () => supportPage(PUBLIC_URL),
+  "/documentation": () => documentationPage(PUBLIC_URL, API),
   "/dashboard": () =>
     dashboardPage(PUBLIC_URL, { email: "e2e@nooticr.com", displayName: "E2E" }, USAGE, "secret-token", KEYS),
   "/dashboard-nokeys": () =>
@@ -176,6 +178,30 @@ test.describe("landing page", () => {
     await page.goto(`${base}/`);
     await expect(page.locator('footer a[href="/terms"]')).toBeVisible();
     await expect(page.locator('footer a[href="/privacy"]')).toBeVisible();
+  });
+});
+
+/**
+ * The reference page was the one public page nothing measured, and it was
+ * scrolling sideways: `doc-t code{white-space:nowrap}` is right for a tool
+ * name and wrong for an argument list, so the Inputs column grew to the
+ * widest signature and took the page with it.
+ */
+test.describe("documentation", () => {
+  for (const width of WIDTHS) {
+    test(`fits the viewport at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/documentation`);
+      await noOverflow(page);
+    });
+  }
+
+  test("lists the marketplaces with the argument that selects each one", async ({ page }) => {
+    await page.goto(`${base}/documentation`);
+    for (const label of ["Amazon", "Vinted", "Mercado Libre", "Temu"]) {
+      await expect(page.getByText(label, { exact: false }).first()).toBeVisible();
+    }
+    await expect(page.locator("#tools-market")).toBeVisible();
   });
 });
 
