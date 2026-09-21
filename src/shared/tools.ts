@@ -423,6 +423,25 @@ function toolError(prefix: string, err: unknown): {
  // and what fixes it — including that they will not have to ask twice, which
  // is only true now that nooticr_login resumes the interrupted call.
  if (isAuthFailure(err)) {
+  // A deployment running on an API key has nobody to open a sign-in link:
+  // its 401 means the key was revoked, expired or mistyped, and "sign in
+  // again" sends whoever reads that log looking for a browser that does not
+  // exist. The backend names this case in its own message and the client
+  // carries plain-text errors through, so the two can be told apart here.
+  if (/api key/i.test(msg)) {
+   return {
+    content: [{
+     type: "text",
+     text:
+      `${prefix}: this nooticr API key is not valid — revoked, expired, or mistyped. ` +
+      `No sign-in link will help: nothing here can be re-authorised interactively. ` +
+      `Replace the key (NOOTICR_API_KEY, or the bearer token sent to the remote ` +
+      `endpoint) with a live one — \`npx @nooticr/mcp api-key list\` shows which are ` +
+      `still active. (${msg})`,
+    }],
+    isError: true,
+   };
+  }
   return {
    content: [{
     type: "text",

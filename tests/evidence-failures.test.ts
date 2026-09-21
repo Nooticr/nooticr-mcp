@@ -209,6 +209,25 @@ describe("a failed fetch is reported as a failure", () => {
     expect(text(res)).toMatch(/sign in again/i);
     expect(text(res)).toContain("nooticr_login");
   });
+
+  it("does not offer a sign-in link to a deployment running on an API key", async () => {
+    // The 401 a bad key produces reads the same as an expired session, and
+    // the advice for it is the opposite: there is no browser on the other end
+    // of a server-side integration, and nothing a link could fix. The backend
+    // names the case, so the message has to follow it.
+    const { client } = await connect((name) =>
+      name === "get_social_media"
+        ? new NooticrError(401, "unknown, revoked or expired nooticr API key")
+        : undefined,
+    );
+    const res = await call(client, "analyze_post_fast", { url: URL });
+
+    expect(res.isError).toBe(true);
+    expect(text(res)).not.toMatch(/sign in again/i);
+    expect(text(res)).not.toContain("nooticr_login");
+    expect(text(res)).toMatch(/api-key list/);
+    expect(text(res)).toMatch(/revoked, expired, or mistyped/i);
+  });
 });
 
 describe("score_draft costs nothing because it fetches nothing", () => {

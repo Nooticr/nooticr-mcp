@@ -92,6 +92,26 @@ export interface McpProxyResult {
   structured: unknown;
 }
 
+/** An API key as a listing shows it: everything except the secret. */
+export interface NooticrApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  workspaceId?: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
+}
+
+/**
+ * A freshly created key. `key` is the secret, and this is the only response
+ * that will ever carry it — the server keeps a hash and cannot show it again.
+ */
+export interface CreatedNooticrApiKey extends NooticrApiKey {
+  key: string;
+}
+
 /**
  * Supplies the access token for each request and (optionally) refreshes it
  * when the nooticr API rejects with 401. Implementations own token storage:
@@ -197,12 +217,17 @@ export class NooticrClient {
       body = undefined;
     }
     const json = (body ?? {}) as Record<string, unknown>;
+    // Name the endpoint: a bare status code says nothing about which call
+    // failed, and these surface to the user as tool errors. Then add the
+    // body when it is plainly a sentence — dropping it leaves a headless
+    // caller with a number and no cause.
+    const detail = plainTextDetail(text);
     const errorMessage =
       typeof json.error === "string"
         ? json.error
-        : // Name the endpoint: a bare status code says nothing about which
-          // call failed, and these surface to the user as tool errors.
-          `nooticr API error (${res.status}) from ${path}`;
+        : detail
+          ? `nooticr API error (${res.status}) from ${path}: ${detail}`
+          : `nooticr API error (${res.status}) from ${path}`;
 
     if (res.status >= 200 && res.status < 300) {
       return body as T;
@@ -284,6 +309,33 @@ export class NooticrClient {
 
   async getJob(jobId: string): Promise<JobStatus> {
     return this.request<JobStatus>("GET", `/ai/analyze-post?jobId=${encodeURIComponent(jobId)}`, {
+      auth: true,
+    });
+  }
+
+  /**
+   * Mints a key for the signed-in user. Deliberately not callable *with* a
+   * key: the backend refuses key-management to key-authenticated callers so a
+   * leaked key cannot mint a sibling that survives its own revocation.
+   */
+  async createApiKey(
+    input: { name?: string; workspaceId?: string; expiresInDays?: number } = {}
+  ): Promise<CreatedNooticrApiKey> {
+    return this.request<CreatedNooticrApiKey>("POST", "/auth/api-keys", {
+      auth: true,
+      body: input,
+    });
+  }
+
+  async listApiKeys(): Promise<NooticrApiKey[]> {
+    const res = await this.request<{ keys?: NooticrApiKey[] }>("GET", "/auth/api-keys", {
+      auth: true,
+    });
+    return res?.keys ?? [];
+  }
+
+  async revokeApiKey(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/auth/api-keys/${encodeURIComponent(id)}`, {
       auth: true,
     });
   }
@@ -376,6 +428,20 @@ export class NooticrClient {
       { body }
     );
   }
+}
+
+/**
+ * The backend answers a good many routes with a bare string rather than JSON
+ * (axum's `(StatusCode, String)`), and "nooticr API error (403)" tells whoever
+ * reads it nothing — least of all a headless integration, where the message is
+ * the only thing anyone will see. Use the body when it is plainly a sentence:
+ * short, one line, and not the start of a document.
+ */
+function plainTextDetail(text: string): string | undefined {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 300 || trimmed.includes("\n")) return undefined;
+  if (/^[<{[]/.test(trimmed)) return undefined;
+  return trimmed;
 }
 
 async function parseJsonBody(res: Response): Promise<unknown> {

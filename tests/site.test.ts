@@ -965,6 +965,19 @@ describe("documentation", () => {
     expect(html).toMatch(/Content of retrieved posts/);
   });
 
+  /// The question the docs could not answer before: an integration that runs
+  /// server-side, with nothing that can open a consent screen. Leaving it out
+  /// sent partners to support to ask whether it was possible at all.
+  it("tells a server-side integration how to connect without a browser", () => {
+    expect(html).toContain('id="connect-server"');
+    expect(html).toMatch(/api-key create/);
+    expect(html).toMatch(/Authorization: Bearer nk_/);
+    expect(html).toMatch(/api-key revoke/);
+    // And says the thing a reader has to know before they run it once and
+    // lose the output.
+    expect(html).toMatch(/printed once/);
+  });
+
   it("explains access and revocation", () => {
     expect(html).toContain("social:read");
     expect(html).toContain("credits:spend");

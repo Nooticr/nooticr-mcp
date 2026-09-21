@@ -6,6 +6,7 @@
  * Modes:
  *   nooticr-mcp            stdio transport (default; Claude Desktop, Cursor)
  *   nooticr-mcp login      browser-based Google sign-in to nooticr
+ *   nooticr-mcp api-key    mint/list/revoke a key for a server with no browser
  *   nooticr-mcp --http     remote HTTP transport with OAuth (OpenAI Agents SDK)
  */
 
@@ -22,8 +23,16 @@ import {
   getTransportMode,
   DEFAULT_PORT,
 } from "./config.js";
-import { AuthManager, NooticrAuthError, createHttpTokenProvider, createStdioTokenProvider } from "./auth.js";
-import { NooticrClient, NooticrError } from "./nooticr.js";
+import {
+  AuthManager,
+  NooticrAuthError,
+  createApiKeyTokenProvider,
+  createHttpTokenProvider,
+  createManagementTokenProvider,
+  createStdioTokenProvider,
+} from "./auth.js";
+import { looksLikeApiKey } from "./shared/api-key.js";
+import { NooticrClient, NooticrError, type NooticrApiKey } from "./nooticr.js";
 import {OAuthManager, type McpSession, SCOPES} from "./oauth.js";
 import { createMcpServer } from "./shared/tools.js";
 import { stdioIdempotencyKey } from "./idempotency.js";
@@ -112,11 +121,19 @@ function bearerToken(req: http.IncomingMessage): string | undefined {
 
 /**
  * A request bearer token is valid when it was issued by our OAuth `/token`
- * endpoint, or when it matches `NOOTICR_ACCESS_TOKEN` (pre-provisioned
- * deployments and local testing — no browser OAuth round-trip needed).
+ * endpoint, when it is a nooticr API key, or when it matches
+ * `NOOTICR_ACCESS_TOKEN` (pre-provisioned deployments and local testing — no
+ * browser OAuth round-trip needed).
+ *
+ * A key is accepted on its shape alone because this process does not hold the
+ * secret to check it against — only nooticr-server does, and it checks every
+ * call. What that admits without a round trip is `initialize` and
+ * `tools/list`, both of which answer the same for everyone; the first call
+ * that touches an account gets the backend's own 401.
  */
 function validMcpToken(token: string, oauth: OAuthManager): boolean {
   if (oauth.verifyToken(token)) return true;
+  if (looksLikeApiKey(token)) return true;
   const envToken = process.env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }
@@ -132,8 +149,10 @@ async function handleMcpRequest(
     return sendJson(res, 401, {
       error: "Unauthorized",
       error_description:
-        "This MCP server requires OAuth authentication. Fetch an access token from " +
-        `${state.oauth.authorizationServerMetadata().authorization_endpoint} first.`,
+        "This MCP server requires authentication. Fetch an access token from " +
+        `${state.oauth.authorizationServerMetadata().authorization_endpoint}, or — on a ` +
+        "server with no browser — send a nooticr API key as the bearer token " +
+        "(npx @nooticr/mcp api-key create).",
     });
   }
 
@@ -278,8 +297,16 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
     connections: new Map(),
     serverFactory: () =>
       createMcpServer((extra) => {
-        const session: McpSession | undefined = extra.authInfo?.token
-          ? oauth.verifyToken(extra.authInfo.token)
+        const bearer = extra.authInfo?.token;
+        // A caller who presented their own API key is answered as themselves.
+        // Falling through to `createHttpTokenProvider` here would resolve the
+        // *operator's* environment or credentials file instead — one tenant's
+        // request served from another's account.
+        if (looksLikeApiKey(bearer)) {
+          return new NooticrClient(baseUrl, createApiKeyTokenProvider(bearer));
+        }
+        const session: McpSession | undefined = bearer
+          ? oauth.verifyToken(bearer)
           : undefined;
         return new NooticrClient(
           baseUrl,
@@ -408,6 +435,115 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// api-key command
+// ---------------------------------------------------------------------------
+
+export interface ApiKeyOptions {
+  action: "create" | "list" | "revoke";
+  name?: string;
+  workspaceId?: string;
+  expiresInDays?: number;
+  id?: string;
+  json?: boolean;
+}
+
+function formatDate(value: string | undefined): string {
+  if (!value) return "never";
+  const at = new Date(value);
+  return Number.isNaN(at.getTime()) ? value : at.toISOString().slice(0, 10);
+}
+
+function describeKey(key: NooticrApiKey): string {
+  const state = key.revokedAt
+    ? "revoked"
+    : key.expiresAt && new Date(key.expiresAt).getTime() <= Date.now()
+      ? "expired"
+      : "active";
+  return [
+    `${key.prefix}\u2026  ${key.name}`,
+    `  id         ${key.id}`,
+    `  state      ${state}`,
+    `  created    ${formatDate(key.createdAt)}`,
+    `  last used  ${formatDate(key.lastUsedAt)}`,
+    `  expires    ${formatDate(key.expiresAt)}`,
+  ].join("\n");
+}
+
+/**
+ * Mints, lists and revokes the keys a headless deployment authenticates with.
+ *
+ * Creating one needs an interactive session exactly once — that is the step it
+ * removes from every run afterwards — so these commands deliberately refuse to
+ * authenticate with `NOOTICR_API_KEY` even when one is set. The backend
+ * refuses key management to a key-authenticated caller anyway; resolving one
+ * here would only turn that bound into a 403 that reads like a bug.
+ */
+export async function runApiKey(opts: ApiKeyOptions): Promise<void> {
+  const baseUrl = getBaseUrl();
+  const auth = new AuthManager(baseUrl, getCredentialsFile());
+  const token = await auth.getAccessToken(undefined, { allowApiKey: false });
+  if (!token) {
+    throw new NooticrAuthError(
+      "Sign in first: `npx nooticr-mcp login` (or `login --email ... --password ...`). " +
+        "Minting a key is the one step that needs a browser, and it is the last one: " +
+        "the key it returns is what every run afterwards uses."
+    );
+  }
+  const client = new NooticrClient(baseUrl, createManagementTokenProvider(auth));
+
+  if (opts.action === "create") {
+    const created = await client.createApiKey({
+      ...(opts.name !== undefined ? { name: opts.name } : {}),
+      ...(opts.workspaceId !== undefined ? { workspaceId: opts.workspaceId } : {}),
+      ...(opts.expiresInDays !== undefined ? { expiresInDays: opts.expiresInDays } : {}),
+    });
+    if (opts.json) {
+      process.stdout.write(`${JSON.stringify(created, null, 2)}\n`);
+      return;
+    }
+    process.stdout.write(
+      `Created API key "${created.name}" (${created.id}).\n\n` +
+        `  ${created.key}\n\n` +
+        "This is the only time the key is shown — nooticr stores a hash of it and\n" +
+        "cannot show it again. Store it wherever this deployment keeps its secrets,\n" +
+        "then give it to the server:\n\n" +
+        "  NOOTICR_API_KEY=<key> npx nooticr-mcp\n\n" +
+        "or, against the remote HTTP endpoint, as the bearer token:\n\n" +
+        "  Authorization: Bearer <key>\n"
+    );
+    return;
+  }
+
+  if (opts.action === "list") {
+    const keys = await client.listApiKeys();
+    if (opts.json) {
+      process.stdout.write(`${JSON.stringify(keys, null, 2)}\n`);
+      return;
+    }
+    if (keys.length === 0) {
+      process.stdout.write(
+        "No API keys. Create one with `npx nooticr-mcp api-key create --name <name>`.\n"
+      );
+      return;
+    }
+    process.stdout.write(`${keys.map(describeKey).join("\n\n")}\n`);
+    return;
+  }
+
+  if (!opts.id) {
+    throw new NooticrError(400, "Usage: nooticr-mcp api-key revoke <id>");
+  }
+  await client.revokeApiKey(opts.id);
+  if (opts.json) {
+    process.stdout.write(`${JSON.stringify({ id: opts.id, revoked: true }, null, 2)}\n`);
+    return;
+  }
+  process.stdout.write(
+    `Revoked ${opts.id}. Any server still presenting it now gets a 401.\n`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
@@ -421,11 +557,17 @@ Usage:
                                 (default port ${DEFAULT_PORT}; also NOOTICR_PORT)
   nooticr-mcp login              Sign in to nooticr via Google in your browser
   nooticr-mcp login --email me@example.com --password '...'   Password login
+  nooticr-mcp api-key create [--name N] [--expires-in-days D] [--workspace-id W] [--json]
+                                Mint a key for a server with no browser
+  nooticr-mcp api-key list [--json]        List this account's keys
+  nooticr-mcp api-key revoke <id> [--json] Revoke one
   nooticr-mcp --help             Show this help
 
 Environment variables:
   NOOTICR_BASE_URL          nooticr server base URL (default http://localhost:8080)
   NOOTICR_ACCESS_TOKEN      nooticr JWT access token (bypasses login)
+  NOOTICR_API_KEY           nooticr API key from "api-key create" — no browser,
+                            no refresh, valid until revoked
   NOOTICR_CREDENTIALS_FILE  token store path (default ~/.config/nooticr-mcp/credentials.json)
   NOOTICR_PUBLIC_URL        public base URL for the HTTP mode (default http://localhost:3457)
   NOOTICR_PORT              port for --http and login (default ${DEFAULT_PORT})
@@ -436,6 +578,9 @@ Client setup:
     "command": "npx", "args": ["nooticr-mcp"]  (plus NOOTICR_ACCESS_TOKEN if needed)
   OpenAI Agents SDK (remote HTTP): use the RemoteMCPClient with URL
     <NOOTICR_PUBLIC_URL>/mcp — the OAuth flow will open your browser.
+  Server-side, no browser: mint a key once with "api-key create", then either
+    set NOOTICR_API_KEY for the stdio server, or send it to the remote endpoint
+    as "Authorization: Bearer <key>" and skip the OAuth flow entirely.
 
 See README.md for full instructions.
 `);
@@ -474,6 +619,55 @@ async function main(): Promise<void> {
       process.stderr.write(
         `Login failed: ${err instanceof Error ? err.message : String(err)}\n`
       );
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (args[0] === "api-key" || args[0] === "api-keys") {
+    const rest = args.slice(1);
+    const action = rest[0];
+    if (action !== "create" && action !== "list" && action !== "revoke") {
+      process.stderr.write(
+        "Usage: nooticr-mcp api-key <create|list|revoke> [options]\n" +
+          "       nooticr-mcp api-key create [--name N] [--expires-in-days D] [--workspace-id W]\n" +
+          "       nooticr-mcp api-key revoke <id>\n"
+      );
+      process.exit(1);
+    }
+    const flags = rest.slice(1);
+    const valueOf = (flag: string): string | undefined => {
+      const idx = flags.indexOf(flag);
+      return idx >= 0 && flags[idx + 1] ? flags[idx + 1] : undefined;
+    };
+    const opts: ApiKeyOptions = { action, json: flags.includes("--json") };
+    const name = valueOf("--name");
+    if (name !== undefined) opts.name = name;
+    const workspaceId = valueOf("--workspace-id");
+    if (workspaceId !== undefined) opts.workspaceId = workspaceId;
+    const expiresRaw = valueOf("--expires-in-days");
+    if (expiresRaw !== undefined) {
+      const days = Number.parseInt(expiresRaw, 10);
+      if (!Number.isInteger(days) || days < 1) {
+        process.stderr.write("--expires-in-days must be a positive whole number of days.\n");
+        process.exit(1);
+      }
+      opts.expiresInDays = days;
+    }
+    if (action === "revoke") {
+      // The id is positional, so anything that starts with "-" is a flag the
+      // user meant for something else, not the key they want gone.
+      const id = flags.find((arg) => !arg.startsWith("-"));
+      if (!id) {
+        process.stderr.write("Usage: nooticr-mcp api-key revoke <id>\n");
+        process.exit(1);
+      }
+      opts.id = id;
+    }
+    try {
+      await runApiKey(opts);
+    } catch (err) {
+      process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
       process.exit(1);
     }
     return;

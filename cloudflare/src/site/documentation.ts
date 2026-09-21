@@ -149,16 +149,18 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<div class="callout good"><p><strong>Nothing it writes leaves Nooticr.</strong> Of the 48 tools, 35 carry <code>readOnlyHint: true</code>. The 13 that do not write only inside the user's own Nooticr account — the credit ledger, a watchlist, a scheduled brand-monitoring watch, a generated content plan, a pre-publish review saved onto the user's own draft — or send the user to a platform's consent screen to link an account. Two, <code>unwatch_creator</code> and <code>stop_brand_watch</code>, carry <code>destructiveHint: true</code>: both stop something the user themselves started. None of them writes to your organisation's systems, and none can post, comment, like, follow or message anywhere.</p></div>` +
 
         `<h3 id="admins-access">Access and revocation</h3>` +
-        `<p>Authentication is OAuth 2.1 with PKCE (S256) and dynamic client registration. No API key is ever pasted into a chat window. Tokens are scoped and expiring.</p>` +
+        `<p>Interactive clients authenticate with OAuth 2.1 with PKCE (S256) and dynamic client registration — no key is ever pasted into a chat window, and the tokens it issues are scoped and expiring.</p>` +
+        `<p>A server-side integration has no browser to run that flow in, so it authenticates with an <strong>API key</strong> instead: one credential, sent as <code>Authorization: Bearer nk_&hellip;</code>, minted from an account that did sign in once. A key is scoped to one account and one workspace, stored only as a hash, and cannot create or revoke keys — so a leaked key cannot outlive being revoked. See <a href="#connect-server">Server-side integrations</a>.</p>` +
         `<p>Two scopes are granted, and they describe exactly what the tools do:</p>` +
         `<ul><li><code>social:read</code> — read public posts, transcripts, comments, creators, sounds and hashtags</li>` +
         `<li><code>credits:spend</code> — run AI tools and open a checkout, both of which draw on the user's credit balance</li></ul>` +
-        `<p><strong>To revoke:</strong> the user removes the connector in their AI client, which invalidates its tokens immediately. To remove the account and its data entirely, email <a href="mailto:${esc(BRAND.supportEmail)}">${esc(BRAND.supportEmail)}</a>.</p>` +
+        `<p><strong>To revoke:</strong> the user removes the connector in their AI client, which invalidates its tokens immediately; an API key is revoked with <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>, which takes effect at the API on the spot. To remove the account and its data entirely, email <a href="mailto:${esc(BRAND.supportEmail)}">${esc(BRAND.supportEmail)}</a>.</p>` +
 
         `<h3 id="admins-data">Data handling</h3>` +
         `<table class="doc-t"><thead><tr><th>Data</th><th>Stored?</th><th>Retention</th></tr></thead><tbody>` +
         `<tr><td>Account identity (email, display name, user id)</td><td>Yes</td><td>Until the account is deleted</td></tr>` +
         `<tr><td>OAuth tokens issued to the AI client</td><td>Yes</td><td>Until expiry or revocation</td></tr>` +
+        `<tr><td>API keys (stored as a sha256 hash, never in the clear)</td><td>Yes</td><td>Until revoked or deleted with the account</td></tr>` +
         `<tr><td>Credit ledger (tool name, credits, timestamp)</td><td>Yes</td><td>Retained as a financial record</td></tr>` +
         `<tr><td>URLs and search terms passed to tools</td><td>No</td><td>Processed, not retained after the call</td></tr>` +
         `<tr><td><strong>Content of retrieved posts</strong></td><td><strong>No</strong></td><td>Streamed through; media cached only transiently so it can be displayed</td></tr>` +
@@ -202,7 +204,13 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<p>Settings → Connectors → Advanced → <strong>Developer mode</strong>, then add the same URL.</p>` +
         `<h3 id="connect-stdio">Cursor and other stdio clients</h3>` +
         `<pre><code>{\n  "mcpServers": {\n    "nooticr": {\n      "command": "npx",\n      "args": ["-y", "@nooticr/mcp"]\n    }\n  }\n}</code></pre>` +
-        `<p>Then <code>npx -y @nooticr/mcp login</code> once to sign in.</p>`,
+        `<p>Then <code>npx -y @nooticr/mcp login</code> once to sign in.</p>` +
+        `<h3 id="connect-server">Server-side integrations (no browser)</h3>` +
+        `<p>The OAuth flow needs a browser once and leaves behind a token that has to keep being refreshed. If your integration runs on a server, mint an API key instead — from any machine you can sign in on, once:</p>` +
+        `<pre><code>npx -y @nooticr/mcp login\nnpx -y @nooticr/mcp api-key create --name "my-service"</code></pre>` +
+        `<p>The key is printed once and stored only as a hash, so it cannot be shown again. Give it to the deployment and there is nothing left to configure:</p>` +
+        `<pre><code>POST ${esc(publicUrl)}/mcp\nAuthorization: Bearer nk_&hellip;</code></pre>` +
+        `<p>Or, for a local stdio process, set <code>NOOTICR_API_KEY</code>. There is no consent screen, no redirect URI and no refresh: the key is valid until <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>. Pass <code>--expires-in-days</code> at creation if you would rather it also expire on its own.</p>`,
     },
     {
       id: "tools",
