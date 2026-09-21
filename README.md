@@ -344,8 +344,9 @@ prints into a browser manually.
 for an integration running server-side: nothing there can complete a consent
 screen, and a refresh chain that breaks has to be repaired by hand.
 
-An **API key** is the other way in. Mint one from a machine you *can* sign in
-on, once:
+An **API key** is the other way in. Mint one from a browser at
+[mcp.nooticr.com/dashboard](https://mcp.nooticr.com/dashboard) — sign in, name
+the key, copy it — or from a machine you *can* sign in on, once:
 
 ```bash
 npx @nooticr/mcp login                                  # the one interactive step
@@ -383,7 +384,7 @@ POST https://mcp.nooticr.com/mcp
 Authorization: Bearer nk_...
 ```
 
-Managing them:
+Managing them, from the dashboard's **API keys** card or the CLI:
 
 ```bash
 npx @nooticr/mcp api-key create --name "staging" --expires-in-days 90

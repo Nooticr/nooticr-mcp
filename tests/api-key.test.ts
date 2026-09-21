@@ -19,6 +19,7 @@ import { AuthManager } from "../src/auth.js";
 import { NooticrClient, NooticrError } from "../src/shared/nooticr.js";
 import { apiKeyIsValid, validMcpToken } from "../cloudflare/src/oauth.js";
 import { makeClientForSession } from "../cloudflare/src/endpoint.js";
+import { callAsUser, dashboardCaller } from "../cloudflare/src/index.js";
 
 const BASE = "http://localhost:8080";
 const KEY = `${API_KEY_PREFIX}0123456789abcdef0123456789abcdef`;
@@ -293,5 +294,104 @@ describe("what a rejected key tells the caller", () => {
       /cannot manage API keys/
     );
     await expect(client.createApiKey({ name: "second" })).rejects.toBeInstanceOf(NooticrError);
+  });
+});
+
+/**
+ * The dashboard half: the worker mints keys on behalf of a signed-in browser
+ * session, so the two things that decide whether that is safe and whether it
+ * works are the origin it accepts requests from and the token it calls the
+ * backend with.
+ */
+describe("the worker acting for a signed-in dashboard user", () => {
+  const PUBLIC_URL = "https://mcp.nooticr.com";
+
+  function session(overrides: Record<string, unknown> = {}) {
+    return {
+      nooticrAccessToken: "jwt-that-just-expired",
+      nooticrRefreshToken: "refresh-1",
+      clientId: "nooticr-dashboard",
+      scopes: ["social:read"],
+      expiresAt: Date.now() + 60_000,
+      ...overrides,
+    } as never;
+  }
+
+  it("refreshes the 15-minute token once and retries, rather than reporting a dead session", async () => {
+    // The dashboard session lives 30 days and the JWT in it lives 15 minutes.
+    // Without the retry, every visit after the first quarter of an hour read
+    // as "your session expired" when it had not.
+    const sent: string[] = [];
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const auth = (init?.headers as Record<string, string> | undefined)?.authorization ?? "";
+      if (String(url).endsWith("/auth/refresh")) {
+        return new Response(JSON.stringify({ accessToken: "jwt-fresh", refreshToken: "refresh-2" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      sent.push(auth);
+      return auth === "Bearer jwt-fresh"
+        ? new Response(JSON.stringify({ balance: 12 }), { status: 200 })
+        : new Response("token expired", { status: 401 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { env } = fakeEnv({ PUBLIC_URL });
+    const s = session();
+    const res = await callAsUser(env as never, "dash-token", s, "/mcp/usage");
+
+    expect(res.status).toBe(200);
+    expect(sent).toEqual(["Bearer jwt-that-just-expired", "Bearer jwt-fresh"]);
+    // And the rotated token is kept, so the next call does not refresh again.
+    expect((s as unknown as { nooticrAccessToken: string }).nooticrAccessToken).toBe("jwt-fresh");
+  });
+
+  it("lets a 401 stand when the refresh token is dead too", async () => {
+    // Retrying forever, or reporting something vaguer, both hide the one fact
+    // that matters: this person has to sign in again.
+    const fetchMock = vi.fn(async (url: string) =>
+      String(url).endsWith("/auth/refresh")
+        ? new Response(JSON.stringify({ error: "invalid refresh token" }), { status: 401 })
+        : new Response("token expired", { status: 401 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { env } = fakeEnv({ PUBLIC_URL });
+    const res = await callAsUser(env as never, "dash-token", session(), "/mcp/usage");
+    expect(res.status).toBe(401);
+  });
+
+  it("does not spend a refresh on a call that worked", async () => {
+    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { env } = fakeEnv({ PUBLIC_URL });
+    await callAsUser(env as never, "dash-token", session(), "/mcp/usage");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a cross-origin request before it can mint anything", async () => {
+    // SameSite=Lax already keeps the cookie off a cross-site POST and a JSON
+    // body forces a preflight nothing answers. This is the third lock, and it
+    // is here because the endpoint behind it hands out a long-lived credential.
+    const { env } = fakeEnv({ PUBLIC_URL });
+    const refused = await dashboardCaller(
+      new Request(`${PUBLIC_URL}/api/keys`, {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+      }),
+      env as never
+    );
+    expect(refused).toBeInstanceOf(Response);
+    expect((refused as Response).status).toBe(403);
+  });
+
+  it("asks a same-origin caller for a session before doing anything else", async () => {
+    const { env } = fakeEnv({ PUBLIC_URL });
+    const unauthenticated = await dashboardCaller(
+      new Request(`${PUBLIC_URL}/api/keys`, { method: "POST", headers: { origin: PUBLIC_URL } }),
+      env as never
+    );
+    expect((unauthenticated as Response).status).toBe(401);
   });
 });

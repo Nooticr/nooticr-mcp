@@ -968,6 +968,10 @@ describe("documentation", () => {
   /// The question the docs could not answer before: an integration that runs
   /// server-side, with nothing that can open a consent screen. Leaving it out
   /// sent partners to support to ask whether it was possible at all.
+  it("points at the dashboard card, which is the path that needs no terminal", () => {
+    expect(html).toContain('href="/dashboard#keys"');
+  });
+
   it("tells a server-side integration how to connect without a browser", () => {
     expect(html).toContain('id="connect-server"');
     expect(html).toMatch(/api-key create/);

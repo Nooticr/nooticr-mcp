@@ -206,7 +206,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<pre><code>{\n  "mcpServers": {\n    "nooticr": {\n      "command": "npx",\n      "args": ["-y", "@nooticr/mcp"]\n    }\n  }\n}</code></pre>` +
         `<p>Then <code>npx -y @nooticr/mcp login</code> once to sign in.</p>` +
         `<h3 id="connect-server">Server-side integrations (no browser)</h3>` +
-        `<p>The OAuth flow needs a browser once and leaves behind a token that has to keep being refreshed. If your integration runs on a server, mint an API key instead — from any machine you can sign in on, once:</p>` +
+        `<p>The OAuth flow needs a browser once and leaves behind a token that has to keep being refreshed. If your integration runs on a server, mint an API key instead. The quickest way is the <a href="/dashboard#keys">API keys card on your dashboard</a> — sign in, name the key, copy it. From a terminal, the same thing:</p>` +
         `<pre><code>npx -y @nooticr/mcp login\nnpx -y @nooticr/mcp api-key create --name "my-service"</code></pre>` +
         `<p>The key is printed once and stored only as a hash, so it cannot be shown again. Give it to the deployment and there is nothing left to configure:</p>` +
         `<pre><code>POST ${esc(publicUrl)}/mcp\nAuthorization: Bearer nk_&hellip;</code></pre>` +
