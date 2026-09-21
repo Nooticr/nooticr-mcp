@@ -5,7 +5,7 @@
  *
  * Modes:
  *   nooticr-mcp            stdio transport (default; Claude Desktop, Cursor)
- *   nooticr-mcp login      browser-based Google sign-in to nooticr
+ *   nooticr-mcp login      browser-based Google sign-in (or --api-key, no browser)
  *   nooticr-mcp api-key    mint/list/revoke a key for a server with no browser
  *   nooticr-mcp --http     remote HTTP transport with OAuth (OpenAI Agents SDK)
  */
@@ -347,6 +347,7 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
 export interface LoginOptions {
   email?: string;
   password?: string;
+  apiKey?: string;
   port: number;
 }
 
@@ -356,6 +357,31 @@ export async function runLogin(opts: LoginOptions): Promise<void> {
   const client = new NooticrClient(baseUrl, {
     getAccessToken: async () => undefined,
   });
+
+  if (opts.apiKey) {
+    // Check the key before writing it. This is the one moment a person is
+    // present to fix a typo — an unchecked key would instead surface as a
+    // failed tool call later, from a client that cannot explain itself.
+    const keyed = new NooticrClient(baseUrl, createApiKeyTokenProvider(opts.apiKey));
+    let user: Awaited<ReturnType<NooticrClient["me"]>>;
+    try {
+      user = await keyed.me();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new NooticrAuthError(
+        `That API key was rejected by ${baseUrl}: ${msg}\n` +
+          "`npx nooticr-mcp api-key list` (signed in) shows which keys are still active."
+      );
+    }
+    await auth.persistApiKey(opts.apiKey, user);
+    process.stdout.write(
+      `Signed in as ${user?.email ?? "unknown user"} with an API key. ` +
+        `Saved to ${auth.getCredentialsFile()}\n` +
+        "The key does not expire, so there is nothing to refresh and no browser to open again.\n" +
+        "On a server, prefer NOOTICR_API_KEY over this file — see the README.\n"
+    );
+    return;
+  }
 
   if (opts.email && opts.password) {
     const session = await client.login(opts.email, opts.password);
@@ -483,10 +509,19 @@ export async function runApiKey(opts: ApiKeyOptions): Promise<void> {
   const auth = new AuthManager(baseUrl, getCredentialsFile());
   const token = await auth.getAccessToken(undefined, { allowApiKey: false });
   if (!token) {
+    // Telling these two apart matters: "sign in first" is wrong advice for
+    // someone who *is* signed in, with a key, and is being refused for a
+    // reason the message otherwise never mentions.
+    const hasKey = Boolean(await auth.getAccessToken());
     throw new NooticrAuthError(
-      "Sign in first: `npx nooticr-mcp login` (or `login --email ... --password ...`). " +
-        "Minting a key is the one step that needs a browser, and it is the last one: " +
-        "the key it returns is what every run afterwards uses."
+      hasKey
+        ? "You are signed in with an API key, and a key cannot manage keys — that bound is " +
+          "what stops a leaked key minting a replacement that outlives revoking the original. " +
+          "Sign in as yourself for this one: `npx nooticr-mcp login` " +
+          "(or `login --email ... --password ...`)."
+        : "Sign in first: `npx nooticr-mcp login` (or `login --email ... --password ...`). " +
+          "Minting a key is the one step that needs a browser, and it is the last one: " +
+          "the key it returns is what every run afterwards uses."
     );
   }
   const client = new NooticrClient(baseUrl, createManagementTokenProvider(auth));
@@ -557,6 +592,7 @@ Usage:
                                 (default port ${DEFAULT_PORT}; also NOOTICR_PORT)
   nooticr-mcp login              Sign in to nooticr via Google in your browser
   nooticr-mcp login --email me@example.com --password '...'   Password login
+  nooticr-mcp login --api-key nk_...  Sign in with an API key (no browser)
   nooticr-mcp api-key create [--name N] [--expires-in-days D] [--workspace-id W] [--json]
                                 Mint a key for a server with no browser
   nooticr-mcp api-key list [--json]        List this account's keys
@@ -581,6 +617,8 @@ Client setup:
   Server-side, no browser: mint a key once with "api-key create", then either
     set NOOTICR_API_KEY for the stdio server, or send it to the remote endpoint
     as "Authorization: Bearer <key>" and skip the OAuth flow entirely.
+  A client that does not inherit your shell environment: "login --api-key nk_..."
+    stores the same key in the credentials file instead.
 
 See README.md for full instructions.
 `);
@@ -602,6 +640,17 @@ async function main(): Promise<void> {
     };
     const email = valueOf("--email");
     const password = valueOf("--password");
+    // Every other flag here is kebab-case; `--api_key` is the near-miss worth
+    // naming rather than ignoring, since ignoring it opens a browser instead.
+    if (rest.includes("--api_key")) {
+      process.stderr.write("Unknown flag --api_key. Did you mean --api-key?\n");
+      process.exit(1);
+    }
+    const apiKey = valueOf("--api-key");
+    if (rest.includes("--api-key") && !apiKey) {
+      process.stderr.write("--api-key needs a value (the nk_… key from `api-key create`).\n");
+      process.exit(1);
+    }
     let port = getPort();
     const portRaw = valueOf("--port");
     if (portRaw !== undefined) port = Number.parseInt(portRaw, 10);
@@ -613,8 +662,12 @@ async function main(): Promise<void> {
       process.stderr.write("Both --email and --password must be provided together.\n");
       process.exit(1);
     }
+    if (apiKey && (email || password)) {
+      process.stderr.write("Use --api-key or --email/--password, not both.\n");
+      process.exit(1);
+    }
     try {
-      await runLogin({ email, password, port });
+      await runLogin({ email, password, apiKey, port });
     } catch (err) {
       process.stderr.write(
         `Login failed: ${err instanceof Error ? err.message : String(err)}\n`

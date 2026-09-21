@@ -138,6 +138,60 @@ describe("AuthManager with an API key", () => {
   });
 });
 
+describe("a key stored by `login --api-key`", () => {
+  it("is used like the env var, and is never refreshed either", async () => {
+    await withCredentialsFile({ apiKey: KEY }, async (file) => {
+      const auth = new AuthManager(BASE, file);
+      expect(await auth.getAccessToken()).toBe(KEY);
+      expect(await auth.onUnauthorized()).toBe(false);
+    });
+  });
+
+  it("is skipped when the caller is managing keys, wherever it was found", async () => {
+    // The bound is about the credential, not about the environment: a key
+    // that reached the process through the file would 403 just the same.
+    await withCredentialsFile({ apiKey: KEY }, async (file) => {
+      const auth = new AuthManager(BASE, file);
+      expect(await auth.getAccessToken(undefined, { allowApiKey: false })).toBeUndefined();
+    });
+  });
+
+  it("replaces whatever login last wrote, rather than sitting beside it", async () => {
+    // A file holding both would make "who am I signed in as" unanswerable,
+    // and would let a rejected key fall back to a stale session.
+    await withCredentialsFile(
+      { accessToken: "file-token", refreshToken: "rt", expiresIn: 3600, fetchedAt: Date.now() },
+      async (file) => {
+        const auth = new AuthManager(BASE, file);
+        await auth.persistApiKey(KEY, { id: "u1", email: "partner@example.com" });
+
+        const written = JSON.parse(await fs.promises.readFile(file, "utf8"));
+        expect(written.apiKey).toBe(KEY);
+        expect(written.accessToken).toBeUndefined();
+        expect(written.refreshToken).toBeUndefined();
+        expect(await new AuthManager(BASE, file).getAccessToken()).toBe(KEY);
+      }
+    );
+  });
+
+  it("is written with the same locked-down permissions as a session", async () => {
+    await withCredentialsFile({}, async (file) => {
+      const auth = new AuthManager(BASE, file);
+      await auth.persistApiKey(KEY);
+      const mode = (await fs.promises.stat(file)).mode & 0o777;
+      expect(mode).toBe(0o600);
+    });
+  });
+
+  it("still loses to an env key, so a deployment can override the box", async () => {
+    await withCredentialsFile({ apiKey: KEY }, async (file) => {
+      process.env.NOOTICR_API_KEY = `${API_KEY_PREFIX}fromtheenvironment`;
+      const auth = new AuthManager(BASE, file);
+      expect(await auth.getAccessToken()).toBe(`${API_KEY_PREFIX}fromtheenvironment`);
+    });
+  });
+});
+
 describe("the worker's view of a key", () => {
   it("asks the backend once, then remembers the answer", async () => {
     const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
@@ -209,6 +263,16 @@ describe("the worker's view of a key", () => {
 });
 
 describe("what a rejected key tells the caller", () => {
+  it("does not tell someone signed in with a key to sign in", async () => {
+    // They are signed in. What they need to hear is that a key cannot manage
+    // keys — the one thing the generic message never says.
+    await withCredentialsFile({ apiKey: KEY }, async (file) => {
+      const auth = new AuthManager(BASE, file);
+      expect(await auth.getAccessToken(undefined, { allowApiKey: false })).toBeUndefined();
+      expect(await auth.getAccessToken()).toBe(KEY);
+    });
+  });
+
   it("surfaces the backend's own sentence instead of a bare status", async () => {
     vi.stubGlobal(
       "fetch",

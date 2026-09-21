@@ -210,7 +210,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<pre><code>npx -y @nooticr/mcp login\nnpx -y @nooticr/mcp api-key create --name "my-service"</code></pre>` +
         `<p>The key is printed once and stored only as a hash, so it cannot be shown again. Give it to the deployment and there is nothing left to configure:</p>` +
         `<pre><code>POST ${esc(publicUrl)}/mcp\nAuthorization: Bearer nk_&hellip;</code></pre>` +
-        `<p>Or, for a local stdio process, set <code>NOOTICR_API_KEY</code>. There is no consent screen, no redirect URI and no refresh: the key is valid until <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>. Pass <code>--expires-in-days</code> at creation if you would rather it also expire on its own.</p>`,
+        `<p>Or, for a local stdio process, set <code>NOOTICR_API_KEY</code> — or run <code>npx -y @nooticr/mcp login --api-key nk_&hellip;</code> where a client will not inherit your shell environment. There is no consent screen, no redirect URI and no refresh: the key is valid until <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>. Pass <code>--expires-in-days</code> at creation if you would rather it also expire on its own.</p>`,
     },
     {
       id: "tools",

@@ -360,6 +360,22 @@ to refresh — the key stays valid until you revoke it.
 NOOTICR_API_KEY=nk_... npx @nooticr/mcp
 ```
 
+On a server, prefer the environment variable: it is what every container
+runtime and secret manager already injects, and it leaves nothing on a disk
+that a redeploy is going to throw away. Where setting one is the awkward part
+— a laptop, or a client like Claude Desktop that does not inherit your shell —
+store the key in the credentials file instead:
+
+```bash
+npx @nooticr/mcp login --api-key nk_...
+```
+
+That checks the key against the server before writing it, so a typo fails
+while you are still there to fix it, and then behaves exactly like the
+environment variable: no browser, no refresh, valid until revoked. The file
+holds one credential, so this replaces any session an earlier `login` left
+behind (and `NOOTICR_API_KEY` still overrides it).
+
 ```http
 # or against the remote endpoint, as an ordinary bearer token —
 # no /authorize, no PKCE, no redirect URI
@@ -508,6 +524,7 @@ nooticr-mcp --stdio            Same as above
 nooticr-mcp --http [--port N]  Start the remote HTTP transport with OAuth (default port 3457)
 nooticr-mcp login              Sign in to nooticr via Google in your browser
 nooticr-mcp login --email ... --password ...   Password login
+nooticr-mcp login --api-key nk_...             Sign in with an API key, no browser
 nooticr-mcp api-key create [--name N] [--expires-in-days D] [--workspace-id W] [--json]
                                Mint a key for a server with no browser
 nooticr-mcp api-key list [--json]         List this account's keys
@@ -521,7 +538,7 @@ nooticr-mcp --help             Show help
 |----------|---------|-------------|
 | `NOOTICR_BASE_URL` | `https://api.nooticr.com` | nooticr server base URL (trailing slash stripped) |
 | `NOOTICR_ACCESS_TOKEN` | — | nooticr JWT access token; takes priority over everything below |
-| `NOOTICR_API_KEY` | — | nooticr API key from `api-key create` — no browser, no refresh, valid until revoked; takes priority over the credentials file |
+| `NOOTICR_API_KEY` | — | nooticr API key from `api-key create` — no browser, no refresh, valid until revoked; takes priority over the credentials file (including a key `login --api-key` put there) |
 | `NOOTICR_CREDENTIALS_FILE` | `~/.config/nooticr-mcp/credentials.json` | token store path |
 | `NOOTICR_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
 | `NOOTICR_PORT` | `3457` | port for `--http` and `login` |
@@ -531,10 +548,12 @@ nooticr-mcp --help             Show help
 
 **stdio mode** (Claude Desktop, Cursor): the server uses the first credential
 it finds — `NOOTICR_ACCESS_TOKEN`, then `NOOTICR_API_KEY`, then the credentials
-file written by `login`. A file token that has expired is refreshed with the
-stored refresh token, and a `401` from the nooticr API is retried once after a
-refresh. An API key is never refreshed: it does not expire, so a `401` on one
-means revoked or mistyped, and retrying would only hide that.
+file written by `login`. That file holds one credential, whichever `login` last
+wrote: an API key (`login --api-key`) or a session. A session token that has
+expired is refreshed with the stored refresh token, and a `401` from the
+nooticr API is retried once after a refresh. An API key is never refreshed
+wherever it came from: it does not expire, so a `401` on one means revoked or
+mistyped, and retrying would only hide that.
 
 **API key** (any transport, no browser): send it as the bearer token, or set
 `NOOTICR_API_KEY`. nooticr-server resolves the key to its owner and the
@@ -582,8 +601,8 @@ and text** posts.
   account has live. `npx @nooticr/mcp api-key list` shows every key and its
   state, revoked ones included.
 - **`API keys cannot manage API keys`**: `api-key create`/`list`/`revoke` need a
-  signed-in session, which is why they ignore `NOOTICR_API_KEY`. Run
-  `npx @nooticr/mcp login` first.
+  signed-in session, which is why they ignore a key in `NOOTICR_API_KEY` *and*
+  one stored by `login --api-key`. Run `npx @nooticr/mcp login` first.
 - **402 paywall / `insufficient MCP credits`**: your nooticr account is out of
   credits. Prices are listed per tool in [Tools](#tools) — 1 credit for a post
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3

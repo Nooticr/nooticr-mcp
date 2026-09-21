@@ -229,7 +229,7 @@ Environment for the MCP itself:
 | `NOOTICR_PUBLIC_URL` | `https://mcp.nooticr.app` | HTTPS in production |
 | `NOOTICR_PORT` | `3457` | HTTP transport port |
 | `NOOTICR_ACCESS_TOKEN` | — | optional pre-provisioned token (bypasses `login`) |
-| `NOOTICR_API_KEY` | `nk_…` | optional API key from `api-key create` — no browser, no expiry, revoked by id; the path for server-side deployments |
+| `NOOTICR_API_KEY` | `nk_…` | optional API key from `api-key create` — no browser, no expiry, revoked by id; the path for server-side deployments. `npx @nooticr/mcp login --api-key nk_…` stores the same key in the credentials file for clients that do not inherit a shell environment |
 | `NOOTICR_CREDENTIALS_FILE` | — | token store (default `~/.config/nooticr-mcp/credentials.json`, mode 0600) |
 
 ---

@@ -2,13 +2,18 @@
  * Token storage + resolution.
  *
  * Priority: env NOOTICR_ACCESS_TOKEN > env NOOTICR_API_KEY > credentials file
- * (auto-refresh when expired) > per-session tokens (HTTP OAuth mode only).
+ * (an API key stored by `login --api-key`, else a session token, refreshed
+ * when expired) > per-session tokens (HTTP OAuth mode only).
  *
  * `NOOTICR_ACCESS_TOKEN` stays first because it has always been the explicit
  * "use exactly this token" override, and someone who exports one for a single
  * debugging run should get it. An API key sits directly behind it: it is the
- * credential a server holds permanently, so it outranks anything a browser
- * login left in a file.
+ * credential a server holds permanently, so it outranks anything in a file.
+ *
+ * The file holds *one* credential, whichever `login` last wrote. A store
+ * carrying both a key and a session would make "which am I signed in as"
+ * unanswerable — and, worse, let a rejected key quietly fall back to a stale
+ * session belonging to someone else.
  */
 
 import fs from "node:fs";
@@ -19,10 +24,16 @@ import { NooticrClient, NooticrError, NooticrSession, NooticrUser, TokenProvider
 const REFRESH_BEFORE_EXPIRY_MS = 30_000;
 
 export interface TokenStore {
-  accessToken: string;
+  /** A session access token, from a browser or password login. Refreshable. */
+  accessToken?: string;
   refreshToken?: string;
   expiresIn?: number;
   fetchedAt?: number;
+  /**
+   * An API key, from `login --api-key`. Never refreshed and never expires on
+   * its own, so it carries none of the fields above.
+   */
+  apiKey?: string;
   user?: NooticrUser;
 }
 
@@ -62,7 +73,7 @@ export class AuthManager {
     try {
       const raw = await fs.promises.readFile(this.credentialsFile, "utf8");
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.accessToken === "string") {
+      if (parsed && (typeof parsed.accessToken === "string" || typeof parsed.apiKey === "string")) {
         return parsed as TokenStore;
       }
       return null;
@@ -89,9 +100,11 @@ export class AuthManager {
    *
    * `allowApiKey` exists for the one caller that must not use one: the
    * `api-key` CLI commands. The backend refuses key management to a
-   * key-authenticated caller, so resolving `NOOTICR_API_KEY` there would turn
-   * "create me a second key" into a 403 that reads like a permissions bug
-   * rather than the deliberate bound it is.
+   * key-authenticated caller, so resolving a key there would turn "create me
+   * a second key" into a 403 that reads like a permissions bug rather than
+   * the deliberate bound it is. It skips both places a key can live — the
+   * environment and the credentials file — since the bound is about the
+   * credential, not about where it was found.
    */
   async getAccessToken(
     session?: { accessToken?: string; refreshToken?: string },
@@ -112,6 +125,12 @@ export class AuthManager {
     }
 
     const store = await this.loadStore();
+    if (allowApiKey && store?.apiKey) {
+      this.lastSource = "apiKey";
+      this.lastRefreshToken = undefined;
+      return store.apiKey;
+    }
+
     if (store?.accessToken && !isTokenExpired(store)) {
       this.lastSource = "file";
       this.lastRefreshToken = store.refreshToken;
@@ -178,7 +197,23 @@ export class AuthManager {
     await this.saveStore(store);
     this.lastSource = "file";
     this.lastRefreshToken = store.refreshToken;
-    return store.accessToken;
+    // `session.accessToken` rather than `store.accessToken`: the guard above
+    // has already narrowed it, and the store's field is optional now that a
+    // credentials file may hold an API key instead of a session.
+    return session.accessToken;
+  }
+
+  /**
+   * Persists an API key as this machine's credential, replacing whatever
+   * `login` last wrote. For clients that do not inherit a shell environment
+   * (Claude Desktop, Cursor) and for a laptop where editing JSON to set an
+   * env var is the annoying part; a server should still be given
+   * `NOOTICR_API_KEY` and left with nothing on disk.
+   */
+  async persistApiKey(apiKey: string, user?: NooticrUser): Promise<void> {
+    await this.saveStore({ apiKey, user });
+    this.lastSource = "apiKey";
+    this.lastRefreshToken = undefined;
   }
 
   /**
