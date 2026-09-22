@@ -2410,3 +2410,28 @@ test("a classified reply carries its category chip", async ({ page }) => {
   });
   await expect(page.locator(".reply-row .chip-cat")).toContainText("bug report");
 });
+
+// #107: the read says whether its listings are the scan's own, and flags an
+// ASIN it cites that the scan does not contain.
+test("a category read shows whether its listings were checked against the scan", async ({ page }) => {
+  const base = {
+    marketplace: "amazon", view: "insights", category: "Coffee grinders",
+    strengths: [{ brand: "Ghost", detail: "Made up", asin: "B0GHOST" }],
+    products: [{ asin: "B0ACME", title: "Acme Grinder", brand: "Acme", reviews: [] }],
+    rollup: {},
+  };
+  await renderTemplate(page, {
+    ...base,
+    verification: { status: "verified", note: "The 1 listing(s) drawn are the scan's own.", unknownAsins: ["B0GHOST"] },
+  });
+  await expect(page.locator('[data-verification="verified"]')).toContainText("re-read from the scan");
+  await expect(page.locator("[data-not-in-scan]")).toHaveCount(1);
+  await expect(page.locator("body")).toContainText("Every claim above can be checked");
+
+  await renderTemplate(page, {
+    ...base,
+    verification: { status: "unverified", note: "No scanId was passed." },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toContainText("not checked against a scan");
+  await expect(page.locator("body")).not.toContainText("Every claim above can be checked");
+});

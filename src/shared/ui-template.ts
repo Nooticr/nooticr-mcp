@@ -4062,10 +4062,23 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var drivers=(ins.drivers||[]).map(function(f){return amazonFinding(f,"driver");}).join("");
     var barriers=(ins.barriers||[]).map(function(f){return amazonFinding(f,"barrier");}).join("");
     var gaps=(ins.gaps||[]).map(function(f){return amazonFinding(f,"gap");}).join("");
+    // #107: whether the listings on this card are the scan's own, re-read by
+    // the server, or whatever the model re-sent. Only the first earns the
+    // "check any claim" line at the bottom.
+    var ver=ins.verification||null,verified=!!(ver&&ver.status==="verified");
+    var unknown=(ver&&ver.unknownAsins)||[];
     var strengths=(ins.strengths||[]).map(function(s){
+      var off=s.asin&&unknown.indexOf(s.asin)!==-1;
       return '<div class="amz-strength"><span class="amz-strength-brand">'+esc(s.brand||"")+"</span>"
-        +'<span class="amz-strength-detail">'+esc(s.detail||"")+"</span></div>";
+        +'<span class="amz-strength-detail">'+esc(s.detail||"")+"</span>"
+        +(off?'<span data-not-in-scan style="margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red,#b42318)">not in the scan</span>':"")
+        +"</div>";
     }).join("");
+    var verBox=ver
+      ?'<div data-verification="'+(verified?"verified":"unverified")+'" style="font-size:12px;padding:8px 10px;margin-bottom:10px;border-radius:8px;border:1px solid var(--border);'
+        +(verified?"":"background:rgba(180,35,24,.06);")+'">'
+        +'<b>'+(verified?"Listings re-read from the scan":"Listings not checked against a scan")+"</b> · "+esc(ver.note||"")+"</div>"
+      :"";
     var angles=(ins.positioning||[]).map(function(a){
       return '<div class="amz-angle"><div class="amz-angle-claim">'+esc(a.angle||"")+"</div>"
         +(a.who?'<div class="amz-angle-row"><b>For</b> '+esc(a.who)+"</div>":"")
@@ -4074,6 +4087,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +"</div>";
     }).join("");
     return '<div class="fade-in">'
+      +verBox
       +(ins.summary?'<div class="lede-box">'+esc(ins.summary)+"</div>":"")
       +block("Purchase drivers","What makes someone buy. Click an id to read the review it rests on.",drivers)
       +block("Purchase barriers","What stops them, or brings it back.",barriers)
@@ -4081,7 +4095,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +block("Gaps in the category","Asked for repeatedly, served by nobody in this set.",gaps)
       +block("Positioning angles","",angles)
       +'<div class="ai-note">This read is your model’s, from the reviews on this screen — not a nooticr '
-      +"rating of anyone’s product. Every claim above can be checked against the text it came from.</div>"
+      +"rating of anyone’s product."
+      +(verified||!ver?" Every claim above can be checked against the text it came from.":" The listings were not checked against a scan, so check them before relying on them.")+"</div>"
       +"</div>";
   }
 
