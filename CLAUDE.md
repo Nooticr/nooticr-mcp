@@ -50,7 +50,11 @@ doesn't. This is a deliberate protocol mismatch, not a bug — CI's
 `MCP Apps conformance` step pins the two checks that object to it
 (`ui-listed-resources-valid`, `ui-resource-contents-valid`) and fails the
 build if conformance objects to anything *else*, or if those two start
-failing for a different reason than the dual-mime deviation. If you touch
+failing for a different reason than the dual-mime deviation — or start
+passing, which would mean the ChatGPT twins lost their mime. Every other
+check mcpjam runs, including ones a later release adds, is a gate:
+`scripts/mcpjam-conformance-check.py` is the one verdict, shared by CI and
+`npm run conformance:mcpjam`. If you touch
 `src/shared/ui-template.ts` or how a resource's mime type is chosen, expect
 that pin to need re-verifying, not just the obvious tests.
 
