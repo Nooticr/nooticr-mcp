@@ -526,6 +526,22 @@ export async function runApiKey(opts: ApiKeyOptions): Promise<void> {
   }
   const client = new NooticrClient(baseUrl, createManagementTokenProvider(auth));
 
+  // Who, and where. A key is scoped to one account on one server, and both
+  // are easy to get wrong without noticing: the credentials file holds
+  // whoever last ran `login` on this machine, and NOOTICR_BASE_URL defaults
+  // to production. A key minted against one pair and looked for in another
+  // is simply absent, with nothing anywhere saying why — which is exactly how
+  // this was first reported.
+  let account = "an unknown account";
+  try {
+    const me = await client.me();
+    if (me?.email) account = me.email;
+  } catch {
+    // Not worth failing the command over; the operation below will fail with
+    // a better message if the credential is genuinely bad.
+  }
+  const scope = `${account} on ${baseUrl}`;
+
   if (opts.action === "create") {
     const created = await client.createApiKey({
       ...(opts.name !== undefined ? { name: opts.name } : {}),
@@ -537,7 +553,7 @@ export async function runApiKey(opts: ApiKeyOptions): Promise<void> {
       return;
     }
     process.stdout.write(
-      `Created API key "${created.name}" (${created.id}).\n\n` +
+      `Created API key "${created.name}" (${created.id}) for ${scope}.\n\n` +
         `  ${created.key}\n\n` +
         "This is the only time the key is shown — nooticr stores a hash of it and\n" +
         "cannot show it again. Store it wherever this deployment keeps its secrets,\n" +
@@ -557,11 +573,14 @@ export async function runApiKey(opts: ApiKeyOptions): Promise<void> {
     }
     if (keys.length === 0) {
       process.stdout.write(
-        "No API keys. Create one with `npx nooticr-mcp api-key create --name <name>`.\n"
+        `No API keys for ${scope}.\n` +
+          "Create one with `npx nooticr-mcp api-key create --name <name>`.\n"
       );
       return;
     }
-    process.stdout.write(`${keys.map(describeKey).join("\n\n")}\n`);
+    process.stdout.write(
+      `Keys for ${scope}:\n\n${keys.map(describeKey).join("\n\n")}\n`
+    );
     return;
   }
 
@@ -574,7 +593,7 @@ export async function runApiKey(opts: ApiKeyOptions): Promise<void> {
     return;
   }
   process.stdout.write(
-    `Revoked ${opts.id}. Any server still presenting it now gets a 401.\n`
+    `Revoked ${opts.id} for ${scope}. Any server still presenting it now gets a 401.\n`
   );
 }
 

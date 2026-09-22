@@ -514,20 +514,42 @@ async function handleDashboard(request: Request, env: Env): Promise<Response> {
   // Keys are a separate ask, and a failure here must not cost the user their
   // whole dashboard: a worker deployed against a backend that predates
   // `/auth/api-keys` would otherwise take balance and usage down with it.
+  //
+  // The reason travels with the failure. Collapsing every one of them to
+  // "unavailable" is what made the first bug report here unanswerable: a key
+  // created by the CLI and absent from this card can mean three different
+  // things — a different account, a different backend, or a read that failed
+  // — and the card said none of them.
   let keys: ApiKeySummary[] | null = null;
+  let keysError: string | undefined;
   try {
     const res = await callAsUser(env, token, session, "/auth/api-keys");
     if (res.ok) {
       const body = (await res.json()) as { keys?: ApiKeySummary[] };
       keys = Array.isArray(body.keys) ? body.keys : [];
+    } else {
+      keysError =
+        res.status === 404
+          ? `This deployment reads ${env.NOOTICR_BASE_URL}, which has no API-key endpoint yet.`
+          : `${env.NOOTICR_BASE_URL} answered ${res.status} when asked for your keys.`;
     }
-  } catch {
-    keys = null;
+  } catch (err) {
+    keysError = `Could not reach ${env.NOOTICR_BASE_URL}: ${
+      err instanceof Error ? err.message : "unknown error"
+    }`;
   }
 
   return htmlResponse(
     200,
-    dashboardPage(env.PUBLIC_URL, session.nooticrUser ?? {}, usage as never, token, keys)
+    dashboardPage(
+      env.PUBLIC_URL,
+      session.nooticrUser ?? {},
+      usage as never,
+      token,
+      keys,
+      keysError,
+      env.NOOTICR_BASE_URL
+    )
   );
 }
 
