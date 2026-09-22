@@ -9,7 +9,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { z } from "zod";
-import { NooticrClient, NooticrError, type McpProxyResult } from "./nooticr.js";
+import { NooticrClient, NooticrError, safeCreditsHint, type McpProxyResult } from "./nooticr.js";
 import { NOOTICR_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
@@ -2698,8 +2698,12 @@ export function createMcpServer(
     // run, and is the whole reason it asserts on the serialised result rather
     // than on `structuredContent` alone.
     const structured = proxy.structured as Record<string, unknown> | undefined;
-    if (structured && "billingUrl" in structured) {
+    if (structured) {
      const { billingUrl: _dropped, ...rest } = structured;
+     // The sibling `hint` carried the same pitch in prose ("call
+     // buy_nooticr_credits to get a Stripe Checkout URL"), so it is held
+     // to the same rule as the URL (#100).
+     if ("hint" in rest) rest.hint = safeCreditsHint(rest.hint);
      return await toToolResult({ ...proxy, structured: rest });
     }
     return await toToolResult(proxy);
