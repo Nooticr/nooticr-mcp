@@ -919,6 +919,18 @@
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
+    },
+    "list_watchlist": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored watchlist. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr watchlist; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
     }
   },
   "test_cases": [

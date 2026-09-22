@@ -245,6 +245,12 @@ export const TOOLS: Tool[] = [
     when: "They should no longer appear in the catch-up.",
   },
   {
+    name: "list_watchlist", cost: 0, group: "research",
+    args: "\u2014",
+    desc: "Who you are watching, and when you last caught up on each. Reads the stored list only.",
+    when: "Before paying for a catch-up, or to find the exact handle to unwatch.",
+  },
+  {
     name: "catch_up_watchlist", cost: 2, group: "research",
     args: "limit?, platform?",
     desc: "What everyone you watch has posted since your last catch-up \u2014 2 credits per creator checked, not per call.",
