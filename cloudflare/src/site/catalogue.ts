@@ -288,6 +288,12 @@ export const TOOLS: Tool[] = [
 
   // ── research ──
   {
+    name: "detect_spoken_mentions", cost: 2, group: "research",
+    args: "url, brands?, language?",
+    desc: "Every brand named out loud in one video, for your model to find in the transcript beside the caption \u2014 1 credit for the transcript and 1 for the caption, nothing when no transcript can be made.",
+    when: "A brand may be said on camera but never written; you have the video's URL.",
+  },
+  {
     name: "search_spoken_mentions", cost: 2, group: "research",
     args: "term, platforms?, handles?, maxTranscripts?",
     desc: "Finds a term said out loud on camera rather than written anywhere \u2014 2 credits per platform searched, 2 per creator handle checked and 1 per transcript actually fetched.",

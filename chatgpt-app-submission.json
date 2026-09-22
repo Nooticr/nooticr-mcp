@@ -919,6 +919,18 @@
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
+    },
+    "detect_spoken_mentions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one public post's transcript and caption. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches the post and its audio from a third-party social network, so the result depends on live data outside this server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
     }
   },
   "test_cases": [

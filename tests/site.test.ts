@@ -564,6 +564,7 @@ describe("tool surface", () => {
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
+    "detect_spoken_mentions",
     "nooticr_login",
     "show_comment_review",
     "show_compared_posts",
