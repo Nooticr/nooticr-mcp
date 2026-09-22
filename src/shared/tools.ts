@@ -704,6 +704,8 @@ export function createMcpServer(
   "niche_report",
   "find_hook_pattern",
   "check_nooticr_credits",
+  "list_tool_runs",
+  "get_tool_run",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like nooticr_login.
@@ -2705,6 +2707,87 @@ export function createMcpServer(
     return await toToolResult(proxy);
    } catch (err) {
     return toolError("check_nooticr_credits failed", err);
+   }
+  }
+ );
+
+ // Where the credits went (#105), from the run ledger the backend already
+ // writes for every call (nooticr-server#117). Free, like the balance: the
+ // user with a surprising bill is exactly the one who must be able to look.
+ const runFilters = {
+  tool: z.string().optional().describe("Only runs of this tool, e.g. 'search_mentions'."),
+  from: z.string().optional().describe("Only runs at or after this ISO date or timestamp."),
+  to: z.string().optional().describe("Only runs before this ISO date or timestamp."),
+  success: z.boolean().optional().describe("true for runs that worked, false for the ones that failed."),
+  minCredits: z.number().int().min(0).optional().describe("Only runs that took at least this many credits."),
+  limit: z.number().int().min(1).max(100).optional().describe("Runs per page (default 20, max 100)."),
+  before: z.number().int().optional().describe("Page cursor: pass the previous page's nextBefore."),
+  scope: z
+   .enum(["mine", "workspace"])
+   .optional()
+   .describe("'mine' (default) or 'workspace' — every member's runs, for the workspace's owner and admins only."),
+ };
+ server.registerTool(
+  "list_tool_runs",
+  {
+   title: "List Tool Runs",
+   description:
+    "Your own tool-call history, newest first: which tool ran, when, whether it worked and why " +
+    "not, how long it took, and the credits it actually took — 0 for a free first use, a refund, " +
+    "a cached answer or a replayed retry. Use it to answer 'where did my credits go' or 'which " +
+    "call produced that' from the record rather than from memory: filter by tool, time window, " +
+    "success or minCredits, and page with before/nextBefore. creditsOnThisPage totals the page. " +
+    "scope:\"workspace\" shows every member's runs with a userId, and only for the workspace's " +
+    "owner and admins. Error text is shown with credentials scrubbed. No cost to call. " +
+    "Use when a balance moved more than expected, before disputing a charge.",
+   _meta: {
+    ui: { resourceUri: uiResource("list_tool_runs") },
+    "ui/resourceUri": uiResource("list_tool_runs"),
+    "openai/outputTemplate": appsSdkResource("list_tool_runs"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.list_tool_runs,
+   inputSchema: z.object(runFilters).strict(),
+  },
+  async (args: Record<string, unknown>, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("list_tool_runs", { ...args }));
+   } catch (err) {
+    return toolError("list_tool_runs failed", err);
+   }
+  }
+ );
+
+ server.registerTool(
+  "get_tool_run",
+  {
+   title: "Get Tool Run",
+   description:
+    "One run from list_tool_runs by its id: the tool, when it ran, how long it took, the credits " +
+    "it took and its full error text, credentials scrubbed. A run outside your scope reads as not " +
+    "found, exactly like one that does not exist. No cost to call. " +
+    "Use to look closely at one charge list_tool_runs surfaced.",
+   _meta: {
+    ui: { resourceUri: uiResource("get_tool_run") },
+    "ui/resourceUri": uiResource("get_tool_run"),
+    "openai/outputTemplate": appsSdkResource("get_tool_run"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.get_tool_run,
+   inputSchema: z
+    .object({
+     id: z.number().int().describe("The run's id, from list_tool_runs."),
+     scope: runFilters.scope,
+    })
+    .strict(),
+  },
+  async (args: { id: number; scope?: "mine" | "workspace" }, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("get_tool_run", { ...args }));
+   } catch (err) {
+    return toolError("get_tool_run failed", err);
    }
   }
  );

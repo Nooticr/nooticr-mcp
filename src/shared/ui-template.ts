@@ -43,6 +43,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Discover Sounds",
     understand_social_post:"Understand Social Post",
     check_nooticr_credits:"Check Credits",
+    list_tool_runs:"Tool Runs",
+    get_tool_run:"Tool Run",
     compose_sequence:"Compose Sequence",
     overlay_bake:"Overlay Bake",
     spawn_variants:"Spawn Variants",
@@ -72,6 +74,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
     understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
+    list_tool_runs:"Where your credits went: every call, what it cost, and whether it worked.",
+    get_tool_run:"One call from your history, with its full error.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
     spawn_variants:"Generate multiple content variants from a single seed.",
@@ -4614,6 +4618,31 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +(s.videoCount?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+fmtNum(s.videoCount)+" videos</div>":"")
           +"</div></div>"+player+"</div>";
       }).join(""),d.sounds.length);return;}
+    // Run history (list_tool_runs / get_tool_run): where the credits went.
+    // One row per call, the credits it actually took on the right, so the
+    // expensive calls are the ones the eye lands on.
+    if(Array.isArray(d.runs)||(d.run&&d.run.tool)){
+      var runs=Array.isArray(d.runs)?d.runs:[d.run];
+      if(!runs.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🧾</div><div class="text">No runs in this window</div></div>';return;}
+      var runRows=runs.map(function(r){
+        var when=r.startedAt?String(r.startedAt).slice(0,16).split("T").join(" ")+" UTC":"";
+        var secs=Number(r.durationMs)>0?(Number(r.durationMs)/1000).toFixed(1)+"s":"";
+        var meta=[when,secs,r.userId?"user "+String(r.userId).slice(0,8):""].filter(Boolean).join(" • ");
+        var cr=Number(r.credits)||0;
+        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13.5px;font-weight:600">'+(r.ok===false?"⚠️ ":"")+esc(r.tool||"")+"</div>"
+          +'<div style="font-size:11.5px;color:var(--muted)">'+esc(meta)+"</div>"
+          +(r.error?'<div style="font-size:12px;color:var(--muted);margin-top:3px;word-break:break-word">'+esc(String(r.error))+"</div>":"")
+          +"</div>"
+          +'<div style="font-size:14px;font-weight:700;white-space:nowrap">'+(cr?cr+" cr":"free")+"</div></div>";
+      }).join("");
+      var total=d.creditsOnThisPage!=null?'<div class="section-label" style="margin-bottom:6px">'+esc(String(d.creditsOnThisPage))+" credits across "+runs.length+" call"+(runs.length===1?"":"s")+(d.scope==="workspace"?" in the workspace":"")+"</div>":"";
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">🧾 '+(d.run?"Tool run":"Where your credits went")+"</div>"
+        +total+runRows
+        +(d.nextBefore!=null?'<div style="font-size:11.5px;color:var(--muted);margin-top:8px">More runs are older than these.</div>':"")
+        +"</div></div>";return;}
     // Credits
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];

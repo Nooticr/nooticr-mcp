@@ -80,7 +80,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(76);
+    expect(tools).toHaveLength(78);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -115,11 +115,13 @@ describe("tool annotations", () => {
       "get_content_plan",
       "get_post_performance",
       "get_scheduled_posts",
+      "get_tool_run",
       "get_video_stats",
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
       "list_social_connections",
+      "list_tool_runs",
       "mention_trend",
       "nooticr_login",
       // Formats what the caller classified into text for a tracker on another

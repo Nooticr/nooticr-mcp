@@ -194,6 +194,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({}).strict(),
  },
  {
+ name: "list_tool_runs",
+ title: "List Tool Runs",
+ description: "Your own tool-call history, newest first: which tool ran, when, whether it worked, how long it took and the credits it actually took (0 for a free, refunded, cached or replayed call). Filter by tool, time window, success or minCredits; page with before/nextBefore. scope workspace shows every member's runs to the workspace's owner and admins. No cost to call. Use when a balance moved more than expected.",
+ inputSchema: z.object({ tool: z.string().optional(), from: z.string().optional(), to: z.string().optional(), success: z.boolean().optional(), minCredits: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(100).optional(), before: z.number().int().optional(), scope: z.enum(["mine", "workspace"]).optional() }).strict(),
+ },
+ {
+ name: "get_tool_run",
+ title: "Get Tool Run",
+ description: "One run from list_tool_runs by its id, with its full error text, credentials scrubbed. A run outside your scope reads as not found. No cost to call. Use to look closely at one charge.",
+ inputSchema: z.object({ id: z.number().int(), scope: z.enum(["mine", "workspace"]).optional() }).strict(),
+ },
+ {
  name: "nooticr_login",
  title: "Nooticr Login",
  description: "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. Use when a call fails with an authentication error, to re-link the account. Free to call. No cost to call.",
