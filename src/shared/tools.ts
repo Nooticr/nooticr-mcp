@@ -1406,6 +1406,9 @@ export function createMcpServer(
     "transcribing:true and a retryAfterMs. That is the job accepted, NOT a failure — wait that " +
     "many milliseconds, call again with the same url, and the words come back. Any other " +
     "available:false is final and carries a reason. " +
+    "Pass format:\"srt\" or \"vtt\" to also get a ready caption file (captionFile.content) built " +
+    "from the track's own timing, for captions, a re-edit or a translation pipeline: use it as-is " +
+    "rather than reformatting the transcript into cues yourself, which is where timings go wrong. " +
     "A poll costs nothing and neither does a call that comes back with no transcript: you pay " +
     "for words, not for asking. " +
     "Two honest limits on the listening route. It needs speech-to-text configured on the server, " +
@@ -1431,10 +1434,17 @@ export function createMcpServer(
     .object({
      url: z.string().describe("Public post URL, on any platform nooticr reads. Ask again with the same url to collect a transcript that was still being listened to."),
      language: z.string().optional().describe("Preferred language code, e.g. 'en'."),
+     format: z
+      .enum(["text", "srt", "vtt"])
+      .optional()
+      .describe(
+       "Also return a caption file: 'srt' or 'vtt' adds captionFile.content, built from the " +
+        "transcript's own cue timing and never re-timed. Default 'text'. Same price.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; language?: string }, extra) => {
+  async (args: { url: string; language?: string; format?: "text" | "srt" | "vtt" }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_post_transcript", { ...args }));
