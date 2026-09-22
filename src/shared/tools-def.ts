@@ -50,6 +50,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ username: z.string().describe("Seed creator handle, e.g. 'zoundsapp'."), platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok).") }).strict(),
  },
  {
+ name: "suggest_creator_identity",
+ title: "Same Person Elsewhere",
+ description: "Given a handle on one network, find accounts on the other networks that may be the same person, with the evidence for each (shared bio link, cross-link, identical handle, matching display name). It SUGGESTS and never merges; a human confirms, and follower counts are never added together. Serves tiktok, instagram, xiaohongshu. Consumes 2 nooticr credits per network searched plus 2 to find the handle: 6 by default.",
+ inputSchema: z.object({ handle: z.string().describe("The account you already know, with or without @."), platform: z.enum(["tiktok", "instagram", "xiaohongshu"]).optional().describe("Which network that handle is on (default tiktok)."), platforms: z.array(z.enum(["tiktok", "instagram", "xiaohongshu"])).optional().describe("Networks to look on. Defaults to every searchable one except the handle's own.") }).strict(),
+ },
+ {
  name: "discover_sounds",
  title: "Discover Sounds",
  description: "Discover trending sounds/music for a keyword on TikTok or Instagram — the sound is a huge ranking signal for TikTok virality. Returns title, artist, duration, play/cover URLs. (20 free credits for new users). Use when picking audio for a post, or to spot a sound before it peaks. Consumes 2 nooticr credits.",

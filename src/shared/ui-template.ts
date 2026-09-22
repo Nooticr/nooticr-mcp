@@ -40,6 +40,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_post_comments:"Get Post Comments",
     search_creators:"Search Creators",
     get_similar_creators:"Similar Creators",
+    suggest_creator_identity:"Same Person Elsewhere",
     discover_sounds:"Discover Sounds",
     understand_social_post:"Understand Social Post",
     check_nooticr_credits:"Check Credits",
@@ -69,6 +70,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_post_comments:"Top comments on a post — sentiment, themes, viral threads.",
     search_creators:"Find creators in a niche by engagement, followers, and content.",
     get_similar_creators:"Find creators similar to a given handle.",
+    suggest_creator_identity:"Accounts on other networks that may be the same person, with the evidence.",
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
     understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
@@ -2998,6 +3000,52 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +"</div>";
   }
 
+  // ─── Identity suggestions (suggest_creator_identity) ───
+  //
+  // Its own view rather than creatorCard: a candidate carries a points score
+  // (50 for a shared bio link, 25 for a cross-link) that the vetting strip
+  // would draw as "/100", and no follower total, because adding two accounts'
+  // followers together on this evidence is exactly what the tool forbids.
+  // Every card says "suggestion" on its face for the same reason.
+  function renderIdentity(d){
+    var seed=d.seed||{},list=d.suggestions||[];
+    var searched=(d.searched||[]).join(", ");
+    var head='<div style="margin-bottom:12px"><div style="font-size:15px;font-weight:700">Possibly the same person as @'
+      +esc(seed.handle||"")+" on "+esc(seed.platform||"")+"</div>"
+      +'<div style="font-size:12px;color:var(--muted);margin-top:3px">'
+      +list.length+" suggestion"+(list.length===1?"":"s")+(searched?" · looked on "+esc(searched):"")
+      +" · nothing merged, a human confirms</div>"
+      +(d.note?'<div style="font-size:12px;color:var(--muted);margin-top:6px">'+esc(d.note)+"</div>":"")
+      +"</div>";
+    var cards=list.map(function(c){
+      var high=c.confidence==="high",color=pColor(c.platform||"");
+      var ev=(c.evidence||[]).map(function(e){
+        var strong=e.strength==="strong";
+        return '<li style="margin:3px 0"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:'
+          +(strong?"var(--green)":"var(--muted)")+'">'+esc(e.strength||"")+"</span> "
+          +'<span style="font-weight:600">'+esc(String(e.signal||"").split("_").join(" "))+"</span>"
+          +(e.detail?' <span style="color:var(--muted)">· '+esc(e.detail)+"</span>":"")+"</li>";
+      }).join("");
+      var link=c.profileUrl&&String(c.profileUrl).indexOf("http")===0
+        ?'<a href="'+esc(c.profileUrl)+'" style="font-size:12px;color:var(--fg)">Open profile</a>':"";
+      return '<div class="creator-card" data-identity-candidate>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+        +'<div class="avatar-placeholder" style="flex-shrink:0;background:'+color+'20">'+pSvg(c.platform||"",22)+"</div>"
+        +'<div style="min-width:0"><div style="font-size:14px;font-weight:700">'+esc(c.nickname||c.username||"")+"</div>"
+        +'<div class="handle" style="overflow-wrap:anywhere">@'+esc(c.username||"")+" · "+esc(c.platform||"")+"</div></div></div>"
+        +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;color:'
+        +(high?"var(--green)":"var(--muted)")+'">'+(high?"likely":"possible")+" · suggestion</div>"
+        +(c.followers!=null?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+fmtNum(c.followers)+" followers on this account alone</div>":"")
+        +(ev?'<ul style="list-style:none;padding:0;margin:0;font-size:12px;line-height:1.4">'+ev+"</ul>":"")
+        +(link?'<div style="margin-top:8px">'+link+"</div>":"")
+        +"</div>";
+    }).join("");
+    var none=list.length?"":'<div class="empty-state"><div class="icon">👤</div><div class="text">No account cleared the bar. A creator with no links in their bio is hard to match this way; that is not proof they have no other accounts.</div></div>';
+    var gaps=(d.unavailable||[]).map(function(u){return esc(u.platform||"")+" could not be searched";}).join(" · ");
+    return '<div class="fade-in">'+head+none+(cards?'<div class="gallery">'+cards+"</div>":"")
+      +(gaps?'<div style="font-size:12px;color:var(--muted);margin-top:10px">'+gaps+"</div>":"")+"</div>";
+  }
+
   // ─── Vetting strip ───
   //
   // Only show_collab_shortlist sends these fields, so every other creator card
@@ -4410,6 +4458,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       return;}
 
     // Creators
+    if(Array.isArray(d.suggestions)&&d.seed){app.innerHTML=renderIdentity(d);setTimeout(reportSize,50);return;}
     if(d.creators&&Array.isArray(d.creators)){
       if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}
       app.innerHTML=galleryWrap(d.creators.map(function(c){return creatorCard(c);}).join(""),d.creators.length);return;}
