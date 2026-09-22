@@ -166,6 +166,7 @@ a `scanId` for the rest.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
+| `nooticr_getting_started` | free | **Start here.** Where this account stands — balance, connected accounts, watchlist — and the next calls worth making, each with its price and an example. The server's `instructions` point every host at it. |
 | `check_nooticr_credits` | free | Balance and billing URL. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 | `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |

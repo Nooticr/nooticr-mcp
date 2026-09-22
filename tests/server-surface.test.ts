@@ -80,7 +80,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(76);
+    expect(tools).toHaveLength(77);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -121,6 +121,8 @@ describe("tool annotations", () => {
       "list_own_apps",
       "list_social_connections",
       "mention_trend",
+      // Reads the caller's own balance, connections and watchlist; suggests.
+      "nooticr_getting_started",
       "nooticr_login",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:

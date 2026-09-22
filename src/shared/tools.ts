@@ -53,6 +53,7 @@ import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
 import { registerCollabTools } from "./collab.js";
@@ -661,12 +662,16 @@ export function createMcpServer(
  const server = new McpServer(
   { name: "nooticr-mcp", version: MCP_SERVER_VERSION },
   {
+   // The one string a host reads before any tool search (#96). See
+   // getting-started.ts for why it exists and what it deliberately leaves out.
+   instructions: SERVER_INSTRUCTIONS,
    // Per-server, so per session on both transports. See tasks.ts.
    taskStore: opts?.taskStore ?? createTaskStore(),
    capabilities: {
     resources: {},
-    // The workflows, named — see prompts.ts. Without this a host shows the
-    // user 24 tools and no way in.
+    // The workflows, named — see prompts.ts. Prompts are one way in; hosts
+    // that do not render them (ChatGPT) get `instructions` above and
+    // nooticr_getting_started instead.
     prompts: {},
     extensions: {
      [UI_EXTENSION]: { mimeTypes: [RESOURCE_MIME_TYPE] },
@@ -704,6 +709,7 @@ export function createMcpServer(
   "niche_report",
   "find_hook_pattern",
   "check_nooticr_credits",
+  "nooticr_getting_started",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like nooticr_login.
@@ -2847,6 +2853,7 @@ export function createMcpServer(
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
  registerConnectionTools(server, makeClient);
+ registerGettingStarted(server, makeClient, watchStore);
  // Neither fetches, neither takes a client: one formats what the model
  // classified for a tracker on another server, the other draws what it scored.
  registerHandoff(server);

@@ -2410,3 +2410,24 @@ test("a classified reply carries its category chip", async ({ page }) => {
   });
   await expect(page.locator(".reply-row .chip-cat")).toContainText("bug report");
 });
+
+// nooticr_getting_started (#96). It carries a balance, so it must not fall
+// into the credits card, and a read it could not make is not a zero.
+test("getting started draws its own view, with unknowns as unknown", async ({ page }) => {
+  await renderTemplate(page, {
+    gettingStarted: true,
+    signedIn: true,
+    balance: 20,
+    connectedCount: null,
+    watching: 0,
+    nextSteps: [
+      { tool: "get_social_media", why: "Read one post.", credits: 1, example: { url: "<a post URL>" } },
+      { tool: "watch_creator", why: "Keep a creator on a list.", credits: 0 },
+    ],
+  });
+  await expect(page.locator("[data-next-step]")).toHaveCount(2);
+  await expect(page.locator("body")).toContainText("Where your nooticr account stands");
+  await expect(page.locator("body")).toContainText("could not read");
+  await expect(page.locator("[data-next-step]").first()).toContainText("1 cr");
+  await expect(page.locator("[data-next-step]").nth(1)).toContainText("free");
+});

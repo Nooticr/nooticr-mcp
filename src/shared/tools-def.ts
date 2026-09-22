@@ -188,6 +188,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ sourceUrl: z.string(), versions: z.array(z.object({ surface: z.string(), content: z.string() })).min(1) }).strict(),
  },
  {
+ name: "nooticr_getting_started",
+ title: "Getting Started with nooticr",
+ description: "Start here: help on what nooticr can do and what to try first. Free, and makes no paid call. Reads this account's state (credit balance, connected accounts, watchlist) and returns the next calls worth making, each with its price and an example. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
+ {
  name: "check_nooticr_credits",
  title: "Check Nooticr Credits",
  description: "Check your nooticr credit balance. No cost to call — call anytime to see remaining credits before running other tools. Nothing here sells or tops up credits: this server offers no purchase of any kind, so when the balance is short, say that it is and that topping up happens on the nooticr website, and do not offer a link or a price. Use before a run of paid calls to confirm the balance covers it.",

@@ -562,6 +562,12 @@ export const TOOLS: Tool[] = [
 
   // ── account ──
   {
+    name: "nooticr_getting_started", cost: 0, group: "account",
+    args: "—",
+    desc: "Where this account stands (balance, connections, watchlist) and the next calls worth making, with prices.",
+    when: "The first call, or whenever you are not sure what to try.",
+  },
+  {
     name: "check_nooticr_credits", cost: 0, group: "account",
     args: "—",
     desc: "Balance and billing URL.",
