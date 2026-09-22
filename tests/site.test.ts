@@ -762,6 +762,25 @@ describe("README", () => {
     expect(missing, `undocumented tools: ${missing.join(", ")}`).toEqual([]);
   });
 
+  // The one sentence nothing else gated: it was bumped by hand, and drifted
+  // from 72 to four behind the tables right under it (#94).
+  it("states the tool count the server actually registers", async () => {
+    const doc = await readme();
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    const shipped = (await client.listTools()).tools.length;
+    const stated = doc.match(/^(\d+) tools, grouped by what you are trying to do/m);
+    expect(stated, "the Tools section no longer opens with its count").toBeTruthy();
+    expect(Number(stated![1]), "README states the wrong tool count").toBe(shipped);
+  });
+
   it("quotes the prices the server actually charges", async () => {
     const doc = await readme();
     // Row form: | `tool` | N (…) | …
@@ -820,6 +839,19 @@ describe("nothing on the tool surface sells anything", () => {
     await Promise.all([client.connect(a), server.connect(b)]);
     return (await client.listTools()).tools;
   }
+
+  // The documentation page's safety callout counts the surface, and went
+  // stale the same way the README's headline did (#94).
+  it("counts the read-only tools the server actually registers", async () => {
+    const tools = await shipped();
+    const readOnly = tools.filter((t) => t.annotations?.readOnlyHint === true).length;
+    const html = documentationPage(URL, API);
+    const m = html.match(/Of the (\d+) tools, (\d+) carry <code>readOnlyHint: true<\/code>\. The (\d+) that do not/);
+    expect(m, "the read-only callout changed shape").toBeTruthy();
+    expect(Number(m![1]), "wrong tool count").toBe(tools.length);
+    expect(Number(m![2]), "wrong read-only count").toBe(readOnly);
+    expect(Number(m![3]), "wrong writing count").toBe(tools.length - readOnly);
+  });
 
   it("registers no tool that transacts", async () => {
     const names = (await shipped()).map((t) => t.name);

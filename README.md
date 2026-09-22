@@ -52,10 +52,10 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-72 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+76 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
-Seven of them — the ones under **Answer a question you actually have** — are not
+The job tools under **Answer a question you actually have** are not
 endpoint wrappers. Each names a job, fans out over the calls that job needs,
 groups the evidence by whatever you are deciding about, gives every item an id
 a follow-up tool can act on, and hands the reading to your model rather than to
