@@ -10,6 +10,7 @@ type McpRequest = Parameters<
   WebStandardStreamableHTTPServerTransport["handleRequest"]
 >[0];
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
+import { looksLikeApiKey } from "../../src/shared/api-key.js";
 import { NooticrClient, jwtExpiry, type TokenProvider } from "../../src/shared/nooticr.js";
 import { argumentsDigest, createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import { KvWatchStore } from "../../src/shared/watchlist.js";
@@ -111,13 +112,27 @@ const REFRESH_LEAD_MS = 60_000;
  * rotated tokens into the KV session so the next tool call uses a live token.
  * Pre-provisioned deployments (env.NOOTICR_ACCESS_TOKEN) get a static-token
  * provider and never refresh.
+ *
+ * An API key is the third case and the simplest: the bearer the caller
+ * presented *is* the nooticr credential, so it is forwarded as-is and there is
+ * nothing to refresh. It is checked before the `!session` branch below on
+ * purpose — falling through to the pre-provisioned path would answer one
+ * tenant's call with whatever account this deployment was configured with.
  */
-async function makeClientForSession(
+export async function makeClientForSession(
   env: Env,
   mcpToken: string,
   session: McpSession | undefined,
   idempotencyKey?: string
 ): Promise<NooticrClient> {
+  if (looksLikeApiKey(mcpToken)) {
+    return new NooticrClient(
+      env.NOOTICR_BASE_URL,
+      { getAccessToken: async () => mcpToken },
+      idempotencyKey
+    );
+  }
+
   const staticToken = env.NOOTICR_ACCESS_TOKEN;
   if (!session) {
     return new NooticrClient(env.NOOTICR_BASE_URL, {
@@ -265,8 +280,9 @@ export class McpEndpoint {
         {
           error: "Unauthorized",
           error_description:
-            "This MCP server requires OAuth authentication. Fetch an access token from " +
-            `${this.env.PUBLIC_URL}/authorize first.`,
+            "This MCP server requires authentication. Fetch an access token from " +
+            `${this.env.PUBLIC_URL}/authorize, or — on a server with no browser — send a ` +
+            "nooticr API key as the bearer token (npx @nooticr/mcp api-key create).",
         },
         {
           "www-authenticate":

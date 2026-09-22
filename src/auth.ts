@@ -1,21 +1,39 @@
 /**
  * Token storage + resolution.
  *
- * Priority: env NOOTICR_ACCESS_TOKEN > credentials file (auto-refresh when
- * expired) > per-session tokens (HTTP OAuth mode only).
+ * Priority: env NOOTICR_ACCESS_TOKEN > env NOOTICR_API_KEY > credentials file
+ * (an API key stored by `login --api-key`, else a session token, refreshed
+ * when expired) > per-session tokens (HTTP OAuth mode only).
+ *
+ * `NOOTICR_ACCESS_TOKEN` stays first because it has always been the explicit
+ * "use exactly this token" override, and someone who exports one for a single
+ * debugging run should get it. An API key sits directly behind it: it is the
+ * credential a server holds permanently, so it outranks anything in a file.
+ *
+ * The file holds *one* credential, whichever `login` last wrote. A store
+ * carrying both a key and a session would make "which am I signed in as"
+ * unanswerable — and, worse, let a rejected key quietly fall back to a stale
+ * session belonging to someone else.
  */
 
 import fs from "node:fs";
 import path from "node:path";
+import { getApiKey } from "./config.js";
 import { NooticrClient, NooticrError, NooticrSession, NooticrUser, TokenProvider } from "./nooticr.js";
 
 const REFRESH_BEFORE_EXPIRY_MS = 30_000;
 
 export interface TokenStore {
-  accessToken: string;
+  /** A session access token, from a browser or password login. Refreshable. */
+  accessToken?: string;
   refreshToken?: string;
   expiresIn?: number;
   fetchedAt?: number;
+  /**
+   * An API key, from `login --api-key`. Never refreshed and never expires on
+   * its own, so it carries none of the fields above.
+   */
+  apiKey?: string;
   user?: NooticrUser;
 }
 
@@ -37,7 +55,7 @@ export class AuthManager {
   credentialsFile: string;
   private client: NooticrClient;
   private lastRefreshToken?: string;
-  private lastSource?: "env" | "file" | "session";
+  private lastSource?: "env" | "apiKey" | "file" | "session";
 
   constructor(baseUrl: string, credentialsFile: string) {
     this.baseUrl = baseUrl;
@@ -55,7 +73,7 @@ export class AuthManager {
     try {
       const raw = await fs.promises.readFile(this.credentialsFile, "utf8");
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.accessToken === "string") {
+      if (parsed && (typeof parsed.accessToken === "string" || typeof parsed.apiKey === "string")) {
         return parsed as TokenStore;
       }
       return null;
@@ -79,8 +97,19 @@ export class AuthManager {
   /**
    * Resolves the current access token for a request. `session` provides the
    * per-session tokens issued via our own OAuth /token endpoint (HTTP mode).
+   *
+   * `allowApiKey` exists for the one caller that must not use one: the
+   * `api-key` CLI commands. The backend refuses key management to a
+   * key-authenticated caller, so resolving a key there would turn "create me
+   * a second key" into a 403 that reads like a permissions bug rather than
+   * the deliberate bound it is. It skips both places a key can live — the
+   * environment and the credentials file — since the bound is about the
+   * credential, not about where it was found.
    */
-  async getAccessToken(session?: { accessToken?: string; refreshToken?: string }): Promise<string | undefined> {
+  async getAccessToken(
+    session?: { accessToken?: string; refreshToken?: string },
+    { allowApiKey = true }: { allowApiKey?: boolean } = {}
+  ): Promise<string | undefined> {
     const envToken = process.env.NOOTICR_ACCESS_TOKEN;
     if (envToken) {
       this.lastSource = "env";
@@ -88,7 +117,20 @@ export class AuthManager {
       return envToken;
     }
 
+    const apiKey = allowApiKey ? getApiKey() : undefined;
+    if (apiKey) {
+      this.lastSource = "apiKey";
+      this.lastRefreshToken = undefined;
+      return apiKey;
+    }
+
     const store = await this.loadStore();
+    if (allowApiKey && store?.apiKey) {
+      this.lastSource = "apiKey";
+      this.lastRefreshToken = undefined;
+      return store.apiKey;
+    }
+
     if (store?.accessToken && !isTokenExpired(store)) {
       this.lastSource = "file";
       this.lastRefreshToken = store.refreshToken;
@@ -123,6 +165,9 @@ export class AuthManager {
    * the current token. Returns true when a new token is available.
    */
   async onUnauthorized(session?: { refreshToken?: string }): Promise<boolean> {
+    // A key has nothing to redeem: a 401 on one means revoked, expired or
+    // mistyped, and retrying with the same string forever would hide that.
+    if (this.lastSource === "apiKey") return false;
     let refreshToken = this.lastRefreshToken;
     if (this.lastSource === "session" && session?.refreshToken) {
       refreshToken = session.refreshToken;
@@ -152,7 +197,23 @@ export class AuthManager {
     await this.saveStore(store);
     this.lastSource = "file";
     this.lastRefreshToken = store.refreshToken;
-    return store.accessToken;
+    // `session.accessToken` rather than `store.accessToken`: the guard above
+    // has already narrowed it, and the store's field is optional now that a
+    // credentials file may hold an API key instead of a session.
+    return session.accessToken;
+  }
+
+  /**
+   * Persists an API key as this machine's credential, replacing whatever
+   * `login` last wrote. For clients that do not inherit a shell environment
+   * (Claude Desktop, Cursor) and for a laptop where editing JSON to set an
+   * env var is the annoying part; a server should still be given
+   * `NOOTICR_API_KEY` and left with nothing on disk.
+   */
+  async persistApiKey(apiKey: string, user?: NooticrUser): Promise<void> {
+    await this.saveStore({ apiKey, user });
+    this.lastSource = "apiKey";
+    this.lastRefreshToken = undefined;
   }
 
   /**
@@ -174,7 +235,8 @@ export class AuthManager {
   ensureUnauthenticatedError(): never {
     throw new NooticrAuthError(
       "Not authenticated with nooticr. Run `npx nooticr-mcp login` to sign in " +
-        "with Google, or set the NOOTICR_ACCESS_TOKEN environment variable " +
+        "with Google, or — on a server with no browser — set NOOTICR_API_KEY " +
+        "to a key from `npx nooticr-mcp api-key create` " +
         "(see `npx nooticr-mcp --help`)."
     );
   }
@@ -188,7 +250,29 @@ export function createStdioTokenProvider(auth: AuthManager): TokenProvider {
   };
 }
 
-/** Builds a TokenProvider for HTTP mode: env > file > per-session tokens. */
+/**
+ * Builds a TokenProvider for the `api-key` CLI commands: env access token or
+ * the credentials file, never `NOOTICR_API_KEY`. See `getAccessToken`.
+ */
+export function createManagementTokenProvider(auth: AuthManager): TokenProvider {
+  return {
+    getAccessToken: async () => auth.getAccessToken(undefined, { allowApiKey: false }),
+    onUnauthorized: async () => auth.onUnauthorized(),
+  };
+}
+
+/**
+ * Builds a TokenProvider for one caller's own API key — the headless path
+ * through HTTP mode, where the bearer the client presented *is* the nooticr
+ * credential. Deliberately not `createHttpTokenProvider`: that one falls back
+ * to the operator's environment and credentials file, which would answer one
+ * tenant's call with another's account.
+ */
+export function createApiKeyTokenProvider(apiKey: string): TokenProvider {
+  return { getAccessToken: async () => apiKey };
+}
+
+/** Builds a TokenProvider for HTTP mode: env > api key > file > per-session tokens. */
 export function createHttpTokenProvider(
   auth: AuthManager,
   session?: { accessToken?: string; refreshToken?: string }

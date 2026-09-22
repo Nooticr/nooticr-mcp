@@ -121,9 +121,12 @@ describe("NooticrClient", () => {
 
     // The message names the endpoint: these surface to the user as tool
     // errors, and a bare status code says nothing about which call failed.
+    // It also carries the body, because a good part of this backend answers
+    // with a bare string rather than JSON — "(403)" with the sentence
+    // explaining it thrown away is what a headless caller used to get.
     await expect(client.startVideoAnalysis("https://youtu.be/x")).rejects.toMatchObject({
       status: 502,
-      message: "nooticr API error (502) from /mcp/analyze-post",
+      message: "nooticr API error (502) from /mcp/analyze-post: gateway timeout",
     });
   });
 

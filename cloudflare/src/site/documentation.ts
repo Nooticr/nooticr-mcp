@@ -16,6 +16,9 @@
 import { page, esc, BRAND } from "./layout.js";
 import { PLATFORMS } from "./platforms.js";
 import { GROUPS, PACKS, TOOLS, toolsIn } from "./catalogue.js";
+// The marketplace registry itself, not a copy of it: "which sites can you
+// read" is answered here by the same list the tools refuse arguments against.
+import { MARKETS } from "../../../src/shared/marketplace.js";
 
 const CSS = `
 .doc{display:grid;gap:34px;padding:38px 0 10px}
@@ -55,6 +58,13 @@ table.doc-t td{padding:11px 12px;border-bottom:1px solid var(--border-soft);colo
   vertical-align:top}
 table.doc-t td:first-child{color:var(--fg)}
 table.doc-t code{font-size:12.5px;white-space:nowrap}
+/* An argument list is not an identifier. The nowrap above keeps a tool name
+   from breaking mid-word, which is right; applied to "url, count?, focus?"
+   it made the Inputs column as wide as the longest signature and pushed the
+   whole page into a horizontal scroll. Wrapping at the spaces that already
+   separate the arguments breaks nothing. (No backticks in this CSS: it is a
+   template literal and one would end the string.) */
+table.doc-t td.args code{white-space:normal}
 .cost-cell{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--brand)}
 
 .yesno{display:grid;gap:14px;margin:18px 0}
@@ -98,13 +108,26 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
   const host = esc(publicUrl.replace(/^https?:\/\//, ""));
   const platformNames = PLATFORMS.map((p) => p.name).join(", ");
 
+  /**
+   * What a tool costs, in the purse it actually draws on.
+   *
+   * A plan-billed tool spends the workspace's AI credits rather than the MCP
+   * balance this server sells, so it is neither "Free" nor a number of `cr`.
+   * Printing it as free would be wrong in the one direction that costs
+   * somebody money.
+   */
+  const costLabel = (t: (typeof TOOLS)[number]): string => {
+    if (t.billing === "plan") return "Plan AI credits";
+    return t.cost === 0 ? "Free" : `${t.cost} cr`;
+  };
+
   const toolTable = (group: (typeof GROUPS)[number]) => {
     const rows = toolsIn(group.id)
       .map(
         (t) =>
           `<tr><td><code>${esc(t.name)}</code></td>` +
-          `<td class="cost-cell">${t.cost === 0 ? "Free" : `${t.cost} cr`}</td>` +
-          `<td><code>${esc(t.args ?? "—")}</code></td>` +
+          `<td class="cost-cell">${costLabel(t)}</td>` +
+          `<td class="args"><code>${esc(t.args ?? "—")}</code></td>` +
           `<td>${esc(t.desc)}${t.when ? `<br><span style="opacity:.75">${esc(t.when)}</span>` : ""}</td></tr>`
       )
       .join("");
@@ -122,8 +145,8 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
       title: "Overview",
       group: "Start here",
       body:
-        `<p class="lead">Nooticr MCP is a Model Context Protocol server that lets an AI assistant read public social posts across ${PLATFORMS.length} networks and act on what it finds.</p>` +
-        `<p>It connects over Streamable HTTP at <code>${esc(publicUrl)}/mcp</code>, authenticates with OAuth 2.1, and exposes ${TOOLS.length} tools. Assistants use it to fetch a post's media and spoken transcript, read its comment section, survey a niche, and then produce work from that: alternative hooks, variants to film, a draft scored before publication.</p>` +
+        `<p class="lead">Nooticr MCP is a Model Context Protocol server that lets an AI assistant read public social posts across ${PLATFORMS.length} networks and product listings across ${MARKETS.length} marketplaces, and act on what it finds.</p>` +
+        `<p>It connects over Streamable HTTP at <code>${esc(publicUrl)}/mcp</code>, authenticates with OAuth 2.1 (or an API key, for a server with no browser), and exposes ${TOOLS.length} tools. Assistants use it to fetch a post's media and spoken transcript, read its comment section, survey a niche, scan a shopping category down to its review text, and then produce work from that: alternative hooks, variants to film, a draft scored before publication.</p>` +
         `<p>Networks covered: ${esc(platformNames)}.</p>`,
     },
     {
@@ -149,16 +172,18 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<div class="callout good"><p><strong>Nothing it writes leaves Nooticr.</strong> Of the 48 tools, 35 carry <code>readOnlyHint: true</code>. The 13 that do not write only inside the user's own Nooticr account — the credit ledger, a watchlist, a scheduled brand-monitoring watch, a generated content plan, a pre-publish review saved onto the user's own draft — or send the user to a platform's consent screen to link an account. Two, <code>unwatch_creator</code> and <code>stop_brand_watch</code>, carry <code>destructiveHint: true</code>: both stop something the user themselves started. None of them writes to your organisation's systems, and none can post, comment, like, follow or message anywhere.</p></div>` +
 
         `<h3 id="admins-access">Access and revocation</h3>` +
-        `<p>Authentication is OAuth 2.1 with PKCE (S256) and dynamic client registration. No API key is ever pasted into a chat window. Tokens are scoped and expiring.</p>` +
+        `<p>Interactive clients authenticate with OAuth 2.1 with PKCE (S256) and dynamic client registration — no key is ever pasted into a chat window, and the tokens it issues are scoped and expiring.</p>` +
+        `<p>A server-side integration has no browser to run that flow in, so it authenticates with an <strong>API key</strong> instead: one credential, sent as <code>Authorization: Bearer nk_&hellip;</code>, minted from an account that did sign in once. A key is scoped to one account and one workspace, stored only as a hash, and cannot create or revoke keys — so a leaked key cannot outlive being revoked. See <a href="#connect-server">Server-side integrations</a>.</p>` +
         `<p>Two scopes are granted, and they describe exactly what the tools do:</p>` +
         `<ul><li><code>social:read</code> — read public posts, transcripts, comments, creators, sounds and hashtags</li>` +
         `<li><code>credits:spend</code> — run AI tools and open a checkout, both of which draw on the user's credit balance</li></ul>` +
-        `<p><strong>To revoke:</strong> the user removes the connector in their AI client, which invalidates its tokens immediately. To remove the account and its data entirely, email <a href="mailto:${esc(BRAND.supportEmail)}">${esc(BRAND.supportEmail)}</a>.</p>` +
+        `<p><strong>To revoke:</strong> the user removes the connector in their AI client, which invalidates its tokens immediately; an API key is revoked with <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>, which takes effect at the API on the spot. To remove the account and its data entirely, email <a href="mailto:${esc(BRAND.supportEmail)}">${esc(BRAND.supportEmail)}</a>.</p>` +
 
         `<h3 id="admins-data">Data handling</h3>` +
         `<table class="doc-t"><thead><tr><th>Data</th><th>Stored?</th><th>Retention</th></tr></thead><tbody>` +
         `<tr><td>Account identity (email, display name, user id)</td><td>Yes</td><td>Until the account is deleted</td></tr>` +
         `<tr><td>OAuth tokens issued to the AI client</td><td>Yes</td><td>Until expiry or revocation</td></tr>` +
+        `<tr><td>API keys (stored as a sha256 hash, never in the clear)</td><td>Yes</td><td>Until revoked or deleted with the account</td></tr>` +
         `<tr><td>Credit ledger (tool name, credits, timestamp)</td><td>Yes</td><td>Retained as a financial record</td></tr>` +
         `<tr><td>URLs and search terms passed to tools</td><td>No</td><td>Processed, not retained after the call</td></tr>` +
         `<tr><td><strong>Content of retrieved posts</strong></td><td><strong>No</strong></td><td>Streamed through; media cached only transiently so it can be displayed</td></tr>` +
@@ -202,7 +227,42 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<p>Settings → Connectors → Advanced → <strong>Developer mode</strong>, then add the same URL.</p>` +
         `<h3 id="connect-stdio">Cursor and other stdio clients</h3>` +
         `<pre><code>{\n  "mcpServers": {\n    "nooticr": {\n      "command": "npx",\n      "args": ["-y", "@nooticr/mcp"]\n    }\n  }\n}</code></pre>` +
-        `<p>Then <code>npx -y @nooticr/mcp login</code> once to sign in.</p>`,
+        `<p>Then <code>npx -y @nooticr/mcp login</code> once to sign in.</p>` +
+        `<h3 id="connect-server">Server-side integrations (no browser)</h3>` +
+        `<p>The OAuth flow needs a browser once and leaves behind a token that has to keep being refreshed. If your integration runs on a server, mint an API key instead. The quickest way is the <a href="/dashboard#keys">API keys card on your dashboard</a> — sign in, name the key, copy it. From a terminal, the same thing:</p>` +
+        `<pre><code>npx -y @nooticr/mcp login\nnpx -y @nooticr/mcp api-key create --name "my-service"</code></pre>` +
+        `<p>The key is printed once and stored only as a hash, so it cannot be shown again. Give it to the deployment and there is nothing left to configure:</p>` +
+        `<pre><code>POST ${esc(publicUrl)}/mcp\nAuthorization: Bearer nk_&hellip;</code></pre>` +
+        `<p>Or, for a local stdio process, set <code>NOOTICR_API_KEY</code> — or run <code>npx -y @nooticr/mcp login --api-key nk_&hellip;</code> where a client will not inherit your shell environment. There is no consent screen, no redirect URI and no refresh: the key is valid until <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>. Pass <code>--expires-in-days</code> at creation if you would rather it also expire on its own.</p>`,
+    },
+    {
+      id: "marketplaces",
+      title: "Marketplaces",
+      group: "Reference",
+      body:
+        `<p class="lead">Twelve shopping sites, read the same way a post is: the products, their prices, the full star histogram and the review text itself \u2014 not a summary of it.</p>` +
+        `<p>One <code>marketplace</code> argument picks the site, so an assistant chooses a site rather than choosing between twelve near-identical tools. ` +
+        `Amazon has a tool of its own, <code>scan_amazon_category</code>, because it returns Amazon's own review-aspect counts on top of the same shape.</p>` +
+        // Three columns, not four: the registry's storefront hints are whole
+        // sentences, and giving them a column of their own pushed the page
+        // into a horizontal scroll. They ride under the id instead, the way
+        // `toolTable` carries a tool's `when`.
+        `<table class="doc-t"><thead><tr><th>Site</th><th><code>marketplace</code></th>` +
+        `<th>What to pass as the product id</th></tr></thead><tbody>` +
+        MARKETS.map(
+          (m) =>
+            `<tr><td>${esc(m.label)}</td><td><code>${esc(m.slug)}</code></td>` +
+            `<td>${esc(m.idLabel)}` +
+            (m.region
+              ? `<br><span style="opacity:.75">Storefronts \u2014 <code>${esc(m.region.field)}</code>: ${esc(m.region.hint)}</span>`
+              : `<br><span style="opacity:.75">One storefront; takes no market argument.</span>`) +
+            `</td></tr>`
+        ).join("") +
+        `</tbody></table>` +
+        `<div class="callout"><p><strong>Search in the site's own language.</strong> A query in the wrong language does not error \u2014 it returns the few imported listings that happen to match, which reads as a thin category and is really a bad search. ` +
+        `Each site's expected language: ${esc(MARKETS.map((m) => `${m.label} ${m.searchLang}`).join(" \u00b7 "))}.</p></div>` +
+        `<p>Collection is a real browser render behind each site's bot defences, so it runs as a background job: a scan returns what is ready plus a <code>scanId</code>, and the poll that finishes it is free. ` +
+        `3 credits per product collected; a single product by id is 3.</p>`,
     },
     {
       id: "tools",

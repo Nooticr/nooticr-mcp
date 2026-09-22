@@ -14,6 +14,8 @@ import { termsPage, privacyPage, LEGAL_EFFECTIVE } from "../cloudflare/src/site/
 import { supportPage } from "../cloudflare/src/site/support.js";
 import { dashboardPage, dashboardSignedOut } from "../cloudflare/src/site/dashboard.js";
 import { TOOLS } from "../cloudflare/src/site/catalogue.js";
+import { TOOL_DEFINITIONS } from "../src/shared/tools-def.js";
+import { MARKETS } from "../src/shared/marketplace.js";
 import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
 import { BRAND } from "../cloudflare/src/site/layout.js";
@@ -64,6 +66,102 @@ const FREE_TOOLS = [
   "watch_creator",
   "unwatch_creator",
 ];
+
+/**
+ * The check that was missing while the site drifted a year out of date.
+ *
+ * Everything else here reads a hand-maintained list — `SERVER_PRICING`,
+ * `EXPECTED`, `FREE_TOOLS` — so it only ever checked the tools somebody had
+ * already remembered to add. Forty-nine of seventy-six were absent from the
+ * public catalogue, including every marketplace tool, and nothing failed:
+ * each list was internally consistent and none of them spanned the gap
+ * between what the server ships and what the site says it ships.
+ *
+ * These three do span it. They are deliberately derived from
+ * `TOOL_DEFINITIONS` and `MARKETS` — the artifacts the server itself is
+ * checked against — rather than from anything written out by hand here.
+ */
+describe("the site describes the server that actually shipped", () => {
+  const catalogue = new Map(TOOLS.map((t) => [t.name, t]));
+
+  it("lists every tool the server registers, and invents none", () => {
+    const shipped = TOOL_DEFINITIONS.map((t) => t.name);
+    const missing = shipped.filter((n) => !catalogue.has(n));
+    const invented = [...catalogue.keys()].filter((n) => !shipped.includes(n));
+    expect(missing, "shipped but absent from the public catalogue").toEqual([]);
+    expect(invented, "advertised but not registered by the server").toEqual([]);
+  });
+
+  it("quotes a price the tool's own description agrees with", () => {
+    // The number on the page and the number the server tells a host have to
+    // be the same number. Advertising the wrong one is worse than saying
+    // nothing: a host budgets against it before it calls.
+    for (const t of TOOLS) {
+      if (t.cost === 0) continue;
+      const shipped = TOOL_DEFINITIONS.find((d) => d.name === t.name);
+      expect(
+        shipped!.description,
+        `the site prices ${t.name} at ${t.cost} credits and the tool does not say so`
+      ).toContain(`${t.cost} nooticr credit`);
+    }
+  });
+
+  it("never prints a plan-billed tool as free", () => {
+    // These spend the workspace's AI credits, not the MCP balance this server
+    // sells. "Free" would be wrong in the direction that costs someone money.
+    const planBilled = TOOLS.filter((t) => t.billing === "plan");
+    expect(planBilled.length).toBeGreaterThan(0);
+    const docs = documentationPage(URL, API);
+    for (const t of planBilled) {
+      expect(t.cost, `${t.name} draws no MCP credits`).toBe(0);
+      const at = docs.indexOf(`<code>${t.name}</code>`);
+      expect(at, `${t.name} missing from the reference`).toBeGreaterThan(-1);
+      expect(docs.slice(at, at + 200)).toContain("Plan AI credits");
+      // And it stays out of the landing page's priced grid, which is
+      // denominated in the credits it does not spend.
+      expect(landingPage(URL, API).indexOf(`>${t.name}</h3>`)).toBe(-1);
+    }
+  });
+});
+
+/**
+ * Twelve shopping sites reached the tools without reaching the site at all —
+ * the report that started this. The list is imported rather than copied, so
+ * the only thing left to get wrong is failing to render it.
+ */
+describe("marketplace coverage", () => {
+  const landing = landingPage(URL, API);
+  const docs = documentationPage(URL, API);
+
+  it("names every marketplace the server can read, on both pages", () => {
+    expect(MARKETS.length).toBeGreaterThanOrEqual(12);
+    for (const m of MARKETS) {
+      expect(landing, `${m.label} missing from the landing page`).toContain(m.label);
+      expect(docs, `${m.label} missing from the documentation`).toContain(m.label);
+      // The docs carry the argument a caller actually passes, not just a
+      // brand name they then have to guess the spelling of.
+      expect(docs, `${m.slug} not documented as a marketplace argument`).toContain(
+        `<code>${m.slug}</code>`
+      );
+    }
+  });
+
+  it("says which language a query has to be written in", () => {
+    // A query in the wrong language does not error, it quietly returns a thin
+    // category — the failure that is invisible unless the page warns about it.
+    expect(docs).toMatch(/language/i);
+    for (const m of MARKETS) expect(docs).toContain(m.searchLang);
+  });
+
+  it("promises no marketplace the tools would refuse", () => {
+    const slugs = new Set(MARKETS.map((m) => m.slug));
+    for (const claimed of ["shein", "walmart", "etsy", "wish", "alibaba"]) {
+      if (slugs.has(claimed)) continue;
+      expect(landing.toLowerCase(), `landing page claims ${claimed}`).not.toContain(claimed);
+      expect(docs.toLowerCase(), `documentation claims ${claimed}`).not.toContain(claimed);
+    }
+  });
+});
 
 describe("landing page", () => {
   const html = landingPage(URL, API);
@@ -963,6 +1061,23 @@ describe("documentation", () => {
     expect(html).toMatch(/not used to train/i);
     // The load-bearing negative: retrieved content is not stored.
     expect(html).toMatch(/Content of retrieved posts/);
+  });
+
+  /// The question the docs could not answer before: an integration that runs
+  /// server-side, with nothing that can open a consent screen. Leaving it out
+  /// sent partners to support to ask whether it was possible at all.
+  it("points at the dashboard card, which is the path that needs no terminal", () => {
+    expect(html).toContain('href="/dashboard#keys"');
+  });
+
+  it("tells a server-side integration how to connect without a browser", () => {
+    expect(html).toContain('id="connect-server"');
+    expect(html).toMatch(/api-key create/);
+    expect(html).toMatch(/Authorization: Bearer nk_/);
+    expect(html).toMatch(/api-key revoke/);
+    // And says the thing a reader has to know before they run it once and
+    // lose the output.
+    expect(html).toMatch(/printed once/);
   });
 
   it("explains access and revocation", () => {

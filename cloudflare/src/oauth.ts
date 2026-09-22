@@ -13,6 +13,7 @@
  * `src/shared/oauth.ts` — the same code the Node package uses.
  */
 
+import { looksLikeApiKey } from "../../src/shared/api-key.js";
 import {
   SCOPE,
   escapeHtml,
@@ -72,6 +73,21 @@ export interface PendingAuthorization {
 const pendKey = (code: string) => `pend:${code}`;
 const sessKey = (token: string) => `sess:${token}`;
 const rateKey = (ip: string) => `rate:${ip}`;
+const apiKeyKey = (hash: string) => `apikey:${hash}`;
+
+/**
+ * How long a verified API key is remembered.
+ *
+ * Short on purpose, and it bounds less than it looks like: every call that
+ * touches an account carries the key to nooticr-server, which checks it
+ * against its own table every time. What this cache gates is the handful of
+ * requests that never reach the backend — `initialize`, `tools/list` — so the
+ * worst a stale positive buys is a few minutes of a revoked key being able to
+ * read a tool list that is the same for everybody.
+ */
+const API_KEY_OK_TTL_SECONDS = 300;
+/** Shorter, so a key fixed a minute after a typo is not locked out for five. */
+const API_KEY_BAD_TTL_SECONDS = 60;
 
 export async function storePending(env: Env, pending: PendingAuthorization): Promise<void> {
   await env.STORE.put(pendKey(pending.mcpAuthCode), JSON.stringify(pending), {
@@ -148,9 +164,57 @@ export async function verifyToken(env: Env, token: string): Promise<McpSession |
   }
 }
 
-/** True when a bearer token is valid: OAuth-issued or the env static token. */
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Whether a nooticr API key is real, asked of the backend and remembered
+ * briefly (see `API_KEY_OK_TTL_SECONDS`).
+ *
+ * The key is hashed before it is used as a cache key: KV key names are not a
+ * place to keep a live credential in the clear.
+ *
+ * A backend that is down or unreachable answers "no" without being cached.
+ * The alternative — remembering the outage as a bad key — would keep every
+ * integration locked out for a minute after the backend came back.
+ */
+export async function apiKeyIsValid(env: Env, key: string): Promise<boolean> {
+  const cacheKey = apiKeyKey(await sha256Hex(key));
+  const cached = await env.STORE.get(cacheKey);
+  if (cached === "1") return true;
+  if (cached === "0") return false;
+
+  let res: Response;
+  try {
+    res = await fetch(`${env.NOOTICR_BASE_URL}/auth/me`, {
+      headers: { authorization: `Bearer ${key}` },
+    });
+  } catch {
+    return false;
+  }
+  if (res.status >= 500) return false;
+
+  const ok = res.ok;
+  await env.STORE.put(cacheKey, ok ? "1" : "0", {
+    expirationTtl: ok ? API_KEY_OK_TTL_SECONDS : API_KEY_BAD_TTL_SECONDS,
+  });
+  return ok;
+}
+
+/**
+ * True when a bearer token is valid: OAuth-issued, a live nooticr API key, or
+ * the env static token.
+ *
+ * The API key branch is what lets a server-side integration connect to this
+ * endpoint with one header and no consent screen.
+ */
 export async function validMcpToken(env: Env, token: string): Promise<boolean> {
   if (await verifyToken(env, token)) return true;
+  if (looksLikeApiKey(token)) return apiKeyIsValid(env, token);
   const envToken = env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }

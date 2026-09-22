@@ -337,6 +337,76 @@ npx @nooticr/mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
 (mode `0600`). If your browser cannot be opened automatically, copy the URL it
 prints into a browser manually.
 
+## Running on a server (no browser)
+
+`login` and the OAuth flow both need a browser once, and both leave behind a
+15-minute access token kept alive by a refresh token. That is the wrong shape
+for an integration running server-side: nothing there can complete a consent
+screen, and a refresh chain that breaks has to be repaired by hand.
+
+An **API key** is the other way in. Mint one from a browser at
+[mcp.nooticr.com/dashboard](https://mcp.nooticr.com/dashboard) — sign in, name
+the key, copy it — or from a machine you *can* sign in on, once:
+
+```bash
+npx @nooticr/mcp login                                  # the one interactive step
+npx @nooticr/mcp api-key create --name "aybee-prod"     # prints the key, once
+```
+
+Then give it to the deployment. There is nothing else to configure and nothing
+to refresh — the key stays valid until you revoke it.
+
+```bash
+# stdio, as a subprocess of your own service
+NOOTICR_API_KEY=nk_... npx @nooticr/mcp
+```
+
+On a server, prefer the environment variable: it is what every container
+runtime and secret manager already injects, and it leaves nothing on a disk
+that a redeploy is going to throw away. Where setting one is the awkward part
+— a laptop, or a client like Claude Desktop that does not inherit your shell —
+store the key in the credentials file instead:
+
+```bash
+npx @nooticr/mcp login --api-key nk_...
+```
+
+That checks the key against the server before writing it, so a typo fails
+while you are still there to fix it, and then behaves exactly like the
+environment variable: no browser, no refresh, valid until revoked. The file
+holds one credential, so this replaces any session an earlier `login` left
+behind (and `NOOTICR_API_KEY` still overrides it).
+
+```http
+# or against the remote endpoint, as an ordinary bearer token —
+# no /authorize, no PKCE, no redirect URI
+POST https://mcp.nooticr.com/mcp
+Authorization: Bearer nk_...
+```
+
+Managing them, from the dashboard's **API keys** card or the CLI:
+
+```bash
+npx @nooticr/mcp api-key create --name "staging" --expires-in-days 90
+npx @nooticr/mcp api-key list
+npx @nooticr/mcp api-key revoke <id>
+```
+
+Every command takes `--json` for scripting. A few things worth knowing:
+
+- The key is shown **once**, by `api-key create`. nooticr stores only a hash of
+  it and cannot show it again; `list` shows the head (`nk_1a2b3c4d…`) so you
+  can tell keys apart.
+- A key carries the scope of whoever created it — their account, and the
+  workspace they were in (`--workspace-id` picks another one you belong to).
+- A key **cannot create or revoke keys**. That is deliberate: it means a leaked
+  key cannot mint a replacement that outlives revoking the original.
+- `--expires-in-days` is optional. Without it a key does not expire on its own.
+- Revoking takes effect immediately at the API. The hosted remote endpoint
+  caches the "this key is real" answer for up to five minutes, which only ever
+  lets a revoked key see the tool list — every call that touches your account
+  is checked against nooticr-server on the spot.
+
 ## Usage in Claude Desktop
 
 After `npx @nooticr/mcp login`, add to `claude_desktop_config.json`:
@@ -455,6 +525,11 @@ nooticr-mcp --stdio            Same as above
 nooticr-mcp --http [--port N]  Start the remote HTTP transport with OAuth (default port 3457)
 nooticr-mcp login              Sign in to nooticr via Google in your browser
 nooticr-mcp login --email ... --password ...   Password login
+nooticr-mcp login --api-key nk_...             Sign in with an API key, no browser
+nooticr-mcp api-key create [--name N] [--expires-in-days D] [--workspace-id W] [--json]
+                               Mint a key for a server with no browser
+nooticr-mcp api-key list [--json]         List this account's keys
+nooticr-mcp api-key revoke <id> [--json]  Revoke one
 nooticr-mcp --help             Show help
 ```
 
@@ -463,7 +538,8 @@ nooticr-mcp --help             Show help
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NOOTICR_BASE_URL` | `https://api.nooticr.com` | nooticr server base URL (trailing slash stripped) |
-| `NOOTICR_ACCESS_TOKEN` | — | nooticr JWT access token; takes priority over the credentials file |
+| `NOOTICR_ACCESS_TOKEN` | — | nooticr JWT access token; takes priority over everything below |
+| `NOOTICR_API_KEY` | — | nooticr API key from `api-key create` — no browser, no refresh, valid until revoked; takes priority over the credentials file (including a key `login --api-key` put there) |
 | `NOOTICR_CREDENTIALS_FILE` | `~/.config/nooticr-mcp/credentials.json` | token store path |
 | `NOOTICR_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
 | `NOOTICR_PORT` | `3457` | port for `--http` and `login` |
@@ -471,10 +547,20 @@ nooticr-mcp --help             Show help
 
 ## How authentication works
 
-**stdio mode** (Claude Desktop, Cursor): the server uses the token from
-`NOOTICR_ACCESS_TOKEN` or the credentials file written by `login`. If the token
-is expired it is automatically refreshed with the stored refresh token, and if
-the nooticr API returns `401` the request is retried once after a refresh.
+**stdio mode** (Claude Desktop, Cursor): the server uses the first credential
+it finds — `NOOTICR_ACCESS_TOKEN`, then `NOOTICR_API_KEY`, then the credentials
+file written by `login`. That file holds one credential, whichever `login` last
+wrote: an API key (`login --api-key`) or a session. A session token that has
+expired is refreshed with the stored refresh token, and a `401` from the
+nooticr API is retried once after a refresh. An API key is never refreshed
+wherever it came from: it does not expire, so a `401` on one means revoked or
+mistyped, and retrying would only hide that.
+
+**API key** (any transport, no browser): send it as the bearer token, or set
+`NOOTICR_API_KEY`. nooticr-server resolves the key to its owner and the
+workspace it was scoped to, and every authorization check downstream sees
+exactly what it would have seen for a signed-in session. See
+[Running on a server](#running-on-a-server-no-browser).
 
 **HTTP mode** (OpenAI Agents SDK, remote clients): the server runs its own
 OAuth 2.0 authorization server (Authorization Code + PKCE S256, public client,
@@ -488,7 +574,9 @@ per the MCP 2025-03-26 spec):
   one-time code
 - `POST /token` — verifies PKCE and issues an opaque Bearer token bound to the
   nooticr session (valid 1 hour)
-- every MCP RPC validates the Bearer token against the session map
+- every MCP RPC validates the Bearer token against the session map — or, when
+  the bearer is an API key, forwards it to nooticr-server as the caller's own
+  credential, which is what makes this endpoint usable with no browser at all
 
 ## Supported URLs
 
@@ -508,8 +596,14 @@ and text** posts.
 
 ## Troubleshooting
 
-- **`Not authenticated with nooticr` / 401**: run `npx @nooticr/mcp login` or set
-  `NOOTICR_ACCESS_TOKEN`.
+- **`Not authenticated with nooticr` / 401**: run `npx @nooticr/mcp login`, or
+  set `NOOTICR_API_KEY` (see [Running on a server](#running-on-a-server-no-browser)).
+- **`unknown, revoked or expired nooticr API key`**: the key is not one this
+  account has live. `npx @nooticr/mcp api-key list` shows every key and its
+  state, revoked ones included.
+- **`API keys cannot manage API keys`**: `api-key create`/`list`/`revoke` need a
+  signed-in session, which is why they ignore a key in `NOOTICR_API_KEY` *and*
+  one stored by `login --api-key`. Run `npx @nooticr/mcp login` first.
 - **402 paywall / `insufficient MCP credits`**: your nooticr account is out of
   credits. Prices are listed per tool in [Tools](#tools) — 1 credit for a post
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
@@ -541,7 +635,12 @@ package for **Claude Desktop**, **Cursor**, and **OpenAI Agents SDK**.
   (in-memory).
 - Access tokens are opaque, random, and bound to the in-memory session map;
   they expire after 1 hour. Restarting the server invalidates all sessions.
-- Never share your credentials file or `NOOTICR_ACCESS_TOKEN`.
+- API keys are stored as a sha256 hash, never in the clear, so a database dump
+  cannot be replayed against the API. They are scoped to one account and one
+  workspace, carry their owner's role as it is *now* rather than as it was when
+  the key was minted, and cannot be used to create or revoke keys.
+- Never share your credentials file, `NOOTICR_ACCESS_TOKEN` or
+  `NOOTICR_API_KEY`.
 
 ## Development
 
