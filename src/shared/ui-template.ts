@@ -43,6 +43,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Discover Sounds",
     understand_social_post:"Understand Social Post",
     check_nooticr_credits:"Check Credits",
+    get_google_analytics:"Google Analytics",
+    get_search_console_data:"Search Console",
+    get_posthog_analytics:"PostHog",
     compose_sequence:"Compose Sequence",
     overlay_bake:"Overlay Bake",
     spawn_variants:"Spawn Variants",
@@ -72,6 +75,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
     understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
+    get_google_analytics:"Your GA4 sync, as of its last sync.",
+    get_search_console_data:"Search clicks, impressions and top queries, as of the last sync.",
+    get_posthog_analytics:"Your PostHog pageview trend, as of the last sync.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
     spawn_variants:"Generate multiple content variants from a single seed.",
@@ -2998,6 +3004,62 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +"</div>";
   }
 
+  // ─── Connector reads (get_google_analytics, get_search_console_data,
+  // get_posthog_analytics) ───
+  //
+  // Every one is a stored sync, so "as of" leads the card: a number drawn
+  // without its date is read as today's (#104).
+  function renderConnector(d){
+    var names={google_analytics:"Google Analytics",search_console:"Search Console",posthog:"PostHog"};
+    var name=names[d.connector]||"Analytics";
+    var when=String(d.synced_at||d.lastSync||d.lastRefresh||"");
+    var asOf=when?"as of "+esc(when.slice(0,16).split("T").join(" "))+" UTC · not live":"sync time not reported";
+    var head='<div style="margin-bottom:12px"><div style="font-size:15px;font-weight:700">'+esc(name)
+      +(d.appName?" · "+esc(d.appName):"")+"</div>"
+      +'<div data-as-of style="font-size:12px;color:var(--muted);margin-top:2px">'+asOf+"</div></div>";
+    if(d.message){
+      return '<div class="fade-in">'+head+'<div class="empty-state"><div class="icon">📊</div><div class="text">'+esc(d.message)+"</div></div></div>";
+    }
+    function tile(label,val){
+      return '<div style="flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
+        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
+        +'<div style="font-size:18px;font-weight:700;margin-top:3px">'+esc(String(val))+"</div></div>";
+    }
+    var body="";
+    if(d.connector==="search_console"){
+      var clicks=Number(d.clicks)||0,imp=Number(d.impressions)||0;
+      body='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
+        +tile("Clicks",fmtNum(clicks))+tile("Impressions",fmtNum(imp))
+        +tile("Click-through",imp?(Math.round(clicks/imp*1000)/10)+"%":"—")+"</div>"
+        +(d.error?'<div style="font-size:12px;color:var(--red);margin-bottom:8px">Search Console refused the last sync: '+esc(d.error)+"</div>":"")
+        +((d.topQueries||[]).length
+          ?'<div class="sec-label">Top queries</div>'+(d.topQueries||[]).map(function(q,i){
+            return '<div data-query style="padding:6px 0;border-top:1px solid var(--border);font-size:13px"><span style="color:var(--muted);margin-right:8px">'+(i+1)+"</span>"+esc(q)+"</div>";
+          }).join("")
+          :"");
+    }else if(d.connector==="google_analytics"){
+      var r=d.dateRange||{};
+      body='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+        +tile("Days synced",d.rowsSynced==null?"—":d.rowsSynced)
+        +tile("Range",(r.from||"?")+" → "+(r.to||"?"))+"</div>"
+        +(d.propertyId?'<div style="font-size:12px;color:var(--muted)">Property '+esc(d.propertyId)+"</div>":"")
+        +'<div style="font-size:12px;color:var(--muted);margin-top:6px">The metrics themselves feed post performance and the growth brief.</div>';
+    }else{
+      var series=Array.isArray(d.result)?d.result:[];
+      body=series.length?series.map(function(s){
+        var pts=Array.isArray(s.data)?s.data.map(Number):[];
+        var total=pts.reduce(function(a,b){return a+(b||0);},0),max=Math.max.apply(null,pts.concat([1]));
+        var bars=pts.slice(-30).map(function(v){
+          return '<span style="display:inline-block;width:6px;margin-right:2px;background:var(--fg);opacity:.55;height:'+Math.max(2,Math.round((v||0)/max*40))+'px"></span>';
+        }).join("");
+        return '<div data-series style="margin-bottom:12px"><div style="font-size:13px;font-weight:600">'+esc(s.label||s.action&&s.action.name||"Pageviews")
+          +' <span style="color:var(--muted);font-weight:500">· '+fmtNum(total)+" total</span></div>"
+          +'<div style="display:flex;align-items:flex-end;height:44px;margin-top:6px">'+bars+"</div></div>";
+      }).join(""):'<div style="font-size:13px;color:var(--muted)">No trend in the last sync.</div>';
+    }
+    return '<div class="fade-in">'+head+body+"</div>";
+  }
+
   // ─── Vetting strip ───
   //
   // Only show_collab_shortlist sends these fields, so every other creator card
@@ -4615,6 +4677,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +"</div></div>"+player+"</div>";
       }).join(""),d.sounds.length);return;}
     // Credits
+    if(d.connector==="google_analytics"||d.connector==="search_console"||d.connector==="posthog"){app.innerHTML=renderConnector(d);setTimeout(reportSize,50);return;}
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];
       var freeHtml="";

@@ -753,6 +753,10 @@ export function createMcpServer(
   "get_scheduled_posts",
   "get_post_performance",
   "get_video_stats",
+  // The connector reads (#104): stored syncs, drawn by their own view.
+  "get_google_analytics",
+  "get_search_console_data",
+  "get_posthog_analytics",
   // get_content_plan gets the same card generate_content_plan does: they
   // return the same `plan` shape, so the generic template already renders it.
   "get_content_plan",

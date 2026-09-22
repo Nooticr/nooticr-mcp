@@ -538,6 +538,9 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   get_scheduled_posts: { label: "Reading your pipeline", kind: "list", n: 5, steps: [], free: true },
   get_post_performance: { label: "Reading your numbers", kind: "list", n: 5, steps: [], free: true },
   get_video_stats: { label: "Reading the last sync", kind: "strip", n: 3, steps: [], free: true },
+  get_google_analytics: { label: "Reading your last GA4 sync", kind: "text", n: 1, steps: [], free: true },
+  get_search_console_data: { label: "Reading your last Search Console sync", kind: "text", n: 1, steps: [], free: true },
+  get_posthog_analytics: { label: "Reading your last PostHog sync", kind: "text", n: 1, steps: [], free: true },
   get_brand_playbook: { label: "Reading the playbook", kind: "text", n: 1, steps: [], free: true },
 
   // ─── The product analysis: the one own-account tool that spends ───

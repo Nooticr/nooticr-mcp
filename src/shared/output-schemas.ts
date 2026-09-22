@@ -1343,6 +1343,47 @@ export const OUTPUT_SCHEMAS = {
    * ui-template.ts's shared posts-gallery view picks this up. Declared here
    * too so a host validating structuredContent does not choke on it.
    */
+  // The connector reads (#104). Each is the backend's connector_sync_cache
+  // row as stored, plus `synced_at`, the hoisted appId/appName, and the
+  // `connector` this surface adds so the view knows which table to draw.
+  get_google_analytics: open({
+    connector: scalar(),
+    propertyId: scalar(),
+    rowsSynced: scalar(),
+    dateRange: open({ from: scalar(), to: scalar() }).nullish(),
+    lastSync: scalar(),
+    synced_at: scalar().describe("When nooticr last synced this. Not live: say this date when quoting it."),
+    message: scalar().describe("Set instead of data when nothing has been synced yet."),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  get_search_console_data: open({
+    connector: scalar(),
+    clicks: scalar(),
+    impressions: scalar(),
+    topQueries: listOf(z.string()),
+    error: scalar().describe("Search Console's own error at the last sync, when it refused."),
+    synced_at: scalar().describe("When nooticr last synced this. Not live: say this date when quoting it."),
+    message: scalar(),
+    appId: scalar(),
+    appName: scalar(),
+  }),
+  get_posthog_analytics: open({
+    connector: scalar(),
+    projectId: scalar(),
+    result: listOf(
+      open({
+        label: scalar(),
+        data: listOf(z.number()).describe("One count per day, aligned with days."),
+        days: listOf(z.string()),
+      }),
+    ).describe("PostHog's pageview trend series, as its API returned them."),
+    lastRefresh: scalar(),
+    synced_at: scalar().describe("When nooticr last synced this. Not live: say this date when quoting it."),
+    message: scalar(),
+    appId: scalar(),
+    appName: scalar(),
+  }),
   get_video_stats: open({
     videos: listOf(
       open({

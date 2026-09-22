@@ -392,6 +392,94 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
     },
   );
 
+  /**
+   * The three connector reads (#104): GA4, Search Console, PostHog, as of
+   * their last sync into nooticr. They are the only tools here that say
+   * whether social moved a business metric, which is why they exist; the
+   * staleness is why the sync time is said in the text as well as the
+   * payload. A model that reads "1,204 clicks" without "as of" states a
+   * week-old number as today's.
+   */
+  const connectorRead = (
+    name: string,
+    connector: "google_analytics" | "search_console" | "posthog",
+    title: string,
+    description: string,
+  ) =>
+    server.registerTool(
+      name,
+      {
+        title,
+        description,
+        _meta: viewMeta(name),
+        // nooticr's own stored copy: nothing reaches Google or PostHog.
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        inputSchema: z
+          .object({
+            appId: z
+              .number()
+              .int()
+              .optional()
+              .describe("Your product's id. Omit only with a single-app workspace."),
+          })
+          .strict(),
+        outputSchema: OUTPUT_SCHEMAS[name as keyof typeof OUTPUT_SCHEMAS],
+      },
+      async (args: { appId?: number }, extra) => {
+        const client = await makeClient({ ...extra, arguments: args });
+        try {
+          const proxy = await client.callTool(name, args);
+          const data: Record<string, unknown> = { ...((proxy.structured ?? {}) as Record<string, unknown>), connector };
+          const synced = String(data.synced_at ?? data.lastSync ?? data.lastRefresh ?? "");
+          const lead = data.message
+            ? String(data.message)
+            : synced
+              ? `${title.replace(/^Get /, "")} for ${String(data.appName ?? "your product")}, as of its last sync at ` +
+                `${synced} — not live. Say that date whenever you quote a number from it.`
+              : `${title.replace(/^Get /, "")} for ${String(data.appName ?? "your product")}; the sync time was not reported, so do not present these as current.`;
+          return {
+            content: [{ type: "text" as const, text: `${lead}\n\n${JSON.stringify(data, null, 2)}` }],
+            structuredContent: data,
+          };
+        } catch (err) {
+          return failed(`${name} failed`, err);
+        }
+      },
+    );
+
+  connectorRead(
+    "get_google_analytics",
+    "google_analytics",
+    "Get Google Analytics",
+    "Your own product's Google Analytics (GA4) sync, as of its last sync into nooticr — not a live " +
+      "GA4 call: the property, the date range synced and how many daily rows came in. The metrics " +
+      "themselves (installs, opens, purchases, revenue) feed get_post_performance and growth_brief " +
+      "rather than being repeated here. Returns a message rather than an error when nothing has " +
+      "ever been synced; connect GA4 in API Connections first. Takes appId (optional when your " +
+      "workspace has only one product). No cost to call.",
+  );
+  connectorRead(
+    "get_search_console_data",
+    "search_console",
+    "Get Search Console Data",
+    "Your own product's Google Search Console data — total clicks and impressions and the top " +
+      "search queries — as of its last sync into nooticr, not a live Search Console call. Use it " +
+      "to see whether people search for what your social content is about. Returns a message " +
+      "rather than an error when nothing has been synced; connect Search Console in API " +
+      "Connections first. Takes appId (optional when your workspace has only one product). No " +
+      "cost to call.",
+  );
+  connectorRead(
+    "get_posthog_analytics",
+    "posthog",
+    "Get PostHog Analytics",
+    "Your own product's PostHog pageview trend as of its last sync into nooticr — not a live " +
+      "PostHog call. Use it to line a post's date up against traffic to your site. Returns a " +
+      "message rather than an error when nothing has been synced; connect PostHog in API " +
+      "Connections first. Takes appId (optional when your workspace has only one product). No " +
+      "cost to call.",
+  );
+
   server.registerTool(
     "analyze_product",
     {

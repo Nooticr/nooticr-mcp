@@ -548,6 +548,24 @@ export const TOOLS: Tool[] = [
     when: "A quick total without spending anything.",
   },
   {
+    name: "get_google_analytics", cost: 0, group: "own",
+    args: "appId?",
+    desc: "Your GA4 sync as of its last sync: property, date range, rows synced.",
+    when: "Checking your GA4 data is flowing into nooticr.",
+  },
+  {
+    name: "get_search_console_data", cost: 0, group: "own",
+    args: "appId?",
+    desc: "Search Console clicks, impressions and top queries as of the last sync.",
+    when: "Whether people search for what your content is about.",
+  },
+  {
+    name: "get_posthog_analytics", cost: 0, group: "own",
+    args: "appId?",
+    desc: "Your PostHog pageview trend as of the last sync.",
+    when: "Lining a post's date up against traffic to your site.",
+  },
+  {
     name: "list_social_connections", cost: 0, group: "own",
     args: "\u2014",
     desc: "Which social accounts your workspace has connected and what each one is allowed to do \u2014 read, publish, manage comments \u2014 plus which platforms can be connected at all.",

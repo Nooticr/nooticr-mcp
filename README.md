@@ -185,6 +185,9 @@ Everything above reads someone else's content. These read and generate for **you
 | `get_scheduled_posts` | free | Your own scheduled and draft posts in the content pipeline — title, status, scheduled time, approval status. What is queued to publish. |
 | `get_post_performance` | free | Your own already-published posts with their engagement counters — views, likes, comments, shares, platform, post date. The raw performance history, not an interpretation of it; pair with `growth_brief` for that. |
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
+| `get_google_analytics` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
+| `get_search_console_data` | free | Search Console clicks, impressions and top queries, as of the last sync — whether people search for what your content is about. |
+| `get_posthog_analytics` | free | Your PostHog pageview trend, as of the last sync — line a post's date up against traffic to your site. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
 | `get_brand_playbook` | free | Your product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by `analyze_product`. Read-only; `available: false` when none exists. |
 | `review_post` | free | Score a draft before you publish it — hook strength, an A/B hook comparison, aesthetic and storytelling notes, rewritten hooks/captions. Never billed, same as the dashboard's own pre-publish review. |

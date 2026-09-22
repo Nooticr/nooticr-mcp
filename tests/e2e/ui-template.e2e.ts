@@ -2410,3 +2410,20 @@ test("a classified reply carries its category chip", async ({ page }) => {
   });
   await expect(page.locator(".reply-row .chip-cat")).toContainText("bug report");
 });
+
+// #104: a connector read leads with when it was synced, and a never-synced
+// connector draws its message rather than empty tiles.
+test("connector reads show their sync time, and a never-synced one its message", async ({ page }) => {
+  await renderTemplate(page, {
+    connector: "search_console", clicks: 412, impressions: 18950,
+    topQueries: ["competitor tracking tool", "fixture app pricing"],
+    synced_at: "2026-09-22T06:00:00Z", appName: "Acme",
+  });
+  await expect(page.locator("[data-as-of]")).toContainText("2026-09-22 06:00 UTC · not live");
+  await expect(page.locator("[data-query]")).toHaveCount(2);
+  await expect(page.locator("body")).toContainText("2.2%");
+
+  await renderTemplate(page, { connector: "posthog", message: "No PostHog data synced yet. Connect PostHog in API Connections." });
+  await expect(page.locator("body")).toContainText("No PostHog data synced yet");
+  await expect(page.locator("[data-series]")).toHaveCount(0);
+});

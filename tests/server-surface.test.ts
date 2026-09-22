@@ -80,7 +80,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(76);
+    expect(tools).toHaveLength(79);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -113,8 +113,11 @@ describe("tool annotations", () => {
       "generate_content_plan",
       "get_brand_playbook",
       "get_content_plan",
+      "get_google_analytics",
       "get_post_performance",
+      "get_posthog_analytics",
       "get_scheduled_posts",
+      "get_search_console_data",
       "get_video_stats",
       "growth_brief",
       "list_brand_watches",
