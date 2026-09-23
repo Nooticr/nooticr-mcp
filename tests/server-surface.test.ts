@@ -40,6 +40,8 @@ const NOT_READ_ONLY = [
   // state. list_brand_watches only reads, so it stays out of this list.
   "create_brand_watch",
   "stop_brand_watch",
+  // Rewrites a portfolio watch's stored terms.
+  "update_watch_portfolio",
   // Own-account generation: each spends the workspace's plan AI credits.
   "draft_post",
   "generate_captions",
@@ -80,7 +82,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(87);
+    expect(tools).toHaveLength(88);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -169,6 +171,7 @@ describe("tool annotations", () => {
       "stop_brand_watch",
       "unwatch_creator",
       "update_product",
+      "update_watch_portfolio",
       "watch_creator",
     ]);
   });

@@ -320,6 +320,102 @@ describe("a competitor watch, priced differently from a mentions watch", () => {
 });
 
 /**
+ * The two kinds added for #97 and #99, each priced from what its runs call:
+ * a report at its job tool's own price, a portfolio at a mentions sweep per
+ * term.
+ */
+describe("a report watch and a portfolio watch", () => {
+  const confirmed = { confirm: true, confirmationToken: "t", cadence: "daily" };
+
+  it("quotes a scheduled niche_report at that tool's price and names the niche", async () => {
+    const { client, calls, asked } = await connect("accept");
+    await client.callTool({
+      name: "create_brand_watch",
+      arguments: {
+        kind: "report",
+        job: { tool: "niche_report", args: { niche: "home fitness" } },
+        ...confirmed,
+      },
+    });
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toMatch(/3 credits every run, about 3 a day/);
+    expect(asked[0]).toContain("home fitness");
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(1);
+  });
+
+  it("prices a discovery job that opens posts for comments by the posts it opens", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool({
+      name: "create_brand_watch",
+      arguments: {
+        kind: "report",
+        job: {
+          tool: "discover_social_posts",
+          args: { niche: "fitness", includeComments: true, openPosts: 3 },
+        },
+        ...confirmed,
+      },
+    });
+    expect(asked[0]).toMatch(/5 credits every run/);
+  });
+
+  it("refuses a job that is not on the schedulable list before anything is sent", async () => {
+    const { client, calls } = await connect("accept");
+    const result = await client.callTool({
+      name: "create_brand_watch",
+      arguments: {
+        kind: "report",
+        job: { tool: "analyze_creator_profile", args: { niche: "x" } },
+        ...confirmed,
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(0);
+  });
+
+  it("quotes a portfolio as one sweep per term and lists the terms", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool({
+      name: "create_brand_watch",
+      arguments: {
+        kind: "portfolio",
+        terms: ["acme", "rival", "Rival"],
+        platforms: ["reddit", "tiktok"],
+        ...confirmed,
+      },
+    });
+    // Two terms after dedupe, 4 credits each across two networks.
+    expect(asked[0]).toMatch(/8 credits every run, about 8 a day/);
+    expect(asked[0]).toContain("acme, rival");
+    expect(asked[0].toLowerCase()).toContain("share of voice");
+  });
+
+  it("caps a portfolio quote at its budget, like any other watch", async () => {
+    const { client, asked } = await connect("accept");
+    await client.callTool({
+      name: "create_brand_watch",
+      arguments: {
+        kind: "portfolio",
+        terms: ["acme", "rival"],
+        platforms: ["reddit", "tiktok"],
+        budgetCredits: 4,
+        ...confirmed,
+      },
+    });
+    expect(asked[0]).toMatch(/4 credits every run/);
+  });
+
+  it("creates nothing when the user declines a portfolio", async () => {
+    const { client, calls } = await connect("decline");
+    await client.callTool({
+      name: "create_brand_watch",
+      arguments: { kind: "portfolio", terms: ["acme"], ...confirmed },
+    });
+    expect(calls.filter((c) => c.name === "create_brand_watch")).toHaveLength(0);
+  });
+});
+
+/**
  * deliverTo is the argument that can carry the answer somewhere the user did
  * not choose, on a schedule. The model picks it, and the model spends its day
  * reading captions and comments written by strangers.

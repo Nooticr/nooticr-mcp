@@ -47,8 +47,29 @@ const CADENCE_RATE: Record<Cadence, { runs: number; per: string }> = {
 };
 
 /** Mirrors `crate::brand_watch::WatchKind` (nooticr-server, brand_watch.rs). */
-const KINDS = ["mentions", "competitor"] as const;
+const KINDS = ["mentions", "competitor", "report", "portfolio"] as const;
 type WatchKind = (typeof KINDS)[number];
+
+/**
+ * Mirrors `SCHEDULABLE_JOBS` in nooticr-server's brand_watch.rs: the tools a
+ * report watch may run. Anything else is refused there too; listing them here
+ * is so the enum a host sees is the list that will actually be accepted.
+ */
+export const SCHEDULABLE_JOBS = ["niche_report", "discover_social_posts"] as const;
+
+/** Mirrors `MAX_PORTFOLIO_TERMS` (and the migration's check). */
+const MAX_PORTFOLIO_TERMS = 25;
+
+interface JobArgs {
+  niche: string;
+  platform?: string;
+  count?: number;
+  keywords?: string;
+  limit?: number;
+  includeComments?: boolean;
+  openPosts?: number;
+  commentsPerPost?: number;
+}
 
 interface CreateArgs {
   kind?: WatchKind;
@@ -59,6 +80,10 @@ interface CreateArgs {
   handle?: string;
   /** Required for `kind: "competitor"`; ignored for `"mentions"`. */
   platform?: string;
+  /** Required for `kind: "report"`. */
+  job?: { tool: (typeof SCHEDULABLE_JOBS)[number]; args: JobArgs };
+  /** Required for `kind: "portfolio"`. */
+  terms?: string[];
   cadence?: Cadence;
   budgetCredits?: number;
   deliverTo?: string;
@@ -76,6 +101,47 @@ interface CreateArgs {
  */
 function competitorWatchCost(): number {
   return BACKEND_CALL_CREDITS.get_user_posts;
+}
+
+/**
+ * What one run of a report watch bills: its job's own price, the same number
+ * `mcp_tool_cost_for` charges for that call by hand. A discovery job that
+ * opens posts for their comments pays one call per post opened.
+ */
+function reportWatchCost(job: CreateArgs["job"]): number {
+  if (!job) return 0;
+  if (job.tool === "niche_report") return NICHE_REPORT_CREDITS;
+  const base = BACKEND_CALL_CREDITS.discover_social_posts;
+  if (!job.args?.includeComments) return base;
+  const opened = Math.min(10, Math.max(1, Math.trunc(job.args.openPosts ?? 5)));
+  return base + opened;
+}
+
+/** `niche_report`'s price in `mcp_tool_cost` — text-only AI, no video. */
+const NICHE_REPORT_CREDITS = 3;
+
+/** The terms a portfolio watch sweeps, as the server will read them. */
+function portfolioTerms(terms: string[] | undefined): string[] {
+  const out: string[] = [];
+  for (const raw of terms ?? []) {
+    const t = raw.trim();
+    if (t && !out.some((o) => o.toLowerCase() === t.toLowerCase())) out.push(t);
+  }
+  return out;
+}
+
+/** An upper bound on one run of any kind, before the budget ceiling. */
+function sweepCost(args: CreateArgs): number {
+  switch (args.kind ?? "mentions") {
+    case "competitor":
+      return competitorWatchCost();
+    case "report":
+      return reportWatchCost(args.job);
+    case "portfolio":
+      return searchMentionsCost(args.platforms) * Math.max(1, portfolioTerms(args.terms).length);
+    default:
+      return searchMentionsCost(args.platforms);
+  }
 }
 
 /**
@@ -105,7 +171,7 @@ async function gateRecurringCharge(
   // means a competitor watch's single 2-credit call always fits, so there is
   // nothing to trim in practice — unlike a mentions sweep, which frequently
   // does.
-  const sweep = kind === "competitor" ? competitorWatchCost() : searchMentionsCost(args.platforms);
+  const sweep = sweepCost(args);
   // An upper bound on the run, deliberately, rather than the exact figure.
   // The server does not bill the budget: `plan_run` drops whole platforms
   // until the rest fit under it, so a ceiling of 9 against 2-credit networks
@@ -116,12 +182,24 @@ async function gateRecurringCharge(
   const rate = CADENCE_RATE[args.cadence ?? "daily"];
   const perPeriod = perRun * rate.runs;
   const where = args.deliverTo ? ` Its digest goes to ${args.deliverTo}.` : "";
+  const every = (args.cadence ?? "daily").replace(/_/g, " ");
+  const terms = portfolioTerms(args.terms);
   const label =
-    kind === "competitor" ? `@${args.handle} on ${args.platform ?? "?"}` : `"${args.term}"`;
+    kind === "competitor"
+      ? `@${args.handle} on ${args.platform ?? "?"}`
+      : kind === "report"
+        ? `"${args.job?.args?.niche ?? "?"}" with ${args.job?.tool ?? "?"}`
+        : kind === "portfolio"
+          ? `${terms.length} term${terms.length === 1 ? "" : "s"} (${terms.join(", ")})`
+          : `"${args.term}"`;
   const what =
     kind === "competitor"
-      ? `email what beats their own median, ${(args.cadence ?? "daily").replace(/_/g, " ")}`
-      : `email what is new, ${(args.cadence ?? "daily").replace(/_/g, " ")}`;
+      ? `email what beats their own median, ${every}`
+      : kind === "report"
+        ? `email the result, ${every}`
+        : kind === "portfolio"
+          ? `email one digest with each term's share of voice, ${every}`
+          : `email what is new, ${every}`;
 
   const decision = await confirmSpend(server.server, {
     credits: perPeriod,
@@ -141,10 +219,13 @@ async function gateRecurringCharge(
     // Said plainly, because the first model to meet this read "cancelled" as
     // a server fault and reported the feature broken — one retry away from
     // treating a person's "no" as an obstacle to route around.
-    const oneOff =
+    const oneOffTool =
       kind === "competitor"
-        ? `A one-off get_user_posts call costs ${perRun} credits and repeats never.`
-        : `A one-off search_mentions sweep costs ${perRun} credits and repeats never.`;
+        ? "get_user_posts call"
+        : kind === "report"
+          ? `${args.job?.tool ?? "report"} call`
+          : "search_mentions sweep";
+    const oneOff = `A one-off ${oneOffTool} costs ${kind === "portfolio" ? searchMentionsCost(args.platforms) : perRun} credits${kind === "portfolio" ? " per term" : ""} and repeats never.`;
     return declinedResult(
       perPeriod,
       `That watch`,
@@ -252,6 +333,42 @@ function perPlatformDirection(runs: Array<Record<string, unknown>>): string {
   );
 }
 
+/**
+ * A portfolio's share of voice, newest run against oldest — computed here for
+ * the same reason `perPlatformDirection` is: `runs` is newest-first.
+ */
+function portfolioShare(runs: Array<Record<string, unknown>>): string {
+  const at = (r: Record<string, unknown>) => String(r.ranAt ?? "");
+  const chronological = [...runs].sort((a, b) => (at(a) < at(b) ? -1 : 1));
+  const shareOf = (r: Record<string, unknown> | undefined) =>
+    (r?.perTerm ?? {}) as Record<string, { found?: unknown; share?: unknown; error?: unknown }>;
+  const latest = shareOf(chronological[chronological.length - 1]);
+  const earliest = shareOf(chronological[0]);
+  const terms = Object.keys(latest);
+  if (!terms.length) {
+    return (
+      "This is a portfolio watch, but no run in this window recorded per-term counts, so there " +
+      "is no share of voice to report yet."
+    );
+  }
+  const said = terms
+    .map((t) => {
+      const now = latest[t];
+      if (now?.error) return `${t}: not searched in the latest run (its sweep failed and was refunded)`;
+      const then = earliest[t];
+      const was =
+        chronological.length > 1 && typeof then?.share === "number" ? `, from ${then.share}%` : "";
+      return `${t}: ${now?.share ?? 0}% of mentions found (${now?.found ?? 0})${was}`;
+    })
+    .join("; ");
+  return (
+    `This is a portfolio watch, so each point also carries \`perTerm\` — every term's found and new ` +
+    `counts and its share of all mentions found that run. Latest run: ${said}. A share is only ` +
+    "comparable between terms because every term was searched on the same networks; a term " +
+    "added to the portfolio part-way through has no share before it was added, which is not zero."
+  );
+}
+
 function trendGuidance(sc: Record<string, unknown>, runs: Array<Record<string, unknown>>): string {
   const n = runs.length;
   const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -329,6 +446,10 @@ function trendGuidance(sc: Record<string, unknown>, runs: Array<Record<string, u
       "period when nobody was talking.",
   );
 
+  if (sc.kind === "portfolio") {
+    lines.push("", portfolioShare(runs));
+  }
+
   const recurring = Array.isArray(sc.recurring) ? sc.recurring : [];
   if (recurring.length) {
     lines.push(
@@ -383,13 +504,21 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
       title: "Create Brand Watch",
       description:
         "Run a sweep on a schedule and email the user what is new, instead of them remembering to " +
-        "ask. Two kinds, chosen with kind: kind: \"mentions\" (the default — omit kind entirely for " +
+        "ask. Four kinds, chosen with kind: kind: \"mentions\" (the default — omit kind entirely for " +
         "this one) runs a brand-mentions sweep for term across platforms; kind: \"competitor\" runs " +
         "a get_user_posts sweep for one creator (handle + platform) and reports only the posts that " +
         "beat that creator's own recent median — a raw view count would just measure follower size, " +
-        "so a run only mails what is unusually good for them. term/platforms belong to a mentions " +
-        "watch; handle/platform belong to a competitor watch — pass the pair that matches kind and " +
-        "leave the other pair out. Two calls by design, because this starts a charge that recurs " +
+        "so a run only mails what is unusually good for them; kind: \"report\" runs one tool on the " +
+        "schedule, given as job: {tool, args} — niche_report (the report is mailed as written every " +
+        "run) or discover_social_posts (only posts no earlier run mailed) — billed at that tool's " +
+        "own price; kind: \"portfolio\" sweeps several terms at once (a brand, its products and its " +
+        "competitors, up to 25) across the same platforms under one budget and mails one digest with " +
+        "each term's share of voice — the budget is split evenly across the terms and trims " +
+        "networks, never terms, and a term whose sweep fails is refunded. Add or remove a " +
+        "portfolio's terms later with update_watch_portfolio. term/platforms belong to a mentions " +
+        "watch; handle/platform belong to a competitor watch; job to a report; terms/platforms (and " +
+        "optionally term, as the portfolio's name) to a portfolio — pass what matches kind and " +
+        "leave the rest out. Two calls by design, because this starts a charge that recurs " +
         "while nobody is watching: call it once with no confirmation to get back the cost per run, " +
         "the cadence and what those multiply out to per day, put those numbers to the user in your " +
         "reply, and only then call it again with confirm: true and the confirmationToken you were " +
@@ -401,7 +530,9 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "between them and a standing charge. Each run bills exactly what the same call costs when a " +
         "person asks for it themselves: for a mentions watch, 2 credits per network swept, 5 for " +
         "Xiaohongshu; for a competitor watch, a flat 2 credits (one get_user_posts call), whatever " +
-        "the platform. budgetCredits is a hard per-run ceiling enforced on the server, not a " +
+        "the platform; for a report, the job tool's own price (niche_report 3, discover_social_posts " +
+        "2, plus 1 per post opened for comments); for a portfolio, a mentions sweep per term. " +
+        "budgetCredits is a hard per-run ceiling enforced on the server, not a " +
         "suggestion — a mentions sweep that would cost more is trimmed to the networks that fit, " +
         "never widened. A run that turns up nothing new — or, for a competitor watch, nothing above " +
         "median — sends no mail. cadence is hourly, every_6_hours, every_12_hours, daily or weekly, " +
@@ -413,8 +544,8 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
             .enum(KINDS)
             .optional()
             .describe(
-              "\"mentions\" (default) or \"competitor\". Selects which of the two argument pairs " +
-                "below applies.",
+              "\"mentions\" (default), \"competitor\", \"report\" or \"portfolio\". Selects which " +
+                "of the arguments below apply.",
             ),
           term: z
             .string()
@@ -445,6 +576,41 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
             .describe(
               "Required for kind: \"competitor\" — the single network that creator posts on, e.g. " +
                 "\"tiktok\". Not used for a mentions watch.",
+            ),
+          job: z
+            .object({
+              tool: z
+                .enum(SCHEDULABLE_JOBS)
+                .describe("The tool to run on the schedule. Only these two can be scheduled."),
+              args: z
+                .object({
+                  niche: z.string().describe("Niche or topic, e.g. \"home fitness\"."),
+                  platform: z.string().optional().describe("Platform to read (the tool's own default when omitted)."),
+                  count: z.number().int().optional().describe("niche_report only: posts to survey (default 20, max 40)."),
+                  keywords: z.string().optional().describe("discover_social_posts only: extra keywords."),
+                  limit: z.number().int().optional().describe("discover_social_posts only: max posts (default 6)."),
+                  includeComments: z
+                    .boolean()
+                    .optional()
+                    .describe("discover_social_posts only: also read comments — 1 extra credit per post opened, every run."),
+                  openPosts: z.number().int().optional().describe("discover_social_posts only: posts to open for comments (default 5, max 10)."),
+                  commentsPerPost: z.number().int().optional().describe("discover_social_posts only: comments per opened post."),
+                })
+                .strict()
+                .describe("The arguments the tool would take by hand. Pagination is not schedulable."),
+            })
+            .strict()
+            .optional()
+            .describe("Required for kind: \"report\" — the job each run performs. Not used for other kinds."),
+          terms: z
+            .array(z.string())
+            .min(1)
+            .max(MAX_PORTFOLIO_TERMS)
+            .optional()
+            .describe(
+              "Required for kind: \"portfolio\" — the terms to compare, e.g. your brand, your " +
+                "products and your competitors (1-25, duplicates ignored). Each is swept across " +
+                "platforms. Not used for other kinds; for a portfolio, term is its optional name.",
             ),
           cadence: z.enum(CADENCES).optional().describe("How often to run. Defaults to daily."),
           budgetCredits: z
@@ -611,6 +777,66 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         };
       } catch (err) {
         return failed("mention_trend failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "update_watch_portfolio",
+    {
+      title: "Update Watch Portfolio",
+      description:
+        "Add terms to a portfolio brand watch, or remove them, by watchId, with add and/or remove " +
+        "lists. No new confirmation: the per-run budget and cadence the user agreed to do not " +
+        "change, so a run still never costs more than that ceiling — but more terms split the same " +
+        "budget more ways, so the response says which networks a run will still search. If it " +
+        "names any in platformsSkipped, tell the user those networks are no longer searched and " +
+        "offer to remove a term or recreate the watch with a larger budget. A change the budget " +
+        "cannot cover at all is refused and nothing changes. No cost to call: no credits are spent.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          watchId: z.string().describe("The portfolio watch's id, from list_brand_watches."),
+          add: z.array(z.string()).optional().describe("Terms to add (duplicates ignored)."),
+          remove: z
+            .array(z.string())
+            .optional()
+            .describe("Terms to take out, matched without regard to case."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.update_watch_portfolio,
+    },
+    async (args, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        const result = toResult(
+          await client.callTool("update_watch_portfolio", args as Record<string, unknown>),
+        );
+        const sc = (result.structuredContent ?? {}) as Record<string, unknown>;
+        if (!sc.updated) return result;
+        // Both channels (#44, #51): a host that renders structuredContent drops
+        // the text block, and one that shows only text never sees the payload —
+        // and a network the split budget stopped reaching is the one thing
+        // here the user has to be told.
+        const skipped = Array.isArray(sc.platformsSkipped) ? (sc.platformsSkipped as string[]) : [];
+        const terms = Array.isArray(sc.terms) ? (sc.terms as string[]) : [];
+        const guidance =
+          `The portfolio now watches ${terms.length} term${terms.length === 1 ? "" : "s"}: ` +
+          `${terms.join(", ")}. A run costs ${sc.costPerRun ?? "?"} credits, within the ` +
+          `${sc.budgetPerRun ?? "?"}-credit ceiling already agreed, and searches ` +
+          `${(Array.isArray(sc.platformsSearched) ? (sc.platformsSearched as string[]) : []).join(", ") || "no network"}.` +
+          (skipped.length
+            ? ` Split this many ways, the budget no longer reaches ${skipped.join(", ")} — tell the ` +
+              "user those networks are not searched for any term now, and offer to remove a term " +
+              "or recreate the watch with a larger budget if they matter."
+            : "");
+        const payload = { guidance, ...sc };
+        return {
+          content: [{ type: "text" as const, text: guidance }],
+          structuredContent: payload,
+        };
+      } catch (err) {
+        return failed("update_watch_portfolio failed", err);
       }
     },
   );
