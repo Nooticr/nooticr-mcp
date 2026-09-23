@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-85 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+86 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -152,6 +152,7 @@ a `scanId` for the rest.
 | `marketplace_scan_status` | free | Picks a running marketplace collection back up by `scanId` and the same `marketplace`. Free, for the same reason `amazon_scan_status` is. |
 | `get_marketplace_product` | 3 | One product from any of the twelve sites, by id or URL: price, rating, the full star histogram, specs and the reviews. |
 | `show_amazon_category_insights` | free | Draws the read **your model** wrote — purchase drivers, barriers, what each brand does well, the gaps, the positioning angles — beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. The conclusions are attributed to your model, never presented as a nooticr rating of anyone's product. Given the `scanId`, it re-reads the listings from the scan itself (free) instead of drawing whatever the model re-sends, and flags any ASIN the read cites that the scan does not contain; without one, the card says its listings were not checked. |
+| `show_marketplace_category_insights` | free | The same card for the other eleven marketplaces: your read beside that site's listings and reviews, labelled with the right site, re-read from the scan by `scanId` and `marketplace` so nothing is re-typed. |
 
 ### Make something
 

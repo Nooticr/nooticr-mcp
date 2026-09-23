@@ -458,6 +458,13 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     steps: [],
     free: true,
   },
+  show_marketplace_category_insights: {
+    label: "Drawing the category read",
+    kind: "list",
+    n: 5,
+    steps: [],
+    free: true,
+  },
 
   // ─── Marketplace ───
   //

@@ -67,7 +67,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_amazon_product:"Get Amazon Product",
     scan_marketplace_category:"Scan Marketplace Category",
     marketplace_scan_status:"Marketplace Scan Status",
-    get_marketplace_product:"Get Marketplace Product"
+    get_marketplace_product:"Get Marketplace Product",
+    show_marketplace_category_insights:"Marketplace Category Insights"
   };
   var TOOL_DESCS={
     analyze_post:"Frames from the post plus its transcript, for you to read yourself.",
@@ -103,9 +104,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     scan_amazon_category:"A category on Amazon — prices, ratings and what reviewers keep raising.",
     amazon_scan_status:"The listings an Amazon scan has collected so far.",
     get_amazon_product:"One Amazon listing: price, rating, star histogram and reviews.",
-    scan_marketplace_category:"A category on any of eleven marketplaces — prices, ratings and review themes.",
+    scan_marketplace_category:"A category on any of twelve marketplaces — prices, ratings and review themes.",
     marketplace_scan_status:"The products a marketplace scan has collected so far.",
-    get_marketplace_product:"One product from any marketplace: price, rating, histogram and reviews."
+    get_marketplace_product:"One product from any marketplace: price, rating, histogram and reviews.",
+    show_marketplace_category_insights:"Your read of a marketplace category, beside its listings."
   };
 
   // ─── The mark ───

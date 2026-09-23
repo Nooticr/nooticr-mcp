@@ -2501,3 +2501,17 @@ test("connector reads show their sync time, and a never-synced one its message",
   await expect(page.locator("body")).toContainText("No PostHog data synced yet");
   await expect(page.locator("[data-series]")).toHaveCount(0);
 });
+
+// #95: a non-Amazon read draws under its own site, not Amazon's.
+test("a marketplace category read is labelled with its own site", async ({ page }) => {
+  await renderTemplate(page, {
+    marketplace: "lazada", view: "insights", category: "Coffee grinders",
+    drivers: [{ label: "Consistent grind", strength: "moderate" }],
+    products: [{ asin: "LZ-1", title: "Kobo grinder", brand: "Kobo", reviews: [] }],
+    rollup: {},
+    verification: { status: "verified", note: "The 1 listing(s) drawn are the scan's own." },
+  });
+  await expect(page.locator(".amz-head-title")).toContainText("Coffee grinders");
+  await expect(page.locator('[data-verification="verified"]')).toBeVisible();
+  await expect(page.locator(".amz-head")).not.toContainText("amazon.com");
+});

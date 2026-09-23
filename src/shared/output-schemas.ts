@@ -338,6 +338,34 @@ const marketplaceScan = open(marketplaceScanShape);
 
 const amazonScan = open(amazonScanShape);
 
+/** A category read drawn beside a scan's listings, on any site. */
+const categoryInsights = open({
+  marketplace: scalar(),
+  view: scalar(),
+  category: scalar(),
+  summary: scalar(),
+  drivers: listOf(amazonFinding).describe("What makes someone buy, as you read it."),
+  barriers: listOf(amazonFinding).describe("What stops them, or makes them return it."),
+  strengths: listOf(open({ brand: scalar(), detail: scalar(), asin: scalar() })),
+  gaps: listOf(amazonFinding),
+  positioning: listOf(
+    open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
+  ),
+  products: listOf(amazonProduct).describe(
+    "The listings drawn: the scan's own, re-read by scanId, unless verification.status is unverified.",
+  ),
+  rollup: open({}).nullish(),
+  scanId: scalar(),
+  verification: open({
+    status: scalar().describe("verified: the listings are the scan's own. unverified: as re-sent by the model."),
+    note: scalar(),
+    scanComplete: scalar(),
+    notInScan: listOf(z.string()).describe("Listings the model sent that the scan does not contain; not drawn."),
+    unknownAsins: listOf(z.string()).describe("ASINs cited in strengths that the scan does not contain."),
+  }).nullish(),
+  mcpCredits,
+});
+
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
   analyze_post_fast: open({ ...evidence, ...analyzed }),
@@ -1698,32 +1726,8 @@ export const OUTPUT_SCHEMAS = {
     ...amazonScanShape,
     product: amazonProduct.nullish().describe("The single listing, also present as products[0]."),
   }),
-  show_amazon_category_insights: open({
-    marketplace: scalar(),
-    view: scalar(),
-    category: scalar(),
-    summary: scalar(),
-    drivers: listOf(amazonFinding).describe("What makes someone buy, as you read it."),
-    barriers: listOf(amazonFinding).describe("What stops them, or makes them return it."),
-    strengths: listOf(open({ brand: scalar(), detail: scalar(), asin: scalar() })),
-    gaps: listOf(amazonFinding),
-    positioning: listOf(
-      open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
-    ),
-    products: listOf(amazonProduct).describe(
-      "The listings drawn: the scan's own, re-read by scanId, unless verification.status is unverified.",
-    ),
-    rollup: open({}).nullish(),
-    scanId: scalar(),
-    verification: open({
-      status: scalar().describe("verified: the listings are the scan's own. unverified: as re-sent by the model."),
-      note: scalar(),
-      scanComplete: scalar(),
-      notInScan: listOf(z.string()).describe("Listings the model sent that the scan does not contain; not drawn."),
-      unknownAsins: listOf(z.string()).describe("ASINs cited in strengths that the scan does not contain."),
-    }).nullish(),
-    mcpCredits,
-  }),
+  show_amazon_category_insights: categoryInsights,
+  // The same card for the other eleven sites (#95); `marketplace` says which.
+  show_marketplace_category_insights: categoryInsights,
 } as const;
-
 export type OutputSchemaName = keyof typeof OUTPUT_SCHEMAS;

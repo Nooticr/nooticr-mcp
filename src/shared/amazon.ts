@@ -344,7 +344,8 @@ export function categoryGuidance(opts: {
     lines.push("");
     lines.push(
       "To show the result in the conversation — products, their reviews, and your read side by",
-      `side — call ${insightsTool} with what you concluded${opts.scanId ? ` and scanId "${opts.scanId}"` : " and the scanId"}.`,
+      `side — call ${insightsTool} with what you concluded${opts.scanId ? ` and scanId "${opts.scanId}"` : " and the scanId"}` +
+        `${Object.entries(opts.statusArgs ?? {}).map(([k, v]) => `, ${k} "${v}"`).join("")}.`,
       "It costs nothing, and it re-reads the listings from the scan itself, so do not re-send them.",
     );
   }
@@ -397,6 +398,89 @@ export const CREDITS_PER_LISTING = 3;
 export function scanCost(args: Record<string, unknown>): number {
   return listingCount(args) * CREDITS_PER_LISTING;
 }
+
+/**
+ * The read a model writes over a category scan, shared by the Amazon and
+ * the eleven-marketplace insights tools (#95): one shape, so the card and the
+ * guidance cannot drift between sites.
+ */
+export const insightsInputShape = {
+    category: z.string().describe("The category this is a read of, e.g. 'Ashwagandha supplements'."),
+    summary: z.string().optional().describe("The category in two or three sentences."),
+    drivers: z
+      .array(
+        z.object({
+          label: z.string().describe("The driver, in a few words."),
+          detail: z.string().optional().describe("What the reviews actually say."),
+          evidence: z
+            .array(z.string())
+            .optional()
+            .describe("Review ids or short quotes that show it."),
+          strength: z
+            .enum(["strong", "moderate", "thin"])
+            .optional()
+            .describe("How well the collected text supports it. Say `thin` rather than overstating."),
+        }),
+      )
+      .optional()
+      .describe("What makes someone buy in this category."),
+    barriers: z
+      .array(
+        z.object({
+          label: z.string(),
+          detail: z.string().optional(),
+          evidence: z.array(z.string()).optional(),
+          strength: z.enum(["strong", "moderate", "thin"]).optional(),
+        }),
+      )
+      .optional()
+      .describe("What stops them buying, or makes them return it."),
+    strengths: z
+      .array(
+        z.object({
+          brand: z.string(),
+          detail: z.string(),
+          asin: z
+        .string()
+        .optional()
+        .describe("The product id this is about: an ASIN on Amazon, the site's own id elsewhere."),
+        }),
+      )
+      .optional()
+      .describe("What each incumbent is genuinely doing well."),
+    gaps: z
+      .array(
+        z.object({
+          label: z.string(),
+          detail: z.string().optional(),
+          evidence: z.array(z.string()).optional(),
+        }),
+      )
+      .optional()
+      .describe("What buyers keep asking for that nobody in the set serves."),
+    positioning: z
+      .array(
+        z.object({
+          angle: z.string().describe("The claim, in one line."),
+          who: z.string().optional().describe("Who it is for."),
+          why: z.string().optional().describe("The driver it answers or the gap it fills."),
+          risk: z.string().optional().describe("What would have to be true, or what could go wrong."),
+        }),
+      )
+      .optional()
+      .describe("Concrete angles a new entrant could take."),
+    products: z
+      .array(anyObject())
+      .optional()
+      .describe(
+        "Only when there is no scanId. With one, the listings are re-read from the scan and anything here is ignored.",
+      ),
+    rollup: anyObject().optional().describe("Only when there is no scanId; re-read from the scan otherwise."),
+    scanId: z
+      .string()
+      .optional()
+      .describe("The scan this reads. Pass it: it is what lets the card draw the collector's own listings."),
+};
 
 export function registerAmazonTools(server: McpServer, makeClient: MakeClient): void {
   server.registerTool(
@@ -619,119 +703,10 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         openWorldHint: false,
       },
       outputSchema: OUTPUT_SCHEMAS.show_amazon_category_insights,
-      inputSchema: z
-        .object({
-          category: z.string().describe("The category this is a read of, e.g. 'Ashwagandha supplements'."),
-          summary: z.string().optional().describe("The category in two or three sentences."),
-          drivers: z
-            .array(
-              z.object({
-                label: z.string().describe("The driver, in a few words."),
-                detail: z.string().optional().describe("What the reviews actually say."),
-                evidence: z
-                  .array(z.string())
-                  .optional()
-                  .describe("Review ids or short quotes that show it."),
-                strength: z
-                  .enum(["strong", "moderate", "thin"])
-                  .optional()
-                  .describe("How well the collected text supports it. Say `thin` rather than overstating."),
-              }),
-            )
-            .optional()
-            .describe("What makes someone buy in this category."),
-          barriers: z
-            .array(
-              z.object({
-                label: z.string(),
-                detail: z.string().optional(),
-                evidence: z.array(z.string()).optional(),
-                strength: z.enum(["strong", "moderate", "thin"]).optional(),
-              }),
-            )
-            .optional()
-            .describe("What stops them buying, or makes them return it."),
-          strengths: z
-            .array(
-              z.object({
-                brand: z.string(),
-                detail: z.string(),
-                asin: z.string().optional(),
-              }),
-            )
-            .optional()
-            .describe("What each incumbent is genuinely doing well."),
-          gaps: z
-            .array(
-              z.object({
-                label: z.string(),
-                detail: z.string().optional(),
-                evidence: z.array(z.string()).optional(),
-              }),
-            )
-            .optional()
-            .describe("What buyers keep asking for that nobody in the set serves."),
-          positioning: z
-            .array(
-              z.object({
-                angle: z.string().describe("The claim, in one line."),
-                who: z.string().optional().describe("Who it is for."),
-                why: z.string().optional().describe("The driver it answers or the gap it fills."),
-                risk: z.string().optional().describe("What would have to be true, or what could go wrong."),
-              }),
-            )
-            .optional()
-            .describe("Concrete angles a new entrant could take."),
-          products: z
-            .array(anyObject())
-            .optional()
-            .describe(
-              "Only when there is no scanId. With one, the listings are re-read from the scan and anything here is ignored.",
-            ),
-          rollup: anyObject().optional().describe("Only when there is no scanId; re-read from the scan otherwise."),
-          scanId: z
-            .string()
-            .optional()
-            .describe("The scan this reads. Pass it: it is what lets the card draw the collector's own listings."),
-        })
-        .passthrough(),
+      inputSchema: z.object(insightsInputShape).passthrough(),
     },
-    async (args: Record<string, unknown>, extra) => {
-      const checked = await rehydrate(args, () => makeClient({ ...extra, arguments: args }));
-      const products = checked.products;
-      const counts = {
-        drivers: Array.isArray(args.drivers) ? args.drivers.length : 0,
-        barriers: Array.isArray(args.barriers) ? args.barriers.length : 0,
-        gaps: Array.isArray(args.gaps) ? args.gaps.length : 0,
-        positioning: Array.isArray(args.positioning) ? args.positioning.length : 0,
-      };
-      const text =
-        `Category read for ${String(args.category ?? "this category")}: ${counts.drivers} driver(s), ` +
-        `${counts.barriers} barrier(s), ${counts.gaps} gap(s), ${counts.positioning} positioning angle(s)` +
-        `${products.length ? `, drawn beside ${products.length} listing(s)` : ""}.` +
-        (args.summary ? ` ${String(args.summary)}` : "") +
-        ` ${checked.verification.note}`;
-      return {
-        content: [{ type: "text" as const, text }],
-        structuredContent: {
-          marketplace: "amazon",
-          view: "insights",
-          category: String(args.category ?? ""),
-          summary: args.summary ?? null,
-          drivers: args.drivers ?? [],
-          barriers: args.barriers ?? [],
-          strengths: args.strengths ?? [],
-          gaps: args.gaps ?? [],
-          positioning: args.positioning ?? [],
-          products,
-          rollup: checked.rollup,
-          scanId: args.scanId ?? null,
-          verification: checked.verification,
-          // The one read is amazon_scan_status, which is free by design.
-          mcpCredits: { cost: 0 },
-        },
-      };
-    },
+    async (args: Record<string, unknown>, extra) =>
+      insightsResult(args, () => makeClient({ ...extra, arguments: args }), { marketplace: "amazon" }),
   );
 }
 
@@ -751,6 +726,7 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
 export async function rehydrate(
   args: Record<string, unknown>,
   client: () => Promise<NooticrClient> | NooticrClient,
+  opts: { statusTool?: string; statusArgs?: Record<string, string> } = {},
 ): Promise<{
   products: Array<Record<string, unknown>>;
   rollup: Record<string, unknown>;
@@ -779,7 +755,11 @@ export async function rehydrate(
   }
   let payload: Record<string, unknown>;
   try {
-    const res = await (await client()).callTool("amazon_scan_status", { scanId, waitSeconds: 0 });
+    const res = await (await client()).callTool(opts.statusTool ?? "amazon_scan_status", {
+      ...(opts.statusArgs ?? {}),
+      scanId,
+      waitSeconds: 0,
+    });
     payload = structured(res);
   } catch (err) {
     const why = err instanceof Error ? err.message : String(err);
@@ -797,7 +777,7 @@ export async function rehydrate(
   const scanComplete = payload.complete !== false;
   const flags = [
     notInScan.length ? `${notInScan.length} listing(s) you sent are not in the scan (${notInScan.join(", ")}) and are not drawn.` : "",
-    unknownAsins.length ? `ASIN(s) cited in strengths but not in the scan: ${unknownAsins.join(", ")}.` : "",
+    unknownAsins.length ? `Product id(s) cited in strengths but not in the scan: ${unknownAsins.join(", ")}.` : "",
     scanComplete ? "" : "The scan is still running, so the set drawn is what it had collected so far.",
   ].filter(Boolean);
   return {
@@ -809,6 +789,54 @@ export async function rehydrate(
       scanComplete,
       notInScan,
       unknownAsins,
+    },
+  };
+}
+
+/**
+ * The insights card for any site: the model's read, drawn beside the scan's
+ * own listings, re-read by scanId so a mis-copied price or an invented
+ * competitor cannot reach the card (#107). `marketplace` is what the view
+ * labels the header with, so a Lazada read is never drawn as an Amazon one.
+ */
+export async function insightsResult(
+  args: Record<string, unknown>,
+  client: () => Promise<NooticrClient> | NooticrClient,
+  site: { marketplace: string; label?: string; statusTool?: string; statusArgs?: Record<string, string> },
+) {
+  const checked = await rehydrate(args, client, { statusTool: site.statusTool, statusArgs: site.statusArgs });
+  const products = checked.products;
+  const counts = {
+    drivers: Array.isArray(args.drivers) ? args.drivers.length : 0,
+    barriers: Array.isArray(args.barriers) ? args.barriers.length : 0,
+    gaps: Array.isArray(args.gaps) ? args.gaps.length : 0,
+    positioning: Array.isArray(args.positioning) ? args.positioning.length : 0,
+  };
+  const on = site.label ? ` on ${site.label}` : "";
+  const text =
+    `Category read for ${String(args.category ?? "this category")}${on}: ${counts.drivers} driver(s), ` +
+    `${counts.barriers} barrier(s), ${counts.gaps} gap(s), ${counts.positioning} positioning angle(s)` +
+    `${products.length ? `, drawn beside ${products.length} listing(s)` : ""}.` +
+    (args.summary ? ` ${String(args.summary)}` : "") +
+    ` ${checked.verification.note}`;
+  return {
+    content: [{ type: "text" as const, text }],
+    structuredContent: {
+      marketplace: site.marketplace,
+      view: "insights",
+      category: String(args.category ?? ""),
+      summary: args.summary ?? null,
+      drivers: args.drivers ?? [],
+      barriers: args.barriers ?? [],
+      strengths: args.strengths ?? [],
+      gaps: args.gaps ?? [],
+      positioning: args.positioning ?? [],
+      products,
+      rollup: checked.rollup,
+      scanId: args.scanId ?? null,
+      verification: checked.verification,
+      // The one read is the site's scan-status poll, free by design.
+      mcpCredits: { cost: 0 },
     },
   };
 }
