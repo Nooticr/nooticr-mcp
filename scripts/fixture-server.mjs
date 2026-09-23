@@ -910,6 +910,59 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { platform: "tiktok", creators },
       };
     }
+    case "suggest_creator_identity": {
+      // The backend's real shape (crates/mcp/src/tools.rs), including its own
+      // guidance: evidence per candidate, never a merge.
+      const handle = String(args?.handle ?? "fixture_creator_1").replace(/^@/, "");
+      const seedPlatform = String(args?.platform ?? "tiktok");
+      const searched = (Array.isArray(args?.platforms) && args.platforms.length
+        ? args.platforms
+        : ["tiktok", "instagram", "xiaohongshu"]).filter((p) => p !== seedPlatform);
+      const suggestions = [
+        {
+          platform: searched[0] ?? "instagram",
+          username: handle,
+          nickname: "Lena Park",
+          profileUrl: `https://www.instagram.com/${handle}/`,
+          followers: 48200,
+          score: 75,
+          confidence: "high",
+          evidence: [
+            { signal: "shared_bio_link", strength: "strong", detail: "both bios link lenapark.studio" },
+            { signal: "same_handle", strength: "weak", detail: `@${handle} on both` },
+          ],
+        },
+        {
+          platform: searched[1] ?? searched[0] ?? "xiaohongshu",
+          username: `${handle}_official`,
+          nickname: "Lena P.",
+          profileUrl: null,
+          followers: 900,
+          score: 10,
+          confidence: "possible",
+          evidence: [{ signal: "similar_handle", strength: "weak", detail: `@${handle}_official is near-identical` }],
+        },
+      ];
+      return {
+        content: [{ type: "text", text: `${suggestions.length} possible matches for @${handle}.` }],
+        structuredContent: {
+          mode: "evidence",
+          tool: "suggest_creator_identity",
+          guidance:
+            `${suggestions.length} accounts on ${searched.join(", ")} may be the same person as @${handle} on ${seedPlatform}.\n\n` +
+            "These are SUGGESTIONS with their evidence attached. Nothing has been merged and nothing here is stored. " +
+            "Do not present a candidate as confirmed, and do not combine their follower counts into a total.",
+          seed: { platform: seedPlatform, handle, bioRead: true },
+          searched,
+          candidatesConsidered: 7,
+          suggestions,
+          unavailable: [],
+          merged: false,
+          note: "Suggestions only. Nothing was merged and nothing was stored; a human confirms.",
+          mcpCredits: { cost: 2 * (searched.length + 1) },
+        },
+      };
+    }
     case "get_post_frames": {
       const count = Math.max(1, Math.min(Number(args?.count ?? 3), 8));
       const frames = Array.from({ length: count }, (_, i) => ({

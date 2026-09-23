@@ -440,6 +440,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "suggest_creator_identity": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches other networks for accounts that may belong to the same person and returns the evidence. Nothing is stored and nothing is merged.",
+        "open_world_justification": "Reaches the public internet: nooticr's API searches third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "get_social_media": {
       "annotations": {
         "readOnlyHint": true,

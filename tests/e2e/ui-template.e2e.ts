@@ -2434,4 +2434,30 @@ test("a category read shows whether its listings were checked against the scan",
   });
   await expect(page.locator('[data-verification="unverified"]')).toContainText("not checked against a scan");
   await expect(page.locator("body")).not.toContainText("Every claim above can be checked");
+// suggest_creator_identity (#102). The candidate's points score (50 per shared
+// bio link) must not reach the creator card's vetting strip, where it would
+// read as a nooticr rating out of 100, and no card may add followers up.
+test("identity suggestions draw as suggestions, with their evidence and no /100", async ({ page }) => {
+  await renderTemplate(page, {
+    mode: "evidence",
+    seed: { platform: "tiktok", handle: "lena", bioRead: true },
+    searched: ["instagram"],
+    suggestions: [
+      {
+        platform: "instagram", username: "lena", nickname: "Lena", profileUrl: "https://instagram.com/lena",
+        followers: 1200, score: 75, confidence: "high",
+        evidence: [{ signal: "shared_bio_link", strength: "strong", detail: "both bios link lena.example" }],
+      },
+    ],
+    unavailable: [{ platform: "xiaohongshu", reason: "upstream timeout" }],
+    merged: false,
+  });
+  const card = page.locator("[data-identity-candidate]");
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText("suggestion");
+  await expect(card).toContainText("shared bio link");
+  await expect(card).toContainText("lena.example");
+  await expect(card).toContainText("on this account alone");
+  await expect(page.locator("body")).not.toContainText("/100");
+  await expect(page.locator("body")).toContainText("xiaohongshu could not be searched");
 });

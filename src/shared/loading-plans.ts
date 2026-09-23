@@ -132,6 +132,7 @@ const CALL_LABELS: Record<string, { label: string; detail?: string }> = {
   discover_social_posts: { label: "Searching posts", detail: "recent, for the niche" },
   search_creators: { label: "Finding creators", detail: "by keyword" },
   get_similar_creators: { label: "Finding lookalikes", detail: "from the seed creator" },
+  suggest_creator_identity: { label: "Looking on the other networks", detail: "and weighing the evidence" },
   discover_sounds: { label: "Finding sounds", detail: "trending audio" },
   discover_hashtags: { label: "Reading the trend board", detail: "with volumes and direction" },
 };
@@ -224,6 +225,12 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     kind: "list",
     n: 5,
     steps: [step("get_similar_creators")],
+  },
+  suggest_creator_identity: {
+    label: "Looking for the same person elsewhere",
+    kind: "list",
+    n: 3,
+    steps: [step("suggest_creator_identity")],
   },
   discover_sounds: { label: "Finding trending sounds", kind: "list", n: 4, steps: [step("discover_sounds")] },
   discover_hashtags: {

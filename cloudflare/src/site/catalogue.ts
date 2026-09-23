@@ -165,6 +165,12 @@ export const TOOLS: Tool[] = [
     when: "One creator works and you want more like them.",
   },
   {
+    name: "suggest_creator_identity", cost: 2, group: "research",
+    args: "handle, platform?, platforms?",
+    desc: "Accounts on other networks that may be the same person, with the evidence for each. Suggests, never merges. 2 per network searched plus 2 for the handle.",
+    when: "You have one confirmed handle and want the same creator elsewhere.",
+  },
+  {
     name: "discover_sounds", cost: 2, group: "research",
     args: "keyword, platform?, count?",
     desc: "Trending audio with playable previews and usage counts.",
