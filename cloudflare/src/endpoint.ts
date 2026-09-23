@@ -10,7 +10,7 @@ type McpRequest = Parameters<
   WebStandardStreamableHTTPServerTransport["handleRequest"]
 >[0];
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import { looksLikeApiKey } from "../../src/shared/api-key.js";
+import { forwardedHeaders, forwardedSession, looksLikeApiKey } from "../../src/shared/api-key.js";
 import { NooticrClient, jwtExpiry, type TokenProvider } from "../../src/shared/nooticr.js";
 import { argumentsDigest, createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import { KvWatchStore } from "../../src/shared/watchlist.js";
@@ -130,6 +130,17 @@ export async function makeClientForSession(
       env.NOOTICR_BASE_URL,
       { getAccessToken: async () => mcpToken },
       idempotencyKey
+    );
+  }
+  // nooticr-server's chat, calling as the user signed in to it: the session
+  // is the credential, forwarded as-is like a key, with nothing to refresh.
+  const forwarded = forwardedSession(mcpToken);
+  if (forwarded) {
+    return new NooticrClient(
+      env.NOOTICR_BASE_URL,
+      { getAccessToken: async () => forwarded.token },
+      idempotencyKey,
+      forwardedHeaders(forwarded)
     );
   }
 

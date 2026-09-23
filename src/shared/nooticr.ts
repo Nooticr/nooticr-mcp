@@ -152,10 +152,19 @@ export class NooticrClient {
   /** Stable per-call key so a retried tool call is billed once. */
   private idempotencyKey?: string;
 
-  constructor(baseUrl: string, tokenProvider: TokenProvider, idempotencyKey?: string) {
+  /** Sent on every request — how a forwarded chat call is attributed. */
+  private extraHeaders: Record<string, string>;
+
+  constructor(
+    baseUrl: string,
+    tokenProvider: TokenProvider,
+    idempotencyKey?: string,
+    extraHeaders: Record<string, string> = {}
+  ) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.tokenProvider = tokenProvider;
     this.idempotencyKey = idempotencyKey;
+    this.extraHeaders = extraHeaders;
   }
 
   private async request<T>(
@@ -169,7 +178,7 @@ export class NooticrClient {
     } = {}
   ): Promise<T> {
     const doRequest = async (accessToken?: string): Promise<Response> => {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { ...this.extraHeaders };
       if (opts.body !== undefined) {
         headers["content-type"] = "application/json";
       }

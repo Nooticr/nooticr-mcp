@@ -14,7 +14,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { API_KEY_PREFIX, looksLikeApiKey } from "../src/shared/api-key.js";
+import {
+  API_KEY_PREFIX,
+  SESSION_TOKEN_PREFIX,
+  forwardedSession,
+  looksLikeApiKey,
+} from "../src/shared/api-key.js";
 import { AuthManager } from "../src/auth.js";
 import { NooticrClient, NooticrError } from "../src/shared/nooticr.js";
 import { apiKeyIsValid, validMcpToken } from "../cloudflare/src/oauth.js";
@@ -260,6 +265,78 @@ describe("the worker's view of a key", () => {
     await client.me();
 
     expect(seen).toEqual([`Bearer ${KEY}`]);
+  });
+});
+
+/**
+ * nooticr-server's chat calls this server as the user signed in to it, by
+ * forwarding that user's own session. The failure worth pinning is the same
+ * one as for keys: a forwarded session answered from the deployment's account.
+ */
+describe("a session forwarded by nooticr-server", () => {
+  const JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1MSJ9.sig";
+  const THREAD = "5c896215-10cf-44e0-ab65-61a6346babda";
+  const FORWARDED = `${SESSION_TOKEN_PREFIX}${THREAD}.${JWT}`;
+
+  it("is read only with its prefix, so a bare JWT is never taken for one", () => {
+    expect(forwardedSession(FORWARDED)).toEqual({ token: JWT, conversationId: THREAD });
+    expect(forwardedSession(`${SESSION_TOKEN_PREFIX}-.${JWT}`)).toEqual({ token: JWT });
+    expect(forwardedSession(JWT)).toBeUndefined();
+    expect(forwardedSession(KEY)).toBeUndefined();
+    expect(forwardedSession(SESSION_TOKEN_PREFIX)).toBeUndefined();
+  });
+
+  it("is checked against the backend with the session itself", async () => {
+    const seen: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        seen.push((init?.headers as Record<string, string> | undefined)?.authorization ?? "");
+        return new Response("{}", { status: 200 });
+      })
+    );
+    const { env } = fakeEnv();
+    expect(await validMcpToken(env, FORWARDED)).toBe(true);
+    expect(seen).toEqual([`Bearer ${JWT}`]);
+  });
+
+  it("answers as that user, not as the deployment", async () => {
+    const seen: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        seen.push((init?.headers as Record<string, string> | undefined)?.authorization ?? "");
+        return new Response(JSON.stringify({ id: "u1", email: "chat@example.com" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      })
+    );
+    const { env } = fakeEnv({ NOOTICR_ACCESS_TOKEN: "deployment-token" });
+    const client = await makeClientForSession(env as never, FORWARDED, undefined);
+    await client.me();
+    expect(seen).toEqual([`Bearer ${JWT}`]);
+  });
+
+  it("files every call under the chat thread that made it", async () => {
+    const sent: Record<string, string>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        sent.push((init?.headers as Record<string, string>) ?? {});
+        return new Response(JSON.stringify({ id: "u1" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      })
+    );
+    const { env } = fakeEnv();
+    const client = await makeClientForSession(env as never, FORWARDED, undefined);
+    await client.me();
+    expect(sent[0]).toMatchObject({
+      "x-nooticr-surface": "chat",
+      "x-nooticr-conversation": THREAD,
+    });
   });
 });
 

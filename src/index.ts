@@ -31,7 +31,7 @@ import {
   createManagementTokenProvider,
   createStdioTokenProvider,
 } from "./auth.js";
-import { looksLikeApiKey } from "./shared/api-key.js";
+import { forwardedHeaders, forwardedSession, looksLikeApiKey } from "./shared/api-key.js";
 import { NooticrClient, NooticrError, type NooticrApiKey } from "./nooticr.js";
 import {OAuthManager, type McpSession, SCOPES} from "./oauth.js";
 import { createMcpServer } from "./shared/tools.js";
@@ -134,6 +134,8 @@ function bearerToken(req: http.IncomingMessage): string | undefined {
 function validMcpToken(token: string, oauth: OAuthManager): boolean {
   if (oauth.verifyToken(token)) return true;
   if (looksLikeApiKey(token)) return true;
+  // Same reasoning as a key: the backend verifies the session on every call.
+  if (forwardedSession(token)) return true;
   const envToken = process.env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }
@@ -304,6 +306,16 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
         // request served from another's account.
         if (looksLikeApiKey(bearer)) {
           return new NooticrClient(baseUrl, createApiKeyTokenProvider(bearer));
+        }
+        // nooticr-server's chat, calling as the user signed in to it.
+        const forwarded = forwardedSession(bearer);
+        if (forwarded) {
+          return new NooticrClient(
+            baseUrl,
+            createApiKeyTokenProvider(forwarded.token),
+            undefined,
+            forwardedHeaders(forwarded)
+          );
         }
         const session: McpSession | undefined = bearer
           ? oauth.verifyToken(bearer)
