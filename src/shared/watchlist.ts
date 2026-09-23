@@ -607,6 +607,51 @@ export function registerWatchlist(
     },
   );
 
+  // Reading the list back (#101). The resource above says the same thing, but
+  // most hosts never surface a resource to the model and ChatGPT does not read
+  // one at all, so "who am I watching?" had no free answer: the only tools
+  // that returned the list were the paid catch-up and standings runs. Built on
+  // `store`, not the backend's own twin, for the reason the header gives.
+  server.registerTool(
+    "list_watchlist",
+    {
+      title: "List Watchlist",
+      _meta: {
+        ui: { resourceUri: "ui://nooticr/list_watchlist" },
+        "ui/resourceUri": "ui://nooticr/list_watchlist",
+        "openai/outputTemplate": "ui://nooticr/list_watchlist.html",
+      },
+      description:
+        "The creators on your watchlist: handle, platform, your note, when you added them and when " +
+        "you last caught up on them. Reads the stored list only — nothing is fetched, so there is no " +
+        "cost. Use it to answer 'who am I watching?', or to find the exact handle and platform " +
+        "unwatch_creator needs, before paying for catch_up_watchlist. No cost to call.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z.object({}).strict(),
+      outputSchema: z
+        .object({
+          watching: orNull(z.number()),
+          entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
+        })
+        .passthrough(),
+    },
+    async (_args: Record<string, never>, extra) => {
+      const client = await makeClient({ ...extra, arguments: {} });
+      const entries = (await store.list(await ownerOf(client))).map((e) => ({
+        id: e.id,
+        platform: e.platform,
+        handle: e.handle,
+        note: e.note ?? null,
+        addedAt: e.addedAt,
+        // When "since I last looked" starts from; null until the first catch-up.
+        // The baseline's post ids stay out: they are the store's bookkeeping,
+        // and a long list of them is context spent on nothing.
+        lastCaughtUpAt: e.baseline?.capturedAt ?? null,
+      }));
+      return text({ watching: entries.length, entries });
+    },
+  );
+
   server.registerTool(
     "catch_up_watchlist",
     {

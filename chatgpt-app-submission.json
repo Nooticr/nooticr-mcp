@@ -128,6 +128,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "nooticr_getting_started": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own balance, connections and watchlist and suggests next calls. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "compare_creators": {
       "annotations": {
         "readOnlyHint": true,
@@ -440,6 +452,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "suggest_creator_identity": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches other networks for accounts that may belong to the same person and returns the evidence. Nothing is stored and nothing is merged.",
+        "open_world_justification": "Reaches the public internet: nooticr's API searches third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "get_social_media": {
       "annotations": {
         "readOnlyHint": true,
@@ -473,6 +497,42 @@
       "justifications": {
         "read_only_justification": "Read-only: it reads the caller's own last-synced video stats. Nothing is written.",
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_google_analytics": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored GA4 sync from nooticr. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's stored copy of the caller's own analytics — no third-party service is contacted during the call.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_search_console_data": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored Search Console sync from nooticr. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's stored copy of the caller's own analytics — no third-party service is contacted during the call.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_posthog_analytics": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored PostHog sync from nooticr. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's stored copy of the caller's own analytics — no third-party service is contacted during the call.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
@@ -917,6 +977,54 @@
       "justifications": {
         "read_only_justification": "Read-only: it fetches a source post so the caller can write opening lines against it. Nothing is written.",
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "detect_spoken_mentions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one public post's transcript and caption. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches the post and its audio from a third-party social network, so the result depends on live data outside this server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "list_watchlist": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored watchlist. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr watchlist; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "list_tool_runs": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own tool-call history from nooticr's run ledger. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr account over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_tool_run": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one of the caller's own tool calls from nooticr's run ledger. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr account over nooticr's API — no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     }

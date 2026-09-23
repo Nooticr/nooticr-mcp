@@ -40,6 +40,8 @@ const DATA_PRICING: Record<string, number> = {
   get_post_comments: 2,
   search_creators: 2,
   get_similar_creators: 2,
+  // Per network searched, like catch_up_watchlist's per creator.
+  suggest_creator_identity: 2,
   discover_sounds: 2,
   // The one comment tool with no entry in EVIDENCE_PLANS: it makes the same
   // single get_post_comments call, and its guidance lives in comment-review.ts.
@@ -531,6 +533,9 @@ describe("tool surface", () => {
     "get_scheduled_posts",
     "get_post_performance",
     "get_video_stats",
+    "get_google_analytics",
+    "get_search_console_data",
+    "get_posthog_analytics",
     "get_content_plan",
     "get_brand_playbook",
     "analyze_product",
@@ -550,6 +555,7 @@ describe("tool surface", () => {
     "analyze_comments",
     "search_creators",
     "get_similar_creators",
+    "suggest_creator_identity",
     "discover_sounds",
     "discover_hashtags",
     "analyze_post",
@@ -564,6 +570,11 @@ describe("tool surface", () => {
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
+    "list_tool_runs",
+    "get_tool_run",
+    "list_watchlist",
+    "detect_spoken_mentions",
+    "nooticr_getting_started",
     "nooticr_login",
     "show_comment_review",
     "show_compared_posts",
@@ -656,6 +667,10 @@ describe("tool surface", () => {
     // here — it fetches per creator, and says so.
     const free = [
       "check_nooticr_credits",
+      "list_tool_runs",
+      "get_tool_run",
+      "list_watchlist",
+      "nooticr_getting_started",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",
@@ -679,6 +694,9 @@ describe("tool surface", () => {
       "get_scheduled_posts",
       "get_post_performance",
       "get_video_stats",
+      "get_google_analytics",
+      "get_search_console_data",
+      "get_posthog_analytics",
       "get_content_plan",
       "get_brand_playbook",
       // Plain rows, no AI call — same reasoning as the reads above.

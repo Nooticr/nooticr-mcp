@@ -141,3 +141,71 @@ describe("the evidence a text-only host receives", () => {
     expect(digest).toContain("would not open");
   });
 });
+
+/** #91: the picture a report embeds has to reach the text channel. */
+describe("images in the digest", () => {
+  it("renders a listing with its title, price, rating and proxied image", () => {
+    const out = evidenceDigest({
+      products: [
+        {
+          asin: "B0ACME", title: "Acme Burr Grinder", brand: "Acme", price: "$39.99",
+          priceValue: 39.99, listPrice: null, availability: "In stock", rating: 4.6, ratingCount: 1234,
+          url: "https://www.amazon.com/dp/B0ACME",
+          image: "https://api.nooticr.com/media/proxy?url=https%3A%2F%2Fm.media-amazon.com%2Fa.jpg",
+          images: ["https://m.media-amazon.com/a.jpg"],
+        },
+      ],
+    });
+    expect(out).toContain("1 listing:");
+    expect(out).toContain("Acme Burr Grinder");
+    expect(out).toContain("$39.99");
+    expect(out).toContain("4.6★ from 1.2k ratings");
+    expect(out).toContain("image: https://api.nooticr.com/media/proxy?url=");
+  });
+
+  it("gives a post its thumbnail, preferring the proxy", () => {
+    const out = evidenceDigest({
+      posts: [{
+        platform: "tiktok", caption: "hello", externalUrl: "https://tiktok.com/@a/video/1",
+        thumbnailUrl: "https://cdn.example/raw.jpg", thumbnailProxyUrl: "https://api.nooticr.com/media/proxy?url=x",
+      }],
+    });
+    expect(out).toContain("image: https://api.nooticr.com/media/proxy?url=x");
+    expect(out).not.toContain("raw.jpg");
+  });
+});
+
+/** #98: a clipped digest says so, and says how to get the whole text. */
+describe("verbatim and recovery", () => {
+  const long = "word ".repeat(400).trim();
+  const comments = Array.from({ length: 40 }, (_, i) => ({ id: `c${i}`, author: `u${i}`, text: long }));
+
+  it("names the way to recover what it clipped", () => {
+    const out = evidenceDigest({ comments }, { recover: "call analyze_comments again with verbatim: true" });
+    expect(out).toContain("…");
+    expect(out).toMatch(/to read them here, call analyze_comments again with verbatim: true/);
+    expect(out).toMatch(/Do not quote a shortened line as complete; to get every item whole, call analyze_comments/);
+  });
+
+  it("renders every comment whole when asked", () => {
+    const out = evidenceDigest({ comments }, { verbatim: true });
+    expect(out).toContain("40 comments:");
+    expect(out).not.toContain("…");
+    expect(out).not.toMatch(/shortened/);
+    expect(out.split(long).length - 1).toBe(40);
+  });
+
+  it("shows every reply under a post when verbatim", () => {
+    const replies = Array.from({ length: 8 }, (_, i) => ({ id: `r${i}`, text: `reply ${i} ${"x".repeat(300)}` }));
+    const clipped = evidenceDigest({ posts: [{ caption: "p", commentSample: replies }] });
+    expect(clipped).toContain("(4 more under this post)");
+    const whole = evidenceDigest({ posts: [{ caption: "p", commentSample: replies }] }, { verbatim: true });
+    expect(whole).not.toContain("more under this post");
+    expect(whole).toContain("reply 7");
+  });
+
+  it("changes nothing for a digest that fits", () => {
+    const out = evidenceDigest({ comments: [{ id: "c1", text: "short" }] }, { recover: "x" });
+    expect(out).toBe("1 comment:\n1. [c1]\n  short");
+  });
+});
