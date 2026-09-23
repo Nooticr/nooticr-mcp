@@ -30,8 +30,8 @@ import sys
 # watch_creator and unwatch_creator change stored state and return a list; the
 # catch-up that reads that state does have a view, because it returns posts.
 #
-# create_brand_watch/stop_brand_watch return a quote or a confirmation, not a
-# list of anything; list_brand_watches and list_own_apps are metadata lists,
+# create_brand_watch/stop_brand_watch/update_watch_portfolio return a quote or
+# a confirmation, not a list of anything; list_brand_watches and list_own_apps are metadata lists,
 # the shape watch_creator's own `entries` list already sets precedent for.
 #
 # The line this set draws is "is there a table or a card in the reply", not
@@ -57,6 +57,7 @@ NO_APP = {
     "unwatch_creator",
     "create_brand_watch",
     "stop_brand_watch",
+    "update_watch_portfolio",
     "list_brand_watches",
     "list_own_apps",
     "analyze_product",

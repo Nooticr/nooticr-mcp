@@ -577,6 +577,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   create_brand_watch: { label: "Setting up the watch", kind: "text", n: 1, steps: [], free: true },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
+  update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
 
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },

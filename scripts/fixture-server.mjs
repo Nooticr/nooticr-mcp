@@ -1222,7 +1222,32 @@ function handleMcpCall(name, args, workspaceId) {
       const platforms = args.platforms ?? ["tiktok", "reddit", "youtube"];
       const cadence = args.cadence ?? "daily";
       const runsPerDay = { hourly: 24, every_6_hours: 4, every_12_hours: 2, daily: 1, weekly: 1 / 7 }[cadence] ?? 1;
-      const costPerRun = platforms.reduce((sum, p) => sum + (p === "xiaohongshu" ? 5 : 2), 0);
+      // The two scheduled kinds from #97/#99, priced the way the backend
+      // prices them: a report at its job tool's cost, a portfolio at one
+      // mentions sweep per term.
+      const kind = args.kind ?? "mentions";
+      const terms = kind === "portfolio" ? [...new Set((args.terms ?? []).map((t) => String(t).trim()))] : [];
+      const job = kind === "report" ? { tool: args.job?.tool, args: args.job?.args ?? {} } : null;
+      const sweep = platforms.reduce((sum, p) => sum + (p === "xiaohongshu" ? 5 : 2), 0);
+      const costPerRun =
+        kind === "report"
+          ? job.tool === "niche_report"
+            ? 3
+            : 2 + (job.args.includeComments ? Math.min(10, Math.max(1, job.args.openPosts ?? 5)) : 0)
+          : kind === "portfolio"
+            ? sweep * Math.max(1, terms.length)
+            : sweep;
+      if (!args.term) {
+        args = {
+          ...args,
+          term:
+            kind === "portfolio"
+              ? terms.join(" vs ")
+              : kind === "report"
+                ? `${job.tool}: ${job.args.niche ?? ""}`
+                : args.handle,
+        };
+      }
       if (args.confirm === true) {
         if (args.confirmationToken !== "fixture-confirm-token") {
           return {
@@ -1235,8 +1260,11 @@ function handleMcpCall(name, args, workspaceId) {
           structuredContent: {
             created: true,
             watchId: "watch-fixture-1",
+            kind,
             term: args.term,
-            platforms,
+            platforms: kind === "report" ? [] : platforms,
+            job,
+            terms: kind === "portfolio" ? terms : null,
             cadence,
             costPerRun,
             creditsPerDay: Math.round(costPerRun * runsPerDay * 100) / 100,
@@ -1254,8 +1282,11 @@ function handleMcpCall(name, args, workspaceId) {
           confirmationToken: "fixture-confirm-token",
           expiresInSeconds: 300,
           quote: {
+            kind,
             term: args.term,
-            platforms,
+            platforms: kind === "report" ? [] : platforms,
+            job,
+            terms: kind === "portfolio" ? terms : null,
             cadence,
             cadenceMinutes: cadence === "hourly" ? 60 : cadence === "every_6_hours" ? 360 : cadence === "every_12_hours" ? 720 : cadence === "weekly" ? 10080 : 1440,
             costPerRun,
@@ -1341,6 +1372,37 @@ function handleMcpCall(name, args, workspaceId) {
           ],
           activeCount: 1,
           creditsPerDayAcrossAllWatches: 4,
+        },
+      };
+    }
+    case "update_watch_portfolio": {
+      // A three-term portfolio on reddit+tiktok with an 8-credit budget, so an
+      // add that pushes it to four terms shows the split trimming a network.
+      const current = ["fixture-brand", "rival-one", "rival-two"];
+      const removed = (args.remove ?? []).map((t) => String(t).toLowerCase());
+      const terms = current.filter((t) => !removed.includes(t.toLowerCase()));
+      for (const t of args.add ?? []) {
+        if (!terms.some((x) => x.toLowerCase() === String(t).toLowerCase())) terms.push(String(t));
+      }
+      const perTerm = Math.floor(8 / Math.max(1, terms.length));
+      const platformsSearched = perTerm >= 4 ? ["reddit", "tiktok"] : ["reddit"];
+      const platformsSkipped = perTerm >= 4 ? [] : ["tiktok"];
+      return {
+        content: [{ type: "text", text: `The portfolio now watches ${terms.length} terms.` }],
+        structuredContent: {
+          updated: true,
+          watchId: args.watchId,
+          term: "fixture portfolio",
+          terms,
+          platformsSearched,
+          platformsSkipped,
+          costPerRun: platformsSearched.length * 2 * terms.length,
+          budgetPerRun: 8,
+          cadence: "daily",
+          cost: 0,
+          message: platformsSkipped.length
+            ? `The portfolio now watches ${terms.length} terms; the budget no longer reaches tiktok.`
+            : `The portfolio now watches ${terms.length} terms.`,
         },
       };
     }

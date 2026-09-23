@@ -860,6 +860,18 @@
         "destructive_justification": "Destructive: it halts a recurring watch. Nothing further is charged and the due run does not happen, which is deliberate — a user out of credits is exactly the user who needs to turn off what is spending them."
       }
     },
+    "update_watch_portfolio": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it rewrites the list of terms a portfolio watch sweeps on its schedule, so every later run searches for a different set.",
+        "open_world_justification": "Closed domain. It edits one row of the caller's own nooticr workspace over nooticr's API — nothing is searched and no third-party network is contacted when it runs.",
+        "destructive_justification": "Not destructive: removing a term only stops future sweeps for it. The watch, its budget, its cadence and its recorded history all stay, and a removed term can be added back."
+      }
+    },
     "track_creator": {
       "annotations": {
         "readOnlyHint": false,

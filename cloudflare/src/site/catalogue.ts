@@ -390,6 +390,12 @@ export const TOOLS: Tool[] = [
     when: "Works at a zero balance, because someone out of credits is exactly who needs to turn off what is spending them.",
   },
   {
+    name: "update_watch_portfolio", cost: 0, group: "research",
+    args: "watchId, add, remove",
+    desc: "Adds terms to a portfolio watch or takes them out. The per-run budget you agreed to does not move, so no new confirmation is needed.",
+    when: "When a new competitor or product should join the comparison \u2014 the reply says if the split budget now reaches fewer networks.",
+  },
+  {
     name: "mention_trend", cost: 0, group: "research",
     args: "watchId",
     desc: "The series a brand watch has built up over its runs, per network, with the mentions more than one run has seen. Free \u2014 the sweeps were billed when they ran.",

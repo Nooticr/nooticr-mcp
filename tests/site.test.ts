@@ -527,6 +527,7 @@ describe("tool surface", () => {
     "create_brand_watch",
     "list_brand_watches",
     "stop_brand_watch",
+    "update_watch_portfolio",
     "list_own_apps",
     "create_product",
     "update_product",
