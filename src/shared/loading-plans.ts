@@ -587,6 +587,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
   watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },
   unwatch_creator: { label: "Removing from your watchlist", kind: "text", n: 1, steps: [], free: true },
+  list_watchlist: { label: "Reading your watchlist", kind: "text", n: 1, steps: [], free: true },
   list_social_connections: { label: "Reading your connections", kind: "list", n: 3, steps: [], free: true },
   connect_social_account: { label: "Minting a fresh link", kind: "text", n: 1, steps: [], free: true },
   create_product: { label: "Writing the row", kind: "text", n: 1, steps: [], free: true },

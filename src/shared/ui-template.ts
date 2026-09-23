@@ -45,6 +45,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     check_nooticr_credits:"Check Credits",
     list_tool_runs:"Tool Runs",
     get_tool_run:"Tool Run",
+    list_watchlist:"Watchlist",
     compose_sequence:"Compose Sequence",
     overlay_bake:"Overlay Bake",
     spawn_variants:"Spawn Variants",
@@ -76,6 +77,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
     list_tool_runs:"Where your credits went: every call, what it cost, and whether it worked.",
     get_tool_run:"One call from your history, with its full error.",
+    list_watchlist:"The creators you are watching, and when you last caught up on each.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
     spawn_variants:"Generate multiple content variants from a single seed.",
@@ -4658,6 +4660,22 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +total+runRows
         +(d.nextBefore!=null?'<div style="font-size:11.5px;color:var(--muted);margin-top:8px">More runs are older than these.</div>':"")
         +"</div></div>";return;}
+    // Watchlist (list_watchlist): who is being watched, and since when.
+    if(Array.isArray(d.entries)&&d.watching!=null&&!d.posts&&!d.results){
+      if(!d.entries.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👀</div><div class="text">You are not watching anyone yet</div></div>';return;}
+      var wlRows=d.entries.map(function(e){
+        if(!e)return"";
+        var since=e.lastCaughtUpAt?"caught up "+String(e.lastCaughtUpAt).slice(0,10):"never caught up";
+        var added=e.addedAt?"added "+String(e.addedAt).slice(0,10):"";
+        return '<div style="padding:9px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="font-size:13.5px;font-weight:600">@'+esc(e.handle||"")+' <span style="font-weight:400;color:var(--muted)">'+esc(e.platform||"")+"</span></div>"
+          +'<div style="font-size:11.5px;color:var(--muted)">'+esc([added,since].filter(Boolean).join(" • "))+"</div>"
+          +(e.note?'<div style="font-size:12px;margin-top:3px">'+esc(String(e.note))+"</div>":"")
+          +"</div>";
+      }).join("");
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">👀 Watching '+esc(String(d.watching))+"</div>"
+        +wlRows+"</div></div>";return;}
     // Credits
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];

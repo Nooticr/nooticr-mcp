@@ -706,6 +706,7 @@ export function createMcpServer(
   "check_nooticr_credits",
   "list_tool_runs",
   "get_tool_run",
+  "list_watchlist",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like nooticr_login.

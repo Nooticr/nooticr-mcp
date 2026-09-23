@@ -218,6 +218,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), note: z.string().optional().describe("Why you are watching them \u2014 shown back to you later.") }).strict(),
  },
  {
+ name: "list_watchlist",
+ title: "List Watchlist",
+ description: "The creators on your watchlist: handle, platform, your note, when you added them and when you last caught up on them. Reads the stored list only, so there is no cost. Use it to answer 'who am I watching?' or to find the exact handle unwatch_creator needs. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
+ {
  name: "unwatch_creator",
  title: "Unwatch Creator",
  description: "Remove a creator from your watchlist. Nothing is fetched. Use when you no longer want them in the catch-up. No cost to call.",
