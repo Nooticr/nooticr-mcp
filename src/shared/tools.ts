@@ -822,6 +822,7 @@ const TOOL_NAMES = [
   "amazon_scan_status",
   "get_amazon_product",
   "show_amazon_category_insights",
+  "show_marketplace_category_insights",
   // The marketplace-agnostic trio. Every name here gets a ui://nooticr/<tool>
   // resource, which is what gives a tool its card — a tool missing from this
   // list is one the host is told to render and then 404s on.

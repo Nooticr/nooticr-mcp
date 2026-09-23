@@ -39,7 +39,17 @@ import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { withEvidence } from "./evidence-digest.js";
 import { confirmSpend, declinedResult } from "./spend.js";
-import { allReviews, categoryGuidance, listingCount, nextPoll, normaliseProducts, pollTail, scanCost } from "./amazon.js";
+import {
+  allReviews,
+  categoryGuidance,
+  insightsInputShape,
+  insightsResult,
+  listingCount,
+  nextPoll,
+  normaliseProducts,
+  pollTail,
+  scanCost,
+} from "./amazon.js";
 
 type MakeClient = (ctx: Record<string, unknown>) => Promise<NooticrClient>;
 
@@ -288,10 +298,10 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     statusArgs: { marketplace: m.slug },
     status: typeof payload.status === "string" ? payload.status : undefined,
     total: num(progress.total) ?? undefined,
-    // There is no free insights view for these sites yet, and pointing a model
-    // at show_amazon_category_insights would have it draw a Lazada scan as an
-    // Amazon one. Better to say nothing than to name the wrong tool.
-    insightsTool: null,
+    // Its own view, labelled with this site (#95): pointing a model at
+    // show_amazon_category_insights would have it draw a Lazada scan as an
+    // Amazon one.
+    insightsTool: "show_marketplace_category_insights",
   });
 
   const structuredPayload = {
@@ -543,4 +553,55 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       }
     },
   );
+
+  /**
+   * The read a model writes from scan_marketplace_category, drawn beside the
+   * site's own listings (#95). The same card and the same check against the
+   * scan as show_amazon_category_insights; the name shares whole words with
+   * its predecessor (`marketplace`, `category`) because that is what decides
+   * whether a host's tool search returns it.
+   */
+  server.registerTool(
+    "show_marketplace_category_insights",
+    {
+      title: "Show Marketplace Category Insights",
+      _meta: viewMeta("show_marketplace_category_insights"),
+      description:
+        "Display the category read you produced from scan_marketplace_category: purchase drivers, " +
+        "barriers, what each brand does well, the gaps and the positioning angles, drawn beside the " +
+        "site's listings and their reviews so a person can check any claim against the text it came " +
+        "from. Pass the same marketplace and the scanId: the listings are then re-read from the scan " +
+        "itself (free) rather than taken from you, so do not re-send them, and any product id you " +
+        "cite that the scan does not contain is flagged. Without a scanId, listings you pass are " +
+        "drawn marked as not checked against a scan. Free. Your read is attributed to you, never " +
+        "presented as a nooticr rating of anyone's product. For Amazon scans use " +
+        "show_amazon_category_insights. Call this after you have read the reviews, not instead of reading them.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        // Its one request re-reads a scan the caller already ran, from
+        // nooticr's job store with no wait: nothing new is fetched.
+        openWorldHint: false,
+      },
+      outputSchema: OUTPUT_SCHEMAS.show_marketplace_category_insights,
+      inputSchema: z.object({ marketplace: marketplaceArg, ...insightsInputShape }).passthrough(),
+    },
+    async (args: Record<string, unknown>, extra) => {
+      const m = BY_SLUG.get(String(args.marketplace ?? ""));
+      if (!m) {
+        return {
+          content: [{ type: "text" as const, text: `Unknown marketplace "${String(args.marketplace)}". One of: ${SLUGS}.` }],
+          isError: true as const,
+        };
+      }
+      return insightsResult(args, () => makeClient({ ...extra, arguments: args }), {
+        marketplace: m.slug,
+        label: m.label,
+        statusTool: "marketplace_scan_status",
+        statusArgs: { marketplace: m.slug },
+      });
+    },
+  );
+
 }
