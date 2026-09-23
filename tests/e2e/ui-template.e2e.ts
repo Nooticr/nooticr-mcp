@@ -2501,3 +2501,19 @@ test("connector reads show their sync time, and a never-synced one its message",
   await expect(page.locator("body")).toContainText("No PostHog data synced yet");
   await expect(page.locator("[data-series]")).toHaveCount(0);
 });
+
+// #93: a workspace usage report draws its totals and a row per tool and seat.
+test("a usage report draws totals, tools and seats", async ({ page }) => {
+  await renderTemplate(page, {
+    report: true, scope: "workspace", from: "2026-08-24T00:00:00Z", to: "2026-09-23T00:00:00Z",
+    totals: { calls: 41, failures: 3, credits: 96, tools: 5, seats: 2 },
+    byTool: [{ tool: "search_mentions", calls: 6, failures: 0, credits: 54 }],
+    bySeat: [{ userId: "u1", name: "Owner", calls: 30, failures: 1, credits: 80 }, { userId: "u2", email: "sam@example.com", calls: 11, failures: 2, credits: 16 }],
+    byDay: [{ day: "2026-09-22", calls: 3, failures: 0, credits: 6 }],
+    recentFailures: [{ tool: "get_social_media", error: "upstream 404", startedAt: "2026-09-22T10:00:00Z" }],
+  });
+  await expect(page.locator("body")).toContainText("Workspace usage");
+  await expect(page.locator("[data-usage-row]")).toHaveCount(3);
+  await expect(page.locator("body")).toContainText("sam@example.com");
+  await expect(page.locator("body")).toContainText("upstream 404");
+});

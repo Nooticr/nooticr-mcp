@@ -1228,6 +1228,27 @@ export const OUTPUT_SCHEMAS = {
       userId: scalar().describe("Whose run it was; only in the workspace scope."),
     }).nullish(),
   }),
+  get_usage_report: open({
+    report: scalar(),
+    scope: scalar().describe("mine or workspace."),
+    from: scalar(),
+    to: scalar(),
+    totals: open({
+      calls: scalar(),
+      failures: scalar(),
+      credits: scalar().describe("Credits actually taken: free first uses, refunds and replays are zero."),
+      tools: scalar(),
+      seats: scalar(),
+    }).nullish(),
+    byTool: listOf(open({ tool: scalar(), calls: scalar(), failures: scalar(), credits: scalar(), lastUsedAt: scalar() })),
+    bySeat: listOf(
+      open({ userId: scalar(), email: scalar(), name: scalar(), calls: scalar(), failures: scalar(), credits: scalar() }),
+    ).describe("Workspace reports only; empty on a personal one."),
+    byDay: listOf(open({ day: scalar(), calls: scalar(), failures: scalar(), credits: scalar() })),
+    recentFailures: listOf(
+      open({ id: scalar(), tool: scalar(), error: scalar(), startedAt: scalar(), userId: scalar(), credits: scalar() }),
+    ),
+  }),
 
   nooticr_login: open({
     signedIn: scalar().describe("true when the session is already good and no link is needed."),

@@ -601,6 +601,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   check_nooticr_credits: { label: "Checking your balance", kind: "text", n: 1, steps: [], free: true },
   list_tool_runs: { label: "Reading your run history", kind: "text", n: 1, steps: [], free: true },
   get_tool_run: { label: "Reading the run", kind: "text", n: 1, steps: [], free: true },
+  get_usage_report: { label: "Adding up the run ledger", kind: "text", n: 1, steps: [], free: true },
   nooticr_getting_started: { label: "Reading where your account stands", kind: "text", n: 1, steps: [], free: true },
   nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
   watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },

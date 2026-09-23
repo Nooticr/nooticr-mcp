@@ -1027,6 +1027,18 @@
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr account over nooticr's API — no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
+    },
+    "get_usage_report": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it adds up the caller's (or, for an admin, the workspace's) stored run ledger into totals. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's own run ledger over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it summarises past calls, so there is nothing for it to destroy."
+      }
     }
   },
   "test_cases": [

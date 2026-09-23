@@ -46,6 +46,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     check_nooticr_credits:"Check Credits",
     list_tool_runs:"Tool Runs",
     get_tool_run:"Tool Run",
+    get_usage_report:"Usage Report",
     list_watchlist:"Watchlist",
     detect_spoken_mentions:"Spoken Mentions",
     nooticr_getting_started:"Getting Started",
@@ -84,6 +85,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
     list_tool_runs:"Where your credits went: every call, what it cost, and whether it worked.",
     get_tool_run:"One call from your history, with its full error.",
+    get_usage_report:"What was spent, on what, by whom, and what failed.",
     list_watchlist:"The creators you are watching, and when you last caught up on each.",
     detect_spoken_mentions:"Brands named out loud in a video, beside what its caption says.",
     nooticr_getting_started:"Where your account stands and what to try first.",
@@ -3151,6 +3153,48 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     return '<div class="fade-in">'+head+body+"</div>";
   }
 
+  // ─── Usage report (get_usage_report) ───
+  //
+  // A spend table: the totals first, then where it went. Credits are what was
+  // actually taken, so a free first use or a refund reads as 0, not as the
+  // tool's price.
+  function renderUsageReport(d){
+    var t=d.totals||{};
+    function tile(label,val){
+      return '<div style="flex:1;min-width:110px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
+        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
+        +'<div style="font-size:18px;font-weight:700;margin-top:3px">'+esc(String(val==null?"—":val))+"</div></div>";
+    }
+    function table(title,cols,rows){
+      if(!rows.length)return "";
+      return '<div class="sec-label" style="margin-top:14px">'+esc(title)+"</div>"
+        +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        +"<tr>"+cols.map(function(c,i){return '<th style="text-align:'+(i?"right":"left")+';font-weight:600;color:var(--muted);padding:4px 0">'+esc(c)+"</th>";}).join("")+"</tr>"
+        +rows.map(function(r){return '<tr data-usage-row style="border-top:1px solid var(--border)">'+r.map(function(v,i){return '<td style="padding:6px 0;text-align:'+(i?"right":"left")+'">'+esc(String(v))+"</td>";}).join("")+"</tr>";}).join("")
+        +"</table>";
+    }
+    var from=String(d.from||"").slice(0,10),to=String(d.to||"").slice(0,10);
+    var days=(d.byDay||[]),max=1;
+    days.forEach(function(x){max=Math.max(max,Number(x.credits)||0);});
+    var bars=days.length?'<div class="sec-label" style="margin-top:14px">Credits per day</div><div style="display:flex;align-items:flex-end;gap:2px;height:48px">'
+      +days.map(function(x){var c=Number(x.credits)||0;return '<span title="'+esc(String(x.day))+": "+c+' cr" style="flex:1;min-width:2px;background:var(--fg);opacity:'+(c?".6":".12")+';height:'+Math.max(2,Math.round(c/max*46))+'px"></span>';}).join("")+"</div>":"";
+    var fails=(d.recentFailures||[]).map(function(f){
+      return '<div style="padding:6px 0;border-top:1px solid var(--border);font-size:12.5px"><b>'+esc(f.tool||"")+"</b> "
+        +'<span style="color:var(--muted)">'+esc(String(f.startedAt||"").slice(0,16).split("T").join(" "))+"</span>"
+        +(f.error?'<div style="color:var(--muted);word-break:break-word">'+esc(f.error)+"</div>":"")+"</div>";
+    }).join("");
+    return '<div class="fade-in">'
+      +'<div style="font-size:15px;font-weight:700">'+(d.scope==="workspace"?"Workspace usage":"Your usage")+"</div>"
+      +'<div style="font-size:12px;color:var(--muted);margin:2px 0 12px">'+esc(from)+" → "+esc(to)+"</div>"
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'+tile("Credits",t.credits)+tile("Calls",t.calls)+tile("Failures",t.failures)
+      +(d.scope==="workspace"?tile("Seats",t.seats):"")+"</div>"
+      +table("By tool",["Tool","Calls","Failed","Credits"],(d.byTool||[]).map(function(r){return [r.tool,r.calls,r.failures,r.credits];}))
+      +table("By seat",["Member","Calls","Failed","Credits"],(d.bySeat||[]).map(function(r){return [r.name||r.email||String(r.userId||"").slice(0,8),r.calls,r.failures,r.credits];}))
+      +bars
+      +(fails?'<div class="sec-label" style="margin-top:14px">Recent failures</div>'+fails:"")
+      +"</div>";
+  }
+
   // ─── Vetting strip ───
   //
   // Only show_collab_shortlist sends these fields, so every other creator card
@@ -4832,6 +4876,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // Credits
     if(d.gettingStarted===true){app.innerHTML=renderGettingStarted(d);setTimeout(reportSize,50);return;}
     if(d.connector==="google_analytics"||d.connector==="search_console"||d.connector==="posthog"){app.innerHTML=renderConnector(d);setTimeout(reportSize,50);return;}
+    if(d.report===true&&d.totals){app.innerHTML=renderUsageReport(d);setTimeout(reportSize,50);return;}
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];
       var freeHtml="";
