@@ -328,7 +328,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "list_social_connections",
  title: "List Social Connections",
- description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Also returns which platforms can be connected at all. No cost to call.",
+ description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Manage comments reports the grant; no nooticr tool posts or replies to a comment. Also returns which platforms can be connected at all. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
  {
@@ -340,7 +340,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "answer_my_audience",
  title: "Answer My Audience",
- description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because no nooticr connection carries comment-write permission \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
+ description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because nooticr does not post comments whatever a connection allows \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
  inputSchema: z.object({ username: z.string().describe("Your handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts to open (default 6, max 12). Each one is a comment fetch, so this is the price."), commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 20, max 50)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD. Windows the posts, not the comments.") }).strict(),
  },
  {

@@ -3415,8 +3415,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +'<div class="sec-label">Read-only — nooticr can sweep these, no account to link</div>'
           +'<div class="chiprow">'+readOnlyTags+"</div>"
           +'<div class="section-text" style="margin-top:12px;color:var(--muted)">So "monitor my '
-          +'brand on Weibo" works and "reply to that Weibo comment" cannot — no nooticr '
-          +"connection carries comment-write permission on any network.</div>"
+          +'brand on Weibo" works and "reply to that Weibo comment" cannot — nooticr does not '
+          +"post replies on any network, whatever a connection is allowed to do.</div>"
           +"</div></div>"
         :"")
       +"</div>";
