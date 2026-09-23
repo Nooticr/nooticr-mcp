@@ -640,8 +640,8 @@ export const OUTPUT_SCHEMAS = {
     sinceApplied: scalar().describe("False when the platform returned no dates, so the window could not be honoured."),
     postsChecked: scalar().describe("Posts whose comments were actually read."),
     repliesCanBeSent: scalar().describe(
-      "Always false. No nooticr connection carries comment-write permission, so the drafts this " +
-        "produces are for a person to paste in themselves.",
+      "Always false. nooticr does not post replies, even where list_social_connections reports a " +
+        "connection can manage comments, so the drafts this produces are for a person to paste in themselves.",
     ),
     totalMentions: scalar().describe("Comments returned across every group."),
     totalThreads: scalar(),
@@ -908,7 +908,23 @@ export const OUTPUT_SCHEMAS = {
             "found at a string index maps back to the moment it was said.",
         ),
       }),
-    ).describe("Cue timings, where the platform published a timed track. Absent for speech-to-text."),
+    ).describe(
+      "Cue timings: the platform's own for a caption track, whisper's segment times for " +
+        "speech-to-text. Absent when neither carried timing.",
+    ),
+    captionFile: open({
+      format: scalar().describe("'srt' or 'vtt', as asked for with `format`."),
+      mimeType: scalar(),
+      filename: scalar(),
+      cueCount: scalar(),
+      truncated: scalar().describe("true when the track was longer than one file carries."),
+      content: scalar().describe(
+        "The caption file itself, ready to save; null when the transcript had no timing, with a reason.",
+      ),
+      reason: scalar(),
+    })
+      .nullish()
+      .describe("Present only when `format` asked for srt or vtt."),
     transcript: scalar(),
     wordCount: scalar(),
     language: scalar(),
@@ -1118,6 +1134,38 @@ export const OUTPUT_SCHEMAS = {
     firstFreeRemaining: listOf(z.string())
       .describe("Superseded by firstFreeTools, which carries the same value. Kept for backward compatibility — read firstFreeTools."),
     hint: scalar(),
+  }),
+
+  list_tool_runs: open({
+    scope: scalar(),
+    runs: listOf(open({
+      id: scalar(),
+      tool: scalar(),
+      surface: scalar().describe("'mcp' for a connector call, 'chat' for the dashboard's agent."),
+      ok: scalar(),
+      error: scalar().describe("Why it failed, credentials scrubbed; null when it worked."),
+      durationMs: scalar(),
+      credits: scalar().describe("What it actually took: 0 for a free, refunded, cached or replayed call."),
+      startedAt: scalar(),
+      userId: scalar().describe("Whose run it was; only in the workspace scope."),
+    })).describe("Newest first."),
+    count: scalar(),
+    creditsOnThisPage: scalar().describe("The credits these runs took, summed."),
+    nextBefore: scalar().describe("Pass as `before` for the next page; null on the last one."),
+  }),
+
+  get_tool_run: open({
+    run: open({
+      id: scalar(),
+      tool: scalar(),
+      surface: scalar().describe("'mcp' for a connector call, 'chat' for the dashboard's agent."),
+      ok: scalar(),
+      error: scalar().describe("Why it failed, credentials scrubbed; null when it worked."),
+      durationMs: scalar(),
+      credits: scalar().describe("What it actually took: 0 for a free, refunded, cached or replayed call."),
+      startedAt: scalar(),
+      userId: scalar().describe("Whose run it was; only in the workspace scope."),
+    }).nullish(),
   }),
 
   nooticr_login: open({
@@ -1560,9 +1608,18 @@ export const OUTPUT_SCHEMAS = {
     positioning: listOf(
       open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
     ),
-    products: listOf(amazonProduct).describe("The listings, passed through so the view can draw them."),
+    products: listOf(amazonProduct).describe(
+      "The listings drawn: the scan's own, re-read by scanId, unless verification.status is unverified.",
+    ),
     rollup: open({}).nullish(),
     scanId: scalar(),
+    verification: open({
+      status: scalar().describe("verified: the listings are the scan's own. unverified: as re-sent by the model."),
+      note: scalar(),
+      scanComplete: scalar(),
+      notInScan: listOf(z.string()).describe("Listings the model sent that the scan does not contain; not drawn."),
+      unknownAsins: listOf(z.string()).describe("ASINs cited in strengths that the scan does not contain."),
+    }).nullish(),
     mcpCredits,
   }),
 } as const;

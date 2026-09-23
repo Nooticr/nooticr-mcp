@@ -698,6 +698,31 @@ function handleMcpCall(name, args, workspaceId) {
           firstFreeTools: [],
         },
       };
+    case "list_tool_runs": {
+      // Two recorded runs, one paid and one refunded, so the history view
+      // has both kinds of row to draw.
+      const runs = [
+        { id: 2, tool: "search_mentions", surface: "mcp", ok: true, error: null, durationMs: 4210, credits: 18, startedAt: "2026-09-21T11:37:55Z" },
+        { id: 1, tool: "discover_social_posts", surface: "mcp", ok: false, error: "upstream timed out", durationMs: 30000, credits: 0, startedAt: "2026-09-21T11:34:25Z" },
+      ].filter((r) => args?.tool === undefined || r.tool === args.tool);
+      return {
+        content: [{ type: "text", text: `${runs.length} run(s) (fixture).` }],
+        structuredContent: {
+          scope: args?.scope ?? "mine",
+          runs,
+          count: runs.length,
+          creditsOnThisPage: runs.reduce((n, r) => n + r.credits, 0),
+          nextBefore: null,
+        },
+      };
+    }
+    case "get_tool_run":
+      return {
+        content: [{ type: "text", text: "One run (fixture)." }],
+        structuredContent: {
+          run: { id: Number(args?.id ?? 2), tool: "search_mentions", surface: "mcp", ok: true, error: null, durationMs: 4210, credits: 18, startedAt: "2026-09-21T11:37:55Z" },
+        },
+      };
     case "list_own_apps": {
       const apps = (workspaces.get(workspaceId)?.apps ?? []).map((a) => ({
         appId: a.id,

@@ -307,8 +307,8 @@ export function categoryGuidance(opts: {
     lines.push("");
     lines.push(
       "To show the result in the conversation — products, their reviews, and your read side by",
-      `side — call ${insightsTool} with what you concluded. It costs nothing and`,
-      "makes no further requests.",
+      `side — call ${insightsTool} with what you concluded${opts.scanId ? ` and scanId "${opts.scanId}"` : " and the scanId"}.`,
+      "It costs nothing, and it re-reads the listings from the scan itself, so do not re-send them.",
     );
   }
   return lines.join("\n");
@@ -538,14 +538,19 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "Display the category read you produced from scan_amazon_category: purchase drivers, " +
         "barriers, what each brand does well, the gaps, and the positioning angles — drawn beside " +
         "the listings and their reviews, so a person can click a product and check any claim " +
-        "against the text it came from. Free, and makes no requests: it only draws what you pass " +
-        "it, attributed to you rather than presented as a nooticr rating of anyone's product. " +
+        "against the text it came from. Pass the scanId: the listings are then re-read from the " +
+        "scan itself (free) rather than taken from you, so do not re-send them, and any ASIN you " +
+        "cite that the scan does not contain is flagged on the card. Without a scanId, listings " +
+        "you pass are drawn marked as not checked against a scan. Free. Your read is attributed " +
+        "to you rather than presented as a nooticr rating of anyone's product. " +
         "Call this after you have read the reviews, not instead of reading them.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        // Draws what it is given; reaches nothing.
+        // Draws what it is given. Its one request re-reads a scan the caller
+        // already ran, from nooticr's own job store with no wait, so it
+        // fetches nothing new from the marketplace (#107).
         openWorldHint: false,
       },
       outputSchema: OUTPUT_SCHEMAS.show_amazon_category_insights,
@@ -615,16 +620,20 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
           products: z
             .array(anyObject())
             .optional()
-            .describe("The listings from the scan, passed straight through so the view can draw them."),
-          rollup: anyObject().optional().describe("The rollup from the scan, passed straight through."),
-          scanId: z.string().optional().describe("The scan this reads, for the record."),
+            .describe(
+              "Only when there is no scanId. With one, the listings are re-read from the scan and anything here is ignored.",
+            ),
+          rollup: anyObject().optional().describe("Only when there is no scanId; re-read from the scan otherwise."),
+          scanId: z
+            .string()
+            .optional()
+            .describe("The scan this reads. Pass it: it is what lets the card draw the collector's own listings."),
         })
         .passthrough(),
     },
-    async (args: Record<string, unknown>) => {
-      const products = Array.isArray(args.products)
-        ? (args.products as Array<Record<string, unknown>>)
-        : [];
+    async (args: Record<string, unknown>, extra) => {
+      const checked = await rehydrate(args, () => makeClient({ ...extra, arguments: args }));
+      const products = checked.products;
       const counts = {
         drivers: Array.isArray(args.drivers) ? args.drivers.length : 0,
         barriers: Array.isArray(args.barriers) ? args.barriers.length : 0,
@@ -635,7 +644,8 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         `Category read for ${String(args.category ?? "this category")}: ${counts.drivers} driver(s), ` +
         `${counts.barriers} barrier(s), ${counts.gaps} gap(s), ${counts.positioning} positioning angle(s)` +
         `${products.length ? `, drawn beside ${products.length} listing(s)` : ""}.` +
-        (args.summary ? ` ${String(args.summary)}` : "");
+        (args.summary ? ` ${String(args.summary)}` : "") +
+        ` ${checked.verification.note}`;
       return {
         content: [{ type: "text" as const, text }],
         structuredContent: {
@@ -649,14 +659,93 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
           gaps: args.gaps ?? [],
           positioning: args.positioning ?? [],
           products,
-          rollup: args.rollup ?? {},
+          rollup: checked.rollup,
           scanId: args.scanId ?? null,
-          // Nothing was fetched, so nothing was charged.
+          verification: checked.verification,
+          // The one read is amazon_scan_status, which is free by design.
           mcpCredits: { cost: 0 },
         },
       };
     },
   );
+}
+
+/**
+ * The listings a category read is drawn beside, from the scan rather than
+ * from the model (#107).
+ *
+ * The card exists so a person can check a claim against the text it came
+ * from, which only works if the text is the collector's. A model that dropped
+ * three listings, mis-copied a price or invented a competitor used to produce
+ * a card identical to a truthful one. With a scanId the listings are re-read
+ * from the scan, free and with no wait, and whatever the model sent is only
+ * compared against them. Without one, or when the re-read fails, what the
+ * model sent is drawn and marked unverified rather than refused: a card with a
+ * visible caveat is more use to a person than no card.
+ */
+export async function rehydrate(
+  args: Record<string, unknown>,
+  client: () => Promise<NooticrClient> | NooticrClient,
+): Promise<{
+  products: Array<Record<string, unknown>>;
+  rollup: Record<string, unknown>;
+  verification: {
+    status: "verified" | "unverified";
+    note: string;
+    scanComplete?: boolean;
+    notInScan?: string[];
+    unknownAsins?: string[];
+  };
+}> {
+  const sent = Array.isArray(args.products) ? (args.products as Array<Record<string, unknown>>) : [];
+  const sentRollup = (args.rollup ?? {}) as Record<string, unknown>;
+  const scanId = typeof args.scanId === "string" ? args.scanId.trim() : "";
+  const unverified = (note: string) => ({
+    products: sent,
+    rollup: sentRollup,
+    verification: { status: "unverified" as const, note },
+  });
+  if (!scanId) {
+    return unverified(
+      sent.length
+        ? "No scanId was passed, so these listings are as re-sent and were not checked against a scan."
+        : "No scanId was passed, so there are no listings to draw beside this read.",
+    );
+  }
+  let payload: Record<string, unknown>;
+  try {
+    const res = await (await client()).callTool("amazon_scan_status", { scanId, waitSeconds: 0 });
+    payload = structured(res);
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    return unverified(`Scan ${scanId} could not be re-read (${why}), so these listings are as re-sent and were not checked.`);
+  }
+  const products = normaliseProducts(payload.products);
+  const ids = new Set(products.map((p) => String(p.asin ?? "")).filter(Boolean));
+  const idOf = (p: Record<string, unknown>) =>
+    String([p.asin, p.sku, p.pid, p.goods_id, p.item_id, p.product_id, p.id].find((v) => typeof v === "string" && v) ?? "");
+  const notInScan = [...new Set(sent.map(idOf).filter((id) => id && !ids.has(id)))];
+  const cited = Array.isArray(args.strengths)
+    ? (args.strengths as Array<Record<string, unknown>>).map((s) => String(s.asin ?? "")).filter(Boolean)
+    : [];
+  const unknownAsins = [...new Set(cited.filter((a) => !ids.has(a)))];
+  const scanComplete = payload.complete !== false;
+  const flags = [
+    notInScan.length ? `${notInScan.length} listing(s) you sent are not in the scan (${notInScan.join(", ")}) and are not drawn.` : "",
+    unknownAsins.length ? `ASIN(s) cited in strengths but not in the scan: ${unknownAsins.join(", ")}.` : "",
+    scanComplete ? "" : "The scan is still running, so the set drawn is what it had collected so far.",
+  ].filter(Boolean);
+  return {
+    products,
+    rollup: (payload.rollup ?? {}) as Record<string, unknown>,
+    verification: {
+      status: "verified",
+      note: [`The ${products.length} listing(s) drawn are the scan's own, re-read from ${scanId}.`, ...flags].join(" "),
+      scanComplete,
+      notInScan,
+      unknownAsins,
+    },
+  };
 }
 
 /**
