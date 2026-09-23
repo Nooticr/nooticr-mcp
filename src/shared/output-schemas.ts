@@ -1576,9 +1576,18 @@ export const OUTPUT_SCHEMAS = {
     positioning: listOf(
       open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
     ),
-    products: listOf(amazonProduct).describe("The listings, passed through so the view can draw them."),
+    products: listOf(amazonProduct).describe(
+      "The listings drawn: the scan's own, re-read by scanId, unless verification.status is unverified.",
+    ),
     rollup: open({}).nullish(),
     scanId: scalar(),
+    verification: open({
+      status: scalar().describe("verified: the listings are the scan's own. unverified: as re-sent by the model."),
+      note: scalar(),
+      scanComplete: scalar(),
+      notInScan: listOf(z.string()).describe("Listings the model sent that the scan does not contain; not drawn."),
+      unknownAsins: listOf(z.string()).describe("ASINs cited in strengths that the scan does not contain."),
+    }).nullish(),
     mcpCredits,
   }),
 } as const;
