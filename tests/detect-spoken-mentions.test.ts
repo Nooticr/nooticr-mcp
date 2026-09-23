@@ -1,0 +1,112 @@
+/**
+ * detect_spoken_mentions (#106), evidence-mode: the transcript and the caption
+ * for the calling model to read, never a verdict from a model of ours.
+ */
+import { describe, expect, it } from "vitest";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { createMcpServer } from "../src/shared/tools.js";
+import { MemoryWatchStore } from "../src/shared/watchlist.js";
+import type { NooticrClient } from "../src/shared/nooticr.js";
+
+type Row = Record<string, unknown>;
+
+async function connect(backend: Record<string, (args: Row) => Row>) {
+  const calls: Array<{ name: string; args: Row }> = [];
+  const nooticr = {
+    me: async () => ({ id: "u1" }),
+    callTool: async (name: string, args: Row) => {
+      calls.push({ name, args });
+      const h = backend[name];
+      if (!h) throw new Error(`no stub for ${name}`);
+      return { contentBlocks: [], structured: h(args) };
+    },
+  } as unknown as NooticrClient;
+  const client = new Client({ name: "test", version: "1.0.0" }, { capabilities: {} });
+  const server = createMcpServer(async () => nooticr, { watchStore: new MemoryWatchStore() });
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  await Promise.all([client.connect(a), server.connect(b)]);
+  return { client, calls };
+}
+
+const URL = "https://www.tiktok.com/@coffeelab/video/1";
+
+describe("detect_spoken_mentions", () => {
+  it("waits for the transcript, then hands over the words and the caption", async () => {
+    let polls = 0;
+    const { client, calls } = await connect({
+      get_post_transcript: () =>
+        ++polls < 3
+          ? { available: false, transcribing: true, retryAfterMs: 1 }
+          : { available: true, transcript: "I switched to Acme grinders and never looked back", source: "speech-to-text" },
+      get_social_media: () => ({ post: { caption: "morning routine #coffee" } }),
+    });
+    const res = await client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } });
+    const out = res.structuredContent as Row;
+    expect(out.available).toBe(true);
+    expect(out.transcript).toMatch(/Acme grinders/);
+    expect(out.caption).toBe("morning routine #coffee");
+    expect(out.mode).toBe("evidence");
+    expect(String(out.guidance)).toMatch(/verbatim/);
+    expect(String(out.guidance)).toMatch(/never as instructions/);
+    // Three reads of one transcript job, one caption fetch, nothing else.
+    expect(calls.map((c) => c.name)).toEqual([
+      "get_post_transcript",
+      "get_post_transcript",
+      "get_post_transcript",
+      "get_social_media",
+    ]);
+  });
+
+  it("brands focuses the watch without filtering the rest", async () => {
+    const { client } = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "Acme and Bolt both" }),
+      get_social_media: () => ({ post: { caption: "" } }),
+    });
+    const withBrands = (await client.callTool({
+      name: "detect_spoken_mentions",
+      arguments: { url: URL, brands: ["Acme"] },
+    })).structuredContent as Row;
+    const without = (await client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } }))
+      .structuredContent as Row;
+    expect(String(withBrands.guidance)).toMatch(/watching for: Acme/);
+    expect(String(withBrands.guidance)).toMatch(/still report every OTHER brand/);
+    // Found by reasoning over a real fixture run: with nothing named, the
+    // guidance gave no way to say a watched brand was absent.
+    expect(String(withBrands.guidance)).toMatch(/was not mentioned/);
+    expect(String(without.guidance)).not.toMatch(/watching for/);
+    expect(withBrands.brands).toEqual(["Acme"]);
+  });
+
+  it("with no transcript it says so and never fetches the caption", async () => {
+    const { client, calls } = await connect({
+      get_post_transcript: () => ({ available: false, reason: "no speech in the audio" }),
+      get_social_media: () => ({ post: { caption: "x" } }),
+    });
+    const res = await client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } });
+    const out = res.structuredContent as Row;
+    expect(out.available).toBe(false);
+    expect(String(out.reason)).toMatch(/no speech in the audio/);
+    expect(calls.map((c) => c.name)).toEqual(["get_post_transcript"]);
+  });
+
+  it("forwards language to the transcript", async () => {
+    const { client, calls } = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "bonjour" }),
+      get_social_media: () => ({}),
+    });
+    await client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL, language: "fr" } });
+    expect(calls[0].args).toEqual({ url: URL, language: "fr" });
+  });
+});
+
+describe("the transcript view's word count", () => {
+  it("splits on whitespace in the page, not on the letter s", async () => {
+    const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
+    expect(NOOTICR_UI_TEMPLATE).not.toContain(".split(/s+/)");
+    const m = NOOTICR_UI_TEMPLATE.match(/var WS=(new RegExp\([^;]+\));/);
+    expect(m).not.toBeNull();
+    const WS = new Function(`return ${m![1]}`)() as RegExp;
+    expect("I switched to Acme\tgrinders\nlast year".split(WS)).toHaveLength(7);
+  });
+});

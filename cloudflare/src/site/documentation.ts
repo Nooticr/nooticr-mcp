@@ -176,7 +176,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<p>A server-side integration has no browser to run that flow in, so it authenticates with an <strong>API key</strong> instead: one credential, sent as <code>Authorization: Bearer nk_&hellip;</code>, minted from an account that did sign in once. A key is scoped to one account and one workspace, stored only as a hash, and cannot create or revoke keys — so a leaked key cannot outlive being revoked. See <a href="#connect-server">Server-side integrations</a>.</p>` +
         `<p>Two scopes are granted, and they describe exactly what the tools do:</p>` +
         `<ul><li><code>social:read</code> — read public posts, transcripts, comments, creators, sounds and hashtags</li>` +
-        `<li><code>credits:spend</code> — run AI tools and open a checkout, both of which draw on the user's credit balance</li></ul>` +
+        `<li><code>credits:spend</code> — run the tools that draw on the user's credit balance</li></ul>` +
         `<p><strong>To revoke:</strong> the user removes the connector in their AI client, which invalidates its tokens immediately; an API key is revoked with <code>npx -y @nooticr/mcp api-key revoke &lt;id&gt;</code>, which takes effect at the API on the spot. To remove the account and its data entirely, email <a href="mailto:${esc(BRAND.supportEmail)}">${esc(BRAND.supportEmail)}</a>.</p>` +
 
         `<h3 id="admins-data">Data handling</h3>` +
@@ -299,7 +299,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
       body:
         `<table class="doc-t"><thead><tr><th>You see</th><th>Meaning</th><th>Do</th></tr></thead><tbody>` +
         `<tr><td><code>401 Unauthorized</code></td><td>No valid token</td><td>Reconnect the connector, or run <code>nooticr_login</code></td></tr>` +
-        `<tr><td><code>-32002</code> insufficient credits</td><td>Balance too low for this tool</td><td><code>buy_nooticr_credits</code>, or top up in the dashboard</td></tr>` +
+        `<tr><td><code>-32002</code> insufficient credits</td><td>Balance too low for this tool</td><td>Top up on the nooticr website, then call the tool again</td></tr>` +
         `<tr><td><code>available: false</code></td><td>The post has no caption track</td><td>Not an error — use <code>analyze_post</code> instead</td></tr>` +
         `<tr><td>Unsupported URL</td><td>Not one of the ${PLATFORMS.length} supported networks</td><td>Check the coverage list above</td></tr>` +
         `</tbody></table>` +

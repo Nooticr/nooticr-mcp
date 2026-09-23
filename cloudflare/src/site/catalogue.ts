@@ -165,6 +165,12 @@ export const TOOLS: Tool[] = [
     when: "One creator works and you want more like them.",
   },
   {
+    name: "suggest_creator_identity", cost: 2, group: "research",
+    args: "handle, platform?, platforms?",
+    desc: "Accounts on other networks that may be the same person, with the evidence for each. Suggests, never merges. 2 per network searched plus 2 for the handle.",
+    when: "You have one confirmed handle and want the same creator elsewhere.",
+  },
+  {
     name: "discover_sounds", cost: 2, group: "research",
     args: "keyword, platform?, count?",
     desc: "Trending audio with playable previews and usage counts.",
@@ -245,6 +251,12 @@ export const TOOLS: Tool[] = [
     when: "They should no longer appear in the catch-up.",
   },
   {
+    name: "list_watchlist", cost: 0, group: "research",
+    args: "\u2014",
+    desc: "Who you are watching, and when you last caught up on each. Reads the stored list only.",
+    when: "Before paying for a catch-up, or to find the exact handle to unwatch.",
+  },
+  {
     name: "catch_up_watchlist", cost: 2, group: "research",
     args: "limit?, platform?",
     desc: "What everyone you watch has posted since your last catch-up \u2014 2 credits per creator checked, not per call.",
@@ -287,6 +299,12 @@ export const TOOLS: Tool[] = [
   },
 
   // ── research ──
+  {
+    name: "detect_spoken_mentions", cost: 2, group: "research",
+    args: "url, brands?, language?",
+    desc: "Every brand named out loud in one video, for your model to find in the transcript beside the caption \u2014 1 credit for the transcript and 1 for the caption, nothing when no transcript can be made.",
+    when: "A brand may be said on camera but never written; you have the video's URL.",
+  },
   {
     name: "search_spoken_mentions", cost: 2, group: "research",
     args: "term, platforms?, handles?, maxTranscripts?",
@@ -572,6 +590,18 @@ export const TOOLS: Tool[] = [
     args: "—",
     desc: "Balance and billing URL.",
     when: "Before a run of paid calls.",
+  },
+  {
+    name: "list_tool_runs", cost: 0, group: "account",
+    args: "tool?, from?, to?, success?, minCredits?, limit?, before?, scope?",
+    desc: "Your tool-call history: what ran, whether it worked, and the credits each call actually took.",
+    when: "A balance moved more than expected.",
+  },
+  {
+    name: "get_tool_run", cost: 0, group: "account",
+    args: "id",
+    desc: "One run by id, with its full error.",
+    when: "Looking closely at one charge from list_tool_runs.",
   },
   {
     name: "nooticr_login", cost: 0, group: "account",

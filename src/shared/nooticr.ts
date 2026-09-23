@@ -281,10 +281,9 @@ export class NooticrClient {
 
     if (rpc && typeof rpc === "object" && rpc.error !== undefined && rpc.error !== null) {
       const err = rpc.error as { code?: unknown; message?: unknown };
-      throw new NooticrError(
-        err.code === -32002 ? 402 : 400,
-        typeof err.message === "string" ? err.message : "nooticr MCP tool call failed"
-      );
+      const message = typeof err.message === "string" ? err.message : "nooticr MCP tool call failed";
+      if (err.code === -32002) throw new NooticrError(402, outOfCreditsMessage(message));
+      throw new NooticrError(400, message);
     }
 
     const result = (rpc.result ?? {}) as {
@@ -451,4 +450,33 @@ async function parseJsonBody(res: Response): Promise<unknown> {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * How this surface tells a model the balance is short.
+ *
+ * The backend's `-32002` message used to say "call buy_nooticr_credits — it
+ * returns a Stripe Checkout URL", a tool this server deliberately does not
+ * register (#100). The numbers are kept, and everything after them is this
+ * server's own sentence, so a backend that is behind - or that reintroduces
+ * the pitch - can never send the model after a tool that is not in its list.
+ */
+export const TOP_UP_INSTRUCTION =
+  "Credits are topped up on the nooticr website; once that is done, call this tool again. " +
+  "This server sells nothing and has no purchase tool, so do not offer a link or a price.";
+
+export function outOfCreditsMessage(backend: string): string {
+  const cost = /costs\s+(\d+)\s+credit/i.exec(backend)?.[1];
+  const balance = /balance is\s+(-?\d+)/i.exec(backend)?.[1];
+  const figures =
+    cost !== undefined && balance !== undefined
+      ? `this tool costs ${cost} credit(s) and your balance is ${balance}. `
+      : "the balance does not cover this tool. ";
+  return `Insufficient nooticr credits — ${figures}${TOP_UP_INSTRUCTION}`;
+}
+
+/** A backend `hint` that pitches a purchase, replaced; any other kept. */
+export function safeCreditsHint(hint: unknown): unknown {
+  if (typeof hint !== "string") return hint;
+  return /buy_nooticr_credits|stripe|checkout/i.test(hint) ? TOP_UP_INSTRUCTION : hint;
 }
