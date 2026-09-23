@@ -112,7 +112,10 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     ],
   },
   creatorSearch: {
-    enumerating: ["search_creators", "who_should_i_work_with"],
+    // suggest_creator_identity runs creator search on each network it looks
+    // on (CREATOR_SEARCH_PLATFORMS in nooticr-server), so it serves exactly
+    // what search does.
+    enumerating: ["search_creators", "who_should_i_work_with", "suggest_creator_identity"],
   },
   similarCreators: {
     enumerating: ["get_similar_creators"],

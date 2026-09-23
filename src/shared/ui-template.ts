@@ -40,9 +40,15 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_post_comments:"Get Post Comments",
     search_creators:"Search Creators",
     get_similar_creators:"Similar Creators",
+    suggest_creator_identity:"Same Person Elsewhere",
     discover_sounds:"Discover Sounds",
     understand_social_post:"Understand Social Post",
     check_nooticr_credits:"Check Credits",
+    list_tool_runs:"Tool Runs",
+    get_tool_run:"Tool Run",
+    list_watchlist:"Watchlist",
+    detect_spoken_mentions:"Spoken Mentions",
+    nooticr_getting_started:"Getting Started",
     get_google_analytics:"Google Analytics",
     get_search_console_data:"Search Console",
     get_posthog_analytics:"PostHog",
@@ -72,9 +78,15 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_post_comments:"Top comments on a post — sentiment, themes, viral threads.",
     search_creators:"Find creators in a niche by engagement, followers, and content.",
     get_similar_creators:"Find creators similar to a given handle.",
+    suggest_creator_identity:"Accounts on other networks that may be the same person, with the evidence.",
     discover_sounds:"Trending sounds and music on TikTok/Instagram.",
     understand_social_post:"The same frames and transcript, for a description of what happens on screen.",
     check_nooticr_credits:"View your Nooticr credit balance and usage.",
+    list_tool_runs:"Where your credits went: every call, what it cost, and whether it worked.",
+    get_tool_run:"One call from your history, with its full error.",
+    list_watchlist:"The creators you are watching, and when you last caught up on each.",
+    detect_spoken_mentions:"Brands named out loud in a video, beside what its caption says.",
+    nooticr_getting_started:"Where your account stands and what to try first.",
     get_google_analytics:"Your GA4 sync, as of its last sync.",
     get_search_console_data:"Search clicks, impressions and top queries, as of the last sync.",
     get_posthog_analytics:"Your PostHog pageview trend, as of the last sync.",
@@ -3004,6 +3016,85 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +"</div>";
   }
 
+  // ─── Identity suggestions (suggest_creator_identity) ───
+  //
+  // Its own view rather than creatorCard: a candidate carries a points score
+  // (50 for a shared bio link, 25 for a cross-link) that the vetting strip
+  // would draw as "/100", and no follower total, because adding two accounts'
+  // followers together on this evidence is exactly what the tool forbids.
+  // Every card says "suggestion" on its face for the same reason.
+  function renderIdentity(d){
+    var seed=d.seed||{},list=d.suggestions||[];
+    var searched=(d.searched||[]).join(", ");
+    var head='<div style="margin-bottom:12px"><div style="font-size:15px;font-weight:700">Possibly the same person as @'
+      +esc(seed.handle||"")+" on "+esc(seed.platform||"")+"</div>"
+      +'<div style="font-size:12px;color:var(--muted);margin-top:3px">'
+      +list.length+" suggestion"+(list.length===1?"":"s")+(searched?" · looked on "+esc(searched):"")
+      +" · nothing merged, a human confirms</div>"
+      +(d.note?'<div style="font-size:12px;color:var(--muted);margin-top:6px">'+esc(d.note)+"</div>":"")
+      +"</div>";
+    var cards=list.map(function(c){
+      var high=c.confidence==="high",color=pColor(c.platform||"");
+      var ev=(c.evidence||[]).map(function(e){
+        var strong=e.strength==="strong";
+        return '<li style="margin:3px 0"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:'
+          +(strong?"var(--green)":"var(--muted)")+'">'+esc(e.strength||"")+"</span> "
+          +'<span style="font-weight:600">'+esc(String(e.signal||"").split("_").join(" "))+"</span>"
+          +(e.detail?' <span style="color:var(--muted)">· '+esc(e.detail)+"</span>":"")+"</li>";
+      }).join("");
+      var link=c.profileUrl&&String(c.profileUrl).indexOf("http")===0
+        ?'<a href="'+esc(c.profileUrl)+'" style="font-size:12px;color:var(--fg)">Open profile</a>':"";
+      return '<div class="creator-card" data-identity-candidate>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+        +'<div class="avatar-placeholder" style="flex-shrink:0;background:'+color+'20">'+pSvg(c.platform||"",22)+"</div>"
+        +'<div style="min-width:0"><div style="font-size:14px;font-weight:700">'+esc(c.nickname||c.username||"")+"</div>"
+        +'<div class="handle" style="overflow-wrap:anywhere">@'+esc(c.username||"")+" · "+esc(c.platform||"")+"</div></div></div>"
+        +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;color:'
+        +(high?"var(--green)":"var(--muted)")+'">'+(high?"likely":"possible")+" · suggestion</div>"
+        +(c.followers!=null?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+fmtNum(c.followers)+" followers on this account alone</div>":"")
+        +(ev?'<ul style="list-style:none;padding:0;margin:0;font-size:12px;line-height:1.4">'+ev+"</ul>":"")
+        +(link?'<div style="margin-top:8px">'+link+"</div>":"")
+        +"</div>";
+    }).join("");
+    var none=list.length?"":'<div class="empty-state"><div class="icon">👤</div><div class="text">No account cleared the bar. A creator with no links in their bio is hard to match this way; that is not proof they have no other accounts.</div></div>';
+    var gaps=(d.unavailable||[]).map(function(u){return esc(u.platform||"")+" could not be searched";}).join(" · ");
+    return '<div class="fade-in">'+head+none+(cards?'<div class="gallery">'+cards+"</div>":"")
+      +(gaps?'<div style="font-size:12px;color:var(--muted);margin-top:10px">'+gaps+"</div>":"")+"</div>";
+  }
+
+  // ─── Getting started (nooticr_getting_started) ───
+  //
+  // Checked before the credits card, which it would otherwise fall into: it
+  // carries a balance too. A null is drawn as "could not read", never as 0 —
+  // "no balance" and "no connections" are claims this view has not checked.
+  function renderGettingStarted(d){
+    function stat(label,val,unknown){
+      return '<div style="flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
+        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
+        +'<div style="font-size:16px;font-weight:700;margin-top:3px">'+(val==null?'<span style="color:var(--muted);font-weight:500;font-size:13px">'+esc(unknown)+"</span>":esc(String(val)))+"</div></div>";
+    }
+    var head='<div style="font-size:15px;font-weight:700;margin-bottom:10px">'
+      +(d.signedIn?"Where your nooticr account stands":"Not signed in to nooticr yet")+"</div>";
+    var stats=d.signedIn
+      ?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'
+        +stat("Credits",d.balance,"could not read")
+        +stat("Connected accounts",d.connectedCount,"could not read")
+        +stat("Watching",d.watching,"could not read")+"</div>"
+      :"";
+    var steps=(d.nextSteps||[]).map(function(n){
+      var price=Number(n.credits)>0?esc(String(n.credits))+" cr":"free";
+      var ex=n.example&&typeof n.example==="object"?JSON.stringify(n.example):"";
+      return '<div data-next-step style="padding:10px 0;border-top:1px solid var(--border)">'
+        +'<div style="display:flex;align-items:baseline;gap:8px"><code style="font-weight:700">'+esc(n.tool||"")+"</code>"
+        +'<span style="margin-left:auto;font-size:11px;font-weight:700;color:'+(price==="free"?"var(--green)":"var(--muted)")+'">'+price+"</span></div>"
+        +'<div style="font-size:13px;margin-top:3px">'+esc(n.why||"")+"</div>"
+        +(ex?'<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:ui-monospace,monospace">'+esc(ex)+"</div>":"")
+        +"</div>";
+    }).join("");
+    return '<div class="fade-in">'+head+stats
+      +'<div class="sec-label">Try next</div>'+steps+"</div>";
+  }
+
   // ─── Connector reads (get_google_analytics, get_search_console_data,
   // get_posthog_analytics) ───
   //
@@ -3477,8 +3568,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +'<div class="sec-label">Read-only — nooticr can sweep these, no account to link</div>'
           +'<div class="chiprow">'+readOnlyTags+"</div>"
           +'<div class="section-text" style="margin-top:12px;color:var(--muted)">So "monitor my '
-          +'brand on Weibo" works and "reply to that Weibo comment" cannot — no nooticr '
-          +"connection carries comment-write permission on any network.</div>"
+          +'brand on Weibo" works and "reply to that Weibo comment" cannot — nooticr does not '
+          +"post replies on any network, whatever a connection is allowed to do.</div>"
           +"</div></div>"
         :"")
       +"</div>";
@@ -4124,10 +4215,23 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var drivers=(ins.drivers||[]).map(function(f){return amazonFinding(f,"driver");}).join("");
     var barriers=(ins.barriers||[]).map(function(f){return amazonFinding(f,"barrier");}).join("");
     var gaps=(ins.gaps||[]).map(function(f){return amazonFinding(f,"gap");}).join("");
+    // #107: whether the listings on this card are the scan's own, re-read by
+    // the server, or whatever the model re-sent. Only the first earns the
+    // "check any claim" line at the bottom.
+    var ver=ins.verification||null,verified=!!(ver&&ver.status==="verified");
+    var unknown=(ver&&ver.unknownAsins)||[];
     var strengths=(ins.strengths||[]).map(function(s){
+      var off=s.asin&&unknown.indexOf(s.asin)!==-1;
       return '<div class="amz-strength"><span class="amz-strength-brand">'+esc(s.brand||"")+"</span>"
-        +'<span class="amz-strength-detail">'+esc(s.detail||"")+"</span></div>";
+        +'<span class="amz-strength-detail">'+esc(s.detail||"")+"</span>"
+        +(off?'<span data-not-in-scan style="margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red,#b42318)">not in the scan</span>':"")
+        +"</div>";
     }).join("");
+    var verBox=ver
+      ?'<div data-verification="'+(verified?"verified":"unverified")+'" style="font-size:12px;padding:8px 10px;margin-bottom:10px;border-radius:8px;border:1px solid var(--border);'
+        +(verified?"":"background:rgba(180,35,24,.06);")+'">'
+        +'<b>'+(verified?"Listings re-read from the scan":"Listings not checked against a scan")+"</b> · "+esc(ver.note||"")+"</div>"
+      :"";
     var angles=(ins.positioning||[]).map(function(a){
       return '<div class="amz-angle"><div class="amz-angle-claim">'+esc(a.angle||"")+"</div>"
         +(a.who?'<div class="amz-angle-row"><b>For</b> '+esc(a.who)+"</div>":"")
@@ -4136,6 +4240,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +"</div>";
     }).join("");
     return '<div class="fade-in">'
+      +verBox
       +(ins.summary?'<div class="lede-box">'+esc(ins.summary)+"</div>":"")
       +block("Purchase drivers","What makes someone buy. Click an id to read the review it rests on.",drivers)
       +block("Purchase barriers","What stops them, or brings it back.",barriers)
@@ -4143,7 +4248,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +block("Gaps in the category","Asked for repeatedly, served by nobody in this set.",gaps)
       +block("Positioning angles","",angles)
       +'<div class="ai-note">This read is your model’s, from the reviews on this screen — not a nooticr '
-      +"rating of anyone’s product. Every claim above can be checked against the text it came from.</div>"
+      +"rating of anyone’s product."
+      +(verified||!ver?" Every claim above can be checked against the text it came from.":" The listings were not checked against a scan, so check them before relying on them.")+"</div>"
       +"</div>";
   }
 
@@ -4472,6 +4578,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       return;}
 
     // Creators
+    if(Array.isArray(d.suggestions)&&d.seed){app.innerHTML=renderIdentity(d);setTimeout(reportSize,50);return;}
     if(d.creators&&Array.isArray(d.creators)){
       if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}
       app.innerHTML=galleryWrap(d.creators.map(function(c){return creatorCard(c);}).join(""),d.creators.length);return;}
@@ -4486,7 +4593,12 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:6px">'+mpIcon("note",16)+"<span>Transcript</span></div>"
           +'<div class="muted" style="font-size:13px;color:var(--muted)">'+esc(d.reason||"No transcript available.")+"</div></div></div>";
         return;}
-      var wc=d.wordCount||(d.transcript?String(d.transcript).trim().split(/\s+/).filter(Boolean).length:0);
+      // No regex escape here: this file is one template literal (and the
+      // page is backslash-free by test), so the old whitespace class reached
+      // the browser as the letter s ("I switched to Acme grinders" counted 3
+      // words). Whitespace is spelled out by char code instead.
+      var WS=new RegExp("["+String.fromCharCode(32,9,10,13)+"]+");
+      var wc=d.wordCount||(d.transcript?String(d.transcript).trim().split(WS).filter(Boolean).length:0);
       var meta=[wc+" words"];
       if(d.language)meta.push(esc(d.language));
       if(d.autoGenerated)meta.push("auto-generated");
@@ -4676,7 +4788,49 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +(s.videoCount?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+fmtNum(s.videoCount)+" videos</div>":"")
           +"</div></div>"+player+"</div>";
       }).join(""),d.sounds.length);return;}
+    // Run history (list_tool_runs / get_tool_run): where the credits went.
+    // One row per call, the credits it actually took on the right, so the
+    // expensive calls are the ones the eye lands on.
+    if(Array.isArray(d.runs)||(d.run&&d.run.tool)){
+      var runs=Array.isArray(d.runs)?d.runs:[d.run];
+      if(!runs.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🧾</div><div class="text">No runs in this window</div></div>';return;}
+      var runRows=runs.map(function(r){
+        var when=r.startedAt?String(r.startedAt).slice(0,16).split("T").join(" ")+" UTC":"";
+        var secs=Number(r.durationMs)>0?(Number(r.durationMs)/1000).toFixed(1)+"s":"";
+        var meta=[when,secs,r.userId?"user "+String(r.userId).slice(0,8):""].filter(Boolean).join(" • ");
+        var cr=Number(r.credits)||0;
+        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13.5px;font-weight:600">'+(r.ok===false?"⚠️ ":"")+esc(r.tool||"")+"</div>"
+          +'<div style="font-size:11.5px;color:var(--muted)">'+esc(meta)+"</div>"
+          +(r.error?'<div style="font-size:12px;color:var(--muted);margin-top:3px;word-break:break-word">'+esc(String(r.error))+"</div>":"")
+          +"</div>"
+          +'<div style="font-size:14px;font-weight:700;white-space:nowrap">'+(cr?cr+" cr":"free")+"</div></div>";
+      }).join("");
+      var total=d.creditsOnThisPage!=null?'<div class="section-label" style="margin-bottom:6px">'+esc(String(d.creditsOnThisPage))+" credits across "+runs.length+" call"+(runs.length===1?"":"s")+(d.scope==="workspace"?" in the workspace":"")+"</div>":"";
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">🧾 '+(d.run?"Tool run":"Where your credits went")+"</div>"
+        +total+runRows
+        +(d.nextBefore!=null?'<div style="font-size:11.5px;color:var(--muted);margin-top:8px">More runs are older than these.</div>':"")
+        +"</div></div>";return;}
+    // Watchlist (list_watchlist): who is being watched, and since when.
+    if(Array.isArray(d.entries)&&d.watching!=null&&!d.posts&&!d.results){
+      if(!d.entries.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👀</div><div class="text">You are not watching anyone yet</div></div>';return;}
+      var wlRows=d.entries.map(function(e){
+        if(!e)return"";
+        var since=e.lastCaughtUpAt?"caught up "+String(e.lastCaughtUpAt).slice(0,10):"never caught up";
+        var added=e.addedAt?"added "+String(e.addedAt).slice(0,10):"";
+        return '<div style="padding:9px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="font-size:13.5px;font-weight:600">@'+esc(e.handle||"")+' <span style="font-weight:400;color:var(--muted)">'+esc(e.platform||"")+"</span></div>"
+          +'<div style="font-size:11.5px;color:var(--muted)">'+esc([added,since].filter(Boolean).join(" • "))+"</div>"
+          +(e.note?'<div style="font-size:12px;margin-top:3px">'+esc(String(e.note))+"</div>":"")
+          +"</div>";
+      }).join("");
+      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">👀 Watching '+esc(String(d.watching))+"</div>"
+        +wlRows+"</div></div>";return;}
     // Credits
+    if(d.gettingStarted===true){app.innerHTML=renderGettingStarted(d);setTimeout(reportSize,50);return;}
     if(d.connector==="google_analytics"||d.connector==="search_console"||d.connector==="posthog"){app.innerHTML=renderConnector(d);setTimeout(reportSize,50);return;}
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];

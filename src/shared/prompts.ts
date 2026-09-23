@@ -397,7 +397,11 @@ export function registerPrompts(server: McpServer): void {
           `name or a domain into an account. Hand back a compact result before calling anything paid: ` +
           `{tiktok: <handle or null>, instagram: <handle or null>, youtube: <handle or null>, ...} for ` +
           `whichever networks you can confirm, plus 2-3 niche keywords describing what they post about` +
-          `${niche ? ` (you already gave me: ${niche})` : ""}. A wrong handle still spends 2 credits per ` +
+          `${niche ? ` (you already gave me: ${niche})` : ""}. Once one handle is confirmed on TikTok, ` +
+          `Instagram or Xiaohongshu, suggest_creator_identity on it looks for the same account on the ` +
+          `other two, with the evidence for each (6 credits) — instead of guessing handles network by ` +
+          `network. Its results are suggestions: show me the evidence and let me confirm before you ` +
+          `treat any of them as theirs. A wrong handle still spends 2 credits per ` +
           `network call and returns nothing — and that looks exactly like a genuinely quiet account, so ` +
           `get the handle right before you spend anything on it.\n\n` +
           `Once you have a handle${platform ? ` on ${platform}` : ""}, work in this order:\n` +

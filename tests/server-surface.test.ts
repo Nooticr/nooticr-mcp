@@ -80,7 +80,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(79);
+    expect(tools).toHaveLength(85);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -118,12 +118,17 @@ describe("tool annotations", () => {
       "get_posthog_analytics",
       "get_scheduled_posts",
       "get_search_console_data",
+      "get_tool_run",
       "get_video_stats",
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
       "list_social_connections",
+      "list_tool_runs",
+      "list_watchlist",
       "mention_trend",
+      // Reads the caller's own balance, connections and watchlist; suggests.
+      "nooticr_getting_started",
       "nooticr_login",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
@@ -138,7 +143,7 @@ describe("tool annotations", () => {
       // every one of them reaches Amazon through the scraper service.
       "show_amazon_category_insights",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
-      // send them either — no connection carries comment-write permission.
+      // send them either — nooticr has no send path for comments.
       "show_audience_replies",
       // Renders scores the caller reached by reading a candidate's links —
       // and it is the caller that opened them, not us. See collab.ts for why

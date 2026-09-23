@@ -12,8 +12,9 @@
  * (or a user on the consent screen) can map them to the tool list:
  *   social:read    — read public posts, transcripts, comments, creators,
  *                    sounds and hashtags on the supported networks
- *   credits:spend  — run the AI tools and open a checkout, both of which
- *                    draw on the account's credit balance
+ *   credits:spend  — run the tools that draw on the account's credit
+ *                    balance. Nothing here buys credits: this server offers
+ *                    no purchase path (see #100).
  *
  * The server previously advertised a single `analyze:video`, which described
  * about a fifth of what the tools do. Scopes are carried on the session but
