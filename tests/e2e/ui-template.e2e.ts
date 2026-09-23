@@ -2501,3 +2501,51 @@ test("connector reads show their sync time, and a never-synced one its message",
   await expect(page.locator("body")).toContainText("No PostHog data synced yet");
   await expect(page.locator("[data-series]")).toHaveCount(0);
 });
+
+// #93: a workspace usage report draws its totals and a row per tool and seat.
+test("a usage report draws totals, tools and seats", async ({ page }) => {
+  await renderTemplate(page, {
+    report: true, scope: "workspace", from: "2026-08-24T00:00:00Z", to: "2026-09-23T00:00:00Z",
+    totals: { calls: 41, failures: 3, credits: 96, tools: 5, seats: 2 },
+    byTool: [{ tool: "search_mentions", calls: 6, failures: 0, credits: 54 }],
+    bySeat: [{ userId: "u1", name: "Owner", calls: 30, failures: 1, credits: 80 }, { userId: "u2", email: "sam@example.com", calls: 11, failures: 2, credits: 16 }],
+    byDay: [{ day: "2026-09-22", calls: 3, failures: 0, credits: 6 }],
+    recentFailures: [{ tool: "get_social_media", error: "upstream 404", startedAt: "2026-09-22T10:00:00Z" }],
+  });
+  await expect(page.locator("body")).toContainText("Workspace usage");
+  await expect(page.locator("[data-usage-row]")).toHaveCount(3);
+  await expect(page.locator("body")).toContainText("sam@example.com");
+  await expect(page.locator("body")).toContainText("upstream 404");
+});
+
+// #95: a non-Amazon read draws under its own site, not Amazon's.
+test("a marketplace category read is labelled with its own site", async ({ page }) => {
+  await renderTemplate(page, {
+    marketplace: "lazada", view: "insights", category: "Coffee grinders",
+    drivers: [{ label: "Consistent grind", strength: "moderate" }],
+    products: [{ asin: "LZ-1", title: "Kobo grinder", brand: "Kobo", reviews: [] }],
+    rollup: {},
+    verification: { status: "verified", note: "The 1 listing(s) drawn are the scan's own." },
+  });
+  await expect(page.locator(".amz-head-title")).toContainText("Coffee grinders");
+  await expect(page.locator('[data-verification="verified"]')).toBeVisible();
+  await expect(page.locator(".amz-head")).not.toContainText("amazon.com");
+});
+
+// #107: a show_* view whose rows were not all returned by nooticr this
+// session says so above the card; a fully matched one draws no banner.
+test("a view with unchecked rows says so, and a checked one stays quiet", async ({ page }) => {
+  const post = { platform: "tiktok", title: "A", externalUrl: "https://tiktok.com/@a/video/1", views: 10 };
+  await renderTemplate(page, {
+    posts: [post, { ...post, externalUrl: "https://tiktok.com/@b/video/2" }],
+    comparison: { winner: 1, differences: [], lessons: [] },
+    verification: { status: "unverified", note: "1 of 2 posts is not among what nooticr returned in this session.", unmatched: ["x"] },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toContainText("Not checked against nooticr");
+  await renderTemplate(page, {
+    posts: [post, post],
+    comparison: { winner: 1, differences: [], lessons: [] },
+    verification: { status: "verified", note: "All 2 posts drawn with the figures nooticr returned.", unmatched: [] },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toHaveCount(0);
+});

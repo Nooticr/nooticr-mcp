@@ -718,6 +718,35 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    case "get_usage_report": {
+      // nooticr-server's run_history::get_usage_report shape.
+      const workspace = args?.scope === "workspace";
+      return {
+        content: [{ type: "text", text: "Usage report." }],
+        structuredContent: {
+          report: true,
+          scope: workspace ? "workspace" : "mine",
+          from: "2026-08-24T00:00:00Z",
+          to: "2026-09-23T00:00:00Z",
+          totals: { calls: 41, failures: 3, credits: 96, tools: 5, seats: workspace ? 2 : 1 },
+          byTool: [
+            { tool: "search_mentions", calls: 6, failures: 0, credits: 54, lastUsedAt: "2026-09-22T09:12:00Z" },
+            { tool: "scan_amazon_category", calls: 2, failures: 1, credits: 30, lastUsedAt: "2026-09-21T15:40:00Z" },
+            { tool: "get_social_media", calls: 33, failures: 2, credits: 12, lastUsedAt: "2026-09-22T11:02:00Z" },
+          ],
+          bySeat: workspace
+            ? [
+                { userId: "u1", email: "owner@example.com", name: "Owner", calls: 30, failures: 1, credits: 80 },
+                { userId: "u2", email: "sam@example.com", name: null, calls: 11, failures: 2, credits: 16 },
+              ]
+            : [],
+          byDay: Array.from({ length: 30 }, (_, i) => ({ day: `2026-08-${String(24 + i).padStart(2, "0")}`, calls: i % 5, failures: 0, credits: (i % 7) * 2 })),
+          recentFailures: [
+            { id: 88, tool: "get_social_media", surface: "mcp", ok: false, error: "upstream 404", durationMs: 800, credits: 0, startedAt: "2026-09-22T10:00:00Z" },
+          ],
+        },
+      };
+    }
     case "get_tool_run":
       return {
         content: [{ type: "text", text: "One run (fixture)." }],

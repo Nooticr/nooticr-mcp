@@ -459,6 +459,12 @@ export const TOOLS: Tool[] = [
     desc: "Draws the read you wrote beside the listings and their reviews, so a person can click a product and check any claim against the text it came from.",
     when: "After you have read the reviews. The scores shown are attributed to you, not presented as a nooticr rating of anyone's product.",
   },
+  {
+    name: "show_marketplace_category_insights", cost: 0, group: "market",
+    args: "marketplace, your category read",
+    desc: "The same card for the other eleven sites: your read beside that site's listings and reviews, re-read from the scan so nothing is re-typed.",
+    when: "After reading a scan_marketplace_category result.",
+  },
 
   // ── create ──
   {
@@ -626,6 +632,12 @@ export const TOOLS: Tool[] = [
     args: "id",
     desc: "One run by id, with its full error.",
     when: "Looking closely at one charge from list_tool_runs.",
+  },
+  {
+    name: "get_usage_report", cost: 0, group: "account",
+    args: "days?, from?, to?, scope?",
+    desc: "Spend over a window: totals, per tool, per day, recent failures; per seat for a workspace's owners and admins.",
+    when: "What did we spend this month, on what, and what failed.",
   },
   {
     name: "nooticr_login", cost: 0, group: "account",

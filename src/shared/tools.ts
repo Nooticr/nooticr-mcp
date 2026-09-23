@@ -6,6 +6,7 @@
  * result formatting live here and nowhere else.
  */
 
+import { ledgerFor } from "./fetch-ledger.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { z } from "zod";
@@ -62,7 +63,7 @@ import { registerAmazonTools } from "./amazon.js";
 import { registerMarketplaceTools } from "./marketplace.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.44";
+export const MCP_SERVER_VERSION = "1.26.46";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -681,6 +682,20 @@ export function createMcpServer(
   }
  );
 
+ // Every tool result passes through the session's fetch ledger on its way
+ // out, so the show_* views can draw what nooticr returned rather than the
+ // model's copy of it (#107). Wrapped once here rather than in eighty
+ // handlers; registerSlowTool records the task path the same way.
+ const ledger = ledgerFor(server);
+ const registerTool = server.registerTool.bind(server) as (...a: unknown[]) => unknown;
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ (server as any).registerTool = (name: string, config: unknown, handler: (...a: unknown[]) => unknown) =>
+  registerTool(name, config, async (...a: unknown[]) => {
+   const result = (await handler(...a)) as { structuredContent?: unknown } | undefined;
+   ledger.record(name, result?.structuredContent);
+   return result;
+  });
+
  // Register one UI app resource per tool/view. Claude/ChatGPT render a
  // separate sandboxed app per resourceUri and key app state by it, so a
  // distinct URI per tool avoids a shared app instance/session colliding
@@ -717,6 +732,7 @@ const TOOL_NAMES = [
   "check_nooticr_credits",
   "list_tool_runs",
   "get_tool_run",
+  "get_usage_report",
   "list_watchlist",
   "nooticr_getting_started",
   "understand_social_post",
@@ -807,6 +823,7 @@ const TOOL_NAMES = [
   "amazon_scan_status",
   "get_amazon_product",
   "show_amazon_category_insights",
+  "show_marketplace_category_insights",
   // The marketplace-agnostic trio. Every name here gets a ui://nooticr/<tool>
   // resource, which is what gives a tool its card — a tool missing from this
   // list is one the host is told to render and then 404s on.
@@ -1958,6 +1975,8 @@ const TOOL_NAMES = [
   {
    title: "Show Trend",
    description:
+   "Figures are checked against what nooticr returned in this session: its own numbers are drawn, " +
+    "and a row it never returned is drawn marked as unchecked, so there is no need to re-type them exactly. " +
     "Draw the trend you read out of mention_trend. Free, and makes no requests — it renders what " +
     "you pass it: the series as a chart, per-network lines where you supply them, and your own " +
     "read of what changed. Pass `tooShort` when the series has too few points to call a " +
@@ -2013,17 +2032,20 @@ const TOOL_NAMES = [
    tooShort?: boolean;
    edgeIsRecordStart?: boolean;
   }) => {
+   const checked = ledger.checkRuns(args.points, args.term);
    return {
     content: [
      {
       type: "text" as const,
       text:
        `Showing a ${args.points.length}-point trend${args.term ? ` for "${args.term}"` : ""}.` +
-       (args.verdict ? ` ${args.verdict}` : ""),
+       (args.verdict ? ` ${args.verdict}` : "") +
+       ` ${checked.verification.note}`,
      },
     ],
     structuredContent: {
-     points: args.points,
+     points: checked.rows,
+     verification: checked.verification,
      term: args.term ?? null,
      metric: args.metric ?? "found",
      verdict: args.verdict ?? null,
@@ -2040,6 +2062,8 @@ const TOOL_NAMES = [
   {
    title: "Show Standings",
    description:
+   "Figures are checked against what nooticr returned in this session: its own numbers are drawn, " +
+    "and a row it never returned is drawn marked as unchecked, so there is no need to re-type them exactly. " +
     "Draw the standings you read out of compare_creators or watchlist_standings. Free, and makes " +
     "no requests — it only renders what you pass it: one row per creator with their window, their " +
     "own median, how often they beat it and how hard, and the post that did best. Pass `ranking` " +
@@ -2089,17 +2113,20 @@ const TOOL_NAMES = [
    verdict?: string;
    tooThin?: string[];
   }) => {
+   const checked = ledger.checkCreators(args.creators);
    return {
     content: [
      {
       type: "text" as const,
       text:
        `Showing standings for ${args.creators.length} creator${args.creators.length === 1 ? "" : "s"}.` +
-       (args.verdict ? ` ${args.verdict}` : ""),
+       (args.verdict ? ` ${args.verdict}` : "") +
+       ` ${checked.verification.note}`,
      },
     ],
     structuredContent: {
-     creators: args.creators,
+     creators: checked.rows,
+     verification: checked.verification,
      metric: args.metric ?? "views",
      ranking: args.ranking ?? null,
      verdict: args.verdict ?? null,
@@ -2115,6 +2142,8 @@ const TOOL_NAMES = [
   {
    title: "Show Comparison",
    description:
+   "Figures are checked against what nooticr returned in this session: its own numbers are drawn, " +
+    "and a row it never returned is drawn marked as unchecked, so there is no need to re-type them exactly. " +
     "Display a comparison you wrote after compare_posts fetched the first post and you fetched " +
     "the rest yourself (get_social_media, 1 credit each). Free, and makes no requests — it only " +
     "draws what you pass it: each post with a BEST badge on the winner, what differed, shared " +
@@ -2156,15 +2185,19 @@ const TOOL_NAMES = [
    lessons?: string[];
    nextTest?: string;
   }) => {
+   const checked = ledger.checkPosts(args.posts);
    return {
     content: [
      {
       type: "text" as const,
-      text: `Showing a comparison of ${args.posts.length} posts.${args.winnerReason ? ` ${args.winnerReason}` : ""}`,
+      text:
+       `Showing a comparison of ${args.posts.length} posts.${args.winnerReason ? ` ${args.winnerReason}` : ""}` +
+       ` ${checked.verification.note}`,
      },
     ],
     structuredContent: {
-     posts: args.posts,
+     posts: checked.rows,
+     verification: checked.verification,
      comparison: {
       winner: args.winner,
       winnerReason: args.winnerReason ?? null,
@@ -2183,6 +2216,8 @@ const TOOL_NAMES = [
   {
    title: "Show Analysis",
    description:
+   "Figures are checked against what nooticr returned in this session: its own numbers are drawn, " +
+    "and a row it never returned is drawn marked as unchecked, so there is no need to re-type them exactly. " +
     "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post " +
     "handed you the material. Free, and makes no requests — it only draws what you pass it: hook " +
     "strength, script structure, quotable lines, hashtags, target audience, viral triggers and " +
@@ -2213,11 +2248,15 @@ const TOOL_NAMES = [
     .strict(),
   },
   async (args: { url: string; post?: Record<string, unknown>; analysis: Record<string, unknown> }) => {
+   const checked = ledger.checkPosts([
+    { ...(args.post ?? { platform: platformFromUrl(args.url) }), externalUrl: args.post?.externalUrl ?? args.url },
+   ]);
    return {
-    content: [{ type: "text" as const, text: `Showing your analysis of ${args.url}.` }],
+    content: [{ type: "text" as const, text: `Showing your analysis of ${args.url}. ${checked.verification.note}` }],
     structuredContent: {
      url: args.url,
-     post: args.post ?? { platform: platformFromUrl(args.url), externalUrl: args.url },
+     post: checked.rows[0],
+     verification: checked.verification,
      analysis: args.analysis,
      mcpCredits: { cost: 0 },
     },
@@ -2275,6 +2314,8 @@ const TOOL_NAMES = [
   {
    title: "Show Variants",
    description:
+   "Figures are checked against what nooticr returned in this session: its own numbers are drawn, " +
+    "and a row it never returned is drawn marked as unchecked, so there is no need to re-type them exactly. " +
     "Display the post variants you wrote after create_variants handed you the original post's " +
     "material. Free, and makes no requests — it only draws what you pass it: each variant's hook, " +
     "the angle that changes, its shot beats and its call to action. Call this after you have " +
@@ -2310,11 +2351,23 @@ const TOOL_NAMES = [
    post?: Record<string, unknown>;
    variants: Array<{ title: string; hook: string; angle?: string; beats?: string[]; cta?: string; whyItCouldWork?: string }>;
   }) => {
+   const checked = ledger.checkPosts([
+    {
+     ...(args.post ?? { platform: platformFromUrl(args.sourceUrl) }),
+     externalUrl: args.post?.externalUrl ?? args.sourceUrl,
+    },
+   ]);
    return {
-    content: [{ type: "text" as const, text: `Showing ${args.variants.length} variants of ${args.sourceUrl}.` }],
+    content: [
+     {
+      type: "text" as const,
+      text: `Showing ${args.variants.length} variants of ${args.sourceUrl}. ${checked.verification.note}`,
+     },
+    ],
     structuredContent: {
      sourceUrl: args.sourceUrl,
-     post: args.post ?? { platform: platformFromUrl(args.sourceUrl), externalUrl: args.sourceUrl },
+     post: checked.rows[0],
+     verification: checked.verification,
      variants: args.variants,
      mcpCredits: { cost: 0 },
     },
@@ -3014,6 +3067,48 @@ const TOOL_NAMES = [
     return await toToolResult(await client.callTool("get_tool_run", { ...args }));
    } catch (err) {
     return toolError("get_tool_run failed", err);
+   }
+  }
+ );
+
+ // The run ledger added up (#93): the question an owner or a security review
+ // asks ("what did the team run this month, what did it cost, what failed")
+ // answered from the same rows as the history, never from memory.
+ server.registerTool(
+  "get_usage_report",
+  {
+   title: "Get Usage Report",
+   description:
+    "A usage report over a window: total calls, failures and credits actually taken; one row " +
+    "per tool, most expensive first; one row per day, quiet days included; and the ten most " +
+    "recent failures with their errors, credentials scrubbed. scope: \"workspace\" covers " +
+    "every member of your workspace and adds one row per seat; it is for the workspace's " +
+    "owners and admins. Reads the stored run ledger, so it is free and says what happened, " +
+    "not what is running. No cost to call. Use for \"what did we spend this month and on " +
+    "what\" or an audit of what nooticr did on the workspace's behalf; list_tool_runs is the " +
+    "call-by-call view.",
+   _meta: {
+    ui: { resourceUri: uiResource("get_usage_report") },
+    "ui/resourceUri": uiResource("get_usage_report"),
+    "openai/outputTemplate": appsSdkResource("get_usage_report"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.get_usage_report,
+   inputSchema: z
+    .object({
+     days: z.number().int().min(1).max(366).optional().describe("The window, in days back from now (default 30)."),
+     from: z.string().optional().describe("Start of the window, ISO date or timestamp. Overrides days."),
+     to: z.string().optional().describe("End of the window, ISO date or timestamp (default now)."),
+     scope: runFilters.scope,
+    })
+    .strict(),
+  },
+  async (args: { days?: number; from?: string; to?: string; scope?: "mine" | "workspace" }, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("get_usage_report", { ...args }));
+   } catch (err) {
+    return toolError("get_usage_report failed", err);
    }
   }
  );
