@@ -62,7 +62,7 @@ import { registerAmazonTools } from "./amazon.js";
 import { registerMarketplaceTools } from "./marketplace.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.41";
+export const MCP_SERVER_VERSION = "1.26.42";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
