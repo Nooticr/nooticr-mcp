@@ -32,6 +32,7 @@ import {
  planCalls,
  scoreDraftGuidance,
   KNOWN_PLATFORMS,
+  ownIt,
   platformFailureGuidance,
 } from "./evidence.js";
 import { evidenceDigest } from "./evidence-digest.js";
@@ -682,7 +683,10 @@ export function createMcpServer(
  // template, which renders whichever structuredResult the tool delivers.
  // Every tool/view gets its own named app resource so it is distinguishable
  // in MCP controllers by BOTH a unique URI and a unique human-readable name.
- const TOOL_NAMES = [
+ /** How long detect_spoken_mentions waits on a transcript still being listened to. */
+const SPOKEN_DETECT_BUDGET_MS = 20_000;
+
+const TOOL_NAMES = [
   "analyze_post",
   "get_social_media",
   "discover_social_posts",
@@ -693,6 +697,7 @@ export function createMcpServer(
   "get_similar_creators",
   "discover_sounds",
   "get_post_transcript",
+  "detect_spoken_mentions",
   "analyze_comments",
   "compare_posts",
   "discover_hashtags",
@@ -1453,6 +1458,134 @@ export function createMcpServer(
     return await toToolResult(await client.callTool("get_post_transcript", { ...args }));
    } catch (err) {
     return toolError("get_post_transcript failed", err);
+   }
+  }
+ );
+
+ // Brands named out loud (#106). The backend's detect_spoken_mentions reads the
+ // transcript with a model of ours; this surface sells the fetch and never the
+ // judgement (see evidence.ts), so it hands the caller the words and the
+ // caption and asks it to do the reading. Same name, same promise - a mention
+ // that was never typed - with the reading done by the model already here.
+ server.registerTool(
+  "detect_spoken_mentions",
+  {
+   title: "Detect Spoken Mentions",
+   description:
+    "The brands a creator names OUT LOUD in one video, for you to find: the post's spoken " +
+    "transcript and its written caption, side by side. A brand is said far more often than it is " +
+    "typed, so caption and comment search miss most mentions; this reads the audio, so it works " +
+    "on a video whose creator never enabled captions. You list each brand, product or company " +
+    "named, with the verbatim sentence it came from, the creator's framing, and mentionedIn: " +
+    "spoken (only said), caption (only written) or both. Give `brands` to focus the watch; still " +
+    "report any other brand named, because the unexpected one is the finding. Waits for the audio " +
+    "to be transcribed rather than returning a partial answer. Costs 2 nooticr credits — 1 for " +
+    "get_post_transcript plus 1 for get_social_media's caption — and nothing when no transcript " +
+    "can be made. Use for one video; search_spoken_mentions looks for one term across a " +
+    "creator's recent posts.",
+   _meta: {
+    ui: { resourceUri: uiResource("detect_spoken_mentions") },
+    "ui/resourceUri": uiResource("detect_spoken_mentions"),
+    "openai/outputTemplate": appsSdkResource("detect_spoken_mentions"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+   outputSchema: OUTPUT_SCHEMAS.detect_spoken_mentions,
+   inputSchema: z
+    .object({
+     url: z.string().describe("Public video URL, on any platform nooticr reads."),
+     brands: z
+      .array(z.string())
+      .max(20)
+      .optional()
+      .describe("Brands to watch for. A focus, not a filter: others named are still reported."),
+     language: z.string().optional().describe("Preferred language code, e.g. 'en'."),
+    })
+    .strict(),
+  },
+  async (args: { url: string; brands?: string[]; language?: string }, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    const ask = { url: args.url, ...(args.language ? { language: args.language } : {}) };
+    const read = async () =>
+     ((await client.callTool("get_post_transcript", ask)).structured ?? {}) as Record<string, unknown>;
+    // Listening is asynchronous. The first call accepts the job; a poll of it
+    // is free, so the wait costs nothing - and the caption is only fetched
+    // once there are words to compare it with, so a post that never yields
+    // a transcript is never charged for one.
+    let transcript = await read();
+    const started = Date.now();
+    while (transcript.transcribing && Date.now() - started < SPOKEN_DETECT_BUDGET_MS) {
+     const waitMs = Math.min(Number(transcript.retryAfterMs) || 1000, 5000);
+     await new Promise((r) => setTimeout(r, waitMs));
+     transcript = await read();
+    }
+    const base = {
+     mode: "evidence",
+     tool: "detect_spoken_mentions",
+     url: args.url,
+     brands: args.brands ?? [],
+    };
+    if (transcript.transcribing || transcript.available !== true) {
+     const reason = transcript.transcribing
+      ? "Still listening to this video's audio. Call detect_spoken_mentions again with the same url in a minute; the wait is free."
+      : `No transcript could be made: ${String(transcript.reason ?? "the post carries no speech we could read")}. ` +
+        "Say that plainly; it is not the same as nothing having been said.";
+     return await toToolResult({
+      contentBlocks: [],
+      structured: { ...base, available: false, transcribing: Boolean(transcript.transcribing), reason, guidance: reason, evidenceFrom: ["get_post_transcript"] },
+     });
+    }
+    let caption: string | null = null;
+    let post: Record<string, unknown> | null = null;
+    try {
+     const media = ((await client.callTool("get_social_media", { url: args.url })).structured ?? {}) as Record<string, unknown>;
+     post = (media.post as Record<string, unknown> | undefined) ?? media;
+     const text = post?.caption ?? post?.title ?? post?.description;
+     caption = typeof text === "string" ? text : null;
+    } catch {
+     caption = null;
+    }
+    const watch = args.brands?.length
+     ? `The caller is watching for: ${args.brands.join(", ")}. Mark those watchlist:true, and still report every OTHER brand, product or company named.`
+     : "No brands were named, so report every brand, product or company you find.";
+    const guidance = [
+     "Below are this video's spoken transcript (what was said) and its caption (what was written).",
+     "",
+     "List every brand, product or company named out loud in the transcript. For each give: the",
+     "name as written by its owner, the exact sentence it appears in, copied verbatim from the",
+     "transcript, the creator's framing (positive, negative, mixed or neutral), your confidence, and",
+     "mentionedIn — spoken if only the transcript names it, both if the caption does too. Add any",
+     "brand that appears only in the caption as mentionedIn: caption.",
+     watch,
+     "",
+     "If nothing is named, say that plainly - and for each watched brand that was not said, say it",
+     "was not mentioned rather than leaving it out, because \"not mentioned\" is the answer to the",
+     "question that was asked.",
+     "",
+     "A mention you cannot quote a transcript sentence for is not evidence: leave it out. Heard",
+     "words can be misspelt (speech-to-text writes homophones), so read past a spelling rather than",
+     "inventing a brand from it, and do not call a word a brand unless the sentence supports it.",
+     ownIt,
+    ].join("\n");
+    return await toToolResult({
+     contentBlocks: [{ type: "text", text: guidance }],
+     structured: {
+      ...base,
+      available: true,
+      guidance,
+      transcript: transcript.transcript ?? null,
+      wordCount: transcript.wordCount ?? null,
+      cues: transcript.cues ?? null,
+      source: transcript.source ?? null,
+      autoGenerated: transcript.autoGenerated ?? null,
+      language: transcript.language ?? null,
+      caption,
+      post,
+      evidenceFrom: ["get_post_transcript", "get_social_media"],
+     },
+    });
+   } catch (err) {
+    return toolError("detect_spoken_mentions failed", err);
    }
   }
  );

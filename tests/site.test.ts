@@ -567,6 +567,7 @@ describe("tool surface", () => {
     "list_tool_runs",
     "get_tool_run",
     "list_watchlist",
+    "detect_spoken_mentions",
     "nooticr_login",
     "show_comment_review",
     "show_compared_posts",

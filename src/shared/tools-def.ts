@@ -62,6 +62,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Xiaohongshu/Weibo/Bilibili/LinkedIn)."), focus: z.string().optional().describe("Extra instruction, e.g. 'focus on the CTA'.") }).strict(),
  },
  {
+ name: "detect_spoken_mentions",
+ title: "Detect Spoken Mentions",
+ description: "The brands a creator names OUT LOUD in one video, for you to find: the spoken transcript and the written caption side by side. List each brand, product or company named with the verbatim sentence, the creator's framing, and mentionedIn spoken, caption or both. Give brands to focus the watch; others named are still reported. Waits for the audio to be transcribed. Costs 2 nooticr credits — 1 for get_post_transcript plus 1 for get_social_media — and nothing when no transcript can be made.",
+ inputSchema: z.object({ url: z.string(), brands: z.array(z.string()).max(20).optional(), language: z.string().optional() }).strict(),
+ },
+ {
  name: "get_post_transcript",
  title: "Get Post Transcript",
  description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason; format 'srt' or 'vtt' also returns a ready caption file built from the track's own timing. A poll costs nothing, and neither does a call that comes back with no transcript. The listening route needs speech-to-text configured on the server and cannot reach Reddit or Bilibili at all. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",

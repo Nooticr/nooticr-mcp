@@ -172,6 +172,13 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     steps: [step("get_post_transcript")],
   },
   get_post_frames: { label: "Sampling frames", kind: "post", n: 1, steps: [step("get_post_frames")] },
+  detect_spoken_mentions: {
+    label: "Listening for brands",
+    kind: "text",
+    n: 1,
+    // Transcript first; the caption is fetched only once there are words.
+    steps: [step("get_post_transcript"), step("get_social_media")],
+  },
   get_post_comments: { label: "Loading comments", kind: "list", n: 6, steps: [step("get_post_comments")] },
 
   // ─── Understand a post ───
