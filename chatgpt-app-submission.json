@@ -128,6 +128,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "nooticr_getting_started": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own balance, connections and watchlist and suggests next calls. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "compare_creators": {
       "annotations": {
         "readOnlyHint": true,

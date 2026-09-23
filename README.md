@@ -169,6 +169,7 @@ a `scanId` for the rest.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
+| `nooticr_getting_started` | free | **Start here.** Where this account stands — balance, connected accounts, watchlist — and the next calls worth making, each with its price and an example. The server's `instructions` point every host at it. |
 | `check_nooticr_credits` | free | Balance and billing URL. |
 | `list_tool_runs` | free | Your tool-call history: what ran, whether it worked, and the credits each call actually took (0 for a free, refunded, cached or replayed call). `scope: "workspace"` shows every member's runs to owners and admins. |
 | `get_tool_run` | free | One run from that history by id, with its full error. |

@@ -2434,6 +2434,8 @@ test("a category read shows whether its listings were checked against the scan",
   });
   await expect(page.locator('[data-verification="unverified"]')).toContainText("not checked against a scan");
   await expect(page.locator("body")).not.toContainText("Every claim above can be checked");
+});
+
 // suggest_creator_identity (#102). The candidate's points score (50 per shared
 // bio link) must not reach the creator card's vetting strip, where it would
 // read as a nooticr rating out of 100, and no card may add followers up.
@@ -2460,4 +2462,25 @@ test("identity suggestions draw as suggestions, with their evidence and no /100"
   await expect(card).toContainText("on this account alone");
   await expect(page.locator("body")).not.toContainText("/100");
   await expect(page.locator("body")).toContainText("xiaohongshu could not be searched");
+});
+
+// nooticr_getting_started (#96). It carries a balance, so it must not fall
+// into the credits card, and a read it could not make is not a zero.
+test("getting started draws its own view, with unknowns as unknown", async ({ page }) => {
+  await renderTemplate(page, {
+    gettingStarted: true,
+    signedIn: true,
+    balance: 20,
+    connectedCount: null,
+    watching: 0,
+    nextSteps: [
+      { tool: "get_social_media", why: "Read one post.", credits: 1, example: { url: "<a post URL>" } },
+      { tool: "watch_creator", why: "Keep a creator on a list.", credits: 0 },
+    ],
+  });
+  await expect(page.locator("[data-next-step]")).toHaveCount(2);
+  await expect(page.locator("body")).toContainText("Where your nooticr account stands");
+  await expect(page.locator("body")).toContainText("could not read");
+  await expect(page.locator("[data-next-step]").first()).toContainText("1 cr");
+  await expect(page.locator("[data-next-step]").nth(1)).toContainText("free");
 });

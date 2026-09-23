@@ -48,6 +48,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_tool_run:"Tool Run",
     list_watchlist:"Watchlist",
     detect_spoken_mentions:"Spoken Mentions",
+    nooticr_getting_started:"Getting Started",
     compose_sequence:"Compose Sequence",
     overlay_bake:"Overlay Bake",
     spawn_variants:"Spawn Variants",
@@ -82,6 +83,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     get_tool_run:"One call from your history, with its full error.",
     list_watchlist:"The creators you are watching, and when you last caught up on each.",
     detect_spoken_mentions:"Brands named out loud in a video, beside what its caption says.",
+    nooticr_getting_started:"Where your account stands and what to try first.",
     compose_sequence:"AI-powered content composition for social posts.",
     overlay_bake:"Bake text/image overlays onto video or image.",
     spawn_variants:"Generate multiple content variants from a single seed.",
@@ -3054,6 +3056,39 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +(gaps?'<div style="font-size:12px;color:var(--muted);margin-top:10px">'+gaps+"</div>":"")+"</div>";
   }
 
+  // ─── Getting started (nooticr_getting_started) ───
+  //
+  // Checked before the credits card, which it would otherwise fall into: it
+  // carries a balance too. A null is drawn as "could not read", never as 0 —
+  // "no balance" and "no connections" are claims this view has not checked.
+  function renderGettingStarted(d){
+    function stat(label,val,unknown){
+      return '<div style="flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
+        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
+        +'<div style="font-size:16px;font-weight:700;margin-top:3px">'+(val==null?'<span style="color:var(--muted);font-weight:500;font-size:13px">'+esc(unknown)+"</span>":esc(String(val)))+"</div></div>";
+    }
+    var head='<div style="font-size:15px;font-weight:700;margin-bottom:10px">'
+      +(d.signedIn?"Where your nooticr account stands":"Not signed in to nooticr yet")+"</div>";
+    var stats=d.signedIn
+      ?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'
+        +stat("Credits",d.balance,"could not read")
+        +stat("Connected accounts",d.connectedCount,"could not read")
+        +stat("Watching",d.watching,"could not read")+"</div>"
+      :"";
+    var steps=(d.nextSteps||[]).map(function(n){
+      var price=Number(n.credits)>0?esc(String(n.credits))+" cr":"free";
+      var ex=n.example&&typeof n.example==="object"?JSON.stringify(n.example):"";
+      return '<div data-next-step style="padding:10px 0;border-top:1px solid var(--border)">'
+        +'<div style="display:flex;align-items:baseline;gap:8px"><code style="font-weight:700">'+esc(n.tool||"")+"</code>"
+        +'<span style="margin-left:auto;font-size:11px;font-weight:700;color:'+(price==="free"?"var(--green)":"var(--muted)")+'">'+price+"</span></div>"
+        +'<div style="font-size:13px;margin-top:3px">'+esc(n.why||"")+"</div>"
+        +(ex?'<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:ui-monospace,monospace">'+esc(ex)+"</div>":"")
+        +"</div>";
+    }).join("");
+    return '<div class="fade-in">'+head+stats
+      +'<div class="sec-label">Try next</div>'+steps+"</div>";
+  }
+
   // ─── Vetting strip ───
   //
   // Only show_collab_shortlist sends these fields, so every other creator card
@@ -4733,6 +4768,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">👀 Watching '+esc(String(d.watching))+"</div>"
         +wlRows+"</div></div>";return;}
     // Credits
+    if(d.gettingStarted===true){app.innerHTML=renderGettingStarted(d);setTimeout(reportSize,50);return;}
     if(d.balance!=null||d.tier){
       var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];
       var freeHtml="";

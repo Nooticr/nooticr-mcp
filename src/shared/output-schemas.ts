@@ -1160,6 +1160,17 @@ export const OUTPUT_SCHEMAS = {
   niche_report: open({
     ...evidence, report: open({}).nullish(), summary: scalar(), niche: scalar(), mcpCredits }),
 
+  nooticr_getting_started: open({
+    gettingStarted: scalar(),
+    signedIn: scalar(),
+    balance: scalar().describe("Null when the balance could not be read, never a guess."),
+    firstFreeTools: listOf(z.string()),
+    connectedCount: scalar(),
+    connectedPlatforms: listOf(z.string()),
+    watching: scalar().describe("Creators on the watchlist; null when it could not be read."),
+    nextSteps: listOf(open({ tool: scalar(), why: scalar(), credits: scalar(), example: open({}).nullish() })),
+    guidance: scalar(),
+  }),
   check_nooticr_credits: open({
     balance: scalar(),
     tier: scalar(),
