@@ -24,6 +24,7 @@
  * The task APIs are experimental in SDK 1.30 and may change under us. They are
  * contained here for that reason — one file to fix rather than three handlers.
  */
+import { ledgerFor } from "./fetch-ledger.js";
 import { InMemoryTaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/stores/in-memory.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
@@ -94,6 +95,7 @@ export function registerSlowTool<A>(
         void (async () => {
           try {
             const result = await run(args, extra);
+            ledgerFor(server).record(name, result?.structuredContent);
             await extra.taskStore.storeTaskResult(
               task.taskId,
               result?.isError ? "failed" : "completed",

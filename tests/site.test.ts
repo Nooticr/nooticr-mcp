@@ -616,6 +616,7 @@ describe("tool surface", () => {
     "scan_marketplace_category",
     "marketplace_scan_status",
     "get_marketplace_product",
+    "show_marketplace_category_insights",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -722,6 +723,7 @@ describe("tool surface", () => {
       // Draws the category read the caller wrote; the collection it reads was
       // billed when scan_amazon_category ran.
       "show_amazon_category_insights",
+      "show_marketplace_category_insights",
       // Polls a collection already paid for — charging for the second half of
       // one answer would bill a wait the server chose.
       "amazon_scan_status",

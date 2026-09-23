@@ -723,9 +723,21 @@
         "destructiveHint": false
       },
       "justifications": {
-        "read_only_justification": "Read-only: it draws the category read the caller already wrote. Nothing is written.",
-        "open_world_justification": "Closed domain, and closed further than most: it makes no network request at all. Everything it returns is computed from the arguments the caller passed in.",
+        "read_only_justification": "Read-only: it draws the Amazon category read the caller wrote beside that scan's listings. Nothing is written.",
+        "open_world_justification": "Closed domain. Its one request re-reads an Amazon scan the caller already ran, from nooticr's own job store with no wait; nothing new is fetched from Amazon.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "show_marketplace_category_insights": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it draws the caller's read of a non-Amazon marketplace category beside that site's scanned listings. Nothing is written.",
+        "open_world_justification": "Closed domain. Its one request re-reads a marketplace scan the caller already ran, from nooticr's own job store with no wait; nothing new is fetched from the site.",
+        "destructive_justification": "Not destructive: it only draws a read, so there is nothing for it to destroy."
       }
     },
     "show_audience_replies": {

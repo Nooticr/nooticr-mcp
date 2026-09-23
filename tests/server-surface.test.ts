@@ -80,7 +80,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(86);
+    expect(tools).toHaveLength(87);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -154,6 +154,8 @@ describe("tool annotations", () => {
       "show_comment_review",
       "show_compared_posts",
       "show_hooks",
+      // Its eleven-marketplace twin (#95): the same re-read of a scan.
+      "show_marketplace_category_insights",
       "show_post_analysis",
       "show_repurposed_post",
       // Draws the standings the caller read out of compare_creators. The two

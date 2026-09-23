@@ -338,6 +338,44 @@ const marketplaceScan = open(marketplaceScanShape);
 
 const amazonScan = open(amazonScanShape);
 
+/** A category read drawn beside a scan's listings, on any site. */
+const categoryInsights = open({
+  marketplace: scalar(),
+  view: scalar(),
+  category: scalar(),
+  summary: scalar(),
+  drivers: listOf(amazonFinding).describe("What makes someone buy, as you read it."),
+  barriers: listOf(amazonFinding).describe("What stops them, or makes them return it."),
+  strengths: listOf(open({ brand: scalar(), detail: scalar(), asin: scalar() })),
+  gaps: listOf(amazonFinding),
+  positioning: listOf(
+    open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
+  ),
+  products: listOf(amazonProduct).describe(
+    "The listings drawn: the scan's own, re-read by scanId, unless verification.status is unverified.",
+  ),
+  rollup: open({}).nullish(),
+  scanId: scalar(),
+  verification: open({
+    status: scalar().describe("verified: the listings are the scan's own. unverified: as re-sent by the model."),
+    note: scalar(),
+    scanComplete: scalar(),
+    notInScan: listOf(z.string()).describe("Listings the model sent that the scan does not contain; not drawn."),
+    unknownAsins: listOf(z.string()).describe("ASINs cited in strengths that the scan does not contain."),
+  }).nullish(),
+  mcpCredits,
+});
+
+/**
+ * Whether a show_* view drew nooticr's own figures (#107): the session's
+ * fetch ledger overlays what was actually returned on what the model sent.
+ */
+const checkedAgainstSession = open({
+  status: scalar().describe("verified: every row matched what nooticr returned this session. unverified: some are as re-sent."),
+  note: scalar(),
+  unmatched: listOf(z.string()).describe("Rows not among what nooticr returned in this session; drawn as sent, unchecked."),
+}).nullish();
+
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
   analyze_post_fast: open({ ...evidence, ...analyzed }),
@@ -596,6 +634,7 @@ export const OUTPUT_SCHEMAS = {
   // to land except chat text. Free, and make no requests, same as
   // show_comment_review: they only draw what they're handed.
   show_compared_posts: open({
+    verification: checkedAgainstSession,
     posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_posts returned."),
     comparison: open({
       winner: scalar().describe("1-indexed position of the post that won, matching the posts array."),
@@ -607,6 +646,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   show_post_analysis: open({
+    verification: checkedAgainstSession,
     url: scalar(),
     post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
     analysis: open({}).passthrough().nullish().describe(
@@ -630,6 +670,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   show_variants: open({
+    verification: checkedAgainstSession,
     sourceUrl: scalar(),
     post: post.nullish(),
     variants: listOf(
@@ -1066,6 +1107,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   show_standings: open({
+    verification: checkedAgainstSession,
     creators: listOf(anyObject()),
     metric: scalar(),
     ranking: scalar().describe("Which axis the order is on — 'how often' and 'how big' disagree."),
@@ -1300,6 +1342,7 @@ export const OUTPUT_SCHEMAS = {
    * might want is left underived on purpose — the model reads the series.
    */
   show_trend: open({
+    verification: checkedAgainstSession,
     points: listOf(anyObject()),
     term: scalar(),
     metric: scalar(),
@@ -1719,32 +1762,8 @@ export const OUTPUT_SCHEMAS = {
     ...amazonScanShape,
     product: amazonProduct.nullish().describe("The single listing, also present as products[0]."),
   }),
-  show_amazon_category_insights: open({
-    marketplace: scalar(),
-    view: scalar(),
-    category: scalar(),
-    summary: scalar(),
-    drivers: listOf(amazonFinding).describe("What makes someone buy, as you read it."),
-    barriers: listOf(amazonFinding).describe("What stops them, or makes them return it."),
-    strengths: listOf(open({ brand: scalar(), detail: scalar(), asin: scalar() })),
-    gaps: listOf(amazonFinding),
-    positioning: listOf(
-      open({ angle: scalar(), who: scalar(), why: scalar(), risk: scalar() }),
-    ),
-    products: listOf(amazonProduct).describe(
-      "The listings drawn: the scan's own, re-read by scanId, unless verification.status is unverified.",
-    ),
-    rollup: open({}).nullish(),
-    scanId: scalar(),
-    verification: open({
-      status: scalar().describe("verified: the listings are the scan's own. unverified: as re-sent by the model."),
-      note: scalar(),
-      scanComplete: scalar(),
-      notInScan: listOf(z.string()).describe("Listings the model sent that the scan does not contain; not drawn."),
-      unknownAsins: listOf(z.string()).describe("ASINs cited in strengths that the scan does not contain."),
-    }).nullish(),
-    mcpCredits,
-  }),
+  show_amazon_category_insights: categoryInsights,
+  // The same card for the other eleven sites (#95); `marketplace` says which.
+  show_marketplace_category_insights: categoryInsights,
 } as const;
-
 export type OutputSchemaName = keyof typeof OUTPUT_SCHEMAS;
