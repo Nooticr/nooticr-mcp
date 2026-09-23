@@ -60,7 +60,7 @@ import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { classifyGuidance, platformFromUrl, postSlug } from "./comment-review.js";
 import { clamp, complaintCore, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
-import { withEvidence } from "./evidence-digest.js";
+import { withEvidence, type DigestOptions } from "./evidence-digest.js";
 import {
   confirmSpend,
   costOf,
@@ -786,8 +786,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // deictic — it counts and describes material that used to be somewhere
   // else — so `withEvidence` puts a rendering of that material in the same
   // block as the sentence describing it.
-  const evidence = (guidance: string, payload: Row) => ({
-    content: [{ type: "text" as const, text: withEvidence(guidance, payload) }],
+  const evidence = (guidance: string, payload: Row, opts: DigestOptions = {}) => ({
+    content: [{ type: "text" as const, text: withEvidence(guidance, payload, opts) }],
     structuredContent: { guidance, ...payload },
   });
 
@@ -2559,6 +2559,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "an X post — and keep each one short, because this is a keyword search and a " +
                 "long sentence matches on its commonest words.",
             ),
+          verbatim: z
+            .boolean()
+            .optional()
+            .describe(
+              "Render every post and every reply whole in the text you read, rather than " +
+                "clipped to fit (default false). Use it when the user wants what people wrote " +
+                "quoted exactly; the result is longer, and the price is the same.",
+            ),
         })
         .strict(),
     },
@@ -2569,6 +2577,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         limit?: number;
         queries?: string[];
         readComments?: boolean;
+        verbatim?: boolean;
       },
       extra,
     ) => {
@@ -2778,6 +2787,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           unavailable,
           creditsCharged: spend.credits,
           mcpCredits: spend.payload,
+        },
+        {
+          verbatim: args.verbatim === true,
+          recover: "call find_people_with_problem again with the same arguments and verbatim: true",
         },
       );
     },

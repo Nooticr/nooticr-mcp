@@ -1481,10 +1481,18 @@ export function createMcpServer(
     .object({
      url: z.string().describe("Full public post URL."),
      limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."),
+     verbatim: z
+      .boolean()
+      .optional()
+      .describe(
+       "Render every comment whole in the text you read, rather than clipped to fit (default " +
+        "false). Use it when the user wants comments quoted exactly; the result is longer, and " +
+        "the price is the same.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; limit?: number }, extra) => {
+  async (args: { url: string; limit?: number; verbatim?: boolean }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
     // The same upstream call get_post_comments makes, so it is billed as the
@@ -1495,7 +1503,8 @@ export function createMcpServer(
     // rather than a paragraph — show_comment_review can only draw a
     // classification whose labels it already knows — so comment-review.ts
     // owns it and this handler stays hand-written.
-    const res = await client.callTool("get_post_comments", { ...args });
+    const { verbatim, ...upstream } = args;
+    const res = await client.callTool("get_post_comments", { ...upstream });
     const structured = (res.structured ?? {}) as Record<string, unknown>;
     const comments = toEvidence(args.url, structured.comments);
     const guidance = reviewGuidance(args.url, comments.length);
@@ -1521,7 +1530,13 @@ export function createMcpServer(
     };
     return {
      content: [
-      { type: "text" as const, text: `${guidance}\n\n---\n\n${evidenceDigest(payload)}` },
+      {
+       type: "text" as const,
+       text: `${guidance}\n\n---\n\n${evidenceDigest(payload, {
+        verbatim: verbatim === true,
+        recover: "call analyze_comments again with the same url and verbatim: true",
+       })}`,
+      },
      ],
      structuredContent: payload,
     };
