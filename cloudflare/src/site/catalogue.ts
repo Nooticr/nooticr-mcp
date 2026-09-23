@@ -628,6 +628,12 @@ export const TOOLS: Tool[] = [
     when: "Looking closely at one charge from list_tool_runs.",
   },
   {
+    name: "get_usage_report", cost: 0, group: "account",
+    args: "days?, from?, to?, scope?",
+    desc: "Spend over a window: totals, per tool, per day, recent failures; per seat for a workspace's owners and admins.",
+    when: "What did we spend this month, on what, and what failed.",
+  },
+  {
     name: "nooticr_login", cost: 0, group: "account",
     args: "—",
     desc: "Re-link the account.",

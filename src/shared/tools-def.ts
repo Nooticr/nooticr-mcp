@@ -224,6 +224,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ id: z.number().int(), scope: z.enum(["mine", "workspace"]).optional() }).strict(),
  },
  {
+ name: "get_usage_report",
+ title: "Get Usage Report",
+ description: "A usage report over a window: total calls, failures and credits actually taken, per tool, per day, and recent failures; scope workspace adds one row per seat, for owners and admins. No cost to call.",
+ inputSchema: z.object({ days: z.number().int().min(1).max(366).optional(), from: z.string().optional(), to: z.string().optional(), scope: z.enum(["mine", "workspace"]).optional() }).strict(),
+ },
+ {
  name: "nooticr_login",
  title: "Nooticr Login",
  description: "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. Use when a call fails with an authentication error, to re-link the account. Free to call. No cost to call.",

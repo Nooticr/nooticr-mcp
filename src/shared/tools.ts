@@ -732,6 +732,7 @@ const TOOL_NAMES = [
   "check_nooticr_credits",
   "list_tool_runs",
   "get_tool_run",
+  "get_usage_report",
   "list_watchlist",
   "nooticr_getting_started",
   "understand_social_post",
@@ -3066,6 +3067,48 @@ const TOOL_NAMES = [
     return await toToolResult(await client.callTool("get_tool_run", { ...args }));
    } catch (err) {
     return toolError("get_tool_run failed", err);
+   }
+  }
+ );
+
+ // The run ledger added up (#93): the question an owner or a security review
+ // asks ("what did the team run this month, what did it cost, what failed")
+ // answered from the same rows as the history, never from memory.
+ server.registerTool(
+  "get_usage_report",
+  {
+   title: "Get Usage Report",
+   description:
+    "A usage report over a window: total calls, failures and credits actually taken; one row " +
+    "per tool, most expensive first; one row per day, quiet days included; and the ten most " +
+    "recent failures with their errors, credentials scrubbed. scope: \"workspace\" covers " +
+    "every member of your workspace and adds one row per seat; it is for the workspace's " +
+    "owners and admins. Reads the stored run ledger, so it is free and says what happened, " +
+    "not what is running. No cost to call. Use for \"what did we spend this month and on " +
+    "what\" or an audit of what nooticr did on the workspace's behalf; list_tool_runs is the " +
+    "call-by-call view.",
+   _meta: {
+    ui: { resourceUri: uiResource("get_usage_report") },
+    "ui/resourceUri": uiResource("get_usage_report"),
+    "openai/outputTemplate": appsSdkResource("get_usage_report"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.get_usage_report,
+   inputSchema: z
+    .object({
+     days: z.number().int().min(1).max(366).optional().describe("The window, in days back from now (default 30)."),
+     from: z.string().optional().describe("Start of the window, ISO date or timestamp. Overrides days."),
+     to: z.string().optional().describe("End of the window, ISO date or timestamp (default now)."),
+     scope: runFilters.scope,
+    })
+    .strict(),
+  },
+  async (args: { days?: number; from?: string; to?: string; scope?: "mine" | "workspace" }, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("get_usage_report", { ...args }));
+   } catch (err) {
+    return toolError("get_usage_report failed", err);
    }
   }
  );

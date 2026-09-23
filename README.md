@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-86 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+87 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -174,6 +174,7 @@ a `scanId` for the rest.
 | `check_nooticr_credits` | free | Balance and billing URL. |
 | `list_tool_runs` | free | Your tool-call history: what ran, whether it worked, and the credits each call actually took (0 for a free, refunded, cached or replayed call). `scope: "workspace"` shows every member's runs to owners and admins. |
 | `get_tool_run` | free | One run from that history by id, with its full error. |
+| `get_usage_report` | free | The run ledger added up over a window: total calls, failures and credits actually taken, per tool, per day and the most recent failures. `scope: "workspace"` adds one row per seat, for the workspace's owners and admins. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 | `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. "Manage comments" reports the platform's grant; no nooticr tool posts or replies to a comment. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
 | `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
