@@ -366,6 +366,16 @@ const categoryInsights = open({
   mcpCredits,
 });
 
+/**
+ * Whether a show_* view drew nooticr's own figures (#107): the session's
+ * fetch ledger overlays what was actually returned on what the model sent.
+ */
+const checkedAgainstSession = open({
+  status: scalar().describe("verified: every row matched what nooticr returned this session. unverified: some are as re-sent."),
+  note: scalar(),
+  unmatched: listOf(z.string()).describe("Rows not among what nooticr returned in this session; drawn as sent, unchecked."),
+}).nullish();
+
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
   analyze_post_fast: open({ ...evidence, ...analyzed }),
@@ -624,6 +634,7 @@ export const OUTPUT_SCHEMAS = {
   // to land except chat text. Free, and make no requests, same as
   // show_comment_review: they only draw what they're handed.
   show_compared_posts: open({
+    verification: checkedAgainstSession,
     posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_posts returned."),
     comparison: open({
       winner: scalar().describe("1-indexed position of the post that won, matching the posts array."),
@@ -635,6 +646,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   show_post_analysis: open({
+    verification: checkedAgainstSession,
     url: scalar(),
     post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
     analysis: open({}).passthrough().nullish().describe(
@@ -658,6 +670,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
   show_variants: open({
+    verification: checkedAgainstSession,
     sourceUrl: scalar(),
     post: post.nullish(),
     variants: listOf(
@@ -1094,6 +1107,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   show_standings: open({
+    verification: checkedAgainstSession,
     creators: listOf(anyObject()),
     metric: scalar(),
     ranking: scalar().describe("Which axis the order is on — 'how often' and 'how big' disagree."),
@@ -1307,6 +1321,7 @@ export const OUTPUT_SCHEMAS = {
    * might want is left underived on purpose — the model reads the series.
    */
   show_trend: open({
+    verification: checkedAgainstSession,
     points: listOf(anyObject()),
     term: scalar(),
     metric: scalar(),

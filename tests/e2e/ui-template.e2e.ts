@@ -2515,3 +2515,21 @@ test("a marketplace category read is labelled with its own site", async ({ page 
   await expect(page.locator('[data-verification="verified"]')).toBeVisible();
   await expect(page.locator(".amz-head")).not.toContainText("amazon.com");
 });
+
+// #107: a show_* view whose rows were not all returned by nooticr this
+// session says so above the card; a fully matched one draws no banner.
+test("a view with unchecked rows says so, and a checked one stays quiet", async ({ page }) => {
+  const post = { platform: "tiktok", title: "A", externalUrl: "https://tiktok.com/@a/video/1", views: 10 };
+  await renderTemplate(page, {
+    posts: [post, { ...post, externalUrl: "https://tiktok.com/@b/video/2" }],
+    comparison: { winner: 1, differences: [], lessons: [] },
+    verification: { status: "unverified", note: "1 of 2 posts is not among what nooticr returned in this session.", unmatched: ["x"] },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toContainText("Not checked against nooticr");
+  await renderTemplate(page, {
+    posts: [post, post],
+    comparison: { winner: 1, differences: [], lessons: [] },
+    verification: { status: "verified", note: "All 2 posts drawn with the figures nooticr returned.", unmatched: [] },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toHaveCount(0);
+});

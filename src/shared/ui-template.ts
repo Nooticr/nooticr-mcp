@@ -3467,7 +3467,24 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // after it — one wrapper instead of a call at each of the many early
   // returns below.
   function render(result){
-    try{renderView(result);}finally{initPlayers();setTimeout(reportSize,80);}
+    try{renderView(result);verificationBanner(result);}finally{initPlayers();setTimeout(reportSize,80);}
+  }
+
+  // #107: a show_* view whose rows could not all be matched to what nooticr
+  // returned this session says so above the card. The marketplace card draws
+  // its own. Only the unverified case is drawn: a banner on every honest card
+  // would be noise that trains a reader to skip it.
+  function verificationBanner(result){
+    var d=extractResult(result);
+    if(!d||typeof d!=="object"||d.marketplace)return;
+    var v=d.verification;
+    if(!v||v.status!=="unverified")return;
+    var app=document.getElementById("app");if(!app)return;
+    var b=document.createElement("div");
+    b.setAttribute("data-verification","unverified");
+    b.style.cssText="font-size:12px;padding:8px 10px;margin:0 0 10px;border-radius:8px;border:1px solid var(--border);background:rgba(180,35,24,.06)";
+    b.innerHTML="<b>Not checked against nooticr</b> · "+esc(v.note||"");
+    app.insertBefore(b,app.firstChild);
   }
 
   // ─── Own account ───
