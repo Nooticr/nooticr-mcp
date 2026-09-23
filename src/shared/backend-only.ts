@@ -27,7 +27,4 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "Returns the dashboard's stored AI fleet-analysis verdict; the public surface sells the evidence, not a judgement of ours.",
   brand_watch_history:
     "Not a deliberate exclusion: a candidate for the public surface once it has a trend view to draw. Listed so it reads as pending, not forgotten.",
-  get_google_analytics: "Site analytics are dashboard-only until #104 decides their shape.",
-  get_posthog_analytics: "Site analytics are dashboard-only until #104 decides their shape.",
-  get_search_console_data: "Site analytics are dashboard-only until #104 decides their shape.",
 };

@@ -326,6 +326,24 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), limit: z.number().int().optional().describe("Max videos (default 20, capped at 50).") }).strict(),
  },
  {
+ name: "get_google_analytics",
+ title: "Get Google Analytics",
+ description: "Your own product's Google Analytics (GA4) sync, as of its last sync into nooticr — not a live GA4 call: the property, the date range synced and how many daily rows came in. Connect GA4 in API Connections first. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace.") }).strict(),
+ },
+ {
+ name: "get_search_console_data",
+ title: "Get Search Console Data",
+ description: "Your own product's Google Search Console clicks, impressions and top queries as of its last sync into nooticr — not a live Search Console call. Connect Search Console in API Connections first. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace.") }).strict(),
+ },
+ {
+ name: "get_posthog_analytics",
+ title: "Get PostHog Analytics",
+ description: "Your own product's PostHog pageview trend as of its last sync into nooticr — not a live PostHog call. Connect PostHog in API Connections first. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace.") }).strict(),
+ },
+ {
  name: "get_content_plan",
  title: "Get Content Plan",
  description: "The saved weekly content plan for your own product, if one has been generated (see generate_content_plan). Read-only and free even when a plan exists. Returns plan: null when none has been made yet. No cost to call.",

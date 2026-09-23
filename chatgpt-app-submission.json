@@ -500,6 +500,42 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "get_google_analytics": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored GA4 sync from nooticr. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's stored copy of the caller's own analytics — no third-party service is contacted during the call.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_search_console_data": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored Search Console sync from nooticr. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's stored copy of the caller's own analytics — no third-party service is contacted during the call.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_posthog_analytics": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored PostHog sync from nooticr. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads nooticr's stored copy of the caller's own analytics — no third-party service is contacted during the call.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "growth_brief": {
       "annotations": {
         "readOnlyHint": false,

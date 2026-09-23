@@ -963,6 +963,35 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    // The connector reads (#104), in the shapes nooticr-server's
+    // connector_sync_cache stores, with own_account_read's appId/appName.
+    case "get_google_analytics":
+      return {
+        content: [{ type: "text", text: "GA4 sync." }],
+        structuredContent: {
+          propertyId: "properties/123456", rowsSynced: 28,
+          dateRange: { from: "2026-08-25", to: "2026-09-21" },
+          lastSync: "2026-09-22T06:00:00Z", synced_at: "2026-09-22T06:00:00Z", appId: 1, appName: "Fixture App",
+        },
+      };
+    case "get_search_console_data":
+      return {
+        content: [{ type: "text", text: "Search Console sync." }],
+        structuredContent: {
+          clicks: 412, impressions: 18950,
+          topQueries: ["competitor tracking tool", "tiktok analytics for founders", "fixture app pricing"],
+          synced_at: "2026-09-22T06:00:00Z", appId: 1, appName: "Fixture App",
+        },
+      };
+    case "get_posthog_analytics":
+      return {
+        content: [{ type: "text", text: "PostHog sync." }],
+        structuredContent: {
+          projectId: "4242",
+          result: [{ label: "$pageview", data: [120, 132, 98, 240, 610, 380, 205], days: ["2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21"] }],
+          lastRefresh: "2026-09-22T06:00:00Z", synced_at: "2026-09-22T06:00:00Z", appId: 1, appName: "Fixture App",
+        },
+      };
     case "get_post_frames": {
       const count = Math.max(1, Math.min(Number(args?.count ?? 3), 8));
       const frames = Array.from({ length: count }, (_, i) => ({
