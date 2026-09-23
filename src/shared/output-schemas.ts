@@ -908,7 +908,23 @@ export const OUTPUT_SCHEMAS = {
             "found at a string index maps back to the moment it was said.",
         ),
       }),
-    ).describe("Cue timings, where the platform published a timed track. Absent for speech-to-text."),
+    ).describe(
+      "Cue timings: the platform's own for a caption track, whisper's segment times for " +
+        "speech-to-text. Absent when neither carried timing.",
+    ),
+    captionFile: open({
+      format: scalar().describe("'srt' or 'vtt', as asked for with `format`."),
+      mimeType: scalar(),
+      filename: scalar(),
+      cueCount: scalar(),
+      truncated: scalar().describe("true when the track was longer than one file carries."),
+      content: scalar().describe(
+        "The caption file itself, ready to save; null when the transcript had no timing, with a reason.",
+      ),
+      reason: scalar(),
+    })
+      .nullish()
+      .describe("Present only when `format` asked for srt or vtt."),
     transcript: scalar(),
     wordCount: scalar(),
     language: scalar(),
