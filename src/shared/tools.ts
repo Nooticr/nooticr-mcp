@@ -9,7 +9,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { z } from "zod";
-import { NooticrClient, NooticrError, type McpProxyResult } from "./nooticr.js";
+import { NooticrClient, NooticrError, safeCreditsHint, type McpProxyResult } from "./nooticr.js";
 import { NOOTICR_UI_TEMPLATE } from "./ui-template.js";
 import { registerPrompts } from "./prompts.js";
 import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
@@ -709,6 +709,9 @@ const TOOL_NAMES = [
   "niche_report",
   "find_hook_pattern",
   "check_nooticr_credits",
+  "list_tool_runs",
+  "get_tool_run",
+  "list_watchlist",
   "understand_social_post",
   // The catch-up draws its new posts through the same gallery view; the two
   // state tools have nothing to show and stay view-less, like nooticr_login.
@@ -1411,6 +1414,9 @@ const TOOL_NAMES = [
     "transcribing:true and a retryAfterMs. That is the job accepted, NOT a failure — wait that " +
     "many milliseconds, call again with the same url, and the words come back. Any other " +
     "available:false is final and carries a reason. " +
+    "Pass format:\"srt\" or \"vtt\" to also get a ready caption file (captionFile.content) built " +
+    "from the track's own timing, for captions, a re-edit or a translation pipeline: use it as-is " +
+    "rather than reformatting the transcript into cues yourself, which is where timings go wrong. " +
     "A poll costs nothing and neither does a call that comes back with no transcript: you pay " +
     "for words, not for asking. " +
     "Two honest limits on the listening route. It needs speech-to-text configured on the server, " +
@@ -1436,10 +1442,17 @@ const TOOL_NAMES = [
     .object({
      url: z.string().describe("Public post URL, on any platform nooticr reads. Ask again with the same url to collect a transcript that was still being listened to."),
      language: z.string().optional().describe("Preferred language code, e.g. 'en'."),
+     format: z
+      .enum(["text", "srt", "vtt"])
+      .optional()
+      .describe(
+       "Also return a caption file: 'srt' or 'vtt' adds captionFile.content, built from the " +
+        "transcript's own cue timing and never re-timed. Default 'text'. Same price.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; language?: string }, extra) => {
+  async (args: { url: string; language?: string; format?: "text" | "srt" | "vtt" }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
     return await toToolResult(await client.callTool("get_post_transcript", { ...args }));
@@ -1604,10 +1617,18 @@ const TOOL_NAMES = [
     .object({
      url: z.string().describe("Full public post URL."),
      limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."),
+     verbatim: z
+      .boolean()
+      .optional()
+      .describe(
+       "Render every comment whole in the text you read, rather than clipped to fit (default " +
+        "false). Use it when the user wants comments quoted exactly; the result is longer, and " +
+        "the price is the same.",
+      ),
     })
     .strict(),
   },
-  async (args: { url: string; limit?: number }, extra) => {
+  async (args: { url: string; limit?: number; verbatim?: boolean }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
     // The same upstream call get_post_comments makes, so it is billed as the
@@ -1618,7 +1639,8 @@ const TOOL_NAMES = [
     // rather than a paragraph — show_comment_review can only draw a
     // classification whose labels it already knows — so comment-review.ts
     // owns it and this handler stays hand-written.
-    const res = await client.callTool("get_post_comments", { ...args });
+    const { verbatim, ...upstream } = args;
+    const res = await client.callTool("get_post_comments", { ...upstream });
     const structured = (res.structured ?? {}) as Record<string, unknown>;
     const comments = toEvidence(args.url, structured.comments);
     const guidance = reviewGuidance(args.url, comments.length);
@@ -1644,7 +1666,13 @@ const TOOL_NAMES = [
     };
     return {
      content: [
-      { type: "text" as const, text: `${guidance}\n\n---\n\n${evidenceDigest(payload)}` },
+      {
+       type: "text" as const,
+       text: `${guidance}\n\n---\n\n${evidenceDigest(payload, {
+        verbatim: verbatim === true,
+        recover: "call analyze_comments again with the same url and verbatim: true",
+       })}`,
+      },
      ],
      structuredContent: payload,
     };
@@ -2831,13 +2859,98 @@ const TOOL_NAMES = [
     // run, and is the whole reason it asserts on the serialised result rather
     // than on `structuredContent` alone.
     const structured = proxy.structured as Record<string, unknown> | undefined;
-    if (structured && "billingUrl" in structured) {
+    if (structured) {
      const { billingUrl: _dropped, ...rest } = structured;
+     // The sibling `hint` carried the same pitch in prose ("call
+     // buy_nooticr_credits to get a Stripe Checkout URL"), so it is held
+     // to the same rule as the URL (#100).
+     if ("hint" in rest) rest.hint = safeCreditsHint(rest.hint);
      return await toToolResult({ ...proxy, structured: rest });
     }
     return await toToolResult(proxy);
    } catch (err) {
     return toolError("check_nooticr_credits failed", err);
+   }
+  }
+ );
+
+ // Where the credits went (#105), from the run ledger the backend already
+ // writes for every call (nooticr-server#117). Free, like the balance: the
+ // user with a surprising bill is exactly the one who must be able to look.
+ const runFilters = {
+  tool: z.string().optional().describe("Only runs of this tool, e.g. 'search_mentions'."),
+  from: z.string().optional().describe("Only runs at or after this ISO date or timestamp."),
+  to: z.string().optional().describe("Only runs before this ISO date or timestamp."),
+  success: z.boolean().optional().describe("true for runs that worked, false for the ones that failed."),
+  minCredits: z.number().int().min(0).optional().describe("Only runs that took at least this many credits."),
+  limit: z.number().int().min(1).max(100).optional().describe("Runs per page (default 20, max 100)."),
+  before: z.number().int().optional().describe("Page cursor: pass the previous page's nextBefore."),
+  scope: z
+   .enum(["mine", "workspace"])
+   .optional()
+   .describe("'mine' (default) or 'workspace' — every member's runs, for the workspace's owner and admins only."),
+ };
+ server.registerTool(
+  "list_tool_runs",
+  {
+   title: "List Tool Runs",
+   description:
+    "Your own tool-call history, newest first: which tool ran, when, whether it worked and why " +
+    "not, how long it took, and the credits it actually took — 0 for a free first use, a refund, " +
+    "a cached answer or a replayed retry. Use it to answer 'where did my credits go' or 'which " +
+    "call produced that' from the record rather than from memory: filter by tool, time window, " +
+    "success or minCredits, and page with before/nextBefore. creditsOnThisPage totals the page. " +
+    "scope:\"workspace\" shows every member's runs with a userId, and only for the workspace's " +
+    "owner and admins. Error text is shown with credentials scrubbed. No cost to call. " +
+    "Use when a balance moved more than expected, before disputing a charge.",
+   _meta: {
+    ui: { resourceUri: uiResource("list_tool_runs") },
+    "ui/resourceUri": uiResource("list_tool_runs"),
+    "openai/outputTemplate": appsSdkResource("list_tool_runs"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.list_tool_runs,
+   inputSchema: z.object(runFilters).strict(),
+  },
+  async (args: Record<string, unknown>, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("list_tool_runs", { ...args }));
+   } catch (err) {
+    return toolError("list_tool_runs failed", err);
+   }
+  }
+ );
+
+ server.registerTool(
+  "get_tool_run",
+  {
+   title: "Get Tool Run",
+   description:
+    "One run from list_tool_runs by its id: the tool, when it ran, how long it took, the credits " +
+    "it took and its full error text, credentials scrubbed. A run outside your scope reads as not " +
+    "found, exactly like one that does not exist. No cost to call. " +
+    "Use to look closely at one charge list_tool_runs surfaced.",
+   _meta: {
+    ui: { resourceUri: uiResource("get_tool_run") },
+    "ui/resourceUri": uiResource("get_tool_run"),
+    "openai/outputTemplate": appsSdkResource("get_tool_run"),
+   },
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   outputSchema: OUTPUT_SCHEMAS.get_tool_run,
+   inputSchema: z
+    .object({
+     id: z.number().int().describe("The run's id, from list_tool_runs."),
+     scope: runFilters.scope,
+    })
+    .strict(),
+  },
+  async (args: { id: number; scope?: "mine" | "workspace" }, extra) => {
+   const client = await makeClient({ ...extra, arguments: args });
+   try {
+    return await toToolResult(await client.callTool("get_tool_run", { ...args }));
+   } catch (err) {
+    return toolError("get_tool_run failed", err);
    }
   }
  );

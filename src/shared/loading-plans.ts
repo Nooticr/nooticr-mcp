@@ -589,9 +589,12 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
 
   // ─── Account and own-account: free, and free at a zero balance ───
   check_nooticr_credits: { label: "Checking your balance", kind: "text", n: 1, steps: [], free: true },
+  list_tool_runs: { label: "Reading your run history", kind: "text", n: 1, steps: [], free: true },
+  get_tool_run: { label: "Reading the run", kind: "text", n: 1, steps: [], free: true },
   nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
   watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },
   unwatch_creator: { label: "Removing from your watchlist", kind: "text", n: 1, steps: [], free: true },
+  list_watchlist: { label: "Reading your watchlist", kind: "text", n: 1, steps: [], free: true },
   list_social_connections: { label: "Reading your connections", kind: "list", n: 3, steps: [], free: true },
   connect_social_account: { label: "Minting a fresh link", kind: "text", n: 1, steps: [], free: true },
   create_product: { label: "Writing the row", kind: "text", n: 1, steps: [], free: true },

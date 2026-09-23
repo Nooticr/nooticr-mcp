@@ -931,6 +931,42 @@
         "open_world_justification": "Reaches the public internet: nooticr's API fetches the post and its audio from a third-party social network, so the result depends on live data outside this server.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
+    },
+    "list_watchlist": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own stored watchlist. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr watchlist; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "list_tool_runs": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's own tool-call history from nooticr's run ledger. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr account over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "get_tool_run": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one of the caller's own tool calls from nooticr's run ledger. Nothing is written.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr account over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
     }
   },
   "test_cases": [
