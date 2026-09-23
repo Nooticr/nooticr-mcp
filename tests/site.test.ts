@@ -567,6 +567,10 @@ describe("tool surface", () => {
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
+    "list_tool_runs",
+    "get_tool_run",
+    "list_watchlist",
+    "detect_spoken_mentions",
     "nooticr_login",
     "show_comment_review",
     "show_compared_posts",
@@ -659,6 +663,9 @@ describe("tool surface", () => {
     // here — it fetches per creator, and says so.
     const free = [
       "check_nooticr_credits",
+      "list_tool_runs",
+      "get_tool_run",
+      "list_watchlist",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",

@@ -60,7 +60,7 @@ import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { classifyGuidance, platformFromUrl, postSlug } from "./comment-review.js";
 import { clamp, complaintCore, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
-import { withEvidence } from "./evidence-digest.js";
+import { withEvidence, type DigestOptions } from "./evidence-digest.js";
 import {
   confirmSpend,
   costOf,
@@ -372,9 +372,9 @@ function audienceGuidance(a: {
       "ones asking the same thing: a single pinned reply beats twenty individual ones, and a " +
       "question that recurs across posts is a video rather than a reply.",
     "",
-    "You are drafting, not sending. Nothing in nooticr can post a comment on any network — the " +
-      "connections carry upload and read permission only — so these are for the creator to paste " +
-      "in themselves. Say that rather than implying the replies will go out.",
+    "You are drafting, not sending. nooticr does not post comments on any network — even a " +
+      "connection whose grant allows managing comments is never used to send one — so these are " +
+      "for the creator to paste in themselves. Say that rather than implying the replies will go out.",
     "",
     "Do not invent facts about the product, the price or the creator's plans to fill a gap. If a " +
       "comment cannot be answered from what is here, say what you would need.",
@@ -786,8 +786,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // deictic — it counts and describes material that used to be somewhere
   // else — so `withEvidence` puts a rendering of that material in the same
   // block as the sentence describing it.
-  const evidence = (guidance: string, payload: Row) => ({
-    content: [{ type: "text" as const, text: withEvidence(guidance, payload) }],
+  const evidence = (guidance: string, payload: Row, opts: DigestOptions = {}) => ({
+    content: [{ type: "text" as const, text: withEvidence(guidance, payload, opts) }],
     structuredContent: { guidance, ...payload },
   });
 
@@ -814,9 +814,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "reads the comments on each, and returns them grouped under the post they were left on — " +
         "every comment with a stable id, and the ones that look like questions or requests " +
         "flagged and sorted to the top. This FINDS and helps you DRAFT answers; it cannot post " +
-        "them. No nooticr connection carries comment-write permission on any network, so the " +
-        "replies are for a person to paste in themselves — never promise the user they will be " +
-        "sent. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
+        "them: nooticr does not post replies on any network, even where list_social_connections " +
+        "reports that a connection can manage comments, so the replies are for a person to paste " +
+        "in themselves — never promise the user they will be sent. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
         "posts are opened. Pair it with show_audience_replies to lay the drafts out for triage. " +
         "Costs 2 nooticr credits for the post list plus 2 per post opened — 14 credits at the " +
         "default of 6 posts. Use when the job is to answer people; search_mentions is for what " +
@@ -996,7 +996,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         postsChecked: threads.length,
         // Stated in the payload as well as the prose, because a model that
         // believes it can send will promise the user something that cannot
-        // happen. No connection carries comment-write permission anywhere.
+        // happen. Some grants do allow managing comments (#29); nooticr has no
+        // send path whatever the grant says.
         repliesCanBeSent: false,
         totalMentions: totalComments,
         totalThreads: threads.length,
@@ -1954,7 +1955,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       description:
         "Lay out the replies you drafted from answer_my_audience so a person can read them. " +
         "Free, and makes no requests — it only draws what you pass it. It does NOT send " +
-        "anything: no nooticr connection can post a comment, so each row is a draft for the " +
+        "anything: nooticr does not post comments, whatever a connection allows, so each row is a draft for the " +
         "creator to copy into the app themselves. Each comment shows with what you decided to do " +
         "about it and your draft underneath, grouped under its post, so they can work through " +
         "them one at a time and skip the rest. Call this after you have drafted the replies, not " +
@@ -2558,6 +2559,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "an X post — and keep each one short, because this is a keyword search and a " +
                 "long sentence matches on its commonest words.",
             ),
+          verbatim: z
+            .boolean()
+            .optional()
+            .describe(
+              "Render every post and every reply whole in the text you read, rather than " +
+                "clipped to fit (default false). Use it when the user wants what people wrote " +
+                "quoted exactly; the result is longer, and the price is the same.",
+            ),
         })
         .strict(),
     },
@@ -2568,6 +2577,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         limit?: number;
         queries?: string[];
         readComments?: boolean;
+        verbatim?: boolean;
       },
       extra,
     ) => {
@@ -2777,6 +2787,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           unavailable,
           creditsCharged: spend.credits,
           mcpCredits: spend.payload,
+        },
+        {
+          verbatim: args.verbatim === true,
+          recover: "call find_people_with_problem again with the same arguments and verbatim: true",
         },
       );
     },

@@ -257,10 +257,11 @@ Authorization codes and PKCE challenges are one-time use and short-lived.
   `src/shared/comment-review.ts`. `prepare_handoff` additionally redacts contact
   details and defangs `@handles` and `#numbers` before text reaches a tracker.
   Worth stating in the submission rather than leaving a reviewer to find it.
-- **Writes to social networks: none.** No nooticr connection carries
-  comment-write permission, so the audience-reply tools draft text for a person
-  to paste in. (See issue #29 for the one place that claim is in tension with
-  what `list_social_connections` reports.)
+- **Writes to social networks: none.** nooticr has no send path for comments:
+  the audience-reply tools draft text for a person to paste in, even where
+  `list_social_connections` reports that a connection's grant allows managing
+  comments (that column reports the platform's grant, not something nooticr
+  does).
 - **Billing, and no commerce in the plugin:** nooticr credits, 20 free on
   signup. Each tool states its cost; the six whose price is set by an argument
   confirm over MCP `elicitation` above 6 credits, a scheduled watch always

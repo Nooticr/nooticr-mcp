@@ -173,6 +173,13 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     steps: [step("get_post_transcript")],
   },
   get_post_frames: { label: "Sampling frames", kind: "post", n: 1, steps: [step("get_post_frames")] },
+  detect_spoken_mentions: {
+    label: "Listening for brands",
+    kind: "text",
+    n: 1,
+    // Transcript first; the caption is fetched only once there are words.
+    steps: [step("get_post_transcript"), step("get_social_media")],
+  },
   get_post_comments: { label: "Loading comments", kind: "list", n: 6, steps: [step("get_post_comments")] },
 
   // ─── Understand a post ───
@@ -589,9 +596,12 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
 
   // ─── Account and own-account: free, and free at a zero balance ───
   check_nooticr_credits: { label: "Checking your balance", kind: "text", n: 1, steps: [], free: true },
+  list_tool_runs: { label: "Reading your run history", kind: "text", n: 1, steps: [], free: true },
+  get_tool_run: { label: "Reading the run", kind: "text", n: 1, steps: [], free: true },
   nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
   watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },
   unwatch_creator: { label: "Removing from your watchlist", kind: "text", n: 1, steps: [], free: true },
+  list_watchlist: { label: "Reading your watchlist", kind: "text", n: 1, steps: [], free: true },
   list_social_connections: { label: "Reading your connections", kind: "list", n: 3, steps: [], free: true },
   connect_social_account: { label: "Minting a fresh link", kind: "text", n: 1, steps: [], free: true },
   create_product: { label: "Writing the row", kind: "text", n: 1, steps: [], free: true },

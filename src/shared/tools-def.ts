@@ -68,16 +68,22 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Xiaohongshu/Weibo/Bilibili/LinkedIn)."), focus: z.string().optional().describe("Extra instruction, e.g. 'focus on the CTA'.") }).strict(),
  },
  {
+ name: "detect_spoken_mentions",
+ title: "Detect Spoken Mentions",
+ description: "The brands a creator names OUT LOUD in one video, for you to find: the spoken transcript and the written caption side by side. List each brand, product or company named with the verbatim sentence, the creator's framing, and mentionedIn spoken, caption or both. Give brands to focus the watch; others named are still reported. Waits for the audio to be transcribed. Costs 2 nooticr credits — 1 for get_post_transcript plus 1 for get_social_media — and nothing when no transcript can be made.",
+ inputSchema: z.object({ url: z.string(), brands: z.array(z.string()).max(20).optional(), language: z.string().optional() }).strict(),
+ },
+ {
  name: "get_post_transcript",
  title: "Get Post Transcript",
- description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason. A poll costs nothing, and neither does a call that comes back with no transcript. The listening route needs speech-to-text configured on the server and cannot reach Reddit or Bilibili at all. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",
- inputSchema: z.object({ url: z.string().describe("Post URL (TikTok or YouTube)."), language: z.string().optional().describe("Preferred language code, e.g. 'en'.") }).strict(),
+ description: "Get the words actually spoken in a post, on any platform nooticr reads. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is; everywhere else the audio is transcribed asynchronously — a first call returning available:false with transcribing:true and a retryAfterMs is the job accepted, not a failure, so call again with the same url. Cheap and exact — use this before analyze_post when you need the script, hook wording or CTA verbatim rather than an interpretation. Returns plain text with a word count, or available:false with a reason; format 'srt' or 'vtt' also returns a ready caption file built from the track's own timing. A poll costs nothing, and neither does a call that comes back with no transcript. The listening route needs speech-to-text configured on the server and cannot reach Reddit or Bilibili at all. Use before any analysis when the exact wording matters. Consumes 1 nooticr credit.",
+ inputSchema: z.object({ url: z.string().describe("Post URL (TikTok or YouTube)."), language: z.string().optional().describe("Preferred language code, e.g. 'en'."), format: z.enum(["text", "srt", "vtt"]).optional().describe("Also return a caption file ('srt' or 'vtt'). Default 'text'.") }).strict(),
  },
  {
  name: "analyze_comments",
  title: "Analyze Comments",
  description: "A post's comment section, fetched and laid out for you to classify: every comment with a stable id, plus whatever themes the platform clustered them into. Label each one's sentiment and what it is doing — praise, complaint, bug report, question, request, comparison, spam — then summarise the themes, the questions worth answering, the objections, and what to make next. The result names the exact labels, and show_comment_review draws them for free afterwards. Use when the goal is 'what should I make next' rather than 'what did people write'. Costs 2 nooticr credits, for the one get_post_comments call it makes.",
- inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100).") }).strict(),
+ inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."), verbatim: z.boolean().optional().describe("Render every comment whole in the text you read (default false).") }).strict(),
  },
  {
  name: "compare_posts",
@@ -200,6 +206,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({}).strict(),
  },
  {
+ name: "list_tool_runs",
+ title: "List Tool Runs",
+ description: "Your own tool-call history, newest first: which tool ran, when, whether it worked, how long it took and the credits it actually took (0 for a free, refunded, cached or replayed call). Filter by tool, time window, success or minCredits; page with before/nextBefore. scope workspace shows every member's runs to the workspace's owner and admins. No cost to call. Use when a balance moved more than expected.",
+ inputSchema: z.object({ tool: z.string().optional(), from: z.string().optional(), to: z.string().optional(), success: z.boolean().optional(), minCredits: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(100).optional(), before: z.number().int().optional(), scope: z.enum(["mine", "workspace"]).optional() }).strict(),
+ },
+ {
+ name: "get_tool_run",
+ title: "Get Tool Run",
+ description: "One run from list_tool_runs by its id, with its full error text, credentials scrubbed. A run outside your scope reads as not found. No cost to call. Use to look closely at one charge.",
+ inputSchema: z.object({ id: z.number().int(), scope: z.enum(["mine", "workspace"]).optional() }).strict(),
+ },
+ {
  name: "nooticr_login",
  title: "Nooticr Login",
  description: "Get a fresh login URL to re-authenticate your MCP session. Call this tool when you need to reconnect or when the session has expired. Use when a call fails with an authentication error, to re-link the account. Free to call. No cost to call.",
@@ -210,6 +228,12 @@ export const TOOL_DEFINITIONS = [
  title: "Watch Creator",
  description: "Add a creator to your watchlist so you can ask later what they have posted since. Stores the handle only \u2014 nothing is fetched here. Use catch_up_watchlist to see what changed. Use when you want to follow someone over time rather than look at them once. No cost to call.",
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), note: z.string().optional().describe("Why you are watching them \u2014 shown back to you later.") }).strict(),
+ },
+ {
+ name: "list_watchlist",
+ title: "List Watchlist",
+ description: "The creators on your watchlist: handle, platform, your note, when you added them and when you last caught up on them. Reads the stored list only, so there is no cost. Use it to answer 'who am I watching?' or to find the exact handle unwatch_creator needs. No cost to call.",
+ inputSchema: z.object({}).strict(),
  },
  {
  name: "unwatch_creator",
@@ -334,7 +358,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "list_social_connections",
  title: "List Social Connections",
- description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Also returns which platforms can be connected at all. No cost to call.",
+ description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Manage comments reports the grant; no nooticr tool posts or replies to a comment. Also returns which platforms can be connected at all. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
  {
@@ -346,7 +370,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "answer_my_audience",
  title: "Answer My Audience",
- description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because no nooticr connection carries comment-write permission \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
+ description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply, because nooticr does not post comments whatever a connection allows \u2014 the drafts are for a person to paste in themselves. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
  inputSchema: z.object({ username: z.string().describe("Your handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts to open (default 6, max 12). Each one is a comment fetch, so this is the price."), commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 20, max 50)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD. Windows the posts, not the comments.") }).strict(),
  },
  {
@@ -401,7 +425,7 @@ export const TOOL_DEFINITIONS = [
  name: "find_people_with_problem",
  title: "Find People With A Problem",
  description: "Find people describing a problem in their own words — prospects, early users, anyone whose complaint your product answers. Say the problem the way a person would say it (\"I spend hours checking competitors by hand\") and this searches for posts shaped like that complaint, not for the topic it is about. That difference is the point: searching the TOPIC finds marketing about it, which is what discover_social_posts is for. Widens the query into the forms a complaint takes — the plain phrasing, the does-anyone-else question, the is-there-a-tool ask — and merges what each returns. It is a wide cheap net and NOT a filter: the posts come back for you to judge, and many will be off-target. Consumes 2 nooticr credits per search, and each platform is searched once per query shape — three by default, so 6 credits per platform. Defaults to reddit, where people describe workflow pain in sentences; add twitter for volume. Not searchable here: linkedin.",
- inputSchema: z.object({ problem: z.string().describe("The problem in a person's own words, not a topic. \"I waste an hour a day checking what competitors posted\" finds people; \"competitor analysis\" finds marketing about competitor analysis."), platforms: z.array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram"])).optional().describe("Where to look (default reddit). Each one is a separate paid search per query shape. Not searchable here: linkedin — no keyword post search exists for it upstream, so asking for it could only ever return nothing, which is why it is absent from this list rather than merely untested."), limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."), readComments: z.boolean().optional().describe("Open the most promising results and read their comments too (default false). On Reddit especially, the person with the problem is at least as often replying under someone else's thread as posting their own, and a post-only search cannot see any of them. Costs 2 nooticr credits per post opened, up to 5 \u2014 and they are opened on the MERGED, deduped results, so it is five extra calls in total rather than five per query shape per platform."), queries: z.array(z.string()).optional().describe("Search these exact phrasings instead of the ones derived from `problem` (max 4). You are better at this than a string template is: write how a person would actually word the complaint on the network being searched \u2014 a Reddit title, an X post \u2014 and keep each one short, because this is a keyword search and a long sentence matches on its commonest words.") }).strict(),
+ inputSchema: z.object({ problem: z.string().describe("The problem in a person's own words, not a topic. \"I waste an hour a day checking what competitors posted\" finds people; \"competitor analysis\" finds marketing about competitor analysis."), platforms: z.array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram"])).optional().describe("Where to look (default reddit). Each one is a separate paid search per query shape. Not searchable here: linkedin — no keyword post search exists for it upstream, so asking for it could only ever return nothing, which is why it is absent from this list rather than merely untested."), limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."), readComments: z.boolean().optional().describe("Open the most promising results and read their comments too (default false). On Reddit especially, the person with the problem is at least as often replying under someone else's thread as posting their own, and a post-only search cannot see any of them. Costs 2 nooticr credits per post opened, up to 5 \u2014 and they are opened on the MERGED, deduped results, so it is five extra calls in total rather than five per query shape per platform."), queries: z.array(z.string()).optional().describe("Search these exact phrasings instead of the ones derived from `problem` (max 4). You are better at this than a string template is: write how a person would actually word the complaint on the network being searched \u2014 a Reddit title, an X post \u2014 and keep each one short, because this is a keyword search and a long sentence matches on its commonest words.") , verbatim: z.boolean().optional().describe("Render every post and reply whole in the text you read (default false).") }).strict(),
  },
  {
  name: "search_spoken_mentions",
@@ -460,7 +484,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "show_amazon_category_insights",
  title: "Show Amazon Category Insights",
- description: "Display the category read you produced from scan_amazon_category: purchase drivers, barriers, what each brand does well, the gaps, and the positioning angles \u2014 drawn beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. Free, and makes no requests: it only draws what you pass it, attributed to you rather than presented as a nooticr rating of anyone's product. Call this after you have read the reviews, not instead of reading them.",
+ description: "Display the category read you produced from scan_amazon_category: purchase drivers, barriers, what each brand does well, the gaps, and the positioning angles \u2014 drawn beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. Pass the scanId: the listings are then re-read from the scan itself (free) rather than taken from you, and any ASIN you cite that the scan does not contain is flagged. Without a scanId, listings you pass are drawn marked as not checked against a scan. Free. Your read is attributed to you rather than presented as a nooticr rating of anyone's product. Call this after you have read the reviews, not instead of reading them.",
  inputSchema: z.object({ category: z.string().describe("The category this is a read of."), summary: z.string().optional(), drivers: z.array(z.any()).optional().describe("What makes someone buy, each with the review evidence behind it."), barriers: z.array(z.any()).optional().describe("What stops them buying, or makes them return it."), strengths: z.array(z.any()).optional().describe("What each incumbent does well."), gaps: z.array(z.any()).optional().describe("What buyers keep asking for that nobody serves."), positioning: z.array(z.any()).optional().describe("Angles a new entrant could take."), products: z.array(z.any()).optional().describe("The listings from the scan, passed straight through."), rollup: z.record(z.unknown()).optional().describe("The rollup from the scan, passed straight through."), scanId: z.string().optional() }).passthrough(),
  },
 ] as const;

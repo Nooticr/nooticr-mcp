@@ -638,8 +638,55 @@ function handleGraphql(body) {
   return { errors: [{ message: `fixture-server: unhandled GraphQL query: ${query.slice(0, 80)}` }] };
 }
 
+// The account watchlist the backend stores per workspace (list_watchlist /
+// watch_creator / unwatch_creator / advance_watchlist_baseline). Without these
+// the generic default answered every write with an empty payload, so a
+// real-client check of the watchlist tools against this fixture always read
+// back an empty list.
+const fixtureWatchlists = new Map();
+function watchlistOf(workspaceId) {
+  const key = workspaceId || "none";
+  if (!fixtureWatchlists.has(key)) fixtureWatchlists.set(key, new Map());
+  return fixtureWatchlists.get(key);
+}
+
 function handleMcpCall(name, args, workspaceId) {
   switch (name) {
+    case "list_watchlist": {
+      const entries = [...watchlistOf(workspaceId).values()];
+      return {
+        content: [{ type: "text", text: `Watching ${entries.length} (fixture).` }],
+        structuredContent: { watching: entries.length, entries, cost: 0 },
+      };
+    }
+    case "watch_creator": {
+      const list = watchlistOf(workspaceId);
+      const platform = String(args?.platform || "tiktok").toLowerCase();
+      const handle = String(args?.handle || args?.username || "").replace(/^@/, "").toLowerCase();
+      const id = `${platform}:${handle}`;
+      const prior = list.get(id);
+      list.set(id, { id, platform, handle, note: args?.note ?? prior?.note ?? null, addedAt: prior?.addedAt ?? new Date().toISOString(), baseline: prior?.baseline ?? null });
+      return { content: [{ type: "text", text: "Watching (fixture)." }], structuredContent: { added: id, watching: list.size, cost: 0 } };
+    }
+    case "unwatch_creator": {
+      const list = watchlistOf(workspaceId);
+      const platform = String(args?.platform || "tiktok").toLowerCase();
+      const handle = String(args?.handle || args?.username || "").replace(/^@/, "").toLowerCase();
+      const removed = list.delete(`${platform}:${handle}`);
+      return { content: [{ type: "text", text: "Unwatched (fixture)." }], structuredContent: { removed, watching: list.size, cost: 0 } };
+    }
+    case "advance_watchlist_baseline": {
+      const list = watchlistOf(workspaceId);
+      const platform = String(args?.platform || "tiktok").toLowerCase();
+      const id = `${platform}:${String(args?.handle || "").replace(/^@/, "").toLowerCase()}`;
+      const entry = list.get(id);
+      if (entry) {
+        const baseline = { capturedAt: new Date().toISOString(), postIds: args?.postIds ?? [] };
+        if (args?.kind === "competitor") entry.competitorBaseline = baseline;
+        else entry.baseline = baseline;
+      }
+      return { content: [{ type: "text", text: "Advanced (fixture)." }], structuredContent: { advanced: Boolean(entry), cost: 0 } };
+    }
     case "check_nooticr_credits":
       return {
         content: [{ type: "text", text: "You have 20 nooticr credits remaining (fixture)." }],
@@ -649,6 +696,31 @@ function handleMcpCall(name, args, workspaceId) {
           isAdmin: false,
           bypassCredits: true,
           firstFreeTools: [],
+        },
+      };
+    case "list_tool_runs": {
+      // Two recorded runs, one paid and one refunded, so the history view
+      // has both kinds of row to draw.
+      const runs = [
+        { id: 2, tool: "search_mentions", surface: "mcp", ok: true, error: null, durationMs: 4210, credits: 18, startedAt: "2026-09-21T11:37:55Z" },
+        { id: 1, tool: "discover_social_posts", surface: "mcp", ok: false, error: "upstream timed out", durationMs: 30000, credits: 0, startedAt: "2026-09-21T11:34:25Z" },
+      ].filter((r) => args?.tool === undefined || r.tool === args.tool);
+      return {
+        content: [{ type: "text", text: `${runs.length} run(s) (fixture).` }],
+        structuredContent: {
+          scope: args?.scope ?? "mine",
+          runs,
+          count: runs.length,
+          creditsOnThisPage: runs.reduce((n, r) => n + r.credits, 0),
+          nextBefore: null,
+        },
+      };
+    }
+    case "get_tool_run":
+      return {
+        content: [{ type: "text", text: "One run (fixture)." }],
+        structuredContent: {
+          run: { id: Number(args?.id ?? 2), tool: "search_mentions", surface: "mcp", ok: true, error: null, durationMs: 4210, credits: 18, startedAt: "2026-09-21T11:37:55Z" },
         },
       };
     case "list_own_apps": {
