@@ -295,6 +295,13 @@ const amazonFinding = open({
 });
 
 const amazonScanShape = {
+  nextCall: open({
+    tool: scalar(),
+    arguments: open({ scanId: scalar(), marketplace: scalar() }),
+    reason: scalar(),
+  })
+    .nullish()
+    .describe("Set while the scan is still collecting: call this next, and write no conclusion until it is null."),
   guidance: scalar(),
   mode: scalar(),
   marketplace: scalar(),

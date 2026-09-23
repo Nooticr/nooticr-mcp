@@ -457,6 +457,8 @@ const FIXTURE_AMAZON_PRODUCTS = [
 ];
 
 /** The scan envelope the backend wraps those listings in. */
+const fixtureSlowScans = new Map();
+
 function fixtureAmazonScan(args, scanId) {
   const asked = Number(args?.limit) || FIXTURE_AMAZON_PRODUCTS.length;
   const products = FIXTURE_AMAZON_PRODUCTS.slice(0, Math.max(1, Math.min(asked, FIXTURE_AMAZON_PRODUCTS.length)));
@@ -1359,9 +1361,25 @@ function handleMcpCall(name, args, workspaceId) {
     case "scan_amazon_category":
     case "amazon_scan_status":
     case "get_amazon_product": {
-      const scanId = String(args?.scanId ?? "scan_fixture_1");
+      // A query containing "slow" starts a scan that is still collecting: one
+      // listing now, one more per amazon_scan_status poll, the way a live
+      // ten-listing scan comes back at 4/10 and finishes minutes later. It is
+      // the only way to exercise a host polling a scan to its end.
+      let scanId = String(args?.scanId ?? "scan_fixture_1");
+      if (name === "scan_amazon_category" && /slow/i.test(String(args?.query ?? ""))) {
+        scanId = `scan_fixture_slow_${fixtureSlowScans.size + 1}`;
+        fixtureSlowScans.set(scanId, 1);
+      } else if (name === "amazon_scan_status" && fixtureSlowScans.has(scanId)) {
+        fixtureSlowScans.set(scanId, fixtureSlowScans.get(scanId) + 1);
+      }
       const single = name === "get_amazon_product";
-      const scan = fixtureAmazonScan(single ? { ...args, limit: 1 } : args, scanId);
+      const slow = fixtureSlowScans.get(scanId);
+      const scan = fixtureAmazonScan(single ? { ...args, limit: 1 } : slow ? { ...args, limit: slow } : args, scanId);
+      if (slow && slow < FIXTURE_AMAZON_PRODUCTS.length) {
+        scan.status = "running";
+        scan.complete = false;
+        scan.progress = { ...scan.progress, done: slow, total: FIXTURE_AMAZON_PRODUCTS.length };
+      }
       if (single) scan.product = scan.products[0] ?? null;
       if (name === "amazon_scan_status") scan.billable = false;
       return {
