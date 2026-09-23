@@ -568,6 +568,18 @@ export const TOOLS: Tool[] = [
     when: "Before a run of paid calls.",
   },
   {
+    name: "list_tool_runs", cost: 0, group: "account",
+    args: "tool?, from?, to?, success?, minCredits?, limit?, before?, scope?",
+    desc: "Your tool-call history: what ran, whether it worked, and the credits each call actually took.",
+    when: "A balance moved more than expected.",
+  },
+  {
+    name: "get_tool_run", cost: 0, group: "account",
+    args: "id",
+    desc: "One run by id, with its full error.",
+    when: "Looking closely at one charge from list_tool_runs.",
+  },
+  {
     name: "nooticr_login", cost: 0, group: "account",
     args: "—",
     desc: "Re-link the account.",

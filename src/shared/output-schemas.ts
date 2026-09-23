@@ -1136,6 +1136,38 @@ export const OUTPUT_SCHEMAS = {
     hint: scalar(),
   }),
 
+  list_tool_runs: open({
+    scope: scalar(),
+    runs: listOf(open({
+      id: scalar(),
+      tool: scalar(),
+      surface: scalar().describe("'mcp' for a connector call, 'chat' for the dashboard's agent."),
+      ok: scalar(),
+      error: scalar().describe("Why it failed, credentials scrubbed; null when it worked."),
+      durationMs: scalar(),
+      credits: scalar().describe("What it actually took: 0 for a free, refunded, cached or replayed call."),
+      startedAt: scalar(),
+      userId: scalar().describe("Whose run it was; only in the workspace scope."),
+    })).describe("Newest first."),
+    count: scalar(),
+    creditsOnThisPage: scalar().describe("The credits these runs took, summed."),
+    nextBefore: scalar().describe("Pass as `before` for the next page; null on the last one."),
+  }),
+
+  get_tool_run: open({
+    run: open({
+      id: scalar(),
+      tool: scalar(),
+      surface: scalar().describe("'mcp' for a connector call, 'chat' for the dashboard's agent."),
+      ok: scalar(),
+      error: scalar().describe("Why it failed, credentials scrubbed; null when it worked."),
+      durationMs: scalar(),
+      credits: scalar().describe("What it actually took: 0 for a free, refunded, cached or replayed call."),
+      startedAt: scalar(),
+      userId: scalar().describe("Whose run it was; only in the workspace scope."),
+    }).nullish(),
+  }),
+
   nooticr_login: open({
     signedIn: scalar().describe("true when the session is already good and no link is needed."),
     loginUrl: scalar().describe("Only present when a sign-in is actually required."),
