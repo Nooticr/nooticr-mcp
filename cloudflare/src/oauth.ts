@@ -13,7 +13,7 @@
  * `src/shared/oauth.ts` — the same code the Node package uses.
  */
 
-import { looksLikeApiKey } from "../../src/shared/api-key.js";
+import { forwardedSession, looksLikeApiKey } from "../../src/shared/api-key.js";
 import {
   SCOPE,
   escapeHtml,
@@ -215,6 +215,10 @@ export async function apiKeyIsValid(env: Env, key: string): Promise<boolean> {
 export async function validMcpToken(env: Env, token: string): Promise<boolean> {
   if (await verifyToken(env, token)) return true;
   if (looksLikeApiKey(token)) return apiKeyIsValid(env, token);
+  // A session nooticr-server's chat forwards: checked against the backend the
+  // same way a key is, since this worker holds nothing to verify it with.
+  const forwarded = forwardedSession(token);
+  if (forwarded) return apiKeyIsValid(env, forwarded.token);
   const envToken = env.NOOTICR_ACCESS_TOKEN;
   return typeof envToken === "string" && envToken.length > 0 && token === envToken;
 }
