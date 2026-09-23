@@ -26,7 +26,10 @@ will catch most of what you miss — but it's faster to get it right first:
 - `tests/server-surface.test.ts` — `NOT_READ_ONLY` if the tool writes state,
   and check whether it lands in the `closed` (`openWorldHint: false`) set.
 - `README.md` — a row in whichever table matches what the tool is for, with
-  its real credit cost.
+  its real credit cost, and the tool count that opens its **Tools** section.
+  `cloudflare/src/site/documentation.ts`'s read-only callout counts the
+  surface too (total, read-only, writing). `tests/site.test.ts` checks both
+  against the registered tools, so a tool added without bumping them fails.
 - `.github/workflows/ci.yml`'s `NO_APP` set (in the `Host contract` step) —
   every tool needs a UI view (`_meta`'s `ui/resourceUri`, matching
   `MCP_APPS_MIME`, with a `.html` ChatGPT twin) unless it genuinely has
