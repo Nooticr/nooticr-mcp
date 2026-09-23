@@ -61,6 +61,10 @@ describe("a stored answer says it is stored", () => {
    pending: 4,
    freshness: line,
   });
-  expect(guidance.indexOf(line)).toBeLessThan(guidance.indexOf("Collection is still running"));
+  // Before the instructions for the read. Only the "not finished" stop line
+  // comes earlier, on purpose: while a scan runs, the first thing a model
+  // reads must be that its next step is a poll, not an answer.
+  expect(guidance.indexOf(line)).toBeLessThan(guidance.indexOf("read the reviews"));
+  expect(guidance.indexOf("NOT FINISHED")).toBe(0);
  });
 });

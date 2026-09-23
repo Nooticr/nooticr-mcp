@@ -39,7 +39,7 @@ import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { withEvidence } from "./evidence-digest.js";
 import { confirmSpend, declinedResult } from "./spend.js";
-import { allReviews, categoryGuidance, listingCount, normaliseProducts, scanCost } from "./amazon.js";
+import { allReviews, categoryGuidance, listingCount, nextPoll, normaliseProducts, pollTail, scanCost } from "./amazon.js";
 
 type MakeClient = (ctx: Record<string, unknown>) => Promise<NooticrClient>;
 
@@ -285,6 +285,9 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     freshness: typeof payload.freshness === "string" ? payload.freshness : undefined,
     site: m.label,
     statusTool: "marketplace_scan_status",
+    statusArgs: { marketplace: m.slug },
+    status: typeof payload.status === "string" ? payload.status : undefined,
+    total: num(progress.total) ?? undefined,
     // There is no free insights view for these sites yet, and pointing a model
     // at show_amazon_category_insights would have it draw a Lazada scan as an
     // Amazon one. Better to say nothing than to name the wrong tool.
@@ -294,6 +297,7 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
   const structuredPayload = {
     guidance,
     mode: "evidence",
+    nextCall: nextPoll(payload, "marketplace_scan_status", { marketplace: m.slug }),
     marketplace: m.slug,
     scanId: payload.scanId ?? null,
     status: payload.status ?? null,
@@ -315,7 +319,7 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
   };
 
   return {
-    content: [{ type: "text" as const, text: withEvidence(guidance, structuredPayload) }],
+    content: [{ type: "text" as const, text: pollTail(withEvidence(guidance, structuredPayload), structuredPayload.nextCall) }],
     structuredContent: structuredPayload,
   };
 }
@@ -344,7 +348,8 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "render behind the site's bot defences. " +
         "Collection runs in the background: this returns everything ready within `waitSeconds` " +
         "plus a scanId to continue with marketplace_scan_status, which is free and worth " +
-        "repeating until the scan is done. " +
+        "repeating until the scan is done. Never conclude, or end your turn, on an incomplete " +
+        "scan: a read of 4 of 10 listings presented as the category is wrong. " +
         "For Amazon specifically, scan_amazon_category returns the same shape plus Amazon's own " +
         "review-aspect counts.",
       annotations: {
@@ -451,7 +456,8 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "same marketplace — the products and reviews collected since, with the same rollup and " +
         "the same instructions for reading them. Free: it is the poll scan_marketplace_category " +
         "asked for, and charging for the second half of one answer would bill a wait this server " +
-        "chose. Call it when a scan came back incomplete, then write your read from the full set.",
+        "chose. Call it when a scan came back incomplete, and keep calling it until it reports " +
+        "complete: true; only then write your read, from the full set. Do not end your turn between polls.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

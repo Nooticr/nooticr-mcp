@@ -34,6 +34,9 @@ export const SERVER_INSTRUCTIONS = [
   "Not sure where to start? Call nooticr_getting_started: it is free, reads this account's state, and names " +
     "the next calls worth making with their prices. Good first calls: get_social_media on a post URL " +
     "(1 credit), discover_social_posts on a niche (2), analyze_comments on a post (2).",
+  "Marketplace scans run in the background and usually come back unfinished (e.g. 4 of 10). When a result " +
+    "says NOT FINISHED or carries a nextCall, make that call (it is free) and keep polling until it is " +
+    "complete before concluding anything or ending your turn.",
   "nooticr posts nothing anywhere and sells nothing here: when credits run out, say so and that topping up " +
     "happens on the nooticr website.",
 ].join("\n");

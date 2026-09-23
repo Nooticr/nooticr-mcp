@@ -233,11 +233,35 @@ export function categoryGuidance(opts: {
    * current.
    */
   freshness?: string;
+  /** The collector's own state: "failed" means it will never finish. */
+  status?: string;
+  /** How many listings the scan set out to collect, when known. */
+  total?: number;
+  /** Arguments the poll needs besides scanId, e.g. the marketplace. */
+  statusArgs?: Record<string, string>;
 }): string {
   const site = opts.site ?? "Amazon";
   const statusTool = opts.statusTool ?? "amazon_scan_status";
   const insightsTool = opts.insightsTool === undefined ? "show_amazon_category_insights" : opts.insightsTool;
   const lines: string[] = [];
+  // A running scan is the one state where the right next step is a tool call,
+  // not an answer. Hosts were writing the whole category read, drawing the
+  // card and signing off at 4 of 10 listings, because the only sign the scan
+  // was unfinished was one sentence in the middle of instructions for writing
+  // the read. So while it runs, the first and the last line say stop, and the
+  // instructions for the read are withheld until there is a full set to read.
+  const polling = !opts.complete && opts.status !== "failed";
+  const collected = opts.total ? `${opts.products} of ${opts.total}` : `${opts.products}`;
+  const pollCall = pollInstruction(statusTool, opts.scanId, opts.statusArgs);
+  if (polling) {
+    lines.push(
+      `NOT FINISHED: ${collected} listings collected so far, ${opts.pending} still being collected. ` +
+        `Do not write the category read yet, do not call a show_* view, and do not end your turn. ` +
+        `Your next step is ${pollCall} — it is free — and again after that until it reports complete: true. ` +
+        `If you tell the user anything meanwhile, say only that the collection is still running (${collected}).`,
+      "",
+    );
+  }
   lines.push(
     `Here are ${opts.products} ${site} listing${opts.products === 1 ? "" : "s"} for ${opts.label}` +
       `, carrying ${opts.reviews} review${opts.reviews === 1 ? "" : "s"}` +
@@ -267,11 +291,16 @@ export function categoryGuidance(opts: {
   // that has already started composing a read is past the point where a
   // caveat changes what it writes.
   if (opts.freshness) lines.push(opts.freshness);
-  if (!opts.complete) {
+  if (polling) {
     lines.push(
-      `Collection is still running — ${opts.pending} listing${opts.pending === 1 ? "" : "s"} to go. ` +
-        `Everything below is real and usable now; call ${statusTool} with scanId "${opts.scanId}" ` +
-        `for the rest before you write a final read.`,
+      `Stop polling only if ${statusTool} reports status "failed", or returns the same number of ` +
+        `listings three calls in a row. Then write the read from what was collected and say plainly ` +
+        `that it covers ${opts.total ? `N of ${opts.total}` : "only part of the"} listings.`,
+    );
+  } else if (!opts.complete) {
+    lines.push(
+      `The collection stopped (status "failed") with ${collected} listings. It will not finish, so ` +
+        `write the read from these and say plainly that it covers ${collected} listings, not the full set.`,
     );
   }
   lines.push("");
@@ -281,7 +310,11 @@ export function categoryGuidance(opts: {
     "action is still just a review; note it and move on.",
   );
   lines.push("");
-  lines.push("Read the reviews and the aspect counts, and produce:");
+  lines.push(
+    polling
+      ? "When the scan is complete — not before — read the reviews and the aspect counts, and produce:"
+      : "Read the reviews and the aspect counts, and produce:",
+  );
   lines.push(
     "  drivers  — what makes someone buy in this category. Quote the review that shows it.",
     "  barriers — what stops them, or makes them return it. The one and two star reviews are where",
@@ -303,6 +336,10 @@ export function categoryGuidance(opts: {
     "basis is worse than a short one. Prices, ratings and mention counts are in the payload;",
     "do not re-derive them by hand.",
   );
+  if (polling) {
+    lines.push("", `Reminder: this scan is not finished. Your next step is ${pollCall}, not an answer.`);
+    return lines.join("\n");
+  }
   if (insightsTool) {
     lines.push("");
     lines.push(
@@ -312,6 +349,31 @@ export function categoryGuidance(opts: {
     );
   }
   return lines.join("\n");
+}
+
+/** The exact poll call, arguments included, so a model can copy it. */
+export function pollInstruction(tool: string, scanId: string, extra: Record<string, string> = {}): string {
+  const args = { scanId, ...extra };
+  return `${tool} ${JSON.stringify(args)}`;
+}
+
+/**
+ * What a host should call next, for the structured channel: the guidance
+ * says it in prose, and a host that reads only structuredContent needs it
+ * there too. Null once there is nothing left to wait for.
+ */
+export function nextPoll(
+  payload: Record<string, unknown>,
+  tool: string,
+  extra: Record<string, string> = {},
+): { tool: string; arguments: Record<string, string>; reason: string } | null {
+  const running = payload.complete === false && payload.status !== "failed";
+  if (!running || !payload.scanId) return null;
+  return {
+    tool,
+    arguments: { scanId: String(payload.scanId), ...extra },
+    reason: "The scan is still collecting. Poll until complete: true before writing any conclusion.",
+  };
 }
 
 /**
@@ -356,7 +418,9 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "Collection runs in the background: this returns everything ready within `waitSeconds` " +
         "plus a scanId to continue with amazon_scan_status. A live scan of ten listings takes " +
         "minutes, so expect the first call to come back incomplete and poll amazon_scan_status " +
-        "until it is done — that is free, and repeating it is how a scan gets more time. " +
+        "until it is done — that is free, and repeating it is how a scan gets more time. Never " +
+        "conclude, or end your turn, on an incomplete scan: a read of 4 of 10 listings presented as " +
+        "the category is wrong. " +
         "Use for a category or a competitive set; for one listing, get_amazon_product is cheaper.",
       annotations: {
         readOnlyHint: true,
@@ -447,7 +511,8 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "and reviews collected since, with the same rollup and the same instructions for reading " +
         "them. Free: it is the poll scan_amazon_category asked for, and charging for the second " +
         "half of one answer would bill a wait this server chose. " +
-        "Call it when a scan came back incomplete, then write your read from the full set.",
+        "Call it when a scan came back incomplete, and keep calling it until it reports complete: " +
+        "true; only then write your read, from the full set. Do not end your turn between polls.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -776,11 +841,14 @@ function categoryResult(payload: Record<string, unknown>, focus?: string) {
     scanId: String(payload.scanId ?? ""),
     pending: Math.max(0, total - done),
     focus,
+    status: typeof payload.status === "string" ? payload.status : undefined,
+    total: num(progress.total) ?? undefined,
   });
 
   const structuredPayload = {
     guidance,
     mode: "evidence",
+    nextCall: nextPoll(payload, "amazon_scan_status"),
     marketplace: "amazon",
     scanId: payload.scanId ?? null,
     status: payload.status ?? null,
@@ -799,7 +867,19 @@ function categoryResult(payload: Record<string, unknown>, focus?: string) {
   };
 
   return {
-    content: [{ type: "text" as const, text: withEvidence(guidance, structuredPayload) }],
+    content: [{ type: "text" as const, text: pollTail(withEvidence(guidance, structuredPayload), structuredPayload.nextCall) }],
     structuredContent: structuredPayload,
   };
+}
+
+/**
+ * The text channel ends on the evidence digest, and the last thing a model
+ * reads is what it acts on. While a scan runs, that has to be the poll.
+ */
+export function pollTail(
+  text: string,
+  next: { tool: string; arguments: Record<string, string> } | null,
+): string {
+  if (!next) return text;
+  return `${text}\n\n---\n\nNOT FINISHED. Call ${next.tool} ${JSON.stringify(next.arguments)} now, before writing anything else.`;
 }
