@@ -101,13 +101,18 @@ describe("detect_spoken_mentions", () => {
 });
 
 describe("the transcript view's word count", () => {
-  it("splits on whitespace in the page, not on the letter s", async () => {
+  it("counts words split on whitespace in the page, not on the letter s", async () => {
     const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
     expect(NOOTICR_UI_TEMPLATE).not.toContain(".split(/s+/)");
-    const m = NOOTICR_UI_TEMPLATE.match(/var WS=(new RegExp\([^;]+\));/);
+    // The counter walks char codes rather than using a regex: this template
+    // is also a Rust raw string, and a whitespace escape survives one host
+    // and not the other. Run the page's own function, not a copy of it.
+    const m = NOOTICR_UI_TEMPLATE.match(/function wordsIn\(text\)\{[\s\S]*?\n  \}/);
     expect(m).not.toBeNull();
-    const WS = new Function(`return ${m![1]}`)() as RegExp;
-    expect("I switched to Acme\tgrinders\nlast year".split(WS)).toHaveLength(7);
+    const wordsIn = new Function(`${m![0]}; return wordsIn;`)() as (t: string) => number;
+    expect(wordsIn("I switched to Acme\tgrinders\nlast year")).toBe(7);
+    expect(wordsIn("  sass  ")).toBe(1);
+    expect(wordsIn("")).toBe(0);
   });
 });
 

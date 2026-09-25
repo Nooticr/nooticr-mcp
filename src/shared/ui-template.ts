@@ -19,7 +19,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Nooticr</title>
 <style>
-@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-rotate-x:initial;--tw-rotate-y:initial;--tw-rotate-z:initial;--tw-skew-x:initial;--tw-skew-y:initial;--tw-border-style:solid;--tw-leading:initial;--tw-font-weight:initial;--tw-shadow:0 0 #0000;--tw-shadow-color:initial;--tw-shadow-alpha:100%;--tw-inset-shadow:0 0 #0000;--tw-inset-shadow-color:initial;--tw-inset-shadow-alpha:100%;--tw-ring-color:initial;--tw-ring-shadow:0 0 #0000;--tw-inset-ring-color:initial;--tw-inset-ring-shadow:0 0 #0000;--tw-ring-inset:initial;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-offset-shadow:0 0 #0000;--tw-outline-style:solid;--tw-blur:initial;--tw-brightness:initial;--tw-contrast:initial;--tw-grayscale:initial;--tw-hue-rotate:initial;--tw-invert:initial;--tw-opacity:initial;--tw-saturate:initial;--tw-sepia:initial;--tw-drop-shadow:initial;--tw-drop-shadow-color:initial;--tw-drop-shadow-alpha:100%;--tw-drop-shadow-size:initial;--tw-ease:initial}}}@layer theme{:root,:host{--font-sans:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";--font-mono:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;--color-black:#000;--color-white:#fff;--spacing:.25rem;--container-sm:24rem;--text-xs:.75rem;--text-xs--line-height:calc(1 / .75);--text-sm:.875rem;--text-sm--line-height:calc(1.25 / .875);--text-base:1rem;--text-base--line-height:calc(1.5 / 1);--text-lg:1.125rem;--text-lg--line-height:calc(1.75 / 1.125);--text-2xl:1.5rem;--text-2xl--line-height:calc(2 / 1.5);--font-weight-semibold:600;--font-weight-bold:700;--font-weight-extrabold:800;--leading-snug:1.375;--leading-relaxed:1.625;--radius-sm:.25rem;--radius-md:.375rem;--radius-lg:.5rem;--radius-xl:.75rem;--radius-2xl:1rem;--shadow-sm:0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;--shadow-md:0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a;--shadow-lg:0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;--ease-out:cubic-bezier(0, 0, .2, 1);--ease-in-out:cubic-bezier(.4, 0, .2, 1);--default-transition-duration:.15s;--default-transition-timing-function:cubic-bezier(.4, 0, .2, 1);--default-font-family:var(--font-sans);--default-mono-font-family:var(--font-mono)}}@layer base{*,:after,:before,::backdrop{box-sizing:border-box;border:0 solid;margin:0;padding:0}::file-selector-button{box-sizing:border-box;border:0 solid;margin:0;padding:0}html,:host{-webkit-text-size-adjust:100%;tab-size:4;line-height:1.5;font-family:var(--default-font-family,-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");font-feature-settings:var(--default-font-feature-settings,normal);font-variation-settings:var(--default-font-variation-settings,normal);-webkit-tap-highlight-color:transparent}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:var(--default-mono-font-family,ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);font-feature-settings:var(--default-mono-font-feature-settings,normal);font-variation-settings:var(--default-mono-font-variation-settings,normal);font-size:1em}small{font-size:80%}sub,sup{vertical-align:baseline;font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}:-moz-focusring:where(:not(iframe)){outline:auto}progress{vertical-align:baseline}summary{display:list-item}ol,ul,menu{list-style:none}img,svg,video,canvas,audio,iframe,embed,object{vertical-align:middle;display:block}img,video{max-width:100%;height:auto}button,input,select,optgroup,textarea{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}::file-selector-button{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}:where(select:is([multiple],[size])) optgroup{font-weight:bolder}:where(select:is([multiple],[size])) optgroup option{padding-inline-start:20px}::file-selector-button{margin-inline-end:4px}::placeholder{opacity:1}@supports (not ((-webkit-appearance:-apple-pay-button))) or (contain-intrinsic-size:1px){::placeholder{color:currentColor}@supports (color:color-mix(in lab, red, red)){::placeholder{color:color-mix(in oklab, currentcolor 50%, transparent)}}}textarea{resize:vertical}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-date-and-time-value{min-height:1lh;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-datetime-edit{padding-block:0}::-webkit-datetime-edit-year-field{padding-block:0}::-webkit-datetime-edit-month-field{padding-block:0}::-webkit-datetime-edit-day-field{padding-block:0}::-webkit-datetime-edit-hour-field{padding-block:0}::-webkit-datetime-edit-minute-field{padding-block:0}::-webkit-datetime-edit-second-field{padding-block:0}::-webkit-datetime-edit-millisecond-field{padding-block:0}::-webkit-datetime-edit-meridiem-field{padding-block:0}::-webkit-calendar-picker-indicator{line-height:1}:-moz-ui-invalid{box-shadow:none}button,input:where([type=button],[type=reset],[type=submit]){appearance:button}::file-selector-button{appearance:button}::-webkit-inner-spin-button{height:auto}::-webkit-outer-spin-button{height:auto}[hidden]:where(:not([hidden=until-found])){display:none!important}html{overflow:hidden auto}[hidden]{display:none!important}a{color:inherit;text-decoration:none}body{color:var(--fg);background:0 0;max-width:100vw;padding:10px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.5;overflow-x:hidden}}@layer components{.load-bar{background:var(--tag);border-radius:3.40282e38px;height:3px;margin-bottom:14px;position:relative;overflow:hidden}.load-bar:after{content:"";background:var(--brand);border-radius:3.40282e38px;width:42%;animation:1.35s cubic-bezier(.45,0,.55,1) infinite sweep;position:absolute;top:0;bottom:0}@keyframes sweep{0%{left:-45%}50%{left:58%}to{left:-45%}}.load-head{align-items:center;gap:calc(var(--spacing) * 2);color:var(--muted);margin-bottom:11px;font-size:12.5px;font-weight:600;display:flex}.load-price{color:var(--brand);white-space:nowrap;margin-left:auto;font-weight:700}.mk{color:var(--fg);flex-shrink:0;display:block}.mk .iris{animation:3.6s cubic-bezier(.5,0,.5,1) infinite mkScan}.mk .lid{transform-box:fill-box;transform-origin:50%;animation:5.4s ease-in-out infinite mkBlink}@keyframes mkScan{0%{transform:translate(0)}18%{transform:translate(-15px,7px)}34%{transform:translate(11px,-5px)}52%{transform:translate(-8px,12px)}70%{transform:translate(14px,3px)}86%{transform:translate(-4px,-6px)}to{transform:translate(0)}}@keyframes mkBlink{0%,88%,to{transform:scaleY(1)}93%{transform:scaleY(.08)}}.load-known{gap:calc(var(--spacing) * 2);flex-wrap:wrap;margin-bottom:11px;display:flex}.load-fact{align-items:center;gap:calc(var(--spacing) * 2);border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:3.40282e38px;padding:4px 11px;font-size:12px;font-weight:600;display:inline-flex}.load-fact-mark{color:var(--brand);display:inline-flex}.load-fact-mark svg{fill:currentColor;width:13px;height:13px}.led .card-body{padding:4px 14px 12px}.led-row{align-items:flex-start;gap:calc(var(--spacing) * 3);border-bottom:1px solid var(--border);padding:10px 0;display:flex}.led-row:last-of-type{border-bottom:none}.led-body{flex:1;min-width:0}.led-label{color:var(--fg);font-size:12.5px;font-weight:600}.led-detail{color:var(--muted);margin-top:1px;font-size:11px}.led-cost{background:var(--tag);color:var(--fg);font-variant-numeric:tabular-nums;border-radius:3.40282e38px;flex:none;align-items:center;padding:2px 9px;font-size:11.5px;font-weight:700;display:inline-flex}.led-mark{width:16px;color:var(--brand);flex:none;justify-content:center;align-items:center;margin-top:1px;display:inline-flex}.led-mark svg{fill:currentColor;width:13px;height:13px}.led-dot{border:1px solid var(--border);border-radius:50%;flex:none;width:13px;height:13px;margin-top:2px}.led-foot{color:var(--muted);margin-top:10px;font-size:11.5px;line-height:1.5}.load-centre{text-align:center;flex-direction:column;align-items:center;padding:30px 0 22px;display:flex}.load-centre .load-what{color:var(--fg);margin-top:20px;font-size:14px;font-weight:700}.load-centre .load-sub{color:var(--muted);margin-top:5px;font-size:12.5px}.load-centre .load-bar{width:210px;margin:16px 0 0}.sk{border-radius:var(--radius-md);background:var(--tag);position:relative;overflow:hidden}.sk-media{aspect-ratio:9/16;width:100%;max-height:var(--stage-max,420px);border-radius:0}.sk-media.h{aspect-ratio:16/9}.sk-line{height:11px;margin-top:8px}.sk-line.w40{width:40%}.sk-line.w60{width:60%}.sk-line.w80{width:80%}.sk-pill{border-radius:999px;width:76px;height:22px;margin:0 5px 5px 0;display:inline-block}.sk-card{border-radius:var(--radius-xl);border:1px solid var(--border);background:var(--card);flex-shrink:0;width:min(340px,86vw);min-width:min(340px,86vw);overflow:hidden}.sk-body{padding:13px 14px}.sk-row{align-items:center;gap:calc(var(--spacing) * 3);border-bottom:1px solid var(--border);padding:11px 0;display:flex}.sk-avatar{border-radius:10px;flex-shrink:0;width:44px;height:44px}.sk-strip{gap:calc(var(--spacing) * 3);padding:2px 0 8px;display:flex;overflow:hidden}@media (prefers-reduced-motion:reduce){.load-bar:after,.mk .iris,.mk .lid{animation:none}.load-bar:after{opacity:.5;width:100%;left:0}}.fade-in{animation:.4s ease-out fadeIn}@keyframes fadeIn{0%{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.stagger>*{opacity:0;animation:.4s ease-out forwards fadeIn}.stagger>:first-child{animation-delay:50ms}.stagger>:nth-child(2){animation-delay:.1s}.stagger>:nth-child(3){animation-delay:.15s}.stagger>:nth-child(4){animation-delay:.2s}.stagger>:nth-child(5){animation-delay:.25s}.stagger>:nth-child(6){animation-delay:.3s}.stagger>:nth-child(7){animation-delay:.35s}.stagger>:nth-child(8){animation-delay:.4s}.gallery-wrap{max-width:100%;position:relative;overflow:hidden}.gallery{gap:calc(var(--spacing) * 3);scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;width:100%;max-width:100%;padding:2px 0 8px;display:flex;overflow-x:auto}.gallery::-webkit-scrollbar{display:none}.gallery-dots{justify-content:center;gap:calc(var(--spacing) * 1.5);flex-wrap:wrap;margin-top:10px;display:flex}.gallery-dots .dot{background:var(--border);cursor:pointer;width:8px;height:8px;transition:var(--transition);border:none;border-radius:50%;padding:0}.gallery-dots .dot.active{background:var(--accent);border-radius:999px;width:20px}.gallery-nav{z-index:2;cursor:pointer;background:var(--card);border:1px solid var(--border);width:32px;height:32px;color:var(--fg);transition:var(--transition);opacity:0;border-radius:50%;justify-content:center;align-items:center;font-size:14px;display:flex;position:absolute;top:50%;transform:translateY(-50%)}.gallery-wrap:hover .gallery-nav{opacity:1}.gallery-nav:hover{background:var(--accent);color:var(--card)}.gallery-nav.prev{left:2px}.gallery-nav.next{right:2px}.card{border-radius:var(--radius-xl);border:1px solid var(--border);background:var(--card);width:min(380px,100%);min-width:min(380px,100%);max-width:100%;transition:var(--transition);cursor:default;scroll-snap-align:center;flex-shrink:0;display:block}.card.card-media{--ar-w:9;--ar-h:16;width:min(100%, calc(var(--stage-max,520px) * var(--ar-w) / var(--ar-h)));background:0 0;border-color:#0000;min-width:0;margin:0 auto}.card.card-media.h{--ar-w:16;--ar-h:9}.card.card-media.sq{--ar-w:1;--ar-h:1}.card-media .card-foot{background:0 0;justify-content:flex-end;padding:8px 4px 0;display:flex}.card-media .btn-sm{margin-top:0}.card:hover{border-color:var(--muted)}.card-media:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}.card-wide{width:100%}.card img:not(.mp-slide){object-fit:cover;width:100%;height:260px;display:block}.card-wide img:not(.mp-slide){max-height:340px}.card video{object-fit:contain;background:#000;border:none;outline:none;width:100%;min-height:220px;max-height:520px;display:block}.card-wide video{max-height:520px}.card-body{padding:14px 16px}.badge{align-items:center;gap:var(--spacing);text-transform:capitalize;transition:var(--transition);border-radius:3.40282e38px;padding:3px 10px;font-size:11px;font-weight:700;display:inline-flex}.handle{color:var(--muted);margin-left:auto;font-size:12px}.tag{align-items:center;gap:var(--spacing);transition:var(--transition);cursor:default;border-radius:3.40282e38px;margin:2px;padding:4px 10px;font-size:12px;display:inline-flex}.tag.clickable{cursor:pointer;-webkit-user-select:none;user-select:none}.tag.clickable:hover{background:var(--tag)}.tag.copied{background:var(--green)!important;color:#fff!important}.title{margin:6px 0;font-size:14px;font-weight:600;line-height:1.35}.card-wide .title{font-size:16px;font-weight:700}.caption{color:var(--muted);margin:6px 0 0;font-size:13px;line-height:1.5}.stats{align-items:center;gap:calc(var(--spacing) * 1.5);flex-wrap:wrap;margin-top:8px;display:flex}.stat-pill{align-items:center;gap:var(--spacing);color:var(--fg);background:var(--tag);transition:var(--transition);border-radius:3.40282e38px;padding:5px 12px;font-size:12px;display:inline-flex}.stat-pill:hover{background:var(--border)}.btn{cursor:pointer;align-items:center;gap:calc(var(--spacing) * 1.5);border-radius:var(--radius-lg);color:#fff;background:var(--brand);transition:var(--transition);border:none;margin-top:12px;padding:8px 18px;font-size:13px;font-weight:600;text-decoration-line:none;display:inline-flex}.btn:hover{background:var(--brand-2)}.btn:active{opacity:.9}.btn-sm{margin-top:8px;padding:5px 12px;font-size:11px}.section{border-bottom:1px solid var(--border);margin-bottom:6px;overflow:hidden}.section-header{cursor:pointer;-webkit-user-select:none;user-select:none;transition:var(--transition);justify-content:space-between;align-items:center;padding:10px 2px;display:flex}.section-header:hover .section-label{color:var(--fg)}.section-label{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:700}.section-chevron{color:var(--muted);font-size:12px;transition:transform .2s}.section-header.open .section-chevron{transform:rotate(180deg)}.section-content{max-height:0;padding:0 2px;transition:max-height .28s,padding .28s;overflow:hidden}.section-content.open{max-height:2400px;padding:4px 2px 14px}.section-text{color:var(--fg);font-size:13px;line-height:1.6}.ai-actions{gap:calc(var(--spacing) * 2);flex-wrap:wrap;margin-top:14px;display:flex}.ai-btn{cursor:pointer;align-items:center;gap:calc(var(--spacing) * 2);border:1px solid var(--border);background:var(--card);color:var(--fg);font:inherit;transition:var(--transition);border-radius:3.40282e38px;padding:8px 13px;font-size:13px;font-weight:600;display:inline-flex}.ai-btn:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft)}.ai-btn:disabled{opacity:.55;cursor:not-allowed}.ai-btn .spark{color:var(--brand);flex-shrink:0;display:inline-flex}.ai-btn .price{white-space:nowrap;color:var(--brand);background:var(--brand-soft);border-radius:3.40282e38px;align-items:center;padding:2px 7px;font-size:11px;font-weight:700;display:inline-flex}.ai-btn.busy .spark{animation:1.1s linear infinite spin}.ai-note{color:var(--muted);margin-top:8px;font-size:11.5px}.an-title{align-items:center;gap:calc(var(--spacing) * 2);margin-bottom:14px;font-size:16px;font-weight:700;display:flex}.verdict{gap:calc(var(--spacing) * 2.5);grid-template-columns:repeat(1,minmax(0,1fr));margin-bottom:12px;display:grid}@media (min-width:420px){.verdict{grid-template-columns:1fr 1fr}}.meter{border-radius:var(--radius-md);background:var(--tag);padding:9px 11px}.meter-top{justify-content:space-between;align-items:baseline;gap:calc(var(--spacing) * 2);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-size:11px;font-weight:700;display:flex}.meter-top b{letter-spacing:0;font-size:14px}.meter-track{background:var(--border);border-radius:3.40282e38px;height:5px;margin-top:6px;overflow:hidden}.meter-track>i{border-radius:3.40282e38px;height:100%;display:block}.chiprow{gap:calc(var(--spacing) * 1.5);flex-wrap:wrap;display:flex}.mhead{z-index:3;background:var(--bg);border-bottom:1px solid var(--border);padding:2px 0 10px;position:sticky;top:0}.mhead-top{justify-content:space-between;align-items:flex-end;gap:calc(var(--spacing) * 2.5);flex-wrap:wrap;display:flex}.mention-term{color:var(--muted);margin-bottom:2px;font-size:13px}.mention-term b{color:var(--fg)}.mention-total{color:var(--fg);letter-spacing:-.01em;font-size:20px;font-weight:650}.mention-down{color:var(--muted);margin-top:8px;font-size:12px}.mention-window{color:var(--muted);border:1px solid var(--border);border-radius:3.40282e38px;margin-left:6px;padding:1px 8px;font-size:11px;display:inline-block}.mention-summary{color:var(--muted);max-width:60ch;margin-top:6px;font-size:13px;line-height:1.45}.msort{background:var(--tag);border-radius:3.40282e38px;flex:none;align-items:center;gap:2px;padding:3px;display:inline-flex}.msort-btn{color:var(--muted);cursor:pointer;transition:var(--transition);white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:5px 14px;font-size:11.5px;font-weight:600}.msort-btn:hover{color:var(--fg)}.msort-btn.on{color:var(--card);background:var(--accent)}.mchips{gap:calc(var(--spacing) * 1.5);flex-wrap:wrap;margin-top:10px;display:flex}.mchip{cursor:pointer;align-items:center;gap:calc(var(--spacing) * 2);color:var(--muted);border:1px solid var(--border);transition:var(--transition);white-space:nowrap;background:0 0;border-radius:3.40282e38px;padding:5px 12px;font-size:12px;font-weight:600;display:inline-flex}.mchip:hover{color:var(--fg);border-color:var(--muted)}.mchip b{color:var(--fg);background:var(--tag);font-variant-numeric:tabular-nums;border-radius:3.40282e38px;padding:1px 7px;font-weight:700}.mchip.on{color:var(--card);background:var(--accent);border-color:#0000}.mchip.on b{color:inherit;background:0 0;padding:1px 0}.mchip.on .mchip-mark{color:inherit}.mchip.quiet{opacity:.5;cursor:default}.mchip.quiet:hover{color:var(--muted);border-color:var(--border)}.mchip-mark{color:var(--brand);display:inline-flex}.mchip-mark svg{fill:currentColor;width:13px;height:13px}.mgroups{gap:calc(var(--spacing) * 2.5);flex-direction:column;margin-top:12px;display:flex}.mgroup{border-radius:var(--radius-xl);border:1px solid var(--border);background:var(--card);padding:12px 14px 6px}.mgroup-head{align-items:center;gap:calc(var(--spacing) * 2);flex-wrap:wrap;margin-bottom:6px;display:flex}.mgroup-plat{align-items:center;gap:calc(var(--spacing) * 1.5);color:var(--brand);font-size:11px;font-weight:600;display:inline-flex}.mgroup-plat svg{fill:currentColor;width:12px;height:12px}.mgroup-about{text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border:1px solid var(--border);border-radius:3.40282e38px;padding:1px 7px;font-size:10.5px}.mgroup-reach{color:var(--muted);margin-left:auto;font-size:11px}.mgroup-title{color:var(--fg);-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px;font-weight:600;line-height:1.35;display:-webkit-box;overflow:hidden}.mgroup-rest{color:var(--muted);cursor:pointer;transition:var(--transition);background:0 0;border:0;align-self:flex-start;margin-top:2px;padding:2px 0;font-size:11.5px;font-weight:600}.mgroup-rest:hover{color:var(--fg)}.mgroup-actions{align-items:center;gap:calc(var(--spacing) * 3);margin-top:5px;display:flex}.mgroup-link{color:var(--muted);font-size:11.5px;text-decoration:none}.mgroup-link:hover{color:var(--fg);text-decoration:underline}.mgroup-all{color:var(--muted);cursor:pointer;transition:var(--transition);background:0 0;border:0;padding:0;font-size:11.5px;font-weight:600}.mgroup-all:hover{color:var(--fg)}.mgroup-none{color:var(--muted);margin-top:8px;font-size:12px}.mgroup-stage{--stage-max:300px;border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:calc(100% + 28px);margin:-12px -14px 10px;overflow:hidden}.mgroup-stage .mp{border:0;border-radius:0;width:100%}.mgroup-media{background:var(--muted);border-radius:var(--radius-xl) var(--radius-xl) 0 0;cursor:default;border:0;width:calc(100% + 28px);height:132px;margin:-12px -14px 10px;padding:0;display:block;position:relative;overflow:hidden}.mgroup-media.is-playable{cursor:pointer}.mgroup-media-img{object-fit:cover;width:100%;height:100%;display:block}.mgroup-media-blank{opacity:.35;justify-content:center;align-items:center;width:100%;height:100%;display:flex}.mgroup-media-play{color:#fff;background:#00000094;border-radius:999px;justify-content:center;align-items:center;width:40px;height:40px;transition:transform .16s cubic-bezier(.16,1,.3,1);display:flex;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.mgroup-media.is-playable:hover .mgroup-media-play{transform:translate(-50%,-50%)scale(1.08)}.mgroup-stage{border-radius:var(--radius-xl) var(--radius-xl) 0 0;--stage-max:300px;width:calc(100% + 28px);margin:-12px -14px 10px;overflow:hidden}.mentions{flex-direction:column;margin-top:8px;display:flex}.mention{cursor:pointer;align-items:flex-start;gap:calc(var(--spacing) * 3);transition:var(--transition);padding:11px 2px;display:flex}.mention+.mention{border-top:1px solid var(--border)}.mention:hover{background:var(--card-hover)}.mention.picked{background:var(--tag)}.mention-pick{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex:none;margin-top:11px}.mention-av{background:var(--tag);border:1px solid var(--border);border-radius:3.40282e38px;flex:none;width:36px;height:36px;position:relative;overflow:visible}.mention-av-init{color:var(--muted);border-radius:3.40282e38px;justify-content:center;align-items:center;font-size:14px;font-weight:700;display:flex;position:absolute;inset:0}.mention-av-img{object-fit:cover;border-radius:3.40282e38px;width:100%;height:100%;position:absolute;inset:0}.mention-av-badge{background:var(--card);width:16px;height:16px;color:var(--brand);border:1px solid var(--border);border-radius:3.40282e38px;justify-content:center;align-items:center;display:flex;position:absolute;bottom:-3px;right:-3px}.mention-av-badge svg{fill:currentColor;width:9.5px;height:9.5px}.mention-body{gap:calc(var(--spacing) * .5);flex-direction:column;flex:1;min-width:0;display:flex}.mention-head{align-items:baseline;gap:calc(var(--spacing) * 2);flex-wrap:wrap;display:flex}.mention-who{color:var(--fg);font-size:13px;font-weight:650}.mention-when{color:var(--muted);font-size:11.5px}.mention-when:before{content:"·";color:var(--border);margin-right:7px}.mention-hits{color:var(--fg);background:var(--tag);border:1px solid var(--border);border-radius:3.40282e38px;margin-left:auto;padding:1px 7px;font-size:10.5px;font-weight:700}.mention-text{color:var(--fg);word-break:break-word;margin-top:4px;font-size:13.5px;line-height:1.5}.mention-text mark{color:inherit;background:#f43f5e26;border-radius:4px;padding:1px 3px;font-weight:600}.mention-note{border-left:2px solid var(--brand,#f43f5e);background:var(--tag);color:var(--fg);white-space:pre-wrap;word-break:break-word;border-radius:0 6px 6px 0;margin-top:6px;padding:6px 9px;font-size:12.5px;line-height:1.5;display:block}.mention-meta{align-items:center;gap:calc(var(--spacing) * 3.5);margin-top:6px;display:flex}.mention-stat{align-items:center;gap:var(--spacing);color:var(--muted);font-size:11px;display:inline-flex}.mention-stat svg{fill:none;stroke:currentColor;stroke-width:1.8px;stroke-linecap:round;stroke-linejoin:round;width:12px;height:12px}.chip{text-transform:capitalize;letter-spacing:.01em;border:1px solid var(--border);color:var(--muted);border-radius:3.40282e38px;padding:1px 7px;font-size:10px;font-weight:600}.chip-positive{color:#15803d;background:#15803d14;border-color:#15803d55}.chip-negative{color:#b91c1c;background:#b91c1c14;border-color:#b91c1c55}.chip-mixed{color:#a16207;background:#a1620714;border-color:#a1620755}.chip-neutral{color:var(--muted)}.chip-cat{background:var(--tag)}.mention-more{cursor:pointer;border-radius:var(--radius-xl);width:100%;color:var(--fg);background:var(--tag);border:1px solid var(--border);transition:var(--transition);margin-top:12px;padding:10px;font-size:13px;font-weight:600;display:block}.mention-more:hover:not(:disabled){border-color:var(--muted)}.mention-more:disabled{opacity:.6;cursor:default}.sm-thumb-badged{flex:none;position:relative;overflow:visible}.sm-thumb-img{object-fit:cover;border-radius:var(--radius-lg);width:100%;height:100%;display:block}.sm-thumb{border-radius:var(--radius-lg);object-fit:cover;background:var(--tag);border:1px solid var(--border);flex:none;width:56px;height:56px}.tag.copyable{cursor:pointer;border:1px solid var(--border);font:inherit;align-items:center;gap:5px;font-size:12px;display:inline-flex}.tag.copyable:hover{border-color:var(--accent)}.tag.warn{background:var(--red)}@supports (color:color-mix(in lab, red, red)){.tag.warn{background:color-mix(in srgb, var(--red) 12%, transparent)}}.tag.warn{color:var(--red);border:1px solid var(--red)}@supports (color:color-mix(in lab, red, red)){.tag.warn{border:1px solid color-mix(in srgb, var(--red) 35%, transparent)}}.lede-box{background:var(--tag);border-radius:var(--radius-sm);margin-bottom:12px;padding:11px 13px;font-size:13.5px;line-height:1.6}.steps-list{gap:calc(var(--spacing) * 2);flex-direction:column;display:flex}.step-row{align-items:flex-start;gap:calc(var(--spacing) * 2.5);grid-template-columns:78px 1fr;display:grid}.step-k{letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding-top:2px;font-size:10.5px;font-weight:700}.step-v{font-size:13px;line-height:1.5}.an-list{margin:0;padding-left:18px;font-size:13px;line-height:1.55}.an-list li{margin:4px 0}.clamp6{-webkit-line-clamp:6;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.hook-bar-track{align-items:center;gap:calc(var(--spacing) * 2.5);margin-top:6px;display:flex}.hook-bar{background:var(--tag);border-radius:3.40282e38px;flex:1;height:10px;overflow:hidden}.hook-bar-fill{border-radius:3.40282e38px;height:100%;transition:width .8s cubic-bezier(.4,0,.2,1)}.hook-score{text-align:right;min-width:40px;font-size:15px;font-weight:800}.quote-box{border-radius:var(--radius-md);background:var(--tag);border-left:3px solid var(--blue);margin:6px 0;padding:10px 14px;font-size:13px;font-weight:600;line-height:1.45;position:relative}.quote-at{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--muted);margin-bottom:4px;font-size:11px;font-weight:700;display:block}.quote-box .copy-btn{cursor:pointer;border-radius:var(--radius-md);background:var(--card);border:1px solid var(--border);color:var(--muted);transition:var(--transition);opacity:0;padding:3px 8px;font-size:10px;position:absolute;top:8px;right:8px}.quote-box:hover .copy-btn{opacity:1}.copy-btn:hover{background:var(--accent);color:var(--card)}.theme-chip{align-items:center;gap:calc(var(--spacing) * 1.5);background:var(--tag);border:1px solid var(--border);color:var(--fg);border-radius:3.40282e38px;margin:0 4px 5px 0;padding:4px 10px;font-size:12px;display:inline-flex}.theme-chip b{color:var(--brand,var(--blue));font-variant-numeric:tabular-nums}.sec-label{letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-size:11px;font-weight:700}.cbadge{white-space:nowrap;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700}.cbadge.pin{color:#b45309;background:#fef3c7}.cbadge.liked{color:#be185d;background:#fce7f3}.cmeta{align-items:center;gap:calc(var(--spacing) * 2);color:var(--muted);flex-wrap:wrap;margin-top:5px;font-size:11px;display:flex}.ctext{color:var(--fg);font-size:13px;line-height:1.45}.ctext.clamp{-webkit-line-clamp:3;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.cmore{color:var(--blue);cursor:pointer;background:0 0;border:none;padding:3px 0 0;font-family:inherit;font-size:11.5px;font-weight:600}.comment-row{justify-content:space-between;align-items:flex-start;gap:calc(var(--spacing) * 2.5);border-radius:var(--radius-md);border-bottom:1px solid var(--border);transition:var(--transition);padding:10px 0;display:flex}.comment-row:last-child{border-bottom:none}.comment-row:hover{background:var(--tag)}.creator-card{border-radius:var(--radius-xl);border:1px solid var(--border);background:var(--card);width:min(240px,80vw);min-width:min(240px,80vw);transition:var(--transition);scroll-snap-align:start;flex-shrink:0;padding:16px;display:block}.creator-card:hover{border-color:var(--muted)}.avatar{object-fit:cover;border:2px solid var(--border);border-radius:3.40282e38px;width:52px;height:52px}.avatar-placeholder{border-radius:3.40282e38px;justify-content:center;align-items:center;width:52px;height:52px;font-size:22px;display:flex}.verified{color:#fff;border-radius:3.40282e38px;justify-content:center;align-items:center;width:18px;height:18px;margin-left:4px;font-size:10px;display:inline-flex}.sound-card{border-radius:var(--radius-xl);border:1px solid var(--border);background:var(--card);width:min(300px,88vw);min-width:min(300px,88vw);transition:var(--transition);scroll-snap-align:start;flex-shrink:0;padding:14px;display:block}.sound-card:hover{border-color:var(--muted)}.sound-cover{border-radius:var(--radius-md);object-fit:cover;width:68px;height:68px}.mp{--ar-w:9;--ar-h:16;width:min(100%, calc(var(--stage-max,520px) * var(--ar-w) / var(--ar-h)));background:#000;border:2px solid #0000;border-radius:18px;margin-inline:auto;position:relative;overflow:hidden}.mp.playing{border-color:var(--brand)}.card-media>.mp{width:100%}.mp.h{--ar-w:16;--ar-h:9}.mp.sq{--ar-w:1;--ar-h:1}.mp-stage{width:100%;aspect-ratio:var(--ar-w) / var(--ar-h);max-height:var(--stage-max,520px);background:#000;position:relative;overflow:hidden}.mp .mp-stage>video{object-fit:contain;background:#000;width:100%;height:100%;max-height:none;display:block}.mp .mp-slide{object-fit:contain;opacity:0;background:#000;width:100%;height:100%;max-height:none;transition:opacity .45s;position:absolute;inset:0;transform:none}.mp-slide.active{opacity:1}.mp-ov{pointer-events:none;z-index:2;position:absolute;inset:0}.mp-ov:after{content:"";pointer-events:none;background:linear-gradient(#0000,#00000047 38%,#000000b8);height:46%;position:absolute;bottom:0;left:0;right:0}.mp-ov:before{content:"";pointer-events:none;background:linear-gradient(#00000073,#0000);height:16%;position:absolute;top:0;left:0;right:0}.mp-badge,.mp-chip,.mp-rail,.mp-meta,.mp-tap,.mp-nav{z-index:1}.mp-ov>*{pointer-events:auto}.mp-badge{text-transform:capitalize;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;background:#0000008c;border-radius:3.40282e38px;align-items:center;gap:5px;padding:4px 9px;font-size:11px;font-weight:700;display:inline-flex;position:absolute;top:10px;left:10px}.mp-pick{z-index:3;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#0000;width:26px;height:26px;transition:var(--transition);background:#0000006b;border:2px solid #ffffffd9;border-radius:3.40282e38px;justify-content:center;align-items:center;padding:0;display:flex;position:absolute;top:9px;right:9px}.mp-pick:hover{background:#000000a8;transform:scale(1.08)}.mp-open{z-index:3;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;width:26px;height:26px;transition:var(--transition);background:#0000006b;border:2px solid #ffffffd9;border-radius:3.40282e38px;justify-content:center;align-items:center;padding:0;text-decoration-line:none;display:flex;position:absolute;top:9px;right:9px}.mp-open:hover{background:#000000a8;transform:scale(1.08)}.mp-open.with-pick{right:43px}.mp-pick[aria-pressed=true]{background:var(--brand,#ff4d23);color:#fff;border-color:#fff}.mp.picked{outline:2px solid var(--brand,#ff4d23);outline-offset:-2px}.mp-pick~.mp-chip,.mp[data-mp=slides] .mp-chip{top:42px}.pickbar{z-index:20;align-items:center;gap:calc(var(--spacing) * 2.5);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:3.40282e38px;margin:12px 0 0;padding:10px 12px;animation:.2s ease-out fadeIn;display:flex;position:sticky;bottom:0}.pickbar .n{white-space:nowrap;font-size:13px;font-weight:700}.pickbar .sp{flex:1}.pickbar button{cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:var(--card);color:var(--fg);font:inherit;transition:var(--transition);border-radius:3.40282e38px;padding:6px 13px;font-size:12.5px;font-weight:600}.pickbar button.primary{background:var(--brand,#ff4d23);color:#fff;border-color:#0000}.pickbar button:hover{filter:brightness(1.08)}.pickbar button:disabled{opacity:.5;cursor:not-allowed}.pickbar .hint{color:var(--muted);font-size:11.5px}.mp-chip{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;font-variant-numeric:tabular-nums;background:#0000008c;border-radius:3.40282e38px;padding:3px 9px;font-size:11px;font-weight:700;position:absolute;top:10px;right:10px}.mp-rail{align-items:center;gap:calc(var(--spacing) * 3.5);flex-direction:column;display:flex;position:absolute;bottom:76px;right:8px}.mp-act{cursor:default;background:0 0;border:none;flex-direction:column;align-items:center;gap:3px;padding:0;display:flex}.mp-act .ic{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;width:38px;height:38px;transition:var(--transition);background:#0006;border-radius:3.40282e38px;justify-content:center;align-items:center;display:flex}.mp-act:hover .ic{background:#0000009e;transform:scale(1.06)}.mp-act .n{color:#fff;text-shadow:0 1px 3px #000c;font-variant-numeric:tabular-nums;font-size:11px;font-weight:700}.mp-meta{color:#fff;text-shadow:0 1px 3px #000000d9;position:absolute;bottom:60px;left:12px;right:64px}.mp-handle{margin-bottom:3px;font-size:13px;font-weight:800}.mp-cap{-webkit-line-clamp:2;opacity:.95;-webkit-box-orient:vertical;font-size:12px;line-height:1.4;display:-webkit-box;overflow:hidden}.mp-song{white-space:nowrap;text-overflow:ellipsis;align-items:center;gap:5px;margin-top:6px;font-size:11px;font-weight:600;display:flex;overflow:hidden}.mp-song .note{flex:none;display:inline-flex}.mp.playing .mp-song .note{animation:3s linear infinite spin}.mp-song-t{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}@keyframes spin{to{transform:rotate(360deg)}}.mp-tap{cursor:pointer;background:0 0;border:none;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.mp-tap span{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);color:#fff;width:64px;height:64px;transition:var(--transition);opacity:1;background:#00000073;border-radius:3.40282e38px;justify-content:center;align-items:center;font-size:26px;display:flex}.mp.playing .mp-tap span{opacity:0}.mp.playing:hover .mp-tap span{opacity:.65}.mp-nav{cursor:pointer;color:#fff;opacity:0;width:34px;height:34px;transition:var(--transition);background:#0000008c;border:none;border-radius:3.40282e38px;justify-content:center;align-items:center;font-size:18px;display:flex;position:absolute;top:50%;transform:translateY(-50%)}.mp:hover .mp-nav,.mp:focus-within .mp-nav{opacity:1}.mp-nav.prev{left:8px}.mp-nav.next{right:8px}.mp-nav:hover{background:#000c}.mp-ctl{z-index:3;background:linear-gradient(#0000,#000000d9);align-items:center;gap:9px;padding:9px 11px;display:flex;position:absolute;bottom:0;left:0;right:0}.mp-btn{cursor:pointer;color:#111;width:30px;height:30px;transition:var(--transition);background:#fffffff2;border:none;border-radius:3.40282e38px;flex:none;justify-content:center;align-items:center;font-size:12px;display:flex}.mp-btn:hover{transform:scale(1.09)}.mp-time{color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px #000c;flex-shrink:0;font-size:10px;font-weight:700}.mp-seek{cursor:pointer;flex:1;align-items:center;min-width:0;height:14px;display:flex;position:relative}.mp-segs{gap:calc(var(--spacing) * .5);border-radius:3.40282e38px;width:100%;height:3px;transition:height .15s;display:flex;overflow:hidden}.mp-seek:hover .mp-segs{height:5px}.mp-seg{background:#ffffff52;border-radius:3.40282e38px;flex:1;height:100%;overflow:hidden}.mp-seg>i{background:#fff;border-radius:3.40282e38px;width:0;height:100%;display:block}.mp-seg.done>i{width:100%}.mp-icon{color:#fff;cursor:pointer;opacity:.9;background:0 0;border:none;flex-shrink:0;padding:0;font-size:14px;line-height:1}.mp-icon:hover{opacity:1}.mp-spin{pointer-events:none;z-index:2;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.mp-spin>i{border:3px solid #ffffff40;border-top-color:#fff;border-radius:3.40282e38px;width:34px;height:34px;animation:.8s linear infinite spin}.mp-err{pointer-events:none;z-index:4;justify-content:center;align-items:center;gap:calc(var(--spacing) * 2);text-align:center;color:#fff;background:#000000d1;flex-direction:column;padding:16px;font-size:12px;font-weight:600;display:flex;position:absolute;inset:0}.mp:focus-visible{outline-offset:-2px;outline:2px solid #fff}.mp-btn:focus-visible,.mp-icon:focus-visible,.mp-nav:focus-visible,.mp-tap:focus-visible,.au-play:focus-visible,.gallery-nav:focus-visible,.dot:focus-visible{outline-offset:2px;outline:2px solid #fff}@media (prefers-reduced-motion:reduce){.mp-song .note{animation:none}.mp-slide{transition:none}.mp-spin>i{animation-duration:2s}*{scroll-behavior:auto!important}}.au{align-items:center;gap:calc(var(--spacing) * 2.5);margin-top:10px;display:flex}.au-play{cursor:pointer;color:#fff;background:var(--brand);width:34px;height:34px;transition:var(--transition);border:none;border-radius:3.40282e38px;flex:none;justify-content:center;align-items:center;display:flex}.au-body{flex:1;min-width:0}.au-seek{cursor:pointer;background:var(--fg);border-radius:3.40282e38px;width:100%;height:5px;position:relative;overflow:hidden}@supports (color:color-mix(in lab, red, red)){.au-seek{background:color-mix(in srgb, var(--fg) 22%, transparent)}}.au-seek>i{background:var(--accent);border-radius:3.40282e38px;width:0;height:100%;display:block}.au-time{color:var(--muted);font-variant-numeric:tabular-nums;justify-content:space-between;margin-top:3px;font-size:10px;display:flex}.au-missing{align-items:center;gap:calc(var(--spacing) * 1.5);color:var(--muted);margin-top:8px;font-size:11px;display:flex}.own-title{color:var(--fg);font-size:16px;font-weight:700}.own-sub{color:var(--muted);margin:3px 0 12px;font-size:12.5px}.own-head{align-items:center;gap:calc(var(--spacing) * 2);color:var(--fg);font-size:16px;font-weight:700;display:flex}.own-tick{color:var(--green);display:inline-flex}.own-connect{text-align:center;flex-direction:column;align-items:center;padding:30px 20px 22px;display:flex}.own-connect .btn{background:var(--accent);color:var(--bg)}.mono{font-family:var(--font-mono)}.conn-row{align-items:flex-start;gap:calc(var(--spacing) * 3);border-bottom:1px solid var(--border);padding:12px 0;display:flex}.conn-row:last-child{border-bottom:none}.conn-body{flex:1;min-width:0}.conn-who{color:var(--fg);font-size:13px;font-weight:650}.conn-sub{color:var(--muted);margin-top:1px;font-size:11.5px}.conn-note{color:var(--muted);margin-top:5px;font-size:11px}.conn-status,.conn-connect{align-self:flex-start;margin-top:2px}.conn-av{background:var(--tag);border:1px solid var(--border);border-radius:3.40282e38px;flex-shrink:0;width:32px;height:32px;position:relative;overflow:visible}.conn-av-empty{background:0 0;border-style:dashed}.conn-av-mark{color:var(--muted);justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.credits-card{border-radius:var(--radius-2xl);border:1px solid var(--border);background:var(--card);max-width:380px;margin:8px 0;padding:24px}.pack{cursor:pointer;border-radius:var(--radius-xl);text-align:center;border:1px solid var(--border);transition:var(--transition);padding:16px}.pack:hover{border-color:var(--muted)}.pack-featured{border-radius:var(--radius-xl);text-align:center;border:2px solid var(--accent);padding:16px}.tier-badge{color:#1e40af;background:#dbeafe;border-radius:3.40282e38px;align-items:center;padding:4px 12px;font-size:12px;font-weight:700;display:inline-flex}.free-tag{align-items:center;gap:var(--spacing);color:#065f46;transition:var(--transition);background:#d1fae5;border-radius:3.40282e38px;margin:2px;padding:4px 10px;font-size:11px;font-weight:600;display:inline-flex}.json-block{border-radius:var(--radius-md);background:var(--tag);border:1px solid var(--border);white-space:pre-wrap;word-break:break-all;max-height:320px;margin-top:10px;padding:14px;font-family:SF Mono,Monaco,monospace;font-size:12px;overflow-y:auto}.empty-state{text-align:center;color:var(--muted);padding:48px 24px}.empty-state .icon{margin-bottom:12px;font-size:48px}.empty-state .text{font-size:14px}.amz-head{align-items:center;gap:calc(var(--spacing) * 3);padding:2px 2px 12px;display:flex}.amz-mark{flex:none;align-items:center;display:inline-flex}.mkt-logo{border-radius:var(--radius-sm);background:#fff;justify-content:center;align-items:center;min-width:34px;padding:0 7px;display:inline-flex;box-shadow:inset 0 0 0 1px #1118271f}.mkt-logo svg{width:auto;max-width:96px;height:60%;display:block}.mkt-generic{color:#fff;font-weight:700}.amz-head-text{flex:1;min-width:0}.amz-head-title{text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:700;overflow:hidden}.amz-head-sub{color:var(--muted);margin-top:1px;font-size:12px}.amz-running{flex:none}.amz-strip{gap:calc(var(--spacing) * 2);flex-wrap:wrap;margin-bottom:12px;display:flex}.amz-stat{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);flex:130px;padding:8px 12px}.amz-stat-k{text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-size:10px;font-weight:700}.amz-stat-v{margin-top:2px;font-size:16px;font-weight:700}.amz-stat-d{color:var(--muted);margin-top:1px;font-size:11px}.amz-grid{gap:calc(var(--spacing) * 2);grid-template-columns:repeat(auto-fill,minmax(220px,1fr));display:grid}.amz-tile{gap:calc(var(--spacing) * 3);text-align:left;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);cursor:pointer;transition:var(--transition);width:100%;padding:10px;display:flex}.amz-tile:hover{background:var(--card-hover)}.amz-tile-open{border-color:#f90}.amz-tile-body{flex-direction:column;gap:2px;min-width:0;display:flex}.amz-brand{color:var(--muted);text-transform:uppercase;letter-spacing:.03em;font-size:11px;font-weight:700}.amz-title{-webkit-line-clamp:3;-webkit-box-orient:vertical;font-size:12px;font-weight:600;line-height:1.35;display:-webkit-box;overflow:hidden}.amz-title-lg{-webkit-line-clamp:4;font-size:14px}.amz-line{flex-wrap:wrap;align-items:center;gap:6px;margin-top:2px;display:flex}.amz-stars{color:#f90;letter-spacing:.5px;font-size:12px}.amz-rating{font-size:12px;font-weight:700}.amz-count{color:var(--muted);font-size:11px}.amz-price{font-size:14px;font-weight:700}.amz-list{color:var(--muted);font-size:11px;text-decoration:line-through}.amz-neg{color:var(--red);border:1px solid var(--border);border-radius:999px;padding:0 6px;font-size:11px;font-weight:700}.amz-sub{color:var(--muted);font-size:11px}.amz-thumb{border-radius:var(--radius-sm);border:1px solid var(--border);background:#fff;flex:none;justify-content:center;align-items:center;width:64px;height:64px;display:inline-flex;overflow:hidden}.amz-thumb img{object-fit:contain;width:100%;height:100%}.amz-thumb-empty{background:var(--tag);color:var(--muted);font-size:18px;font-weight:700}.amz-detail{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);border-top:3px solid #f90;margin-top:12px;padding:14px}.amz-detail-head{gap:calc(var(--spacing) * 3);margin-bottom:12px;display:flex}.amz-detail-facts{flex:1;min-width:0}.amz-open{margin-top:8px}.amz-block{margin-top:14px}.amz-blocknote{color:var(--muted);margin:-4px 0 8px;font-size:11.5px}.amz-feats{color:var(--muted);margin:0;padding-left:18px;font-size:12.5px}.amz-feats li{margin:3px 0}.amz-summary{border-left:3px solid #f90;margin-top:12px;padding-left:10px}.amz-note{color:var(--muted);background:var(--tag);border-radius:var(--radius-sm);margin-top:10px;padding:8px 10px;font-size:11.5px}.amz-hist{margin-top:10px}.amz-hrow{align-items:center;gap:calc(var(--spacing) * 2);margin:3px 0;display:flex}.amz-hstar{color:var(--muted);flex:none;width:26px;font-size:11px}.amz-htrack{background:var(--tag);border-radius:999px;flex:1;height:8px;overflow:hidden}.amz-hfill{border-radius:999px;height:100%;display:block}.amz-hpct{color:var(--muted);text-align:right;flex:none;width:34px;font-size:11px}.amz-bar-good{background:var(--green)}.amz-bar-mid{background:var(--amber)}.amz-bar-bad{background:var(--red)}.amz-rev{border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius-sm);background:var(--card);margin:6px 0;padding:9px 11px}.amz-rev-good{border-left-color:var(--green)}.amz-rev-mid{border-left-color:var(--amber)}.amz-rev-bad{border-left-color:var(--red)}.amz-rev-focus{background:var(--card-hover);border-color:#f90}.amz-rev-head{align-items:center;gap:calc(var(--spacing) * 2);flex-wrap:wrap;display:flex}.amz-rev-title{font-size:12.5px;font-weight:700}.amz-rev-body{margin-top:4px;font-size:12.5px;line-height:1.5}.amz-rev-meta{color:var(--muted);margin-top:5px;font-size:11px}.amz-verified{color:var(--green);font-weight:600}.amz-arow{align-items:center;gap:calc(var(--spacing) * 3);margin:7px 0;display:flex}.amz-aname{flex:40%;min-width:0;font-size:12.5px;font-weight:600}.amz-abrands{color:var(--muted);font-size:11px;font-weight:400;display:block}.amz-atrack{background:var(--tag);border-radius:999px;flex:40%;height:8px;overflow:hidden}.amz-afill{border-radius:999px;height:100%;display:block}.amz-amentions{color:var(--muted);text-align:right;flex:none;width:48px;font-size:11.5px}.amz-find{border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius-sm);background:var(--card);margin:7px 0;padding:10px 12px}.amz-find-driver{border-left-color:var(--green)}.amz-find-barrier{border-left-color:var(--red)}.amz-find-gap{border-left-color:var(--blue)}.amz-find-head{align-items:center;gap:calc(var(--spacing) * 2);flex-wrap:wrap;display:flex}.amz-find-label{font-size:13px;font-weight:700}.amz-find-detail{color:var(--muted);margin-top:4px;font-size:12.5px;line-height:1.5}.amz-evrow{gap:var(--spacing);flex-wrap:wrap;margin-top:7px;display:flex}.amz-ev{border:1px solid var(--border);background:var(--tag);color:var(--muted);cursor:pointer;border-radius:999px;padding:2px 8px;font-family:SF Mono,Monaco,monospace;font-size:10.5px}.amz-ev:hover{color:var(--fg);border-color:#f90}.amz-ev-quote{cursor:default;font-family:inherit}.amz-strength{gap:calc(var(--spacing) * 2);margin:6px 0;font-size:12.5px;display:flex}.amz-strength-brand{flex:none;min-width:110px;font-weight:700}.amz-strength-detail{color:var(--muted)}.amz-angle{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);margin:7px 0;padding:10px 12px}.amz-angle-claim{font-size:13px;font-weight:700}.amz-angle-row{color:var(--muted);margin-top:3px;font-size:12px}.amz-angle-risk{color:var(--amber)}.replies-strip{border-top:1px solid var(--border);margin-top:10px;padding-top:9px}.replies-head{text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;font-size:10.5px;font-weight:700}.replies-none{color:var(--muted);font-size:11.5px;font-style:italic}.reply-row{border-left:2px solid var(--border);margin-bottom:7px;padding-left:8px}.reply-meta{align-items:center;gap:var(--spacing);flex-wrap:wrap;margin-bottom:2px;display:flex}.reply-who{font-size:11px;font-weight:700}.reply-stat{color:var(--muted);font-size:10.5px}.reply-text{color:var(--fg);font-size:12.5px;line-height:1.45}}@layer utilities{.collapse{visibility:collapse}.invisible{visibility:hidden}.visible{visibility:visible}.absolute{position:absolute}.fixed{position:fixed}.relative{position:relative}.static{position:static}.bottom-3{bottom:calc(var(--spacing) * 3)}.left-3{left:calc(var(--spacing) * 3)}.isolate{isolation:isolate}.container{width:100%}@media (min-width:40rem){.container{max-width:40rem}}@media (min-width:48rem){.container{max-width:48rem}}@media (min-width:64rem){.container{max-width:64rem}}@media (min-width:80rem){.container{max-width:80rem}}@media (min-width:96rem){.container{max-width:96rem}}.m-0{margin:0}.mx-auto{margin-inline:auto}.mt-2{margin-top:calc(var(--spacing) * 2)}.mt-3{margin-top:calc(var(--spacing) * 3)}.mt-4{margin-top:calc(var(--spacing) * 4)}.mb-1{margin-bottom:var(--spacing)}.mb-2{margin-bottom:calc(var(--spacing) * 2)}.mb-3{margin-bottom:calc(var(--spacing) * 3)}.block{display:block}.contents{display:contents}.flex{display:flex}.grid{display:grid}.hidden{display:none}.inline{display:inline}.inline-flex{display:inline-flex}.table{display:table}.h-2{height:calc(var(--spacing) * 2)}.h-full{height:100%}.w-full{width:100%}.max-w-sm{max-width:var(--container-sm)}.shrink{flex-shrink:1}.grow{flex-grow:1}.border-collapse{border-collapse:collapse}.transform{transform:var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)}.resize{resize:both}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-center{justify-content:center}.gap-1{gap:var(--spacing)}.gap-2{gap:calc(var(--spacing) * 2)}.gap-3{gap:calc(var(--spacing) * 3)}.truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.overflow-hidden{overflow:hidden}.rounded-full{border-radius:3.40282e38px}.rounded-lg{border-radius:var(--radius-lg)}.rounded-xl{border-radius:var(--radius-xl)}.border{border-style:var(--tw-border-style);border-width:1px}.border-line{border-color:var(--border)}.bg-black{background-color:var(--color-black)}.bg-soft{background-color:var(--tag)}.bg-surface{background-color:var(--card)}.object-contain{object-fit:contain}.object-cover{object-fit:cover}.p-3{padding:calc(var(--spacing) * 3)}.px-3{padding-inline:calc(var(--spacing) * 3)}.px-5{padding-inline:calc(var(--spacing) * 5)}.px-6{padding-inline:calc(var(--spacing) * 6)}.py-1{padding-block:var(--spacing)}.py-4{padding-block:calc(var(--spacing) * 4)}.py-10{padding-block:calc(var(--spacing) * 10)}.pl-5{padding-left:calc(var(--spacing) * 5)}.text-center{text-align:center}.text-2xl{font-size:var(--text-2xl);line-height:var(--tw-leading,var(--text-2xl--line-height))}.text-base{font-size:var(--text-base);line-height:var(--tw-leading,var(--text-base--line-height))}.text-lg{font-size:var(--text-lg);line-height:var(--tw-leading,var(--text-lg--line-height))}.text-sm{font-size:var(--text-sm);line-height:var(--tw-leading,var(--text-sm--line-height))}.text-xs{font-size:var(--text-xs);line-height:var(--tw-leading,var(--text-xs--line-height))}.leading-relaxed{--tw-leading:var(--leading-relaxed);line-height:var(--leading-relaxed)}.leading-snug{--tw-leading:var(--leading-snug);line-height:var(--leading-snug)}.font-bold{--tw-font-weight:var(--font-weight-bold);font-weight:var(--font-weight-bold)}.font-extrabold{--tw-font-weight:var(--font-weight-extrabold);font-weight:var(--font-weight-extrabold)}.font-semibold{--tw-font-weight:var(--font-weight-semibold);font-weight:var(--font-weight-semibold)}.text-wrap{text-wrap:wrap}.text-ink{color:var(--fg)}.text-muted{color:var(--muted)}.text-white{color:var(--color-white)}.lowercase{text-transform:lowercase}.uppercase{text-transform:uppercase}.italic{font-style:italic}.shadow{--tw-shadow:0 1px 3px 0 var(--tw-shadow-color,#0000001a), 0 1px 2px -1px var(--tw-shadow-color,#0000001a);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.ring{--tw-ring-shadow:var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color,currentcolor);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.outline{outline-style:var(--tw-outline-style);outline-width:1px}.blur{--tw-blur:blur(8px);filter:var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,)}.filter{filter:var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,)}.transition{transition-property:color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to,opacity,box-shadow,transform,translate,scale,rotate,filter,-webkit-backdrop-filter,backdrop-filter,display,content-visibility,overlay,pointer-events;transition-timing-function:var(--tw-ease,var(--default-transition-timing-function));transition-duration:var(--tw-duration,var(--default-transition-duration))}.ease-in-out{--tw-ease:var(--ease-in-out);transition-timing-function:var(--ease-in-out)}.ease-out{--tw-ease:var(--ease-out);transition-timing-function:var(--ease-out)}.select-all{-webkit-user-select:all;user-select:all}}:root{color-scheme:light dark;--bg:#fafbfc;--fg:#111827;--muted:#5f6773;--border:#e5e7eb;--card:#fff;--card-hover:#f3f4f6;--tag:#f3f4f6;--accent:#14151a;--brand:#ff4d23;--brand-2:#ff8a3d;--brand-soft:#ff4d2321;--radius:10px;--radius-sm:6px;--transition:all .25s cubic-bezier(.4, 0, .2, 1);--shadow-md:0 4px 12px #00000014;--shadow-lg:0 8px 24px #0000001f;--green:#047857;--amber:#b45309;--red:#dc2626;--blue:#2563eb}@media (prefers-color-scheme:dark){:root{--bg:#0f172a;--fg:#f1f5f9;--muted:#a8b8cc;--border:#334155;--green:#34d399;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;--card:#1e293b;--card-hover:#273548;--tag:#1e293b;--accent:#e2e8f0;--brand:#ff5c33;--brand-2:#ff9351;--brand-soft:#ff5c3329;--shadow-md:0 4px 12px #0000004d;--shadow-lg:0 8px 24px #0006}}@property --tw-rotate-x{syntax:"*";inherits:false}@property --tw-rotate-y{syntax:"*";inherits:false}@property --tw-rotate-z{syntax:"*";inherits:false}@property --tw-skew-x{syntax:"*";inherits:false}@property --tw-skew-y{syntax:"*";inherits:false}@property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --tw-leading{syntax:"*";inherits:false}@property --tw-font-weight{syntax:"*";inherits:false}@property --tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-shadow-color{syntax:"*";inherits:false}@property --tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-shadow-color{syntax:"*";inherits:false}@property --tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-ring-color{syntax:"*";inherits:false}@property --tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-ring-color{syntax:"*";inherits:false}@property --tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-ring-inset{syntax:"*";inherits:false}@property --tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-outline-style{syntax:"*";inherits:false;initial-value:solid}@property --tw-blur{syntax:"*";inherits:false}@property --tw-brightness{syntax:"*";inherits:false}@property --tw-contrast{syntax:"*";inherits:false}@property --tw-grayscale{syntax:"*";inherits:false}@property --tw-hue-rotate{syntax:"*";inherits:false}@property --tw-invert{syntax:"*";inherits:false}@property --tw-opacity{syntax:"*";inherits:false}@property --tw-saturate{syntax:"*";inherits:false}@property --tw-sepia{syntax:"*";inherits:false}@property --tw-drop-shadow{syntax:"*";inherits:false}@property --tw-drop-shadow-color{syntax:"*";inherits:false}@property --tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-drop-shadow-size{syntax:"*";inherits:false}@property --tw-ease{syntax:"*";inherits:false}@keyframes spin{to{transform:rotate(360deg)}}
+@font-face{font-family:"Geist";src:url(data:font/woff2;base64,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) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}@layer base{*,:after,:before,::backdrop{box-sizing:border-box;border:0 solid;margin:0;padding:0}::file-selector-button{box-sizing:border-box;border:0 solid;margin:0;padding:0}html,:host{-webkit-text-size-adjust:100%;tab-size:4;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Noto Sans,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;line-height:1.5}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-feature-settings:normal;font-variation-settings:normal;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:1em}small{font-size:80%}sub,sup{vertical-align:baseline;font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}:-moz-focusring:where(:not(iframe)){outline:auto}progress{vertical-align:baseline}summary{display:list-item}ol,ul,menu{list-style:none}img,svg,video,canvas,audio,iframe,embed,object{vertical-align:middle;display:block}img,video{max-width:100%;height:auto}button,input,select,optgroup,textarea{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}::file-selector-button{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}:where(select:is([multiple],[size])) optgroup{font-weight:bolder}:where(select:is([multiple],[size])) optgroup option{padding-inline-start:20px}::file-selector-button{margin-inline-end:4px}::placeholder{opacity:1}@supports (not ((-webkit-appearance:-apple-pay-button))) or (contain-intrinsic-size:1px){::placeholder{color:currentColor}@supports (color:color-mix(in lab, red, red)){::placeholder{color:color-mix(in oklab, currentcolor 50%, transparent)}}}textarea{resize:vertical}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-date-and-time-value{min-height:1lh;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-datetime-edit{padding-block:0}::-webkit-datetime-edit-year-field{padding-block:0}::-webkit-datetime-edit-month-field{padding-block:0}::-webkit-datetime-edit-day-field{padding-block:0}::-webkit-datetime-edit-hour-field{padding-block:0}::-webkit-datetime-edit-minute-field{padding-block:0}::-webkit-datetime-edit-second-field{padding-block:0}::-webkit-datetime-edit-millisecond-field{padding-block:0}::-webkit-datetime-edit-meridiem-field{padding-block:0}::-webkit-calendar-picker-indicator{line-height:1}:-moz-ui-invalid{box-shadow:none}button,input:where([type=button],[type=reset],[type=submit]){appearance:button}::file-selector-button{appearance:button}::-webkit-inner-spin-button{height:auto}::-webkit-outer-spin-button{height:auto}[hidden]:where(:not([hidden=until-found])){display:none!important}}:root{--background:#fff;--foreground:#0a0a0a;--card:#fff;--card-foreground:var(--foreground);--popover:#fff;--popover-foreground:var(--foreground);--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--secondary-foreground:#171717;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--accent-foreground:#171717;--destructive:#e7000b;--border:#e5e5e5;--input:#e5e5e5;--ring:#a1a1a1;--chart-1:#171717;--chart-2:#525252;--chart-3:#a3a3a3;--chart-4:#d4d4d4;--chart-5:#e5e5e5;--sidebar:#fafafa;--sidebar-foreground:#0a0a0a;--sidebar-primary:#171717;--sidebar-primary-foreground:#fafafa;--sidebar-accent:#f5f5f5;--sidebar-accent-foreground:#171717;--sidebar-border:#e5e5e5;--sidebar-ring:#a1a1a1;--overlay:#00000080;--success:#15803d;--success-soft:#f0fdf4;--warning:#b45309;--warning-soft:#fffbeb;--destructive-soft:#fef2f2;--neutral-mark:#a3a3a3;--ink:var(--foreground);--faint:#a3a3a3;--background-soft:#fafafa;--border-soft:#f5f5f5;--info:var(--foreground);--code-keyword:var(--foreground);--code-string:#15803d;--code-comment:var(--muted-foreground);--space-1:4px;--space-1_5:6px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--radius-xs:4px;--radius-sm:6px;--radius-md:8px;--radius-lg:10px;--radius-xl:14px;--radius-3xl:24px;--radius-full:9999px;--shadow-xs:0 1px 2px 0 #0000000d;--shadow-sm:0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;--shadow-md:0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a;--shadow-lg:0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;--font-sans:"Geist", ui-sans-serif, system-ui, sans-serif;--font-mono:"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace}@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--popover:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--secondary-foreground:#fafafa;--muted:#262626;--muted-foreground:#a1a1a1;--accent:#262626;--accent-foreground:#fafafa;--destructive:#ff6467;--border:#ffffff1a;--input:#ffffff26;--ring:#737373;--chart-1:#fafafa;--chart-2:#d4d4d4;--chart-4:#525252;--chart-5:#404040;--sidebar:#171717;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;--sidebar-primary-foreground:#171717;--sidebar-accent:#262626;--sidebar-accent-foreground:#fafafa;--sidebar-border:#ffffff1a;--sidebar-ring:#737373;--success:#4ade80;--success-soft:#052e16;--warning:#fbbf24;--warning-soft:#451a03;--destructive-soft:#450a0a;--neutral-mark:#737373;--faint:#525252;--background-soft:#0a0a0a;--border-soft:#ffffff0f;--code-string:#4ade80;--shadow-xs:0 1px 2px 0 #0000004d;--shadow-sm:0 1px 3px 0 #0006,0 1px 2px -1px #0006;--shadow-md:0 4px 6px -1px #0006,0 2px 4px -2px #0006}}:root[data-theme=dark]{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--popover:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--secondary-foreground:#fafafa;--muted:#262626;--muted-foreground:#a1a1a1;--accent:#262626;--accent-foreground:#fafafa;--destructive:#ff6467;--border:#ffffff1a;--input:#ffffff26;--ring:#737373;--chart-1:#fafafa;--chart-2:#d4d4d4;--chart-4:#525252;--chart-5:#404040;--sidebar:#171717;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;--sidebar-primary-foreground:#171717;--sidebar-accent:#262626;--sidebar-accent-foreground:#fafafa;--sidebar-border:#ffffff1a;--sidebar-ring:#737373;--success:#4ade80;--success-soft:#052e16;--warning:#fbbf24;--warning-soft:#451a03;--destructive-soft:#450a0a;--neutral-mark:#737373;--faint:#525252;--background-soft:#0a0a0a;--border-soft:#ffffff0f;--code-string:#4ade80;--shadow-xs:0 1px 2px 0 #0000004d;--shadow-sm:0 1px 3px 0 #0006,0 1px 2px -1px #0006;--shadow-md:0 4px 6px -1px #0006,0 2px 4px -2px #0006}.nt-icon{vertical-align:middle;pointer-events:none;flex:none;display:inline-block}:where(button,a,[tabindex],input,textarea,select):focus-visible{box-shadow:0 0 0 3px var(--ring);outline:none}@supports (color:color-mix(in lab, red, red)){:where(button,a,[tabindex],input,textarea,select):focus-visible{box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent)}}@keyframes nt-spin{to{transform:rotate(360deg)}}@keyframes nt-fade{0%,to{opacity:.2}50%{opacity:1}}@keyframes nt-fade-in{0%{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}.nt-spin{animation:1s linear infinite nt-spin}.nt-muted{color:var(--muted-foreground)}.nt-destructive{color:var(--destructive)}.nt-mono{font-family:var(--font-mono)}.nt-grow{flex:1}.nt-min0{min-width:0}.nt-trunc{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-empty-line{text-align:center;color:var(--muted-foreground);margin:0;padding:24px 12px;font-size:13px}.nt-btn{white-space:nowrap;border-radius:var(--radius-md);font:450 13px/18px var(--font-sans);cursor:pointer;-webkit-user-select:none;user-select:none;border:1px solid #0000;outline:none;flex-shrink:0;justify-content:center;align-items:center;gap:8px;text-decoration:none;transition:color .15s,background-color .15s,border-color .15s,box-shadow .15s;display:inline-flex}.nt-btn:disabled{opacity:.5;pointer-events:none}.nt-btn .nt-icon{width:15px;height:15px}.nt-btn--size-default{height:32px;padding:6px 14px}.nt-btn--size-default:has(>.nt-icon){padding-left:12px;padding-right:12px}.nt-btn--size-xs{gap:4px;height:24px;padding:0 8px;font-size:11.5px}.nt-btn--size-sm{gap:6px;height:28px;padding:0 10px}.nt-btn--size-sm:has(>.nt-icon){padding-left:10px;padding-right:10px}.nt-btn--size-icon{width:32px;height:32px;padding:0}.nt-btn--size-icon-sm{width:28px;height:28px;padding:0}.nt-btn--default{background:var(--primary);color:var(--primary-foreground);box-shadow:var(--shadow-xs)}.nt-btn--default:hover{background:var(--primary)}@supports (color:color-mix(in lab, red, red)){.nt-btn--default:hover{background:color-mix(in srgb, var(--primary) 90%, transparent)}}.nt-btn--secondary{background:var(--secondary);color:var(--secondary-foreground);box-shadow:var(--shadow-xs)}.nt-btn--secondary:hover{background:var(--secondary)}@supports (color:color-mix(in lab, red, red)){.nt-btn--secondary:hover{background:color-mix(in srgb, var(--secondary) 80%, transparent)}}.nt-btn--outline{background:var(--background);color:var(--foreground);border-color:var(--input);box-shadow:var(--shadow-xs)}[data-theme=dark] .nt-btn--outline{background:var(--input)}@supports (color:color-mix(in lab, red, red)){[data-theme=dark] .nt-btn--outline{background:color-mix(in srgb, var(--input) 30%, transparent)}}.nt-btn--outline:hover{background:var(--accent);color:var(--accent-foreground)}.nt-btn--ghost{color:var(--foreground);background:0 0}.nt-btn--ghost:hover,.nt-btn--ghost.is-on{background:var(--accent);color:var(--accent-foreground)}.nt-btn--destructive{background:var(--destructive);color:#fff;box-shadow:var(--shadow-xs)}.nt-btn--destructive:hover{background:var(--destructive)}@supports (color:color-mix(in lab, red, red)){.nt-btn--destructive:hover{background:color-mix(in srgb, var(--destructive) 90%, transparent)}}.nt-btn--link{color:var(--primary);height:auto;box-shadow:none;background:0 0;padding:0}.nt-btn--link:hover{text-underline-offset:4px;text-decoration:underline}.nt-card-action{grid-row:1/span 2;grid-column-start:2;place-self:start end}.nt-badge{border-radius:var(--radius-md);width:fit-content;font:450 11.5px/16px var(--font-sans);white-space:nowrap;border:1px solid #0000;flex-shrink:0;justify-content:center;align-items:center;gap:4px;padding:2px 8px;display:inline-flex;overflow:hidden}.nt-badge .nt-icon{width:12px;height:12px}.nt-badge--default{background:var(--primary);color:var(--primary-foreground)}.nt-badge--secondary{background:var(--secondary);color:var(--secondary-foreground)}.nt-badge--outline,.nt-badge--off{border-color:var(--border);color:var(--foreground)}.nt-badge--off{color:var(--muted-foreground)}.nt-badge--success{border-color:var(--border);color:var(--success)}.nt-badge--warning{border-color:var(--border);color:var(--warning)}.nt-badge--destructive{background:var(--destructive);color:#fff}.nt-stat-pill{border-radius:var(--radius-md);border:1px solid var(--border);color:var(--foreground);font:450 11.5px/16px var(--font-sans);font-variant-numeric:tabular-nums;align-items:center;gap:4px;padding:2px 8px;display:inline-flex}.nt-stat-pill b{font-weight:550}.nt-avatar{border-radius:var(--radius-full);background:var(--muted);color:var(--foreground);font:450 11.5px/1 var(--font-sans);flex:none;justify-content:center;align-items:center;display:inline-flex;position:relative;overflow:hidden}.nt-avatar.is-square{border-radius:var(--radius-lg)}.nt-avatar img{object-fit:cover;width:100%;height:100%}.nt-tabs-list{border-radius:var(--radius-lg);background:var(--muted);width:fit-content;height:32px;color:var(--muted-foreground);justify-content:center;align-items:center;padding:3px;display:inline-flex}.nt-tabs-trigger{border-radius:var(--radius-md);height:100%;color:var(--foreground);font:450 13px/18px var(--font-sans);white-space:nowrap;cursor:pointer;background:0 0;border:1px solid #0000;flex:1;justify-content:center;align-items:center;gap:6px;padding:4px 8px;transition:color .15s,box-shadow .15s;display:inline-flex}[data-theme=dark] .nt-tabs-trigger{color:var(--muted-foreground)}.nt-tabs-trigger.is-active{background:var(--background);box-shadow:var(--shadow-sm)}[data-theme=dark] .nt-tabs-trigger.is-active{color:var(--foreground);background:var(--input)}@supports (color:color-mix(in lab, red, red)){[data-theme=dark] .nt-tabs-trigger.is-active{background:color-mix(in srgb, var(--input) 30%, transparent)}}[data-theme=dark] .nt-tabs-trigger.is-active{border-color:var(--input)}.nt-chevron{transition:transform .2s}.nt-chevron.is-open{transform:rotate(180deg)}.nt-sk{background:var(--accent);border-radius:var(--radius-md);animation:2s cubic-bezier(.4,0,.6,1) infinite nt-sk-pulse;display:block}@keyframes nt-sk-pulse{50%{opacity:.5}}.nt-progress{font-family:var(--font-sans);align-items:center;gap:12px;display:flex}.nt-progress-track{border-radius:var(--radius-full);background:var(--primary);flex:1;width:100%;height:8px;display:block;position:relative}@supports (color:color-mix(in lab, red, red)){.nt-progress-track{background:color-mix(in srgb, var(--primary) 20%, transparent)}}.nt-progress-track{overflow:hidden}.nt-progress-fill{background:var(--primary);height:100%;transition:width .5s;display:block}.nt-mark{color:var(--ink);flex:none;display:block}.nt-mark.is-scanning .nt-mark-iris{animation:3.6s cubic-bezier(.5,0,.5,1) infinite nt-mk-scan}.nt-mark.is-scanning .nt-mark-lid{transform-box:fill-box;transform-origin:50%;animation:5.4s ease-in-out infinite nt-mk-blink}@keyframes nt-mk-scan{0%{transform:translate(0)}18%{transform:translate(-15px,7px)}34%{transform:translate(11px,-5px)}52%{transform:translate(-8px,12px)}70%{transform:translate(14px,3px)}86%{transform:translate(-4px,-6px)}to{transform:translate(0)}}@keyframes nt-mk-blink{0%,88%,to{transform:scaleY(1)}93%{transform:scaleY(.08)}}.nt-loadbar{border-radius:var(--radius-full);background:var(--muted);height:3px;position:relative;overflow:hidden}.nt-loadbar:after{content:"";border-radius:var(--radius-full);background:var(--foreground);width:42%;animation:1.35s cubic-bezier(.45,0,.55,1) infinite nt-sweep;position:absolute;top:0;bottom:0}@keyframes nt-sweep{0%{left:-45%}50%{left:58%}to{left:-45%}}.nt-table-wrap{overflow-x:auto}.nt-table{border-collapse:collapse;width:100%;font:400 13px/18px var(--font-sans);caption-side:bottom}.nt-table th{text-align:left;vertical-align:middle;height:40px;color:var(--foreground);white-space:nowrap;border-bottom:1px solid var(--border);padding:0 12px;font-weight:450}.nt-table td{vertical-align:middle;border-bottom:1px solid var(--border);color:var(--foreground);white-space:nowrap;padding:8px 12px}.nt-table tbody tr{transition:background-color .15s}.nt-table tbody tr:hover{background:var(--muted)}@supports (color:color-mix(in lab, red, red)){.nt-table tbody tr:hover{background:color-mix(in srgb, var(--muted) 50%, transparent)}}.nt-table tr:last-child td{border-bottom:none}.nt-table td.is-name{font-family:var(--font-mono);font-size:12.5px}.nt-table td.is-strong{font-weight:450}.nt-table .is-num{text-align:right;font-variant-numeric:tabular-nums}.nt-section{border-bottom:1px solid var(--border);font-family:var(--font-sans)}.nt-section-header{cursor:pointer;width:100%;color:var(--foreground);text-align:left;border-radius:var(--radius-md);background:0 0;border:0;justify-content:space-between;align-items:flex-start;gap:16px;padding:16px 0;display:flex}.nt-section-header:hover .nt-section-label{text-underline-offset:4px;text-decoration:underline}.nt-section-header .nt-icon{color:var(--muted-foreground)}.nt-section-label{font:450 13px/18px var(--font-sans)}.nt-section-content{color:var(--foreground);padding:0 0 16px;font-size:13px;line-height:18px}.nt-gallery-wrap{max-width:100%;position:relative}.nt-gallery{scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:12px;padding:2px 0 8px;display:flex;overflow-x:auto}.nt-gallery::-webkit-scrollbar{display:none}.nt-gallery>*{scroll-snap-align:start;flex:none}.nt-gallery-dots{justify-content:center;gap:6px;margin-top:10px;display:flex}.nt-gallery-dot{background:var(--border);cursor:pointer;border:none;border-radius:50%;width:8px;height:8px;padding:0;transition:all .25s cubic-bezier(.4,0,.2,1)}.nt-gallery-dot.is-active{border-radius:var(--radius-full);background:var(--ink);width:20px}.nt-gallery-nav{z-index:2;border:1px solid var(--border);background:var(--card);width:32px;height:32px;color:var(--foreground);cursor:pointer;opacity:0;border-radius:50%;justify-content:center;align-items:center;transition:all .25s;display:flex;position:absolute;top:50%;transform:translateY(-60%)}.nt-gallery-wrap:hover .nt-gallery-nav,.nt-gallery-nav:focus-visible{opacity:1}.nt-gallery-nav:hover{background:var(--primary);color:var(--primary-foreground)}.nt-gallery-nav.is-prev{left:2px}.nt-gallery-nav.is-next{right:2px}.nt-quote{border-radius:var(--radius-sm);background:var(--muted);color:var(--foreground);font:550 12.5px/1.45 var(--font-sans);padding:10px 14px;position:relative}.nt-quote-at{font:600 10.5px/1.4 var(--font-mono);font-variant-numeric:tabular-nums;color:var(--muted-foreground);margin-bottom:4px;display:block}.nt-copy-btn{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--muted-foreground);font:450 10px/1.4 var(--font-sans);cursor:pointer;opacity:0;padding:3px 8px;transition:all .16s;position:absolute;top:8px;right:8px}.nt-quote:hover .nt-copy-btn,.nt-copy-btn:focus-visible{opacity:1}.nt-copy-btn:hover{background:var(--primary);color:var(--primary-foreground)}.nt-empty{text-align:center;border:1px dashed var(--border);border-radius:var(--radius-lg);color:var(--muted-foreground);font:400 13px/18px var(--font-sans);flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:48px 24px;display:flex}.nt-empty>.nt-mark,.nt-empty>svg:first-child{color:var(--foreground);margin-bottom:8px}.nt-empty-title{font:450 16px/24px var(--font-sans);letter-spacing:-.025em;color:var(--foreground);margin:0}.nt-mark{color:currentColor}.nt-glyph{vertical-align:middle;flex:none;display:inline-block}.nt-view{border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);color:var(--card-foreground);box-shadow:var(--shadow-sm);font-family:var(--font-sans);overflow:hidden}.nt-view.is-pad{padding:24px}.nt-view-head{flex-wrap:wrap;align-items:center;gap:6px 8px;padding:20px 24px 16px;display:flex}.nt-view-head>.nt-icon{color:var(--muted-foreground);width:16px;height:16px}.nt-view-title{font:550 14px/1 var(--font-sans);color:var(--card-foreground);align-items:center;gap:8px;margin:0;display:flex}.nt-view-title.is-80{color:var(--card-foreground)}.nt-view-head>.nt-card-action,.nt-view-head>[style*="margin-left: auto"]{order:2;margin-left:auto}.nt-view-desc{color:var(--muted-foreground);flex-basis:100%;order:3;margin:0;font-size:13px;line-height:18px}.nt-view-foot{border-top:1px solid var(--border);color:var(--muted-foreground);padding:12px 24px;font-size:11.5px}.nt-tag{border:1px solid var(--border);border-radius:var(--radius-md);font:450 11.5px/16px var(--font-sans);color:var(--foreground);white-space:nowrap;font-variant-numeric:tabular-nums;align-items:center;padding:2px 8px;display:inline-flex}.nt-tag.is-fg{color:var(--foreground)}.nt-tag.is-caps{background:var(--secondary);border-color:#0000}.nt-segmented{border-radius:var(--radius-md);box-shadow:var(--shadow-xs);flex-wrap:wrap;display:inline-flex}.nt-segmented.is-stretch{display:flex}.nt-segmented.is-stretch .nt-segmented-opt{flex:1}.nt-segmented-opt{border:1px solid var(--input);background:var(--background);min-width:32px;height:32px;color:var(--foreground);font:450 13px/1 var(--font-sans);cursor:pointer;border-radius:0;margin-left:-1px;padding:0 12px;transition:background-color .15s}.nt-segmented-opt:first-child{border-top-left-radius:var(--radius-md);border-bottom-left-radius:var(--radius-md);margin-left:0}.nt-segmented-opt:last-child{border-top-right-radius:var(--radius-md);border-bottom-right-radius:var(--radius-md)}.nt-segmented-opt:hover{background:var(--muted);color:var(--muted-foreground)}.nt-segmented-opt.is-on{background:var(--accent);color:var(--accent-foreground)}.nt-commerce-fade{animation:.2s ease-out nt-fade-in}.nt-commerce-pad{padding-left:24px;padding-right:24px}.nt-commerce-pad-b{padding-bottom:24px}.nt-commerce-chiprow{flex-wrap:wrap;gap:6px;display:flex}.nt-commerce-tone{gap:4px}.nt-commerce-tone b{font-variant-numeric:tabular-nums;font-weight:550}.nt-commerce-tone.is-success{color:var(--success)}.nt-commerce-tone.is-warning{color:var(--warning)}.nt-commerce-tone.is-destructive{color:var(--destructive)}.nt-commerce-tone.is-muted{color:var(--muted-foreground)}.nt-commerce-tone.is-success b,.nt-commerce-tone.is-warning b,.nt-commerce-tone.is-destructive b{color:var(--foreground)}.nt-commerce-note{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--muted);color:var(--muted-foreground);font:400 11.5px/16px var(--font-sans);align-items:flex-start;gap:8px;padding:10px 12px;display:flex}.nt-commerce-note>.nt-icon{margin-top:1px}.nt-commerce-note.is-row{align-items:center;padding:6px 6px 6px 12px}.nt-commerce-note.is-row>.nt-icon{margin-top:0}.nt-commerce-lede{border-radius:var(--radius-lg);background:var(--muted);color:var(--foreground);font:400 13px/20px var(--font-sans);margin:0;padding:12px 14px}.nt-commerce-prose{font:400 13px/20px var(--font-sans);color:var(--foreground);margin:0}.nt-commerce-mtile{border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-xs);background:#fff;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex;overflow:hidden}.nt-commerce-mtile.is-wordmark{padding:0 8px}.nt-commerce-mtile.is-generic{background:var(--muted);color:var(--muted-foreground);font-weight:550}.nt-commerce-scan{flex-direction:column;min-width:0;display:flex}.nt-commerce-head,.nt-commerce-phead{flex-wrap:wrap;align-items:center;gap:8px 12px;min-width:0;padding:20px 24px 16px;display:flex}.nt-commerce-head-text{flex-direction:column;flex:160px;gap:6px;min-width:0;display:flex}.nt-commerce-head-title{font:550 14px/1 var(--font-sans);color:var(--card-foreground);text-overflow:ellipsis;white-space:nowrap;margin:0;overflow:hidden}.nt-commerce-head-sub{font:400 13px/18px var(--font-sans);color:var(--muted-foreground);text-overflow:ellipsis;white-space:nowrap;margin:0;overflow:hidden}.nt-commerce-running{color:var(--foreground)}.nt-commerce-progress{margin:-4px 0 16px}.nt-commerce-progress .nt-progress-track{height:4px}.nt-commerce-tabbar{scrollbar-width:none;padding:0 24px 16px;overflow-x:auto}.nt-commerce-tabbar::-webkit-scrollbar{display:none}.nt-commerce-strip{border:1px solid var(--border);border-radius:var(--radius-lg);flex-wrap:wrap;margin-bottom:16px;display:flex;overflow:hidden}.nt-commerce-stat{border-top:1px solid var(--border);border-left:1px solid var(--border);background:var(--card);flex-direction:column;flex:136px;gap:2px;min-width:0;margin:-1px 0 0 -1px;padding:10px 12px;display:flex}.nt-commerce-stat-k{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground)}.nt-commerce-stat-v{font:550 18px/24px var(--font-sans);letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--card-foreground);overflow-wrap:anywhere}.nt-commerce-stat-d{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-commerce-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;display:grid}.nt-commerce-tile{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--card);min-width:0;color:var(--card-foreground);text-align:left;font:400 13px/18px var(--font-sans);cursor:pointer;align-items:flex-start;gap:12px;padding:12px;transition:background-color .15s;display:flex}.nt-commerce-tile:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-commerce-tile:hover{background:color-mix(in srgb, var(--accent) 50%, var(--card))}}.nt-commerce-tile-body{flex-direction:column;flex:1;gap:3px;min-width:0;display:flex}.nt-commerce-tile-go{color:var(--muted-foreground);align-self:center}.nt-commerce-thumb{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--muted);flex:none;justify-content:center;align-items:center;display:inline-flex;overflow:hidden}.nt-commerce-thumb img{object-fit:cover;width:100%;height:100%}.nt-commerce-thumb.is-empty{color:var(--muted-foreground);font-family:var(--font-sans);letter-spacing:.02em;font-weight:550}.nt-commerce-brand{font:450 11.5px/16px var(--font-sans);color:var(--muted-foreground)}.nt-commerce-title{-webkit-line-clamp:2;font:450 13px/18px var(--font-sans);color:var(--foreground);-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.nt-commerce-line{flex-wrap:wrap;align-items:center;gap:2px 6px;min-width:0;display:flex}.nt-commerce-line.is-wrap{flex-wrap:wrap}.nt-commerce-stars{color:var(--muted-foreground);align-items:center;gap:1px;display:inline-flex}@supports (color:color-mix(in lab, red, red)){.nt-commerce-stars{color:color-mix(in srgb, var(--muted-foreground) 45%, transparent)}}.nt-commerce-stars .is-on{color:var(--foreground)}.nt-commerce-rating{font:550 12px/16px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--foreground)}.nt-commerce-count,.nt-commerce-sub{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);font-variant-numeric:tabular-nums;white-space:nowrap}.nt-commerce-price{font:550 13px/18px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--foreground);white-space:nowrap}.nt-commerce-neg{border:1px solid var(--border);border-radius:var(--radius-sm);font:450 11.5px/16px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--muted-foreground);white-space:nowrap;align-items:center;gap:2px;padding:0 6px;display:inline-flex}.nt-commerce-detail{flex-direction:column;padding-bottom:8px;display:flex}.nt-commerce-back{color:var(--muted-foreground);margin-bottom:8px;margin-left:-10px}.nt-commerce-dhead{align-items:flex-start;gap:16px;min-width:0;padding:0 24px 16px;display:flex}.nt-commerce-dfacts{flex-direction:column;flex:1;gap:6px;min-width:0;display:flex}.nt-commerce-dfacts .nt-btn{margin-top:4px}.nt-commerce-dtitle{font:550 14px/20px var(--font-sans);color:var(--foreground)}.nt-commerce-block{border-top:1px solid var(--border);flex-direction:column;gap:8px;padding:16px 24px;display:flex}.nt-commerce-block-title{font:550 13px/18px var(--font-sans);color:var(--foreground);align-items:center;gap:6px;display:flex}.nt-commerce-block-title>.nt-icon{color:var(--muted-foreground)}.nt-commerce-block-note{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);margin-top:-4px}.nt-commerce-feats{font:400 13px/20px var(--font-sans);color:var(--foreground);margin:0;padding-left:18px}.nt-commerce-feats li+li{margin-top:2px}.nt-commerce-detail>.nt-commerce-pad>.nt-commerce-note{margin:4px 0 16px}.nt-commerce-revlist{flex-direction:column;display:flex}.nt-commerce-revlist>.nt-commerce-block-title{border-top:1px solid var(--border);padding-top:16px;padding-bottom:4px}.nt-commerce-hist{flex-direction:column;gap:4px;max-width:420px;display:flex}.nt-commerce-hrow{font:450 11.5px/16px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--muted-foreground);grid-template-columns:26px 1fr 38px;align-items:center;gap:8px;display:grid}.nt-commerce-hstar{color:var(--foreground);align-items:center;gap:2px;display:inline-flex}.nt-commerce-hstar .nt-icon{color:var(--muted-foreground)}.nt-commerce-htrack,.nt-commerce-atrack{border-radius:var(--radius-full);background:var(--muted);height:8px;display:block;position:relative;overflow:hidden}.nt-commerce-hfill,.nt-commerce-afill{border-radius:var(--radius-full);height:100%;display:block}.nt-commerce-hfill.is-good,.nt-commerce-afill.is-good{background:var(--success)}.nt-commerce-hfill.is-mid,.nt-commerce-afill.is-mid{background:var(--warning)}.nt-commerce-hfill.is-bad,.nt-commerce-afill.is-bad{background:var(--destructive)}.nt-commerce-hpct{text-align:right}.nt-commerce-filters{flex-wrap:wrap;gap:6px;padding-bottom:12px;display:flex}.nt-commerce-toggle{border:1px solid var(--input);border-radius:var(--radius-md);height:28px;color:var(--foreground);font:450 13px/18px var(--font-sans);cursor:pointer;box-shadow:var(--shadow-xs);background:0 0;align-items:center;gap:4px;padding:0 10px;transition:background-color .15s;display:inline-flex}.nt-commerce-toggle .nt-icon{color:var(--muted-foreground)}.nt-commerce-toggle b{color:var(--muted-foreground);font-variant-numeric:tabular-nums;margin-left:2px;font-weight:450}.nt-commerce-toggle:hover{background:var(--accent)}.nt-commerce-toggle.is-on{background:var(--accent);box-shadow:none;border-color:#0000}.nt-commerce-toggle.is-on b{color:var(--foreground)}.nt-commerce-filters+.nt-commerce-pad>.nt-commerce-note{margin-bottom:12px}.nt-commerce-rev{border-top:1px solid var(--border);flex-direction:column;gap:4px;padding:12px 24px;transition:background-color .15s;display:flex}.nt-commerce-rev:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-commerce-rev:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-commerce-rev.is-focus{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-commerce-rev.is-focus{background:color-mix(in srgb, var(--accent) 70%, transparent)}}.nt-commerce-rev.is-focus{box-shadow:inset 2px 0 0 var(--foreground)}.nt-commerce-rev-head{align-items:center;gap:8px;min-width:0;display:flex}.nt-commerce-rev-title{text-overflow:ellipsis;white-space:nowrap;min-width:0;font:550 13px/18px var(--font-sans);color:var(--foreground);flex:1;overflow:hidden}.nt-commerce-rev-pin{margin-left:auto}.nt-commerce-rev-body{font:400 13px/20px var(--font-sans);color:var(--foreground)}.nt-commerce-rev-meta{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);flex-wrap:wrap;align-items:center;gap:4px 10px;display:flex}.nt-commerce-verified{color:var(--success);align-items:center;gap:3px;display:inline-flex}.nt-commerce-rid{font-size:11px}.nt-commerce-scan>.nt-commerce-fade>.nt-commerce-revlist:last-child,.nt-commerce-detail>.nt-commerce-revlist:last-child{padding-bottom:8px}.nt-commerce-arows{flex-direction:column;margin-top:8px;display:flex}.nt-commerce-arow{border-top:1px solid var(--border);grid-template-columns:minmax(0,1.2fr) minmax(64px,1fr) 48px;align-items:center;gap:12px;padding:10px 24px;display:grid}.nt-commerce-aname{flex-direction:column;min-width:0;display:flex}.nt-commerce-aname-t{font:450 13px/18px var(--font-sans);color:var(--foreground);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-commerce-abrands{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground)}.nt-commerce-amentions{text-align:right;font:450 13px/18px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--foreground)}.nt-commerce-arows+.nt-commerce-pad{border-top:1px solid var(--border);padding-top:12px}.nt-commerce-scan>.nt-commerce-fade>.nt-commerce-pad>.nt-commerce-lede{margin-bottom:16px}.nt-commerce-find{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--card);flex-direction:column;gap:4px;padding:10px 12px;display:flex}.nt-commerce-find-head{flex-wrap:wrap;align-items:center;gap:6px 8px;display:flex}.nt-commerce-find-kind{border-radius:var(--radius-sm);background:var(--muted);width:22px;height:22px;color:var(--foreground);flex:none;justify-content:center;align-items:center;display:inline-flex}.nt-commerce-find-label{min-width:0;font:550 13px/18px var(--font-sans);color:var(--foreground);flex:1}.nt-commerce-find-detail{font:400 13px/20px var(--font-sans);color:var(--muted-foreground);padding-left:30px}.nt-commerce-evrow{flex-wrap:wrap;gap:6px;margin-top:2px;padding-left:30px;display:flex}.nt-commerce-ev{border:1px solid var(--input);border-radius:var(--radius-sm);max-width:100%;height:22px;color:var(--foreground);font:450 11.5px/16px var(--font-sans);cursor:pointer;box-shadow:var(--shadow-xs);background:0 0;align-items:center;gap:4px;padding:0 8px;display:inline-flex}.nt-commerce-ev .nt-icon{color:var(--muted-foreground)}.nt-commerce-ev:hover{background:var(--accent)}.nt-commerce-ev.is-quote{background:var(--muted);height:auto;min-height:22px;color:var(--muted-foreground);cursor:default;box-shadow:none;white-space:normal;border-color:#0000;font-style:italic}.nt-commerce-strength{font:400 13px/20px var(--font-sans);grid-template-columns:96px minmax(0,1fr);align-items:baseline;gap:12px;display:grid}.nt-commerce-strength-brand{min-width:0;color:var(--foreground);font-weight:550}.nt-commerce-strength-detail{color:var(--muted-foreground)}.nt-commerce-angle{border:1px solid var(--border);border-radius:var(--radius-lg);flex-direction:column;gap:2px;padding:10px 12px;display:flex}.nt-commerce-angle-claim{font:550 13px/18px var(--font-sans);color:var(--foreground);margin-bottom:2px}.nt-commerce-angle-row{font:400 13px/20px var(--font-sans);color:var(--muted-foreground)}.nt-commerce-angle-row b{color:var(--foreground);margin-right:6px;font-weight:450}.nt-commerce-angle-row.is-risk b{color:var(--warning)}.nt-commerce-block+.nt-commerce-pad-b,.nt-commerce-block+.nt-commerce-pad{border-top:1px solid var(--border);padding-top:16px}.nt-commerce-foot{align-items:flex-start;gap:6px;display:flex}.nt-commerce-foot>.nt-icon{color:var(--warning);margin-top:1px}.nt-commerce-loading{min-width:0;font-family:var(--font-sans);color:var(--foreground);animation:.4s ease-out nt-fade-in}.nt-commerce-loading .nt-mark{color:var(--foreground)}.nt-commerce-lbar{margin-bottom:14px}.nt-commerce-lhead{min-width:0;font:550 12.5px/18px var(--font-sans);color:var(--muted-foreground);align-items:center;gap:8px;margin-bottom:11px;display:flex}.nt-commerce-lhead-t{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.nt-commerce-lprice{white-space:nowrap;color:var(--primary);font-variant-numeric:tabular-nums;flex:none;margin-left:auto;font-weight:550}.nt-commerce-lknown{flex-wrap:wrap;gap:8px;margin-bottom:11px;display:flex}.nt-commerce-lfact{border:1px solid var(--border);border-radius:var(--radius-full);background:var(--card);max-width:100%;color:var(--foreground);font:550 12px/18px var(--font-sans);text-overflow:ellipsis;white-space:nowrap;align-items:center;gap:8px;padding:4px 11px;display:inline-flex;overflow:hidden}.nt-commerce-lfact-mark{display:inline-flex}.nt-commerce-lcard{border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);width:100%;overflow:hidden}.nt-commerce-lcard-body{padding:14px 16px}.nt-commerce-led{padding:4px 14px 12px}.nt-commerce-led-row{border-bottom:1px solid var(--border);align-items:flex-start;gap:12px;padding:10px 0;display:flex}.nt-commerce-led-mark{flex:none;justify-content:center;align-items:center;width:16px;margin-top:1px;display:inline-flex}.nt-commerce-led-dot{border:1px solid var(--border);border-radius:50%;flex:none;width:13px;height:13px;margin-top:2px}.nt-commerce-led-body{flex:1;min-width:0}.nt-commerce-led-label{font:550 12.5px/18px var(--font-sans);color:var(--foreground)}.nt-commerce-led-detail{font:400 11px/16px var(--font-sans);color:var(--muted-foreground);margin-top:1px}.nt-commerce-led-cost{border-radius:var(--radius-full);background:var(--muted);color:var(--foreground);font:550 11.5px/16px var(--font-sans);font-variant-numeric:tabular-nums;flex:none;align-items:center;padding:2px 9px;display:inline-flex}.nt-commerce-led-foot{font:400 11.5px/1.5 var(--font-sans);color:var(--muted-foreground);margin-top:10px}.nt-commerce-sk{border-radius:var(--radius-sm);display:block}.nt-commerce-skcard{border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);flex:none;width:min(340px,86vw);min-width:min(340px,86vw);overflow:hidden}.nt-commerce-skmedia{aspect-ratio:9/16;border-radius:0;width:100%;max-height:420px}.nt-commerce-skbody{padding:13px 14px}.nt-commerce-skline{height:11px;margin-top:8px}.nt-commerce-skline.is-w40{width:40%}.nt-commerce-skline.is-w60{width:60%}.nt-commerce-skline.is-w80{width:80%}.nt-commerce-skpill{border-radius:var(--radius-full);width:76px;height:22px;margin:0 5px 5px 0;display:inline-block}.nt-commerce-skpills{margin-top:14px}.nt-commerce-skpost{justify-content:center;display:flex}.nt-commerce-skstrip{gap:12px;padding:2px 0 8px;display:flex;overflow:hidden}.nt-commerce-skrow{border-bottom:1px solid var(--border);align-items:center;gap:12px;padding:11px 0;display:flex}.nt-commerce-skavatar{border-radius:var(--radius-lg);flex:none;width:44px;height:44px}.nt-commerce-skrow .nt-commerce-skline:first-child{margin-top:0}.nt-commerce-lcentre{text-align:center;flex-direction:column;align-items:center;padding:30px 0 22px;display:flex}.nt-commerce-lwhat{font:550 14px/20px var(--font-sans);color:var(--foreground);margin-top:20px}.nt-commerce-lsub{font:400 12.5px/18px var(--font-sans);color:var(--muted-foreground);margin-top:5px}.nt-commerce-lcentre .nt-commerce-lbar{width:210px;margin:16px 0 0}.nt-commerce-idle{text-align:center;min-height:220px;font-family:var(--font-sans);flex-direction:column;justify-content:center;align-items:center;padding:40px 24px;display:flex}.nt-commerce-idle .nt-mark{color:var(--foreground)}.nt-commerce-idle-title{font:550 18px/28px var(--font-sans);letter-spacing:-.01em;color:var(--foreground);margin-top:16px}.nt-commerce-idle-desc{max-width:384px;font:400 14px/1.625 var(--font-sans);color:var(--muted-foreground);margin-top:8px}.nt-commerce-cancelled{text-align:center;font-family:var(--font-sans);color:var(--muted-foreground);flex-direction:column;align-items:center;padding:48px 24px;animation:.4s ease-out nt-fade-in;display:flex}.nt-commerce-cancel-ico{color:var(--muted-foreground);margin-bottom:12px}.nt-commerce-cancel-text{font:400 14px/20px var(--font-sans)}.nt-commerce-cancel-note{max-width:360px;font:400 12.5px/18px var(--font-sans);margin-top:6px}.nt-commerce-connect{text-align:center;min-height:200px;font-family:var(--font-sans);color:var(--foreground);flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:32px 24px;display:flex}.nt-commerce-connect .nt-mark{color:var(--foreground);margin-bottom:10px}.nt-commerce-connect-title{font:550 14px/20px var(--font-sans);color:var(--foreground)}.nt-commerce-connect-desc{max-width:360px;font:400 13px/18px var(--font-sans);color:var(--muted-foreground);margin:0}.nt-commerce-connect .nt-btn{margin-top:12px;text-decoration:none}.nt-commerce-connect-note{max-width:380px;font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);margin:12px 0 0}.nt-commerce-conns{flex-direction:column;display:flex}.nt-commerce-conn{border-top:1px solid var(--border);align-items:flex-start;gap:12px;min-width:0;padding:12px 24px;display:flex}.nt-commerce-conn:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-commerce-conn:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-commerce-conn>.nt-btn{flex:none;align-self:center}.nt-commerce-conn-body{flex-direction:column;flex:1;gap:2px;min-width:0;display:flex}.nt-commerce-conn-body>.nt-commerce-chiprow{margin-top:6px}.nt-commerce-conn-who{font:550 13px/18px var(--font-sans);color:var(--foreground);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-commerce-conn-sub{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);margin:0}.nt-commerce-conn-note{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);margin-top:6px}.nt-commerce-conn-top{align-items:center;gap:8px;min-width:0;display:flex}.nt-commerce-conn-top>.nt-commerce-conn-who{flex:1;min-width:0}.nt-commerce-conn-status{flex:none;margin-left:auto}.nt-commerce-cav{border-radius:var(--radius-full);background:var(--muted);width:32px;height:32px;color:var(--foreground);flex:none;justify-content:center;align-items:center;display:inline-flex;position:relative}.nt-commerce-cav-init{font:550 12px/1 var(--font-sans)}.nt-commerce-cav-badge{border:1px solid var(--border);border-radius:var(--radius-full);background:var(--card);justify-content:center;align-items:center;width:16px;height:16px;display:inline-flex;position:absolute;bottom:-3px;right:-3px}.nt-commerce-cav.is-empty{border:1px dashed var(--input);background:0 0}.nt-commerce-readonly{border-top:1px solid var(--border);flex-direction:column;gap:8px;padding:16px 24px;display:flex}.nt-commerce-nettag{color:var(--foreground);gap:6px}.nt-commerce-price-tag{border-left:1px solid var(--border);font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);margin-left:2px;padding-left:8px}.nt-commerce-product{flex-direction:column;display:flex}.nt-commerce-ptick{border-radius:var(--radius-full);background:var(--success-soft);width:32px;height:32px;color:var(--success);flex:none;justify-content:center;align-items:center;display:inline-flex}.nt-commerce-ptick.is-edit{background:var(--muted);color:var(--foreground)}.nt-commerce-idline{white-space:normal}.nt-commerce-idline .nt-mono{font-size:12px}.nt-commerce-fields{border-top:1px solid var(--border);margin:0 0 12px}.nt-commerce-field{border-bottom:1px solid var(--border);grid-template-columns:96px minmax(0,1fr);gap:12px;padding:8px 24px;display:grid}.nt-commerce-field dt{font:400 13px/20px var(--font-sans);color:var(--muted-foreground)}.nt-commerce-field dd{min-width:0;font:400 13px/20px var(--font-sans);color:var(--foreground);flex-wrap:wrap;align-items:center;gap:8px;margin:0;display:flex}.nt-commerce-field-v{overflow-wrap:anywhere;min-width:0}.nt-commerce-ptags{margin-top:12px}.nt-commerce-pactions{flex-wrap:wrap;gap:8px;padding-top:12px;padding-bottom:16px;display:flex}.nt-commerce-product .nt-view-foot .nt-mono{color:var(--foreground);font-size:11px}.nt-commerce-scan,.nt-commerce-own,.nt-commerce-product,.nt-commerce-loading{container-type:inline-size}@container (max-width:480px){.nt-commerce-pad,.nt-commerce-head,.nt-commerce-phead,.nt-commerce-tabbar,.nt-commerce-rev,.nt-commerce-arow,.nt-commerce-block,.nt-commerce-conn,.nt-commerce-readonly,.nt-commerce-field,.nt-commerce-dhead{padding-left:16px;padding-right:16px}.nt-commerce-grid{grid-template-columns:1fr}.nt-commerce-arow{grid-template-columns:minmax(0,1fr) 72px 40px;gap:8px}.nt-commerce-find-detail,.nt-commerce-evrow{padding-left:0}}.nt-feeds-muted{color:var(--muted-foreground)}.nt-feeds-ptile{border-radius:var(--radius-xs);background:var(--muted-foreground);color:var(--background);font:600 8px/1 var(--font-sans);flex:none;justify-content:center;align-items:center;display:inline-flex}.nt-feeds-plat{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);min-width:0;color:var(--foreground);font:450 11.5px/16px var(--font-sans);white-space:nowrap;align-items:center;gap:4px;padding:2px 8px 2px 6px;display:inline-flex}.nt-feeds-plat.is-float{z-index:1;background:var(--background);border-color:#0000;position:absolute;top:8px;left:8px}@supports (color:color-mix(in lab, red, red)){.nt-feeds-plat.is-float{background:color-mix(in srgb, var(--background) 92%, transparent)}}.nt-feeds-gallery{font-family:var(--font-sans);max-width:100%}.nt-feeds-gallery .nt-gallery{padding:2px 0 8px}.nt-feeds-gallery .nt-gallery>*{scroll-snap-align:center}.nt-feeds-single{justify-content:center;display:flex}.nt-feeds-stats{color:var(--muted-foreground);font-variant-numeric:tabular-nums;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:11.5px;line-height:16px;display:flex}.nt-feeds-stats span{align-items:center;gap:4px;display:inline-flex}.nt-feeds-stats span:not(:only-child){color:var(--foreground)}.nt-feeds-stats .nt-icon,.nt-feeds-stats.is-meta span{color:var(--muted-foreground)}.nt-feeds-card .nt-feeds-stats{gap:6px}.nt-feeds-pill{border-radius:var(--radius-full);background:var(--secondary);color:var(--secondary-foreground);padding:4px 10px;font-weight:450}.nt-feeds-card .nt-feeds-stats .nt-feeds-pill .nt-icon{color:var(--secondary-foreground)}.nt-feeds-card{--nt-stage-max:560px;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);width:min(380px,100%);max-width:100%;color:var(--card-foreground);box-shadow:var(--shadow-sm);font:400 13px/18px var(--font-sans);flex:none;transition:border-color .2s,box-shadow .2s,transform .2s;display:block;overflow:hidden}.nt-feeds-card:hover{border-color:var(--muted-foreground)}@supports (color:color-mix(in lab, red, red)){.nt-feeds-card:hover{border-color:color-mix(in srgb, var(--muted-foreground) 45%, var(--border))}}.nt-feeds-card.is-wide{width:100%}.nt-feeds-card.is-media{--ar-w:9;--ar-h:16;width:min(100%, calc(var(--nt-stage-max) * var(--ar-w) / var(--ar-h)));box-shadow:none;background:0 0;border-color:#0000;margin:0 auto;overflow:visible}.nt-feeds-card.is-media.is-h{--ar-w:16;--ar-h:9}.nt-feeds-card.is-media.is-sq{--ar-w:1;--ar-h:1}.nt-feeds-card.is-media:hover{transform:translateY(-2px)}.nt-feeds-card-body{flex-direction:column;gap:8px;min-width:0;padding:14px 16px;display:flex}.nt-feeds-card.is-media .nt-feeds-card-body{padding:4px 4px 0}.nt-feeds-card-head{align-items:center;gap:8px;min-width:0;display:flex}.nt-feeds-handle{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--muted-foreground);margin-left:auto;font-size:11.5px;line-height:16px;overflow:hidden}.nt-feeds-title{font:550 14px/19px var(--font-sans);overflow-wrap:anywhere;margin:0}.nt-feeds-card.is-wide .nt-feeds-title{font-size:16px;line-height:22px}.nt-feeds-view{align-self:flex-start;margin-top:4px;text-decoration:none}.nt-feeds-thumb{background:linear-gradient(135deg, var(--muted), var(--muted-foreground));height:260px}@supports (color:color-mix(in lab, red, red)){.nt-feeds-thumb{background:linear-gradient(135deg, var(--muted), color-mix(in srgb, var(--muted-foreground) 40%, var(--muted)))}}.nt-feeds-thumb.is-wide{aspect-ratio:16/9;height:auto;max-height:340px}.nt-feeds-thumb img{object-fit:cover;width:100%;height:100%;display:block}.nt-feeds-quote{border-bottom:1px solid var(--border);background:var(--card);padding:16px 18px}.nt-feeds-quote p{color:var(--foreground);white-space:pre-line;overflow-wrap:anywhere;margin:0;font-size:13px;line-height:20px}.nt-feeds-card-wrap{flex-direction:column;gap:12px;display:flex}.nt-feeds-mp{--mp-fg:#fff;--mp-scrim:#0000008c;--mp-scrim-soft:#0006;--mp-edge:#ffffffd9;border-radius:var(--radius-3xl);width:100%;color:var(--mp-fg);font-family:var(--font-sans);background:#000;border:2px solid #0000;outline:none;transition:border-color .2s;position:relative;overflow:hidden}.nt-feeds-mp:focus-visible{box-shadow:0 0 0 3px var(--ring)}@supports (color:color-mix(in lab, red, red)){.nt-feeds-mp:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent)}}.nt-feeds-mp.is-playing{border-color:var(--ring)}.nt-feeds-mp.is-picked{border-color:var(--foreground);box-shadow:0 0 0 3px var(--ring)}@supports (color:color-mix(in lab, red, red)){.nt-feeds-mp.is-picked{box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent)}}.nt-feeds-mp-stage{width:100%;aspect-ratio:var(--ar-w,9) / var(--ar-h,16);max-height:var(--nt-stage-max,560px);background:#000;position:relative;overflow:hidden}.nt-feeds-mp-stage>video{object-fit:contain;background:#000;width:100%;height:100%;display:block}.nt-feeds-mp-slide{object-fit:contain;opacity:0;width:100%;height:100%;transition:opacity .45s;position:absolute;inset:0}.nt-feeds-mp-slide.is-active{opacity:1}.nt-feeds-mp-slide.is-blank{background:linear-gradient(135deg,#3f3f46,#18181b)}.nt-feeds-mp-ov{z-index:2;pointer-events:none;position:absolute;inset:0}.nt-feeds-mp-ov:before{content:"";pointer-events:none;background:linear-gradient(#00000073,#0000);height:16%;position:absolute;top:0;left:0;right:0}.nt-feeds-mp-ov:after{content:"";pointer-events:none;background:linear-gradient(#0000,#00000047 38%,#000000b8);height:46%;position:absolute;bottom:0;left:0;right:0}.nt-feeds-mp-ov>*{pointer-events:auto;z-index:1}.nt-feeds-mp-badge{border-radius:var(--radius-full);background:var(--mp-scrim);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font:450 11.5px/16px var(--font-sans);color:var(--mp-fg);align-items:center;gap:5px;padding:3px 9px 3px 7px;display:inline-flex;position:absolute;top:10px;left:10px}.nt-feeds-mp-badge .nt-glyph{color:var(--mp-fg)}.nt-feeds-mp-pick,.nt-feeds-mp-open{z-index:3;border:2px solid var(--mp-edge);border-radius:var(--radius-full);background:var(--mp-scrim-soft);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);width:26px;height:26px;color:var(--mp-fg);cursor:pointer;justify-content:center;align-items:center;padding:0;text-decoration:none;transition:transform .15s,background-color .15s;display:flex;position:absolute;top:9px;right:9px}.nt-feeds-mp-pick{color:#0000}.nt-feeds-mp-pick:hover,.nt-feeds-mp-open:hover{background:#000000a8;transform:scale(1.08)}.nt-feeds-mp-pick.is-on{color:#0a0a0a;background:#fff;border-color:#fff}.nt-feeds-mp-open.with-pick{right:43px}.nt-feeds-mp-chip{border-radius:var(--radius-full);background:var(--mp-scrim);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font:450 11.5px/16px var(--font-sans);font-variant-numeric:tabular-nums;padding:2px 9px;position:absolute;top:10px;right:10px}.nt-feeds-mp-chip.is-low{top:42px}.nt-feeds-mp-nav{border-radius:var(--radius-full);background:var(--mp-scrim);width:34px;height:34px;color:var(--mp-fg);cursor:pointer;opacity:0;border:0;justify-content:center;align-items:center;padding:0;transition:opacity .2s,background-color .15s;display:flex;position:absolute;top:50%;transform:translateY(-50%)}.nt-feeds-mp:hover .nt-feeds-mp-nav,.nt-feeds-mp:focus-within .nt-feeds-mp-nav{opacity:1}.nt-feeds-mp-nav.is-prev{left:8px}.nt-feeds-mp-nav.is-next{right:8px}.nt-feeds-mp-nav:hover{background:#000c}.nt-feeds-mp-rail{flex-direction:column;align-items:center;gap:14px;display:flex;position:absolute;bottom:76px;right:8px}.nt-feeds-mp-act{flex-direction:column;align-items:center;gap:3px;display:flex}.nt-feeds-mp-ic{border-radius:var(--radius-full);background:var(--mp-scrim-soft);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);justify-content:center;align-items:center;width:38px;height:38px;transition:transform .15s,background-color .15s;display:flex}.nt-feeds-mp-act:hover .nt-feeds-mp-ic{background:#0000009e;transform:scale(1.06)}.nt-feeds-mp-ic.is-flip .nt-icon{transform:scaleX(-1)}.nt-feeds-mp-n{font:550 11px/14px var(--font-sans);font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000c}.nt-feeds-mp-meta{text-shadow:0 1px 3px #000000d9;position:absolute;bottom:60px;left:12px;right:64px}.nt-feeds-mp.is-h .nt-feeds-mp-rail{gap:8px;bottom:60px}.nt-feeds-mp.is-h .nt-feeds-mp-ic{width:32px;height:32px}.nt-feeds-mp-inline{font:450 11px/14px var(--font-sans);font-variant-numeric:tabular-nums;opacity:.9;margin-top:4px;display:none}.nt-feeds-mp{container-type:inline-size}.nt-feeds-mp-handle{font:550 13px/18px var(--font-sans);margin-bottom:3px}.nt-feeds-mp-cap{opacity:.95;-webkit-line-clamp:2;overflow-wrap:anywhere;-webkit-box-orient:vertical;font-size:12px;line-height:17px;display:-webkit-box;overflow:hidden}.nt-feeds-mp-song{font:450 11px/14px var(--font-sans);align-items:center;gap:5px;margin-top:6px;display:flex;overflow:hidden}.nt-feeds-mp-song .nt-icon{flex:none}.nt-feeds-mp-song span{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-feeds-mp.is-playing .nt-feeds-mp-song .nt-icon{animation:3s linear infinite nt-spin}.nt-feeds-mp-tap{color:var(--mp-fg);cursor:pointer;background:0 0;border:0;justify-content:center;align-items:center;padding:0;display:flex;position:absolute;inset:0;z-index:0!important}.nt-feeds-mp-tap span{border-radius:var(--radius-full);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:#00000073;justify-content:center;align-items:center;width:64px;height:64px;transition:opacity .2s;display:flex}.nt-feeds-mp.is-playing .nt-feeds-mp-tap span{opacity:0}.nt-feeds-mp.is-playing:hover .nt-feeds-mp-tap span{opacity:.65}.nt-feeds-mp-ctl{z-index:3;background:linear-gradient(#0000,#000000d9);align-items:center;gap:9px;padding:9px 11px;display:flex;position:absolute;bottom:0;left:0;right:0}.nt-feeds-mp-btn{border-radius:var(--radius-full);color:#111;cursor:pointer;background:#fffffff2;border:0;flex:none;justify-content:center;align-items:center;width:30px;height:30px;padding:0;transition:transform .15s;display:flex}.nt-feeds-mp-btn:hover{transform:scale(1.09)}.nt-feeds-mp-time{font:550 10px/1 var(--font-sans);font-variant-numeric:tabular-nums;text-shadow:0 1px 2px #000c;flex:none}.nt-feeds-mp-seek{cursor:pointer;flex:1;align-items:center;min-width:0;height:14px;display:flex;position:relative}.nt-feeds-mp-segs{border-radius:var(--radius-full);gap:2px;width:100%;height:3px;transition:height .15s;display:flex;overflow:hidden}.nt-feeds-mp-seek:hover .nt-feeds-mp-segs{height:5px}.nt-feeds-mp-seg{border-radius:var(--radius-full);background:#ffffff52;flex:1;height:100%;overflow:hidden}.nt-feeds-mp-seg>i{border-radius:inherit;background:#fff;height:100%;display:block}.nt-feeds-mp-mute{color:var(--mp-fg);opacity:.9;cursor:pointer;background:0 0;border:0;flex:none;padding:0;display:inline-flex}.nt-feeds-mp-mute:hover{opacity:1}.nt-feeds-mp-btn:focus-visible,.nt-feeds-mp-mute:focus-visible,.nt-feeds-mp-nav:focus-visible,.nt-feeds-mp-tap:focus-visible,.nt-feeds-mp-pick:focus-visible,.nt-feeds-mp-open:focus-visible{outline-offset:2px;outline:2px solid #fff}.nt-feeds-mp-spin{z-index:2;pointer-events:none;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.nt-feeds-mp-spin>i{border-radius:var(--radius-full);border:3px solid #ffffff40;border-top-color:#fff;width:34px;height:34px;animation:.8s linear infinite nt-spin}.nt-feeds-mp-err{z-index:4;text-align:center;font:450 12px/16px var(--font-sans);pointer-events:none;background:#000000d1;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:16px;display:flex;position:absolute;inset:0}.nt-feeds-standing{border-top:1px solid var(--border);color:var(--muted-foreground);align-items:center;gap:6px;padding:7px 12px;font-size:12px;line-height:16px;display:flex}.nt-feeds-card.is-media .nt-feeds-standing{border-top:0;padding:8px 12px 0}.nt-feeds-standing b{font-variant-numeric:tabular-nums;font-weight:550}.nt-feeds-standing.is-up b,.nt-feeds-standing.is-up .nt-icon{color:var(--success)}.nt-feeds-standing.is-down b,.nt-feeds-standing.is-down .nt-icon{color:var(--destructive)}.nt-feeds-standing.is-mid b,.nt-feeds-standing.is-mid .nt-icon{color:var(--warning)}.nt-feeds-standing.is-none b{color:var(--foreground)}.nt-feeds-replies{border-top:1px solid var(--border);flex-direction:column;gap:7px;margin-top:2px;padding-top:9px;display:flex}.nt-feeds-replies-head,.nt-feeds-replies-none{color:var(--muted-foreground);margin:0;font-size:11.5px;line-height:16px}.nt-feeds-reply{border-left:2px solid var(--border);padding-left:8px}.nt-feeds-reply-meta{color:var(--muted-foreground);flex-wrap:wrap;align-items:center;gap:6px;font-size:11.5px;line-height:16px;display:flex}.nt-feeds-reply-meta b{color:var(--foreground);font-weight:450}.nt-feeds-reply-text{overflow-wrap:anywhere;margin:2px 0 0;font-size:12.5px;line-height:18px}.nt-feeds-an-post{justify-content:center;display:flex}.nt-feeds-pickbar{z-index:5;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--card);box-shadow:var(--shadow-md);font:400 13px/18px var(--font-sans);color:var(--foreground);flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding:8px 8px 8px 16px;display:flex;position:sticky;bottom:0}.nt-feeds-pickbar-n b{font-variant-numeric:tabular-nums;font-weight:550}.nt-feeds-pickbar-hint{color:var(--muted-foreground);font-size:11.5px;line-height:16px}.nt-feeds-pickbar-sp{flex:1;min-width:0}.nt-feeds-cr{margin-right:-4px}.nt-btn--default .nt-feeds-cr{background:var(--primary-foreground)}@supports (color:color-mix(in lab, red, red)){.nt-btn--default .nt-feeds-cr{background:color-mix(in srgb, var(--primary-foreground) 18%, transparent)}}.nt-btn--default .nt-feeds-cr{color:var(--primary-foreground)}.nt-feeds-ai{flex-direction:column;gap:8px;display:flex}.nt-feeds-ai.is-under{padding:0 2px}.nt-feeds-ai.is-foot{border-top:1px solid var(--border);padding:16px 24px}.nt-feeds-ai-row{flex-wrap:wrap;gap:8px;display:flex}.nt-feeds-aibtn,.nt-feeds-aibtn:has(>.nt-icon){padding-right:4px}.nt-feeds-ai-note{color:var(--muted-foreground);margin:0;font-size:11.5px;line-height:16px}.nt-feeds-block{border-top:1px solid var(--border);padding:16px 24px;font-size:13px;line-height:18px}.nt-feeds-block.is-top{border-top:0;padding-top:0}.nt-feeds-label{font:450 13px/18px var(--font-sans);color:var(--muted-foreground);margin:0 0 8px}.nt-feeds-prose{color:var(--foreground);overflow-wrap:anywhere;margin:0;font-size:13px;line-height:20px}.nt-feeds-prose.is-pre{white-space:pre-wrap;margin-bottom:8px}.nt-feeds-prose.is-clamp6{-webkit-line-clamp:6;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.nt-feeds-lede{color:var(--foreground);margin:0;padding:0 24px 16px;font-size:14px;line-height:22px}.nt-feeds-lede.is-verdict{padding:16px 24px}.nt-feeds-list{color:var(--foreground);flex-direction:column;gap:6px;margin:0;padding-left:18px;font-size:13px;line-height:18px;display:flex}.nt-feeds-list li::marker{color:var(--muted-foreground)}.nt-feeds-kv{flex-direction:column;margin:0;display:flex}.nt-feeds-kv dt{padding-top:10px;font-weight:450}.nt-feeds-kv dt:first-child{padding-top:0}.nt-feeds-kv dd{border-bottom:1px solid var(--border);color:var(--muted-foreground);margin:2px 0 0;padding-bottom:10px}.nt-feeds-kv dd:last-child{border-bottom:0;padding-bottom:0}.nt-feeds-callout{border-radius:var(--radius-lg);background:var(--muted);gap:10px;padding:12px 14px;display:flex}.nt-feeds-callout>.nt-icon{color:var(--muted-foreground);flex:none;margin-top:1px}.nt-feeds-callout b{font-weight:450}.nt-feeds-callout p{color:var(--foreground);margin:2px 0 0}.nt-feeds-more{border-radius:var(--radius-xs);color:var(--foreground);font:450 11.5px/16px var(--font-sans);text-underline-offset:3px;text-decoration:underline;-webkit-text-decoration-color:var(--border);-webkit-text-decoration-color:var(--border);text-decoration-color:var(--border);cursor:pointer;background:0 0;border:0;align-self:flex-start;margin-top:4px;padding:0}.nt-feeds-more:hover{text-decoration-color:currentColor}.nt-feeds-foot-row{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.nt-feeds-cmp-list{border-top:1px solid var(--border);margin:0;padding:0;list-style:none}.nt-feeds-cmp-row{border-bottom:1px solid var(--border);align-items:flex-start;gap:12px;padding:12px 24px;transition:background-color .15s;display:flex}.nt-feeds-cmp-row:last-child{border-bottom:0}.nt-feeds-cmp-row:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-feeds-cmp-row:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-feeds-cmp-row.is-win{background:var(--success)}@supports (color:color-mix(in lab, red, red)){.nt-feeds-cmp-row.is-win{background:color-mix(in srgb, var(--success) 6%, transparent)}}.nt-feeds-cmp-n{border-radius:var(--radius-full);background:var(--secondary);width:24px;height:24px;font:450 11.5px/1 var(--font-sans);font-variant-numeric:tabular-nums;flex:none;justify-content:center;align-items:center;display:inline-flex}.nt-feeds-cmp-row.is-win .nt-feeds-cmp-n{background:var(--primary);color:var(--primary-foreground)}.nt-feeds-cmp-main{flex-direction:column;flex:1;gap:6px;min-width:0;display:flex}.nt-feeds-cmp-top{flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:11.5px;line-height:16px;display:flex}.nt-feeds-cmp-top .nt-badge{margin-left:auto}.nt-feeds-cmp-cap{overflow-wrap:anywhere;margin:0;font-size:13px;line-height:18px}.nt-feeds-analysis{font-family:var(--font-sans);flex-direction:column;gap:12px;display:flex}.nt-feeds-meters{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 24px;padding:0 24px 16px;display:grid}.nt-feeds-meter-top{justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:13px;line-height:18px;display:flex}.nt-feeds-meter-top b{font-variant-numeric:tabular-nums;font-weight:550}.nt-feeds-meter-track{border-radius:var(--radius-full);background:var(--muted);height:6px;overflow:hidden}.nt-feeds-meter-track i{border-radius:inherit;height:100%;transition:width .4s;display:block}.nt-feeds-meter.is-success b{color:var(--success)}.nt-feeds-meter.is-success i{background:var(--success)}.nt-feeds-meter.is-warning b{color:var(--warning)}.nt-feeds-meter.is-warning i{background:var(--warning)}.nt-feeds-meter.is-destructive b{color:var(--destructive)}.nt-feeds-meter.is-destructive i{background:var(--destructive)}.nt-feeds-tags{flex-wrap:wrap;gap:6px;display:flex}.nt-feeds-tags.is-pad{padding:0 24px 16px}.nt-feeds-tag{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);max-width:100%;color:var(--foreground);font:450 11.5px/16px var(--font-sans);cursor:pointer;align-items:center;gap:4px;padding:2px 8px;transition:background-color .15s;display:inline-flex}.nt-feeds-tag span{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-feeds-tag .nt-icon{color:var(--muted-foreground);flex:none}.nt-feeds-tag:hover{background:var(--accent)}.nt-feeds-tag.is-static{cursor:default}.nt-feeds-tag.is-static:hover{background:var(--background)}.nt-feeds-tag.is-warn,.nt-feeds-tag.is-warn .nt-icon{color:var(--warning)}.nt-feeds-tag.is-ghost{color:var(--muted-foreground);border-style:dashed}.nt-feeds-secs{border-top:1px solid var(--border);padding:0 24px}.nt-feeds-secs>.nt-section:last-child{border-bottom:0}.nt-feeds-secs .nt-section-header{padding:12px 0}.nt-feeds-secs .nt-section-content{padding-bottom:14px}.nt-feeds-steps{grid-template-columns:minmax(64px,max-content) 1fr;gap:8px 16px;margin:0;font-size:13px;line-height:18px;display:grid}.nt-feeds-steps dt{color:var(--muted-foreground)}.nt-feeds-steps dd{overflow-wrap:anywhere;margin:0}.nt-feeds-stack{flex-direction:column;gap:8px;display:flex}.nt-feeds-analysis .nt-quote{border-radius:var(--radius-md);padding-right:64px;font-size:13px;font-weight:450;line-height:18px}.nt-feeds-creator{border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);width:min(240px,80vw);max-width:100%;color:var(--card-foreground);box-shadow:var(--shadow-sm);font:400 13px/18px var(--font-sans);flex-direction:column;gap:10px;padding:16px;display:flex}.nt-feeds-creator-head{align-items:center;gap:12px;min-width:0;display:flex}.nt-feeds-creator-id{flex-direction:column;gap:4px;min-width:0;display:flex}.nt-feeds-creator-name{min-width:0;font:550 14px/1 var(--font-sans);align-items:center;gap:4px;display:flex}.nt-feeds-creator-name span{overflow-wrap:anywhere;line-height:18px}.nt-feeds-creator-name .nt-icon{flex:none}.nt-feeds-creator-handle{min-width:0;color:var(--muted-foreground);align-items:center;gap:4px;font-size:11.5px;line-height:16px;display:flex}.nt-feeds-creator-handle span{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-feeds-creator-f{color:var(--foreground);font-size:13px;font-weight:550}.nt-feeds-creator-f b{font-variant-numeric:tabular-nums;font-weight:550}.nt-feeds-creator-av{border:2px solid var(--border);background:var(--muted);color:var(--foreground)}.nt-feeds-creator-bio{color:var(--muted-foreground);-webkit-line-clamp:3;overflow-wrap:anywhere;-webkit-box-orient:vertical;margin:0;font-size:12.5px;line-height:18px;display:-webkit-box;overflow:hidden}.nt-feeds-vet{border-top:1px solid var(--border);flex-direction:column;gap:6px;padding-top:10px;display:flex}.nt-feeds-vet-top{flex-wrap:wrap;align-items:center;gap:8px;font-size:11.5px;display:flex}.nt-feeds-score{font:550 20px/1 var(--font-sans);font-variant-numeric:tabular-nums;letter-spacing:-.02em}.nt-feeds-score small{color:var(--muted-foreground);letter-spacing:0;margin-left:1px;font-size:11.5px;font-weight:450}.nt-feeds-vet-top .nt-badge{margin-left:auto}.nt-feeds-vet-by{color:var(--muted-foreground);margin:0;font-size:11.5px;line-height:16px}.nt-feeds-vet-why{margin:0;font-size:12.5px;line-height:18px}.nt-feeds-vet-concern{gap:6px;margin:0;font-size:12px;line-height:16px;display:flex}.nt-feeds-vet-concern .nt-icon{color:var(--warning);flex:none;margin-top:1px}.nt-feeds-vet-links{flex-wrap:wrap;gap:4px;display:flex}.nt-feeds-link{text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--border);border-radius:var(--radius-xs);max-width:100%;color:var(--muted-foreground);padding:0 6px;font-size:11px;line-height:16px;overflow:hidden}.nt-feeds-link.is-opaque{border-style:dashed}.nt-feeds-st-rank{color:var(--muted-foreground);margin:0;padding:0 24px 12px;font-size:13px;line-height:18px}.nt-feeds-st-rank b{color:var(--foreground);font-weight:450}.nt-feeds-st-wrap{padding:0 24px 16px}.nt-feeds-st th:first-child,.nt-feeds-st td:first-child{width:100%}.nt-feeds-st td.nt-feeds-st-who{white-space:normal;min-width:128px}.nt-feeds-st-id{flex-wrap:wrap;align-items:center;gap:2px 6px;display:flex}.nt-feeds-st-id b{overflow-wrap:anywhere;font-weight:450}.nt-feeds-st-id .nt-feeds-muted{font-size:11.5px}.nt-feeds-st-thin{margin-top:4px}.nt-feeds-st tr.has-sub td{border-bottom:0;padding-bottom:2px}.nt-feeds-st tr.nt-feeds-st-sub td{white-space:normal;color:var(--muted-foreground);padding-top:0;font-size:11.5px;line-height:16px}.nt-feeds-st tr.nt-feeds-st-sub td span{color:var(--foreground)}.nt-feeds-st tbody tr.nt-feeds-st-sub:hover{background:0 0}.nt-feeds-st tr.is-thin .is-num{color:var(--muted-foreground)}.nt-feeds-st tr.is-un td{opacity:.6}.nt-feeds-st td.nt-feeds-st-un{white-space:normal;color:var(--muted-foreground);font-size:12.5px}.nt-feeds-standings{container-type:inline-size}.nt-feeds-standings .nt-view-foot{line-height:16px}@container (max-width:479px){.nt-feeds-st-wrap{padding:0 16px 12px}.nt-feeds-st thead{display:none}.nt-feeds-st,.nt-feeds-st tbody{display:block}.nt-feeds-st tbody tr{border-bottom:1px solid var(--border);grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 0;display:grid}.nt-feeds-st tbody tr.has-sub{border-bottom:0;padding-bottom:4px}.nt-feeds-st tbody tr.nt-feeds-st-sub{padding:0 0 12px;display:block}.nt-feeds-st tbody tr:last-child{border-bottom:0}.nt-feeds-st td,.nt-feeds-st tr.has-sub td,.nt-feeds-st tr.nt-feeds-st-sub td{text-align:left;border:0;width:auto;padding:0;display:block}.nt-feeds-st td.nt-feeds-st-who,.nt-feeds-st td.nt-feeds-st-un{grid-column:1/-1;min-width:0}.nt-feeds-st td.is-num{text-align:left}.nt-feeds-st td.is-num:before{content:attr(data-label);color:var(--muted-foreground);font-size:11.5px;line-height:16px;display:block}.nt-feeds-st tbody tr:hover{background:0 0}}.nt-feeds-theme{border-radius:var(--radius-md);background:var(--secondary);color:var(--secondary-foreground);font:450 11.5px/16px var(--font-sans);align-items:center;gap:6px;padding:2px 8px;display:inline-flex}.nt-feeds-theme b{color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-weight:450}.nt-feeds-clist{border-top:1px solid var(--border);margin:0;padding:0;list-style:none}.nt-feeds-comment{border-bottom:1px solid var(--border);flex-direction:column;gap:4px;padding:12px 24px;transition:background-color .15s;display:flex}.nt-feeds-comment:last-child{border-bottom:0}.nt-feeds-comment:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-feeds-comment:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-feeds-comment-by{flex-wrap:wrap;align-items:center;gap:6px;font-size:11.5px;line-height:16px;display:flex}.nt-feeds-comment-by b{font-weight:450}.nt-feeds-comment-text{overflow-wrap:anywhere;margin:0;font-size:13px;line-height:18px}.nt-feeds-comment-text.is-clamp3{-webkit-line-clamp:3;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.nt-feeds-comment .nt-feeds-stats{margin-top:2px}.nt-feeds-sent{border:1px solid var(--border);border-radius:var(--radius-md);font:450 11.5px/16px var(--font-sans);align-items:center;gap:4px;margin-bottom:8px;padding:2px 8px;display:inline-flex}.nt-feeds-sent.is-success{color:var(--success)}.nt-feeds-sent.is-warning{color:var(--warning)}.nt-feeds-sent.is-destructive{color:var(--destructive)}@container (max-width:459px){.nt-feeds-mp.is-h .nt-feeds-mp-rail{display:none}.nt-feeds-mp.is-h .nt-feeds-mp-meta{bottom:50px;right:12px}.nt-feeds-mp.is-h .nt-feeds-mp-cap{-webkit-line-clamp:1}.nt-feeds-mp.is-h .nt-feeds-mp-inline{display:block}.nt-feeds-mp.is-h .nt-feeds-mp-tap span{display:none}}.nt-signals{font:400 13px/18px var(--font-sans);position:relative}.nt-signals-pad{padding:0 24px 24px}.nt-signals-head+.nt-signals-pad{padding-top:16px}.nt-signals-faint{color:var(--muted-foreground);font-size:11.5px;line-height:16px}.nt-signals-head{border-bottom:1px solid var(--border);flex-direction:column;gap:12px;padding:20px 24px 16px;display:flex}.nt-signals-head-top{flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;display:flex}.nt-signals-head-text{flex-direction:column;flex:220px;gap:6px;min-width:0;display:flex}.nt-signals-term{font:550 14px/18px var(--font-sans);color:var(--card-foreground);align-items:center;gap:8px;min-width:0;display:flex}.nt-signals-term>span{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:450;overflow:hidden}.nt-signals-term b{font-weight:550}.nt-signals-total{color:var(--muted-foreground);font-variant-numeric:tabular-nums;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:13px;display:flex}.nt-signals-switch{flex:none}.nt-signals-switch .nt-segmented-opt{height:28px;padding:0 10px;font-size:12.5px}.nt-signals-summary{color:var(--muted-foreground);margin:0;font-size:13px;line-height:18px}.nt-signals-funnel{flex-wrap:wrap;gap:6px;display:flex}.nt-signals-funnel .nt-stat-pill .nt-icon{color:var(--muted-foreground)}.nt-signals-note{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--muted);color:var(--muted-foreground);align-items:flex-start;gap:8px;padding:8px 12px;font-size:12.5px;line-height:18px;display:flex}.nt-signals-note .nt-icon{flex:none;margin-top:2px}.nt-signals-note.is-warn{background:var(--warning-soft);color:var(--warning);border-color:var(--warning)}@supports (color:color-mix(in lab, red, red)){.nt-signals-note.is-warn{border-color:color-mix(in srgb, var(--warning) 30%, transparent)}}.nt-signals-chips{flex-wrap:wrap;gap:6px;display:flex}.nt-signals-fchip{border:1px solid var(--border);border-radius:var(--radius-md);height:28px;color:var(--foreground);font:450 12.5px/1 var(--font-sans);cursor:pointer;white-space:nowrap;background:0 0;align-items:center;gap:6px;padding:0 10px;transition:background-color .15s;display:inline-flex}.nt-signals-fchip b{color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-weight:550}.nt-signals-fchip:hover:not(:disabled){background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-signals-fchip:hover:not(:disabled){background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-signals-fchip.is-on{background:var(--secondary);border-color:var(--input)}.nt-signals-fchip.is-on b{color:var(--foreground)}.nt-signals-fchip.is-quiet{cursor:default;opacity:.5}.nt-signals-fchip:focus-visible,.nt-signals-rest:focus-visible,.nt-signals-tag.is-link:focus-visible,.nt-signals-bar:focus-visible,.nt-signals-poster:focus-visible{box-shadow:0 0 0 3px var(--ring);outline:none}@supports (color:color-mix(in lab, red, red)){.nt-signals-fchip:focus-visible,.nt-signals-rest:focus-visible,.nt-signals-tag.is-link:focus-visible,.nt-signals-bar:focus-visible,.nt-signals-poster:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent)}}.nt-signals-groups{flex-direction:column;display:flex}.nt-signals-group{border-bottom:1px solid var(--border)}.nt-signals-group:last-child{border-bottom:0}.nt-signals-ghead{align-items:flex-start;gap:12px;padding:16px 24px 12px;display:flex}.nt-signals-ghead-main{flex-direction:column;flex:1;gap:6px;min-width:0;display:flex}.nt-signals-gmeta{color:var(--muted-foreground);flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:11.5px;line-height:16px;display:flex}.nt-signals-plat{font:450 12.5px/16px var(--font-sans);color:var(--foreground);align-items:center;gap:6px;display:inline-flex}.nt-signals-reach{font-variant-numeric:tabular-nums}.nt-signals-gtitle{font:450 13px/18px var(--font-sans);color:var(--foreground);-webkit-line-clamp:2;overflow-wrap:anywhere;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.nt-signals-gactions{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.nt-signals-hits{border-radius:var(--radius-sm);background:var(--secondary);color:var(--foreground);font:550 11.5px/16px var(--font-sans);font-variant-numeric:tabular-nums;align-items:center;padding:1px 6px;display:inline-flex}.nt-signals-poster{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--muted);cursor:default;flex:none;width:56px;height:72px;padding:0;position:relative;overflow:hidden}.nt-signals-poster.is-playable{cursor:pointer}.nt-signals-poster img{object-fit:cover;width:100%;height:100%;display:block}.nt-signals-poster-blank{width:100%;height:100%;color:var(--muted-foreground);justify-content:center;align-items:center;display:flex}.nt-signals-poster-play{border-radius:var(--radius-full);color:#fff;background:#0000008c;justify-content:center;align-items:center;width:26px;height:26px;display:flex;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.nt-signals-stage{border-radius:var(--radius-md);background:#000;flex:none;width:160px;overflow:hidden}.nt-signals-stage video{width:100%;max-height:280px;display:block}.nt-signals-rows{flex-direction:column;padding:0 0 8px;display:flex}.nt-signals-row{cursor:pointer;align-items:flex-start;gap:10px;padding:10px 24px;transition:background-color .15s;display:flex}.nt-signals-row:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-signals-row:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-signals-row.is-picked{background:var(--accent)}.nt-signals-face{border-radius:var(--radius-full);background:var(--muted);width:28px;height:28px;color:var(--muted-foreground);flex:none;position:relative}.nt-signals-face.is-square{border-radius:var(--radius-sm)}.nt-signals-face img{object-fit:cover;border-radius:inherit;width:100%;height:100%;display:block}.nt-signals-face-init{width:100%;height:100%;font:550 11.5px/1 var(--font-sans);justify-content:center;align-items:center;display:flex}.nt-signals-face-badge{border-radius:var(--radius-full);background:var(--card);width:15px;height:15px;box-shadow:0 0 0 1px var(--border);color:var(--foreground);justify-content:center;align-items:center;display:flex;position:absolute;bottom:-3px;right:-3px}.nt-signals-row-body{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}.nt-signals-row-text{font:400 13px/18px var(--font-sans);color:var(--foreground);overflow-wrap:anywhere}.nt-signals-row-note{color:var(--muted-foreground);font-size:11.5px;font-style:italic;line-height:16px}.nt-signals-row-meta{color:var(--muted-foreground);font-variant-numeric:tabular-nums;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:11.5px;line-height:16px;display:flex}.nt-signals-who{color:var(--foreground);text-overflow:ellipsis;white-space:nowrap;max-width:180px;font-weight:450;overflow:hidden}.nt-signals-who.is-unknown{color:var(--muted-foreground);font-style:italic}.nt-signals-stat{align-items:center;gap:4px;display:inline-flex}.nt-signals-row-meta .nt-badge{padding:0 6px}.nt-signals-rest{border-radius:var(--radius-md);color:var(--muted-foreground);font:450 12.5px/16px var(--font-sans);cursor:pointer;background:0 0;border:0;align-self:flex-start;align-items:center;gap:6px;margin:2px 24px 4px 62px;padding:4px 8px;display:inline-flex}.nt-signals-rest:hover{background:var(--accent);color:var(--foreground)}.nt-signals-none{color:var(--muted-foreground);padding:0 24px 16px;font-size:12.5px}.nt-signals-quotes{flex-direction:column;gap:8px;padding:0 24px 16px;display:flex}.nt-signals-quote{border-left:2px solid var(--border);border-radius:0 var(--radius-md) var(--radius-md) 0;background:var(--muted);flex-direction:column;gap:4px;margin:0;padding:10px 44px 10px 12px;display:flex;position:relative}.nt-signals-quote-at{font:450 11.5px/16px var(--font-mono);color:var(--muted-foreground);font-variant-numeric:tabular-nums;align-items:center;gap:4px;display:inline-flex}.nt-signals-quote-text{font:400 13px/18px var(--font-sans);color:var(--foreground);overflow-wrap:anywhere}.nt-signals-quote-copy{width:28px;height:28px;position:absolute;top:6px;right:6px}.nt-signals-more{border-top:1px solid var(--border);justify-content:center;padding:12px 24px;display:flex}.nt-signals-pickbar{border-top:1px solid var(--border);background:var(--popover);color:var(--popover-foreground);z-index:3;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px 10px 24px;font-size:13px;display:flex;position:sticky;bottom:0;box-shadow:0 -4px 6px -4px #00000014}.nt-signals-pickbar-n{font-variant-numeric:tabular-nums}.nt-signals-pickbar-n b{font-weight:550}.nt-signals-pickbar-hint{color:var(--muted-foreground);font-size:12.5px}.nt-signals-trend{flex-direction:column;gap:12px;display:flex}.nt-signals-readout{flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:12.5px;display:flex}.nt-signals-readout-v{font:550 22px/28px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--foreground)}.nt-signals-plot{gap:8px;height:132px;display:flex}.nt-signals-yaxis{color:var(--muted-foreground);font-variant-numeric:tabular-nums;text-align:right;flex-direction:column;justify-content:space-between;min-width:20px;margin-top:-6px;margin-bottom:-6px;font-size:11px;line-height:12px;display:flex}.nt-signals-bars{border-bottom:1px solid var(--border);background-image:linear-gradient(var(--border-soft,var(--border)) 1px, transparent 1px);background-position:0 0;background-size:100% 50%;flex:1;align-items:flex-end;gap:2px;min-width:0;display:flex}.nt-signals-bar{cursor:default;border-radius:4px 4px 0 0;outline:none;flex:1 1 0;align-items:flex-end;min-width:3px;max-width:48px;height:100%;display:flex;position:relative}.nt-signals-bar>span{background:var(--chart-3);border-radius:4px 4px 0 0;width:100%;transition:background-color .12s;display:block}.nt-signals-bar.is-last>span{background:var(--chart-2)}.nt-signals-bar.is-cur>span{background:var(--chart-1)}.nt-signals-edge{border-left:1px dashed var(--muted-foreground);position:absolute;top:0;bottom:0;left:-3px}.nt-signals-xaxis{color:var(--muted-foreground);font-variant-numeric:tabular-nums;justify-content:space-between;gap:8px;padding-left:28px;font-size:11.5px;line-height:16px;display:flex}.nt-signals-verdict{color:var(--foreground);margin:0;font-size:13px;line-height:20px}.nt-signals-tags{border-top:1px solid var(--border);margin:0;padding:0;list-style:none}.nt-signals-tags li+li{border-top:1px solid var(--border)}.nt-signals-tag{width:100%;color:inherit;font:inherit;text-align:left;background:0 0;border:0;align-items:center;gap:12px;padding:10px 24px;display:flex}.nt-signals-tag.is-link{cursor:pointer;transition:background-color .15s}.nt-signals-tag.is-link:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-signals-tag.is-link:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-signals-rank{text-align:right;width:18px;color:var(--muted-foreground);font-variant-numeric:tabular-nums;flex:none;font-size:11.5px}.nt-signals-tag-body{flex-direction:column;flex:1;gap:2px;min-width:0;display:flex}.nt-signals-tag-name{font:450 13px/18px var(--font-sans);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nt-signals-tag-stat{color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-size:11.5px;line-height:16px}.nt-signals-trendtag{font:450 11.5px/16px var(--font-sans);flex:none;align-items:center;gap:4px;display:inline-flex}.nt-signals-trendtag.is-success{color:var(--success)}.nt-signals-trendtag.is-destructive{color:var(--destructive)}.nt-signals-trendtag.is-muted{color:var(--muted-foreground)}.nt-signals-caveat{align-items:flex-start;gap:8px;line-height:16px;display:flex}.nt-signals-caveat .nt-icon{flex:none;margin-top:1px}.nt-signals-taction{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.nt-signals-taction .nt-segmented-opt{height:28px;padding:0 10px;font-size:12.5px}.nt-signals-tmeta{flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:12.5px;display:flex}.nt-signals-cues{border-top:1px solid var(--border);max-height:320px;margin:0;padding:4px 0;list-style:none;overflow-y:auto}.nt-signals-cue{align-items:baseline;gap:12px;padding:6px 24px;display:flex}.nt-signals-cue:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-signals-cue:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-signals-cue-at{min-width:40px;font:450 11.5px/18px var(--font-mono);color:var(--muted-foreground);font-variant-numeric:tabular-nums;text-align:left;background:0 0;border:0;flex:none;padding:0}.nt-signals-cue-at.is-link{cursor:pointer}.nt-signals-cue-at.is-link:hover{color:var(--foreground);text-decoration:underline}.nt-signals-cue-text{overflow-wrap:anywhere;flex:1;min-width:0;font-size:13px;line-height:18px}.nt-signals-transcript{border-top:1px solid var(--border);white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;padding:16px 24px 24px;font-size:14px;line-height:22px;overflow-y:auto}@media (max-width:480px){.nt-signals-head,.nt-signals-ghead,.nt-signals-row,.nt-signals-quotes,.nt-signals-none,.nt-signals-pad{padding-left:16px;padding-right:16px}.nt-signals-rest{margin-left:54px}.nt-signals-poster{width:44px;height:56px}.nt-signals-stage{width:120px}.nt-signals-tag,.nt-signals-cue{padding-left:16px;padding-right:16px}}:root{color-scheme:light dark}:root[data-host-theme=light]{color-scheme:light}:root[data-host-theme=dark]{color-scheme:dark}html{overflow:hidden auto}[hidden]{display:none!important}a{color:inherit;text-decoration:none}body{max-width:100vw;color:var(--foreground);font:400 13px/18px var(--font-sans);-webkit-font-smoothing:antialiased;background:0 0;margin:0;padding:10px;overflow-x:hidden}mark{background:var(--warning-soft);color:inherit;border-radius:3px;padding:0 2px}@keyframes nt-in{0%{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}.nt-in{animation:.25s cubic-bezier(.4,0,.2,1) both nt-in}@media (prefers-reduced-motion:reduce){.nt-in{animation:none}}.nt-stack{flex-direction:column;gap:12px;display:flex}.nt-commerce-cancel-ico{stroke-width:1.5px}.nt-feeds-list,.nt-commerce-feats{list-style:outside}ol.nt-feeds-list{list-style:decimal}.nt-avatar>img,.nt-signals-face>img{position:absolute;inset:0}.nt-avatar-fallback{justify-content:center;align-items:center;display:inline-flex}.nt-rows{border-top:1px solid var(--border)}.nt-row{border-bottom:1px solid var(--border);align-items:flex-start;gap:12px;padding:12px 24px;display:flex}.nt-row:last-child{border-bottom:0}.nt-row:hover{background:var(--accent)}@supports (color:color-mix(in lab, red, red)){.nt-row:hover{background:color-mix(in srgb, var(--accent) 50%, transparent)}}.nt-row-main{flex:1;min-width:0}.nt-row-title{font:550 13px/18px var(--font-sans);color:var(--foreground);align-items:center;gap:6px;display:flex}.nt-row-title.nt-mono{font-family:var(--font-mono);font-weight:450}.nt-row-meta{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);font-variant-numeric:tabular-nums;margin-top:2px}.nt-row-meta.nt-mono{font-family:var(--font-mono);word-break:break-all}.nt-row-note{font:400 13px/18px var(--font-sans);color:var(--foreground);margin-top:2px}.nt-row-error{font:400 12px/17px var(--font-sans);color:var(--destructive);word-break:break-word;margin-top:4px}.nt-row-end{font:550 13px/18px var(--font-sans);font-variant-numeric:tabular-nums;flex:none}.nt-unknown{font-size:13px;font-weight:450}.nt-sound{flex-direction:column;gap:12px;width:280px;padding:14px;display:flex}.nt-sound-head{align-items:center;gap:12px;min-width:0;display:flex}.nt-sound-cover{border-radius:var(--radius-md);background:var(--muted);width:48px;height:48px;color:var(--muted-foreground);flex:none;justify-content:center;align-items:center;display:inline-flex;position:relative;overflow:hidden}.nt-sound-cover>img{object-fit:cover;width:100%;height:100%;position:absolute;inset:0}.nt-sound-title{font:550 13px/18px var(--font-sans)}.nt-sound-meta{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground)}.nt-sound-player{align-items:center;gap:10px;display:flex}.nt-sound-play{border-radius:var(--radius-full);background:var(--primary);width:32px;height:32px;color:var(--primary-foreground);cursor:pointer;border:0;flex:none;justify-content:center;align-items:center;display:inline-flex}.nt-sound-player .au-body{flex:1;min-width:0}.nt-sound-seek{border-radius:var(--radius-full);background:var(--muted);cursor:pointer;height:4px;overflow:hidden}.nt-sound-seek>i{background:var(--foreground);width:0;height:100%;display:block}.nt-sound-time{font:400 11px/14px var(--font-sans);color:var(--muted-foreground);font-variant-numeric:tabular-nums;justify-content:space-between;margin-top:4px;display:flex}.nt-sound-missing{font:400 11.5px/16px var(--font-sans);color:var(--muted-foreground);align-items:center;gap:6px;display:flex}.nt-credits{padding-bottom:20px}.nt-credits-v{font:550 36px/1.1 var(--font-sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums}.nt-credits-free{flex-direction:column;gap:6px;margin-top:14px;display:flex}.nt-hook{flex-direction:column;gap:6px;display:flex}.nt-hook-meta{flex-direction:column;align-items:flex-start;gap:4px;display:flex}.nt-identity-ev{font:400 12px/17px var(--font-sans);flex-direction:column;gap:6px;margin:8px 0 0;padding:0;list-style:none;display:flex}.nt-identity-link{margin-top:10px}.nt-series{height:64px}.nt-series .nt-signals-bars{gap:2px}.nt-usage-table{padding:0 24px 8px}.nt-commerce-note.is-error{color:var(--destructive);border-color:var(--destructive)}@supports (color:color-mix(in lab, red, red)){.nt-commerce-note.is-error{border-color:color-mix(in srgb, var(--destructive) 30%, transparent)}}.nt-view-guidance{white-space:pre-wrap;margin:0;padding:0 24px 12px}.nt-json{border-radius:var(--radius-md);background:var(--muted);max-height:420px;font:400 12px/1.55 var(--font-mono);white-space:pre-wrap;word-break:break-word;margin:0 24px 20px;padding:12px 14px;overflow:auto}.nt-pick{appearance:none;border:1px solid var(--input);width:16px;height:16px;box-shadow:var(--shadow-xs);cursor:pointer;background:0 0;border-radius:4px;flex:none;margin:2px 0 0;transition:all .15s;position:relative}.nt-pick:checked{border-color:var(--primary);background:var(--primary)}.nt-pick:checked:after{content:"";border:solid var(--primary-foreground);border-width:0 2px 2px 0;width:4px;height:8px;position:absolute;top:1.5px;left:4.5px;transform:rotate(45deg)}.nt-signals-row>.nt-signals-row-body{display:flex}.nt-signals-gtitle .nt-muted{font-weight:400}.mkt-logo{align-items:center;display:inline-flex}.mkt-logo svg{width:auto;max-width:96px;height:100%;display:block}.nt-verify{margin:0 0 10px}
 </style>
 </head>
 <body>
@@ -123,19 +123,21 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // background colour: this view is mounted inside the host's transcript and
   // deliberately paints no body background, so there is no colour it could
   // paint the cut in that would be right on every host.
+  var mkSeq=0;
   function mkSvg(w,h,scanning){
-    var lid=scanning?' class="lid"':"";
-    var iris=scanning?' class="iris"':"";
-    return '<svg class="mk" width="'+w+'" height="'+h+'" viewBox="-10 -10 387 220" aria-hidden="true">'
-      +'<mask id="mkcut" maskUnits="userSpaceOnUse" x="-10" y="-10" width="387" height="220">'
+    var id="nt-mkcut-"+(++mkSeq);
+    var lid=scanning?"nt-mark-lid lid":"nt-mark-lid";
+    var iris=scanning?"nt-mark-iris iris":"nt-mark-iris";
+    return '<svg class="nt-mark mk'+(scanning?" is-scanning":"")+'" width="'+w+'" height="'+h+'" viewBox="-10 -10 387 220" aria-hidden="true">'
+      +'<mask id="'+id+'" maskUnits="userSpaceOnUse" x="-10" y="-10" width="387" height="220">'
       +'<rect x="-10" y="-10" width="387" height="220" fill="#fff"/>'
       +'<circle cx="100" cy="100" r="84.75" fill="none" stroke="#000" stroke-width="46"/>'
       +'</mask>'
-      +'<g'+lid+' fill="none" stroke="currentColor" stroke-width="30.5">'
-      +'<circle cx="267" cy="100" r="84.75" mask="url(#mkcut)"/>'
+      +'<g class="'+lid+'" fill="none" stroke="currentColor" stroke-width="30.5">'
+      +'<circle cx="267" cy="100" r="84.75" mask="url(#'+id+')"/>'
       +'<circle cx="100" cy="100" r="84.75"/>'
-      +'<circle'+iris+' cx="116.5" cy="66.5" r="33.25"/>'
-      +'<circle'+iris+' cx="250.5" cy="66.5" r="33.25" style="animation-delay:.09s"/>'
+      +'<circle class="'+iris+'" cx="116.5" cy="66.5" r="33.25"/>'
+      +'<circle class="'+iris+'" cx="250.5" cy="66.5" r="33.25" style="animation-delay:.09s"/>'
       +'</g></svg>';
   }
 
@@ -280,21 +282,21 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   }
 
   function skPostCard(){
-    return '<div class="sk-card"><div class="sk sk-media"></div><div class="sk-body">'
-      +'<span class="sk sk-pill" style="width:64px"></span>'
-      +'<div class="sk sk-line w80"></div><div class="sk sk-line w60"></div></div></div>';
+    return '<div class="nt-commerce-skcard sk-card"><span class="nt-sk nt-commerce-sk nt-commerce-skmedia sk sk-media" aria-hidden="true"></span>'
+      +'<div class="nt-commerce-skbody sk-body">'
+      +'<span class="nt-sk nt-commerce-sk nt-commerce-skpill sk sk-pill" style="width:64px" aria-hidden="true"></span>'
+      +'<span class="nt-sk nt-commerce-sk nt-commerce-skline is-w80 sk sk-line" aria-hidden="true"></span>'
+      +'<span class="nt-sk nt-commerce-sk nt-commerce-skline is-w60 sk sk-line" aria-hidden="true"></span></div></div>';
   }
   function skRow(){
-    return '<div class="sk-row"><div class="sk sk-avatar"></div>'
-      +'<div style="flex:1;min-width:0"><div class="sk sk-line w40"></div>'
-      +'<div class="sk sk-line w80"></div></div></div>';
+    return '<div class="nt-commerce-skrow sk-row"><span class="nt-sk nt-commerce-sk nt-commerce-skavatar sk sk-avatar" aria-hidden="true"></span>'
+      +'<div class="nt-grow nt-min0"><span class="nt-sk nt-commerce-sk nt-commerce-skline is-w40 sk sk-line" aria-hidden="true"></span>'
+      +'<span class="nt-sk nt-commerce-sk nt-commerce-skline is-w80 sk sk-line" aria-hidden="true"></span></div></div>';
   }
   function skText(){
-    return '<div class="sk sk-line w60"></div><div class="sk sk-line"></div>'
-      +'<div class="sk sk-line"></div><div class="sk sk-line w80"></div>'
-      +'<div style="margin-top:14px"><span class="sk sk-pill"></span>'
-      +'<span class="sk sk-pill" style="width:58px"></span>'
-      +'<span class="sk sk-pill" style="width:92px"></span></div>';
+    var line=function(w){return '<span class="nt-sk nt-commerce-sk nt-commerce-skline'+(w?" is-w"+w:"")+' sk sk-line" aria-hidden="true"></span>';};
+    var pill=function(w){return '<span class="nt-sk nt-commerce-sk nt-commerce-skpill sk sk-pill"'+(w?' style="width:'+w+'px"':"")+' aria-hidden="true"></span>';};
+    return line(60)+line()+line()+line(80)+'<div class="nt-commerce-skpills">'+pill()+pill(58)+pill(92)+"</div>";
   }
 
   /** Skeleton that mirrors the shape of the result the tool will return. */
@@ -316,11 +318,28 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     return null;
   }
 
+  /**
+   * The call stopped before it answered. Said plainly, and — when the wait had
+   * quoted a price — with what that price was: a ceiling on what the fetch
+   * would bill, never a charge already taken, so a cancelled call spent
+   * nothing. The plan is the same one the wait itemised, so the two screens
+   * cannot disagree about the number.
+   */
   function renderCancelled(reason){
     var app=document.getElementById("app");
     if(!app||toolResultReceived)return;
-    app.innerHTML='<div class="empty-state fade-in"><div class="icon">x</div><div class="text">'
-      +esc(reason?("Cancelled: "+reason):"The tool call was cancelled")+"</div></div>";
+    var note="";
+    if(lastLoad&&PLANS[lastLoad.tool]){
+      var plan=PLANS[lastLoad.tool],cr=creditsFor(lastLoad.tool,lastLoad.args);
+      note=plan.planAi?"No plan AI credits were spent."
+        :cr>0?"Nothing was charged — the "+cr+" credit"+(cr===1?"":"s")+" quoted were a ceiling, not a charge."
+        :"Nothing was charged.";
+    }
+    app.innerHTML='<div class="nt-commerce-cancelled empty-state nt-in" role="status">'
+      +ic("x",44,"nt-commerce-cancel-ico")
+      +'<div class="nt-commerce-cancel-text text">'+esc(reason?("Cancelled: "+reason):"The tool call was cancelled")+"</div>"
+      +(note?'<div class="nt-commerce-cancel-note">'+esc(note)+"</div>":"")
+      +"</div>";
     setTimeout(reportSize,50);
   }
 
@@ -328,7 +347,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // is what drives the skeleton there - which means this runs over and over
   // within one call: every 250ms while polling, plus once per set_globals,
   // and that fires for theme, display mode and height changes as well as for
-  // results. Rewriting innerHTML on each of them restarted .fade-in (opacity
+  // results. Rewriting innerHTML on each of them restarted the entry animation (opacity
   // 0, shifted 8px down), the load-bar sweep and every skeleton shine four
   // times a second, and posted a size-changed at the same rate for the host
   // to re-lay-out on. That is the blinking. The skeleton is a pure function
@@ -336,6 +355,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // only when the shape changes, or when it is no longer on screen because a
   // result replaced it - which is the second call in a reused view.
   var loadingSig=null;
+  /** The tool and arguments the last wait was drawn for. */
+  var lastLoad=null;
 
   /**
    * What the arguments already tell us about the answer.
@@ -353,7 +374,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var url=typeof a.url==="string"?a.url:(Array.isArray(a.urls)&&a.urls.length?String(a.urls[0]):"");
     if(url){
       var plat=platformOfUrl(url);
-      if(plat)out.push({icon:pSvg(plat,13),text:pTitle(plat),brand:pColor(plat)});
+      if(plat)out.push({platform:plat,text:pTitle(plat)});
     }
     if(a.username)out.push({text:"@"+String(a.username).replace(/^@/,"")});
     if(Array.isArray(a.usernames)&&a.usernames.length){
@@ -387,9 +408,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       return !said||String(said).indexOf(f.text)<0;
     });
     if(!facts.length)return "";
-    return '<div class="load-known">'+facts.map(function(f){
-      return '<span class="load-fact"'+(f.brand?' style="--brand:'+f.brand+'"':"")+">"
-        +(f.icon?'<span class="load-fact-mark">'+f.icon+"</span>":"")
+    return '<div class="nt-commerce-lknown load-known">'+facts.map(function(f){
+      return '<span class="nt-commerce-lfact load-fact">'
+        +(f.platform?'<span class="nt-commerce-lfact-mark load-fact-mark">'+glyph(f.platform,13)+"</span>":"")
         +esc(f.text)+"</span>";
     }).join("")+"</div>";
   }
@@ -405,18 +426,18 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function ledgerHtml(lines,total){
     if(!lines.length)return "";
     var rows=lines.map(function(l){
-      return '<div class="led-row">'
-        +(l.platform?'<span class="led-mark" style="--brand:'+pColor(l.platform)+'">'
-          +pSvg(l.platform,13)+"</span>":'<span class="led-dot"></span>')
-        +'<div class="led-body"><div class="led-label">'+esc(l.label)+"</div>"
-        +(l.detail?'<div class="led-detail">'+esc(l.detail)+"</div>":"")+"</div>"
-        +'<span class="led-cost">'+esc(String(l.credits))+"</span>"
+      return '<div class="nt-commerce-led-row led-row">'
+        +(l.platform?'<span class="nt-commerce-led-mark led-mark">'+glyph(l.platform,13)+"</span>"
+          :'<span class="nt-commerce-led-dot led-dot" aria-hidden="true"></span>')
+        +'<div class="nt-commerce-led-body led-body"><div class="nt-commerce-led-label led-label">'+esc(l.label)+"</div>"
+        +(l.detail?'<div class="nt-commerce-led-detail led-detail">'+esc(l.detail)+"</div>":"")+"</div>"
+        +'<span class="nt-commerce-led-cost led-cost">'+esc(String(l.credits))+"</span>"
         +"</div>";
     }).join("");
-    return '<div class="card card-wide led"><div class="card-body">'+rows
-      +'<div class="led-foot">Billed at what it fetched — '+esc(String(total))
+    return '<div class="nt-commerce-lcard nt-commerce-led led">'+rows
+      +'<div class="nt-commerce-led-foot led-foot">Billed at what it fetched — '+esc(String(total))
       +" credit"+(total===1?"":"s")+" is the ceiling, not a charge already taken. "
-      +"A failed fetch is refunded.</div></div></div>";
+      +"A failed fetch is refunded.</div></div>";
   }
 
   // A ChatGPT-shaped host sends no tool-input notification, so the poll below
@@ -438,7 +459,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     loadingSig=sig;
 
     var price=priceLabel(credits,plan);
-    var priceHtml=price?'<span class="load-price">'+esc(price)+"</span>":"";
+    var priceHtml=price?'<span class="nt-commerce-lprice load-price">'+esc(price)+"</span>":"";
+    // Kept so a cancellation can say what this wait had quoted.
+    lastLoad={tool:tool,args:args||{}};
 
     // What is being worked on, said with the arguments rather than in general.
     var what=shape.label;
@@ -451,19 +474,21 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       what=shape.label+' for "'+args.niche+'"';
     }
 
+    // The skeleton mirrors the shape of the result: one post card, a strip of
+    // them, a card of rows, or a text card.
     var skeleton="";
     if(shape.kind==="post"){
-      skeleton='<div style="display:flex;justify-content:center">'+skPostCard()+"</div>";
+      skeleton='<div class="nt-commerce-skpost">'+skPostCard()+"</div>";
     }else if(shape.kind==="strip"){
       var cards="";
       for(var i=0;i<shape.n;i++)cards+=skPostCard();
-      skeleton='<div class="sk-strip">'+cards+"</div>";
+      skeleton='<div class="nt-commerce-skstrip sk-strip">'+cards+"</div>";
     }else if(shape.kind==="list"){
       var rows="";
       for(var j=0;j<shape.n;j++)rows+=skRow();
-      skeleton='<div class="card card-wide"><div class="card-body">'+rows+"</div></div>";
+      skeleton='<div class="nt-commerce-lcard"><div class="nt-commerce-lcard-body">'+rows+"</div></div>";
     }else{
-      skeleton='<div class="card card-wide"><div class="card-body">'+skText()+"</div></div>";
+      skeleton='<div class="nt-commerce-lcard"><div class="nt-commerce-lcard-body">'+skText()+"</div></div>";
     }
 
     // Six is the same line spend.ts draws for asking before spending: below
@@ -473,16 +498,16 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var big=credits>6;
     var body;
     if(big){
-      body='<div class="load-centre">'+mkSvg(158,90,true)
-        +'<div class="load-what">'+esc(what)+"</div>"
-        +'<div class="load-sub">'+esc(price)+" committed"
+      body='<div class="nt-commerce-lcentre load-centre">'+mkSvg(158,90,true)
+        +'<div class="nt-commerce-lwhat load-what">'+esc(what)+"</div>"
+        +'<div class="nt-commerce-lsub load-sub">'+esc(price)+" committed"
         +(plan&&plan.note?" · "+esc(plan.note):"")+"</div>"
-        +'<div class="load-bar"></div></div>'
+        +loadBar(what)+"</div>"
         +knownChips(args,what)
         +ledgerHtml(lines,credits);
     }else{
-      body='<div class="load-bar"></div><div class="load-head">'+mkSvg(32,18,true)
-        +"<span>"+esc(what)+"…</span>"+priceHtml+"</div>"
+      body=loadBar(what)+'<div class="nt-commerce-lhead load-head">'+mkSvg(32,18,true)
+        +'<span class="nt-commerce-lhead-t">'+esc(what)+"…</span>"+priceHtml+"</div>"
         +knownChips(args,what)
         // One line is not a fan-out: the head already named that call and
         // its price, and repeating it underneath is noise. Two or more is
@@ -494,7 +519,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         // fan-out to itemise, shaped where there is not.
         +(lines.length>1?ledgerHtml(lines,credits):skeleton);
     }
-    app.innerHTML='<div class="fade-in">'+body+"</div>";
+    app.innerHTML='<div class="nt-commerce-loading nt-in" role="status" aria-live="polite">'+body+"</div>";
     setTimeout(reportSize,50);
   }
 
@@ -530,10 +555,12 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var desc=TOOL_DESCS[tool]||"Results will appear here as soon as a tool returns.";
     var app=document.getElementById("app");
     if(!app)return;
-    app.innerHTML='<div class="flex flex-col items-center justify-center text-center px-6 py-10" style="min-height:220px">'
+    // The still mark is the same SVG the wait animates, so a call that starts
+    // swaps nothing — the irises just begin to move.
+    app.innerHTML='<div class="nt-commerce-idle">'
       +mkSvg(77,44,false)
-      +'<div class="mt-4 text-lg font-bold text-ink">'+label+'</div>'
-      +'<div class="mt-2 text-sm leading-relaxed text-muted max-w-sm">'+desc+'</div>'
+      +'<div class="nt-commerce-idle-title">'+esc(label)+'</div>'
+      +'<div class="nt-commerce-idle-desc">'+esc(desc)+'</div>'
       +'</div>';
   }
   renderIdle();
@@ -557,6 +584,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function readHostGlobals(){
     var api=window.openai;
     if(!api)return;
+    if(api.theme)themeFromHost({theme:api.theme});
     var out=api.toolOutput;
     if(out){
       // set_globals fires for theme, display mode and height changes as well
@@ -623,6 +651,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       window.openai=window.openai||{};
       if(g.toolOutput!==undefined)window.openai.toolOutput=g.toolOutput;
       if(g.toolInput!==undefined)window.openai.toolInput=g.toolInput;
+      if(g.theme!==undefined)window.openai.theme=g.theme;
     }
     readHostGlobals();
   },{passive:true});
@@ -660,6 +689,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       toolResultReceived=false;
       renderLoading(currentTool,pp.arguments);
     }
+    if(d.method==="ui/notifications/host-context-changed"){
+      themeFromHost(d.params);
+    }
     if(d.method==="ui/notifications/tool-cancelled"){
       renderCancelled(d.params&&d.params.reason);
     }
@@ -672,6 +704,36 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // UNCONDITIONALLY — Claude keeps the widget iframe reserved-but-hidden
   // until it receives that notification, so a reply we don't recognize must
   // never deadlock the handshake.
+  // ─── Theme ───
+  // The design system draws light and dark from one set of tokens, and the
+  // view has to be in whichever the host is — not whichever the OS is: a
+  // user can run a dark Claude on a light Mac. MCP Apps hands the host's theme
+  // over in the initialize result and again on host-context-changed, ChatGPT
+  // sets window.openai.theme; until either speaks, prefers-color-scheme is the
+  // best guess, and the tokens' media query covers a view with no script.
+  var hostTheme="";
+  function applyTheme(t,fromHost){
+    t=String(t||"").toLowerCase();
+    if(t!=="light"&&t!=="dark")return;
+    var root=document.documentElement;
+    root.setAttribute("data-theme",t);
+    // Only a host's word pins the canvas scheme; a guess from the OS leaves
+    // it "light dark" so the canvas still follows the user.
+    if(fromHost)root.setAttribute("data-host-theme",t);
+  }
+  function themeFromHost(ctx){
+    var t=ctx&&typeof ctx==="object"?ctx.theme:"";
+    if(t==="light"||t==="dark"){hostTheme=t;applyTheme(t,true);}
+  }
+  (function(){
+    var mq=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)");
+    if(!mq)return;
+    applyTheme(mq.matches?"dark":"light");
+    var onChange=function(){if(!hostTheme)applyTheme(mq.matches?"dark":"light");};
+    if(mq.addEventListener)mq.addEventListener("change",onChange);
+    else if(mq.addListener)mq.addListener(onChange);
+  })();
+
   var initializedSent=false;
   function sendInitialized(){
     if(initializedSent)return;
@@ -684,7 +746,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     appCapabilities:{availableDisplayModes:["inline"]},
     capabilities:{},
     clientInfo:{name:"nooticr-view",version:"2.0.0"}
-  }).then(function(){ bridgeAlive=true; sendInitialized(); }).catch(sendInitialized);
+  }).then(function(r){ bridgeAlive=true; themeFromHost(r&&r.hostContext); sendInitialized(); }).catch(sendInitialized);
   // Unconditional fallback: never wait on a reply shape we don't recognize.
   setTimeout(sendInitialized, 500);
 
@@ -715,6 +777,207 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     return Math.floor(s/31536000)+"y";
   }
   function fmtTime(sec){sec=Math.max(0,Math.floor(Number(sec)||0));return Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);}
+
+  // ─── The design system's primitives ───
+  // The views are the Nooticr design system's MCP views, and these are its
+  // shadcn primitives as strings: each returns the same markup and the same
+  // nt-* class names the design system's own components render, so a view here
+  // and its card there can be compared rule for rule. Anything a test or a
+  // handler reaches for by an older class name keeps that name alongside.
+  //
+  // Icons are Lucide, the set shadcn ships: 24 viewBox, 2px stroke, round caps,
+  // currentColor. Only the ones these views draw are carried.
+  var ICONS={
+    "arrow-right":'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    "arrow-up-right":'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+    "at-sign":'<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+    "badge-check":'<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12"/>',
+    "bar-chart-3":'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    "bookmark":'<path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>',
+    "calendar":'<path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/>',
+    "chart-line":'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>',
+    "check":'<path d="M20 6 9 17l-5-5"/>',
+    "chevron-down":'<path d="m6 9 6 6 6-6"/>',
+    "chevron-left":'<path d="m15 18-6-6 6-6"/>',
+    "chevron-right":'<path d="m9 18 6-6-6-6"/>',
+    "chevron-up":'<path d="m18 15-6-6-6 6"/>',
+    "circle-alert":'<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+    "circle-half":'<circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/>',
+    "circle-question-mark":'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+    "clock":'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    "coins":'<path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"/><path d="M15 6h1v4"/><path d="m6.134 14.768.866-.5 2 3.464"/><circle cx="16" cy="8" r="6"/>',
+    "copy":'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    "crosshair":'<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>',
+    "dot":'<circle cx="12" cy="12" r="1"/>',
+    "external-link":'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    "eye":'<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    "file-text":'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    "flask":'<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>',
+    "gauge":'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+    "ghost":'<path d="M15 10v1"/><path d="M7.528 20.472a1.6 1.6 0 012.277 0l1.057 1.056a1.6 1.6 0 002.276 0l1.057-1.056a1.6 1.6 0 012.277 0l1.114 1.114a1.4 1.4 0 002.414-1V10a8 8 0 00-16 0v10.586a1.4 1.4 0 002.414 1z"/><path d="M9 10v1"/>',
+    "globe":'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    "group":'<path d="M3 7V5c0-1.1.9-2 2-2h2"/><path d="M17 3h2c1.1 0 2 .9 2 2v2"/><path d="M21 17v2c0 1.1-.9 2-2 2h-2"/><path d="M7 21H5c-1.1 0-2-.9-2-2v-2"/><rect width="7" height="5" x="7" y="7" rx="1"/><rect width="7" height="5" x="10" y="12" rx="1"/>',
+    "hash":'<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+    "heart":'<path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>',
+    "history":'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    "image":'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    "inbox":'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+    "info":'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    "key-round":'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
+    "languages":'<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+    "layers":'<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+    "lightbulb":'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+    "link":'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    "list":'<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
+    "loader-circle":'<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+    "message":'<path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>',
+    "message-square":'<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>',
+    "mic":'<path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/>',
+    "minus":'<path d="M5 12h14"/>',
+    "music":'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    "network":'<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>',
+    "package":'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/>',
+    "pause":'<rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/>',
+    "pencil":'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    "pin":'<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+    "play":'<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>',
+    "plug":'<path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/>',
+    "plus":'<path d="M5 12h14"/><path d="M12 5v14"/>',
+    "quote":'<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/>',
+    "reply":'<path d="M20 18v-2a4 4 0 0 0-4-4H4"/><path d="m9 17-5-5 5-5"/>',
+    "scales":'<path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/>',
+    "search":'<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
+    "section":'<path d="M16 5a4 3 0 0 0-8 0c0 4 8 3 8 7a4 3 0 0 1-8 0"/><path d="M8 19a4 3 0 0 0 8 0c0-4-8-3-8-7a4 3 0 0 1 8 0"/>',
+    "sparkles":'<path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/>',
+    "star":'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
+    "table":'<path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>',
+    "thumbs-down":'<path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/>',
+    "thumbs-up":'<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/>',
+    "trend-down":'<path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/>',
+    "trend-up":'<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>',
+    "trending-down":'<path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/>',
+    "trending-up":'<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>',
+    "triangle-alert":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    "trophy":'<path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2"/><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2"/><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3"/>',
+    "user":'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    "users":'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/>',
+    "video":'<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+    "volume-2":'<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
+    "volume-x":'<path d="M11 4.702a.7.7 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.7.7 0 0 0 11 19.298z"/><path d="m16.5 14.5 5-5"/><path d="m16.5 9.5 5 5"/>',
+    "warning":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    "x":'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    "zap":'<path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z"/>'
+  };
+  function ic(name,size,cls,fill){
+    var s=size||16;
+    return '<svg class="nt-icon'+(cls?" "+cls:"")+'" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="'
+      +(fill?"currentColor":"none")+'" stroke="currentColor" stroke-width="2" stroke-linecap="round"'
+      +' stroke-linejoin="round" aria-hidden="true" focusable="false">'+(ICONS[name]||ICONS.circle||"")+"</svg>";
+  }
+  function attr(name,val){return val==null||val===""?"":" "+name+'="'+esc(String(val))+'"';}
+  /** shadcn Badge: default, secondary, outline, success, warning, off, destructive. */
+  function badge(variant,inner,cls,extra){
+    return '<span class="nt-badge nt-badge--'+(variant||"default")+(cls?" "+cls:"")+'"'+(extra||"")+">"+inner+"</span>";
+  }
+  /** shadcn Button. sizes: default, xs, sm, lg, icon, icon-sm. */
+  function btn(variant,size,inner,extra,cls){
+    return '<button type="button" class="nt-btn nt-btn--'+variant+" nt-btn--size-"+size+(cls?" "+cls:"")+'"'
+      +(extra||"")+">"+inner+"</button>";
+  }
+  /** The same Button as a link, for anything that opens a page. */
+  function linkBtn(variant,size,href,inner,cls,extra){
+    return '<a class="nt-btn nt-btn--'+variant+" nt-btn--size-"+size+(cls?" "+cls:"")+'" href="'+esc(href)
+      +'" target="_blank" rel="noopener"'+(extra||"")+">"+inner+"</a>";
+  }
+  /** An outline tag whose status colour always travels with an icon and a word. */
+  function tone(t,icon,inner,cls,title){
+    return '<span class="nt-badge nt-badge--outline nt-commerce-tone is-'+(t||"muted")+(cls?" "+cls:"")+'"'
+      +attr("title",title)+">"+(icon?ic(icon,12):"")+inner+"</span>";
+  }
+  /**
+   * The frame every result view uses: a shadcn Card with the icon and title,
+   * the provenance line under it, an optional action top right, the view's
+   * rows, and an optional bordered footer.
+   */
+  function viewShell(o){
+    return '<section class="nt-view nt-in'+(o.cls?" "+o.cls:"")+'"'+(o.extra||"")+">"
+      +'<header class="nt-view-head"><h3 class="nt-view-title">'+(o.icon?ic(o.icon,16,"nt-muted"):"")+o.title+"</h3>"
+      +(o.meta?'<p class="nt-view-desc">'+o.meta+"</p>":"")
+      +(o.action?'<div class="nt-card-action">'+o.action+"</div>":"")
+      +"</header>"+(o.body||"")
+      +(o.footer?'<footer class="nt-view-foot">'+o.footer+"</footer>":"")
+      +"</section>";
+  }
+  /** shadcn Empty: the mark (or an icon), a one-line title, one sentence. */
+  function emptyState(icon,title,sentence,cls){
+    return '<div class="nt-empty empty-state nt-in'+(cls?" "+cls:"")+'">'
+      +(icon?ic(icon,24):mkSvg(77,44,false))
+      +(title?'<div class="nt-empty-title text">'+title+"</div>":"")
+      +(sentence?"<div>"+sentence+"</div>":"")+"</div>";
+  }
+  /** A two-to-four option switch; attr names the data attribute the handler reads. */
+  function segmented(label,opts,cur,dataAttr,cls){
+    return '<div class="nt-segmented'+(cls?" "+cls:"")+'" role="group"'+attr("aria-label",label)+">"
+      +opts.map(function(o){
+        var on=o[0]===cur;
+        return '<button type="button" class="nt-segmented-opt'+(on?" is-on":"")+(o[2]?" "+o[2]:"")+'" aria-pressed="'
+          +(on?"true":"false")+'" '+dataAttr+'="'+esc(o[0])+'">'+esc(o[1])+"</button>";
+      }).join("")+"</div>";
+  }
+  /** shadcn Tabs list: a muted track, the active trigger raised on background. */
+  function tabsList(tabs,cur,dataAttr){
+    return '<div class="nt-tabs"><div class="nt-tabs-list" role="tablist">'+tabs.map(function(t){
+      var on=t[0]===cur;
+      return '<button type="button" role="tab" aria-selected="'+(on?"true":"false")+'" class="nt-tabs-trigger'
+        +(on?" is-active":"")+'" '+dataAttr+'="'+esc(t[0])+'">'+esc(t[1])+"</button>";
+    }).join("")+"</div></div>";
+  }
+  function statPill(icon,value,label){
+    return '<span class="nt-stat-pill">'+(icon?ic(icon,12):"")+"<b>"+esc(String(value))+"</b>"+(label?" "+esc(label):"")+"</span>";
+  }
+  /** A verbatim line with its moment above it and Copy on hover. */
+  function quoteBox(text,at,inner){
+    return '<blockquote class="nt-quote quote-box">'+(at?'<span class="nt-quote-at quote-at">'+esc(at)+"</span>":"")
+      +(inner!=null?inner:esc(text))
+      +'<button type="button" class="nt-copy-btn copy-btn" data-copy="'+esc(text)+'">Copy</button></blockquote>';
+  }
+  /** Accordion row for the long parts of a result; open by default at most once or twice. */
+  function accordion(label,body,open){
+    return '<div class="nt-section section"><button type="button" class="nt-section-header section-header'+(open?" open":"")
+      +'" aria-expanded="'+(open?"true":"false")+'"><span class="nt-section-label section-label">'+label+"</span>"
+      +ic("chevron-down",14,"nt-chevron"+(open?" is-open":""))+"</button>"
+      +'<div class="nt-section-content section-content'+(open?" open":"")+'"'+(open?"":" hidden")+">"+body+"</div></div>";
+  }
+  function loadBar(label){
+    return '<div class="nt-loadbar nt-commerce-lbar load-bar" role="progressbar" aria-label="'+esc(label||"Loading")+'"></div>';
+  }
+  function progressBar(pct,label){
+    var v=Math.max(0,Math.min(100,Number(pct)||0));
+    return '<div class="nt-progress" role="progressbar" aria-valuenow="'+Math.round(v)+'" aria-valuemin="0" aria-valuemax="100"'
+      +attr("aria-label",label)+'><div class="nt-progress-track"><i class="nt-progress-fill" style="width:'+v+'%"></i></div></div>';
+  }
+  var GLYPH_KEYS=["tiktok","instagram","youtube","x","twitter","douyin","xiaohongshu","bilibili","linkedin","reddit","weibo"];
+  /** A network's mark in currentColor; networks with no glyph get a neutral letter tile. */
+  function glyph(p,size){
+    var k=String(p||"").toLowerCase(),s=size||12;
+    if(GLYPH_KEYS.indexOf(k)>=0)return pSvg(k,s).replace("<svg ",'<svg class="nt-glyph" ');
+    var n=pTitle(k)||"?";
+    return '<span class="nt-feeds-ptile" style="width:'+s+"px;height:"+s+"px;font-size:"+Math.max(7,Math.round(s*0.62))
+      +'px" role="img" aria-label="'+esc(n)+'">'+esc(n.charAt(0))+"</span>";
+  }
+  /** Outline pill with the network's mark and name. */
+  function platTag(p,cls){
+    return '<span class="nt-feeds-plat'+(cls?" "+cls:"")+'">'+glyph(p,12)+esc(pTitle(p)||"Post")+"</span>";
+  }
+  /** "1.2M" / "38.2k" — the design system's compact number. */
+  function compact(n){
+    n=Number(n)||0;
+    var t=function(x){var s=x.toFixed(1);return s.slice(-2)===".0"?s.slice(0,-2):s;};
+    return n>=1e6?t(n/1e6)+"M":n>=1e3?t(n/1e3)+"k":String(Math.round(n));
+  }
+  /** "48,210" — grouped, for counts a reader compares digit by digit. */
+  function grouped(n){return (Number(n)||0).toLocaleString("en-US");}
+  function plural(n,one,many){return n+" "+(n===1?one:(many||one+"s"));}
 
   // ─── Audio engine ───
   // Every <audio> in the view registers here so only one track is ever
@@ -787,7 +1050,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     }
     function per(){return driven()?audio.duration/total:SLIDE_MS/1000;}
     function paint(){
-      for(var k=0;k<total;k++)slides[k].classList.toggle("active",k===idx);
+      for(var k=0;k<total;k++){
+        slides[k].classList.toggle("active",k===idx);
+        slides[k].classList.toggle("is-active",k===idx);
+      }
       var chip=box.querySelector(".mp-idx");
       if(chip)chip.textContent=idx+1;
     }
@@ -920,9 +1186,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 
   function aiBtn(tool,label,argsJson){
     var cost=AI_PRICE[tool]||0;
-    return '<button class="ai-btn" type="button" data-ai="'+esc(tool)+'" data-args="'+esc(argsJson)+'">'
-      +'<span class="spark">'+mpIcon("sparkle",13)+"</span><span>"+esc(label)+"</span>"
-      +(cost?'<span class="price">'+cost+" cr</span>":"")+"</button>";
+    return '<button class="nt-btn nt-btn--outline nt-btn--size-sm nt-feeds-aibtn ai-btn" type="button" data-ai="'+esc(tool)+'" data-args="'+esc(argsJson)+'">'
+      +'<span class="nt-ai-ico">'+ic("sparkles",14,"nt-muted")+'</span><span class="nt-lbl">'+esc(label)+"</span>"
+      +(cost?badge("secondary",cost+" cr","price"):"")+"</button>";
   }
 
   /** Buttons offered under a single post. */
@@ -930,39 +1196,43 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var url=p&&(p.externalUrl||p.url);
     if(!url)return "";
     var a=JSON.stringify({url:url});
-    return '<div class="ai-actions">'
+    return '<div class="nt-feeds-ai is-under ai-actions"><div class="nt-feeds-ai-row">'
       +aiBtn("create_variants","Create variants",a)
       +aiBtn("write_hooks","Write hooks",a)
       +aiBtn("repurpose_post","Repurpose",a)
       +aiBtn("analyze_comments","Read comments",a)
-      +"</div>";
+      +"</div></div>";
   }
 
   function runAiTool(btn){
     var tool=btn.getAttribute("data-ai");
     var args={};
     try{args=JSON.parse(btn.getAttribute("data-args")||"{}");}catch(e){}
-    var label=btn.querySelector("span:nth-child(2)");
+    var label=btn.querySelector(".nt-lbl");
+    var icon=btn.querySelector(".nt-ai-ico");
     var original=label?label.textContent:"";
-    btn.disabled=true;btn.classList.add("busy");
+    var sparkle=icon?icon.innerHTML:"";
+    btn.disabled=true;btn.classList.add("busy");btn.setAttribute("aria-busy","true");
     if(label)label.textContent="Working…";
+    if(icon)icon.innerHTML=ic("loader-circle",14,"nt-spin");
     var restore=function(text){
-      btn.classList.remove("busy");
+      btn.classList.remove("busy");btn.removeAttribute("aria-busy");
       if(label)label.textContent=text||original;
-      setTimeout(function(){btn.disabled=false;if(label)label.textContent=original;},1600);
+      if(icon)icon.innerHTML=ic("check",14,"nt-muted");
+      setTimeout(function(){btn.disabled=false;if(label)label.textContent=original;if(icon)icon.innerHTML=sparkle;},1600);
     };
     var settled=false;
     var fallback=function(){
       if(settled)return;settled=true;
       var ask="Run "+tool+" on "+(args.url||JSON.stringify(args));
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(ask).then(function(){restore("Copied ✓");})
+        navigator.clipboard.writeText(ask).then(function(){restore("Copied");})
           .catch(function(){restore("Try in chat");});
       }else restore("Try in chat");
     };
     invokeTool(tool,args,function(r){
       settled=true;
-      restore("Sent ✓");
+      restore("Sent");
       renderToolResult(r);
     },fallback);
   }
@@ -995,14 +1265,34 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // that only exists once something is picked.
   var picked = [];
 
-  function pickBarHtml(){
-    return '<div class="pickbar" id="pickbar" hidden>'
-      +'<span class="n"><b id="pickn">0</b> selected</span>'
-      +'<span class="hint" id="pickhint">Pick 2 or more to compare</span>'
-      +'<span class="sp"></span>'
-      +'<button type="button" id="pickclear">Clear</button>'
-      +'<button type="button" id="pickgo" class="primary" disabled>Compare</button>'
+  /**
+   * The selection bar that rises once something is picked: the count, a hint,
+   * Clear, and the one action. Compare carries its price on its face, as
+   * every action that spends credits does; Analyse these re-reads one post's
+   * comments and says so in its own guidance.
+   */
+  function pickBarHtml(kind){
+    var mentions=kind==="mentions";
+    return '<div class="'+(mentions?"nt-signals-pickbar":"nt-feeds-pickbar")+' pickbar" id="pickbar" role="region" aria-label="Selection" hidden>'
+      +'<span class="'+(mentions?"nt-signals-pickbar-n":"nt-feeds-pickbar-n")+' n"><b id="pickn">0</b> selected</span>'
+      +'<span class="'+(mentions?"nt-signals-pickbar-hint":"nt-feeds-pickbar-hint")+' hint" id="pickhint">'+(mentions?"":"Pick 2 or more to compare")+"</span>"
+      +'<span class="nt-feeds-pickbar-sp sp"></span>'
+      +btn("ghost","sm","Clear",' id="pickclear"')
+      +btn("default","sm",
+        (mentions?ic("sparkles",14):ic("scales",14))
+        +'<span class="nt-lbl">'+(mentions?"Analyse these":"Compare")+"</span>"
+        +(mentions?"":badge("secondary",AI_PRICE.compare_posts+" cr","nt-feeds-cr")),
+        ' id="pickgo"'+(mentions?"":" disabled"),"primary")
       +"</div>";
+  }
+  /** The go button's words, without disturbing its icon or its price. */
+  function setGoLabel(go,text){
+    var l=go&&go.querySelector(".nt-lbl");
+    if(l)l.textContent=text;else if(go)go.textContent=text;
+  }
+  function goLabel(go){
+    var l=go&&go.querySelector(".nt-lbl");
+    return l?l.textContent:(go?go.textContent:"");
   }
 
   function syncPickBar(){
@@ -1031,7 +1321,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       picked=[];
       document.querySelectorAll('.mp-pick[aria-pressed="true"]').forEach(function(b){
         b.setAttribute("aria-pressed","false");
-        var mp=b.closest(".mp"); if(mp)mp.classList.remove("picked");
+        b.classList.remove("is-on");
+        var mp=b.closest(".mp"); if(mp){mp.classList.remove("picked");mp.classList.remove("is-picked");}
       });
       syncPickBar();
     });
@@ -1051,7 +1342,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     else picked.splice(i,1);
     b.setAttribute("aria-pressed",on?"true":"false");
     var mp=b.closest(".mp");
-    if(mp)mp.classList.toggle("picked",on);
+    if(mp){mp.classList.toggle("picked",on);mp.classList.toggle("is-picked",on);}
+    b.classList.toggle("is-on",on);
     syncPickBar();
   }
 
@@ -1074,10 +1366,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var go=document.getElementById("pickgo");
     var urls=pickedUrls().slice(0,5);
     if(!go||urls.length<2)return;
-    go.disabled=true; go.textContent="Comparing…";
+    go.disabled=true; setGoLabel(go,"Comparing…");
     var done=function(label){
-      go.textContent=label;
-      setTimeout(function(){ go.textContent="Compare"; syncPickBar(); },1800);
+      setGoLabel(go,label);
+      setTimeout(function(){ setGoLabel(go,"Compare"); syncPickBar(); },1800);
     };
     // Preferred path: the host runs the tool for us.
     var settled=false;
@@ -1093,13 +1385,13 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       var NL=String.fromCharCode(10);
       var text="Compare these posts:"+NL+urls.join(NL);
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(function(){done("Copied ✓");})
+        navigator.clipboard.writeText(text).then(function(){done("Copied");})
           .catch(function(){done("Copy failed");});
       } else done("Copy failed");
     };
     invokeTool("compare_posts",{urls:urls},function(r){
       settled=true;
-      done("Sent ✓");
+      done("Sent");
       renderToolResult(r);
     },fallback);
   }
@@ -1261,12 +1553,13 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     }
     function setPlaying(on){
       box.classList.toggle("playing",on);
+      box.classList.toggle("is-playing",on);
       if(playBtn){
-        playBtn.innerHTML=mpIcon(on?"pause":"play",16);
+        playBtn.innerHTML=mpIcon(on?"pause":"play",14);
         playBtn.setAttribute("aria-label",on?"Pause":"Play");
       }
       if(tapBtn){
-        tapBtn.innerHTML="<span>"+mpIcon(on?"pause":"play",28)+"</span>";
+        tapBtn.innerHTML="<span>"+mpIcon(on?"pause":"play",26)+"</span>";
         tapBtn.setAttribute("aria-label",on?"Pause":"Play");
       }
     }
@@ -1498,7 +1791,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     lastWidth=availableWidth();reportSize();
   },120);});
 
-  function fmtNum(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);}
+  function fmtNum(n){return compact(n);}
   function pColor(p){return{tiktok:"#000",douyin:"#000",instagram:"#E4405F",youtube:"#FF0000",xiaohongshu:"#FF2442",x:"#000",twitter:"#000",bilibili:"#00A1D6",linkedin:"#0A66C2",reddit:"#FF4500",weibo:"#E6162D"}[p]||"#6B7280";}
   /** Display name for a platform key — "xiaohongshu" is not a label. */
   function pTitle(p){
@@ -1530,26 +1823,17 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // OS (and some platforms colour them), so the control bar and engagement
   // rail would not look the same from one machine to the next. These inherit
   // currentColor and size, so one icon serves every context.
-  var MP_ICONS={
-    heart:"M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
-    comment:"M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z",
-    share:"M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z",
-    eye:"M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
-    play:"M8 5v14l11-7z",
-    pause:"M6 19h4V5H6v14zm8-14v14h4V5h-4z",
-    volume:"M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
-    muted:"M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z",
-    note:"M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z",
-    prev:"M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z",
-    next:"M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
-    open:"M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z",
-    warn:"M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z",
-    check:"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
-    sparkle:"M12 2l1.9 5.7L19.6 9.6l-5.7 1.9L12 17.2l-1.9-5.7L4.4 9.6l5.7-1.9L12 2zm6.5 10.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6zM5 14l.7 2 2 .7-2 .7L5 19.4l-.7-2-2-.7 2-.7L5 14z"
-  };
+
+  // The player's own glyph names, drawn from the Lucide set the rest of the
+  // view uses. Play, pause and the two engagement marks are filled, as the
+  // design system draws them on a video.
+  var MP_MAP={heart:["heart",1],comment:["message-square",1],share:["reply",0],eye:["eye",0],
+    play:["play",1],pause:["pause",1],volume:["volume-2",0],muted:["volume-x",0],note:["music",0],
+    prev:["chevron-left",0],next:["chevron-right",0],open:["external-link",0],warn:["triangle-alert",0],
+    check:["check",0],sparkle:["sparkles",0]};
   function mpIcon(name,size){
-    var s=size||18,d=MP_ICONS[name]||"";
-    return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="currentColor" style="display:block;flex-shrink:0" aria-hidden="true" focusable="false"><path d="'+d+'"/></svg>';
+    var m=MP_MAP[name]||[name,0];
+    return ic(m[0],size||18,"",!!m[1]);
   }
 
   /**
@@ -1568,38 +1852,36 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // No invented handle. "@someone" reads as an account you could go and
     // look at, and there is none — the platform withheld it, or the
     // commenter is deleted. An empty handle renders as a stated absence
-    // below instead of a fabricated name. (No backticks in here: this
-    // whole view is one TypeScript template literal, and one would end it.)
+    // instead of a fabricated name. (No backticks in here: this whole view
+    // is one TypeScript template literal, and one would end it.)
     var hits=Number(m.hits||1),id=String(m.id||"");
     var who=m.username==null?"":String(m.username).trim();
     var pic=String(m.avatarProxyUrl||m.avatarUrl||"");
     var picAlt=String(m.avatarUrl||"");
-    // A face and a platform mark, then the words. Reading a feed of
-    // strangers is mostly working out who is talking; a column of handles
-    // makes you read every one of them to find out.
-    var avatar='<span class="mention-av" style="--brand:'+pColor(plat)+'">'
-      +'<span class="mention-av-init">'+esc(initialOf(who))+"</span>"
+    // A face and a platform mark, then the words — and the words lead: the
+    // comment is what is being read, and who said it matters once it has
+    // caught the eye.
+    var face='<span class="nt-signals-face mention-av">'
+      +'<span class="nt-signals-face-init mention-av-init">'+esc(initialOf(who))+"</span>"
       +(pic?'<img class="mention-av-img" data-avatar src="'+esc(pic)+'"'
           +(picAlt&&picAlt!==pic?' data-fallback="'+esc(picAlt)+'"':"")
           +' alt="" loading="lazy"/>':"")
-      +'<span class="mention-av-badge">'+pSvg(plat,9)+"</span></span>";
-    return '<label class="mention" data-mention-id="'+esc(id)+'">'
-      +'<input type="checkbox" class="mention-pick" data-mid="'+esc(id)+'"/>'
-      +avatar
-      +'<span class="mention-body">'
-      +'<span class="mention-head">'
-      +(who?'<span class="mention-who">@'+esc(who)+"</span>"
-            :'<span class="mention-who mention-who-unknown">no handle</span>')
+      +'<span class="nt-signals-face-badge mention-av-badge">'+glyph(plat,9)+"</span></span>";
+    return '<label class="nt-signals-row mention" data-mention-id="'+esc(id)+'">'
+      +'<input type="checkbox" class="nt-pick mention-pick" data-mid="'+esc(id)+'" aria-label="Select comment"/>'
+      +face
+      +'<span class="nt-signals-row-body mention-body">'
+      +'<span class="nt-signals-row-text mention-text">'+highlightTerm(String(m.text||""),term)+"</span>"
+      +(m.note?'<span class="nt-signals-row-note mention-note">'+esc(String(m.note))+"</span>":"")
+      +'<span class="nt-signals-row-meta mention-meta mention-head">'
+      +(who?'<span class="nt-signals-who mention-who">@'+esc(who)+"</span>"
+            :'<span class="nt-signals-who is-unknown mention-who mention-who-unknown">no handle</span>')
       +(m.postedAt?'<span class="mention-when">'+esc(friendlyTime(m.postedAt))+"</span>":"")
-      +(hits>1?'<span class="mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
-      +"</span>"
-      +'<span class="mention-text">'+highlightTerm(String(m.text||""),term)+"</span>"
-      +(m.note?'<span class="mention-note">'+esc(String(m.note))+"</span>":"")
-      +'<span class="mention-meta">'
-      +'<span class="mention-stat">'+heartIcon()+esc(fmtNum(m.likes||0))+"</span>"
-      +'<span class="mention-stat">'+replyIcon()+esc(fmtNum(m.replies||0))+"</span>"
+      +'<span class="nt-signals-stat mention-stat">'+ic("heart",12)+esc(compact(m.likes||0))+"</span>"
+      +'<span class="nt-signals-stat mention-stat">'+ic("message-square",12)+esc(compact(m.replies||0))+"</span>"
+      +(hits>1?'<span class="nt-signals-hits mention-hits" title="names it '+hits+' times">×'+hits+"</span>":"")
       +labelChips(m)
-      +(sourced?'<span class="chip chip-cat">comment</span>':"")
+      +(sourced?badge("outline","comment","chip chip-cat"):"")
       +"</span></span></label>";
   }
 
@@ -1616,17 +1898,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
    * post carries no video, or whose track had no timings, falls back to the
    * thumbnail the row already shows rather than a black rectangle.
    */
-  function spokenStage(hit,startMs){
-    var post=hit&&hit.post||{};
-    var video=typeof post.videoUrl==="string"&&post.videoUrl?post.videoUrl
-      :typeof post.videoProxyUrl==="string"&&post.videoProxyUrl?post.videoProxyUrl:"";
-    if(!video||typeof startMs!=="number")return "";
-    var html=mediaPlayerHtml(post,[],video,String(post.platform||""),false);
-    // mediaPlayerHtml has no opinion about where to start; the attribute is
-    // read by initMediaPlayer once the media reports its duration.
-    var at=' data-mp-start="'+(Math.max(0,Math.floor(startMs/1000)))+'"';
-    return '<div class="mgroup-stage">'+html.replace('<div class="mp ', '<div'+at+' class="mp ')+"</div>";
-  }
 
   /**
    * The same video, opened at the moment the term was said.
@@ -1672,29 +1943,25 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var thumbFb=String((post.thumbnailUrl&&(post.thumbnailFallbackUrl||post.thumbnailProxyUrl))||"");
     var text=String(ex.text||"");
     var at=ex.timecode?String(ex.timecode):"";
-    var face=thumb
-      ? '<span class="sm-thumb sm-thumb-badged">'
-        +'<img class="sm-thumb-img" src="'+esc(thumb)+'"'
-        +(thumbFb&&thumbFb!==thumb?' data-fallback="'+esc(thumbFb)+'"':"")
-        +' alt="" loading="lazy"/>'
-        +'<span class="mention-av-badge">'+pSvg(plat,9)+"</span></span>"
-      : '<span class="mention-av" style="--brand:'+pColor(plat)+'">'
-        +'<span class="mention-av-init">'+mpIcon("volume",16)+"</span>"
-        +'<span class="mention-av-badge">'+pSvg(plat,9)+"</span></span>";
-    return '<label class="mention" data-mention-id="'+esc(id)+'">'
-      +'<input type="checkbox" class="mention-pick" data-mid="'+esc(id)+'"/>'
+    // The commenter is the creator here, so the face is the video's own
+    // thumbnail rather than an avatar, with a microphone when there is none.
+    var face='<span class="nt-signals-face is-square'+(thumb?" sm-thumb-badged":"")+'">'
+      +'<span class="nt-signals-face-init">'+ic("mic",14)+"</span>"
+      +(thumb?'<img class="sm-thumb-img" data-avatar src="'+esc(thumb)+'"'
+        +(thumbFb&&thumbFb!==thumb?' data-fallback="'+esc(thumbFb)+'"':"")+' alt="" loading="lazy"/>':"")
+      +'<span class="nt-signals-face-badge mention-av-badge">'+glyph(plat,9)+"</span></span>";
+    return '<label class="nt-signals-row mention" data-mention-id="'+esc(id)+'">'
+      +'<input type="checkbox" class="nt-pick mention-pick" data-mid="'+esc(id)+'" aria-label="Select spoken line"/>'
       +face
-      +'<span class="mention-body">'
-      +'<span class="mention-head">'
-      +'<span class="mention-who">spoken'+(at?" · "+esc(at):"")+"</span>"
+      +'<span class="nt-signals-row-body mention-body">'
+      +'<span class="nt-signals-row-text mention-text">'+highlightTerm(text,term)+"</span>"
+      +'<span class="nt-signals-row-note mention-note">From the caption track, not inferred. The words are the '
+      +"creator’s, in the video"+(at?", at "+esc(at):"")+".</span>"
+      +'<span class="nt-signals-row-meta mention-meta mention-head">'
+      +'<span class="nt-signals-who mention-who">spoken'+(at?" · "+esc(at):"")+"</span>"
       +(post.postedAt?'<span class="mention-when">'+esc(friendlyTime(post.postedAt))+"</span>":"")
-      +"</span>"
-      +'<span class="mention-text">'+highlightTerm(text,term)+"</span>"
-      +'<span class="mention-note">From the caption track, not inferred. The words are the '
-      +"creator's, in the video"+(at?", at "+esc(at):"")+".</span>"
-      +'<span class="mention-meta">'
-      +(post.views?'<span class="mention-stat">'+mpIcon("eye",12)+esc(fmtNum(post.views))+"</span>":"")
-      +'<span class="chip chip-cat">transcript</span>'
+      +(post.views?'<span class="nt-signals-stat mention-stat">'+ic("eye",12)+esc(compact(post.views))+"</span>":"")
+      +badge("outline","transcript","chip chip-cat")
       +"</span></span></label>";
   }
 
@@ -1725,27 +1992,13 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function labelChips(m){
     var out="";
     var s=String(m.sentiment||"");
-    if(s)out+='<span class="chip chip-'+esc(s)+'">'+esc(s)+"</span>";
+    if(s)out+=badge(s==="positive"?"success":s==="negative"?"warning":"outline",esc(s),"chip chip-"+esc(s));
     var c=String(m.category||"");
-    if(c)out+='<span class="chip chip-cat">'+esc(c.split("_").join(" "))+"</span>";
+    if(c)out+=badge("secondary",esc(c.split("_").join(" ")),"chip chip-cat");
     return out;
   }
 
   /** The counts a review carries, as the same filter chips the sweep uses. */
-  function reviewChips(st){
-    var counts=st.byCategory||{};
-    var keys=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
-    if(!keys.length)return "";
-    return '<div class="mchips">'
-      +['<button type="button" class="mchip'+(st.filter?"":" on")+'" data-filter="">All <b>'
-        +esc(String(st.total))+"</b></button>"]
-        .concat(keys.map(function(k){
-          return '<button type="button" class="mchip'+(st.filter===k?" on":"")
-            +'" data-filter="'+esc(k)+'">'+esc(k.split("_").join(" "))
-            +" <b>"+esc(String(counts[k]))+"</b></button>";
-        })).join("")
-      +"</div>";
-  }
 
   /** Identifies a group across a redraw. The permalink is the stable part. */
   function groupKey(t){
@@ -1806,7 +2059,6 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var app=document.getElementById("app");
     if(!app||!monitorState)return;
     var st=monitorState;
-
     var keep=st.threads.filter(function(t){
       // A post with no matching comment earns its space only when the post
       // itself names the term; otherwise it is a card that says nothing.
@@ -1834,60 +2086,54 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       shown=shown.slice().sort(function(a,b){return groupNewest(b)-groupNewest(a);});
     }
 
-    var order=Object.keys(st.counts).sort(function(a,b){return (st.counts[b]||0)-(st.counts[a]||0);});
-    var live=order.filter(function(k){return Number(st.counts[k]||0)>0;});
-    // A platform that returned nothing still gets a chip — "we looked there and
-    // it was quiet" is an answer — but it is not a filter, because filtering to
-    // it is a dead end.
-    var chips=['<button type="button" class="mchip'+(st.filter?"":" on")
-      +'" data-filter="">All <b>'+esc(String(st.total))+"</b></button>"]
-      .concat(order.map(function(k){
-        var n=Number(st.counts[k]||0),has=!!onScreen[k];
-        return '<button type="button" class="mchip'+(st.filter===k?" on":"")+(has?"":" quiet")
-          +'" data-filter="'+esc(k)+'"'+(has?"":" disabled")+' style="--brand:'+pColor(k)+'">'
-          +'<span class="mchip-mark">'+pSvg(k,13)+"</span>"
-          +esc(pTitle(k))+" <b>"+esc(String(n))+"</b></button>";
-      })).join("");
+    var chips="";
+    if(st.byCategory){
+      var counts=st.byCategory;
+      var keys=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
+      if(keys.length){
+        chips=filterChip("data-filter","","All",st.total,!st.filter,false,"")
+          +keys.map(function(k){
+            return filterChip("data-filter",k,k.split("_").join(" "),counts[k],st.filter===k,!Number(counts[k]),"");
+          }).join("");
+      }
+    }else{
+      var order=Object.keys(st.counts).sort(function(a,b){return (st.counts[b]||0)-(st.counts[a]||0);});
+      // A platform that returned nothing still gets a chip — "we looked there
+      // and it was quiet" is an answer — but it is not a filter, because
+      // filtering to it is a dead end.
+      if(order.length){
+        chips=filterChip("data-filter","","All",st.total,!st.filter,false,"")
+          +order.map(function(k){
+            return filterChip("data-filter",k,pTitle(k),Number(st.counts[k]||0),st.filter===k,!onScreen[k],k);
+          }).join("");
+      }
+    }
+    var live=Object.keys(st.counts).filter(function(k){return Number(st.counts[k]||0)>0;});
 
-    var down=st.unavailable.length
-      ? '<div class="mention-down">Could not reach '
-        +st.unavailable.map(function(u){return esc(pTitle(u&&u.platform||"?"));}).join(", ")
-        +" — those networks may have more.</div>"
-      : "";
-
-    var head='<div class="mhead">'
-      +'<div class="mhead-top">'
-      +'<div><div class="mention-term">'+(st.byCategory?"Comment review — ":"Mentions of ")
-      +"<b>"+esc(st.term)+"</b> "
-      +(st.since?'<span class="mention-window">since '+esc(st.since)
-        +(st.sinceApplied?"":" · not applied")
-        +(st.undatedMentions>0?" · "+esc(String(st.undatedMentions))+" undated":"")
-        +"</span>":"")+"</div>"
-      +'<div class="mention-total">'+esc(String(st.total))+" comment"+(st.total===1?"":"s")
-      +(st.byCategory
-        ?(st.summary?"":"")
-        :(live.length?" across "+esc(String(live.length))+" network"+(live.length===1?"":"s"):""))
-      +"</div>"
-      +(st.summary?'<div class="mention-summary">'+esc(st.summary)+"</div>":"")
-      +"</div>"
-      +'<div class="msort"><button type="button" class="msort-btn'+(st.sort==="loud"?" on":"")
-      +'" data-sort="loud">Loudest</button>'
-      +'<button type="button" class="msort-btn'+(st.sort==="new"?" on":"")
-      +'" data-sort="new">Newest</button></div>'
-      +"</div>"
-      +(st.byCategory?reviewChips(st):'<div class="mchips">'+chips+"</div>")+down+"</div>";
+    var head=mentionHead({
+      icon:st.byCategory?"message-square":"at-sign",
+      title:(st.byCategory?"Comment review — ":"Mentions of ")+"<b>"+esc(st.term)+"</b>",
+      total:esc(plural(st.total,"comment"))
+        +(!st.byCategory&&live.length?" across "+esc(plural(live.length,"network")):""),
+      since:sinceBadge(st),
+      switcher:segmented("Sort",[["loud","Loudest","msort-btn"],["new","Newest","msort-btn"]],st.sort,"data-sort"),
+      summary:st.summary?esc(st.summary):"",
+      chips:chips,
+      notes:st.unavailable.length
+        ?mentionNote("circle-alert","Could not reach "
+          +st.unavailable.map(function(u){return esc(pTitle(u&&u.platform||u||"?"));}).join(", ")
+          +" — those networks may have more.","mention-down"):""
+    });
 
     if(!shown.length){
-      app.innerHTML=head+'<div class="empty-state fade-in"><div class="icon">🔍</div>'
-        +'<div class="text">'+(st.filter?"Nothing from "+esc(pTitle(st.filter)):"Nobody has mentioned that yet")
-        +"</div></div>";
+      app.innerHTML=mentionsShell(head,'<div class="nt-signals-pad">'
+        +emptyState("search",st.filter?"Nothing from "+esc(st.byCategory?st.filter.split("_").join(" "):pTitle(st.filter)):"Nobody has mentioned that yet","")+"</div>");
       setTimeout(reportSize,50);
       return;
     }
 
     var groups=shown.map(function(t){
-      var post=t.post||{},plat=String(post.platform||""),about=!!t.postIsAboutTerm;
-      var reach=postReach(post),link=String(post.externalUrl||"");
+      var post=t.post||{},plat=String(post.platform||"");
       var n=Number(t.mentionCount||0);
       var all=t.mentions||[];
       // A coordinated burst — seven near-identical fan posts under one Weibo
@@ -1895,40 +2141,25 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       // not push everything else off the screen. Nothing is dropped: the rest
       // are one click away, and the click costs nothing.
       var key=groupKey(t);
-      var playing=!!expandedMedia[key];
       var open=expandedGroups[key],cut=open?all.length:Math.min(all.length,GROUP_PEEK);
-      var mentions=all.slice(0,cut).map(function(m){
-        return typedRow(m,plat,st.term,false);
-      }).join("");
-      return '<div class="mgroup" data-platform="'+esc(plat)+'">'
-        +mgroupMediaHtml(post,key,playing)
-        +'<div class="mgroup-head">'
-        +'<span class="mgroup-plat" style="--brand:'+pColor(plat)+'">'+pSvg(plat,12)+" "+esc(pTitle(plat))+"</span>"
-        +(about?'<span class="mgroup-about">about '+esc(st.term)+"</span>":"")
-        +(reach?'<span class="mgroup-reach">'+esc(reach)+"</span>":"")
-        +"</div>"
-        +'<div class="mgroup-title">'+esc(String(post.title||post.caption||"").slice(0,140))+"</div>"
-        +'<div class="mgroup-actions">'
-        +(link?'<a class="mgroup-link" href="'+esc(link)+'" target="_blank" rel="noopener">Open ↗</a>':"")
+      var rows=all.slice(0,cut).map(function(m){return typedRow(m,plat,st.term,false);}).join("");
+      return mentionGroup({post:post,key:key,
+        about:t.postIsAboutTerm?badge("secondary","about "+esc(st.term),"mgroup-about"):"",
+        title:esc(String(post.title||post.caption||"").slice(0,140)),
+        link:String(post.externalUrl||""),
         // A post can name the term while none of its comments do; there is
         // nothing to select there, so do not offer to select it.
-        +(n?'<button type="button" class="mgroup-all" data-group-all="'+esc(key)+'">Select all '+esc(String(n))+"</button>":"")
-        +"</div>"
-        +(n?'<div class="mentions">'+mentions
-             +(all.length>cut||open&&all.length>GROUP_PEEK
-               ?'<button type="button" class="mgroup-rest" data-expand="'+esc(key)+'">'
-                 +(open?"Show fewer":"Show "+(all.length-cut)+" more from this post")+"</button>"
-               :"")
-             +"</div>"
-           :'<div class="mgroup-none">The post names '+esc(st.term)+", but none of its comments do.</div>")
-        +"</div>";
+        selectAttr:n?'data-group-all="'+esc(key)+'"':"",selectCount:n,
+        rows:n?'<div class="nt-signals-rows mentions">'+rows
+             +(all.length>GROUP_PEEK?restButton(key,open,all.length-cut):"")+"</div>"
+           :'<div class="nt-signals-none mgroup-none">The post names '+esc(st.term)+", but none of its comments do.</div>"});
     }).join("");
 
     var more=st.hasMore&&!st.filter
-      ? '<button class="mention-more" type="button" data-next-offset="'+esc(String(st.nextOffset))
-        +'" data-term="'+esc(st.term)+'">Load more mentions</button>'
+      ? '<div class="nt-signals-more">'+btn("outline","sm","Load more mentions",' data-next-offset="'+esc(String(st.nextOffset))
+        +'" data-term="'+esc(st.term)+'"',"mention-more")+"</div>"
       : "";
-    app.innerHTML=head+'<div class="mgroups fade-in">'+groups+"</div>"+more+pickBarHtml();
+    app.innerHTML=mentionsShell(head,'<div class="nt-signals-groups mgroups">'+groups+"</div>",more+pickBarHtml("mentions"));
     initMentionPicks();
     // Selections survive a filter or sort: narrowing the view is not unpicking.
     applyMentionPicks();
@@ -1938,8 +2169,9 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // Filter and sort redraw from memory rather than re-querying — the view has
   // no way to call the tool again for free, and the user did not ask to spend.
   document.addEventListener("click",function(e){
-    if(feedIsMerged())return;
-    var chip=e.target.closest&&e.target.closest(".mchip");
+    var mp0=e.target.closest&&e.target.closest("[data-mplay]");
+    if(feedIsMerged()&&!mp0)return;
+    var chip=e.target.closest&&e.target.closest(".mchip[data-filter]");
     if(chip&&monitorState){
       monitorState.filter=chip.getAttribute("data-filter")||"";
       renderMonitor();
@@ -1959,15 +2191,17 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       return;
     }
     var mplay=e.target.closest&&e.target.closest("[data-mplay]");
-    if(mplay&&monitorState){
+    if(mplay&&(monitorState||spokenState)){
       var mkey=mplay.getAttribute("data-mplay")||"";
       if(mkey&&mplay.className.indexOf("is-playable")>=0){
         expandedMedia[mkey]=true;
-        renderMonitor();
-        // renderMonitor draws outside the top-level render, so the player it
+        renderMentions();
+        // renderMentions draws outside the top-level render, so anything it
         // just wrote has nothing bound to it. initPlayers resets first, so
         // calling it again here is safe.
         initPlayers();
+        var v=document.querySelector(".mgroup-stage video");
+        if(v){registerAudio(v);stopAllPlayers();}
       }
       return;
     }
@@ -2018,15 +2252,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       counts[p]=(counts[p]||0)+1;
     });
     var order=st.platforms.slice().sort(function(a,b){return (counts[b]||0)-(counts[a]||0);});
-    var chips=['<button type="button" class="mchip'+(st.filter?"":" on")
-      +'" data-splatform="">All <b>'+esc(String(st.hits.length))+"</b></button>"]
-      .concat(order.map(function(k){
+    var chips=order.length>1?filterChip("data-splatform","","All",st.hits.length,!st.filter,false,"")
+      +order.map(function(k){
         var n=Number(counts[k]||0);
-        return '<button type="button" class="mchip'+(st.filter===k?" on":"")+(n?"":" quiet")
-          +'" data-splatform="'+esc(k)+'"'+(n?"":" disabled")+' style="--brand:'+pColor(k)+'">'
-          +'<span class="mchip-mark">'+pSvg(k,13)+"</span>"
-          +esc(pTitle(k))+" <b>"+esc(String(n))+"</b></button>";
-      })).join("");
+        return filterChip("data-splatform",k,pTitle(k),n,st.filter===k,!n,k);
+      }).join(""):"";
 
     var shown=!st.filter?st.hits.slice()
       :st.hits.filter(function(h){return String((h.post||{}).platform||"")===st.filter;});
@@ -2037,105 +2267,60 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           || (Number((b.post||{}).views)||0)-(Number((a.post||{}).views)||0);
     });
 
-    var funnel='<div class="stats" style="margin-top:10px">'
-      +'<span class="stat-pill">'+mpIcon("eye",13)+" "+esc(String(st.considered))+" candidate"+(st.considered===1?"":"s")+" considered</span>"
-      +'<span class="stat-pill">'+mpIcon("note",13)+" "+esc(String(st.transcribed))+" transcribed</span>"
-      +'<span class="stat-pill">'+mpIcon("volume",13)+" "+esc(String(st.transcriptsAvailable))+" had captions</span>"
-      +'<span class="stat-pill">'+mpIcon("check",13)+" "+esc(String(st.matched))+" matched</span>"
-      +"</div>";
-    var ceiling=st.ceilingReached
-      ? '<div class="mention-down">Only the '+esc(String(st.maxTranscripts))+' most-viewed candidates were '
-        +'transcribed — '+esc(String(st.considered-st.maxTranscripts))+' more were found and never checked. '
-        +'Raise maxTranscripts to look further.</div>'
-      : "";
-
-    var head='<div class="mhead">'
-      +'<div class="mhead-top">'
-      +'<div><div class="mention-term">Spoken mentions of <b>'+esc(st.term)+"</b>"
-      +(st.platforms.length?'<span class="mention-window">'+esc(st.platforms.map(pTitle).join(" + "))+"</span>":"")
-      +"</div>"
-      +'<div class="mention-total">'+esc(String(st.matched))+" video"+(st.matched===1?"":"s")+" say it out loud</div>"
-      +"</div>"
-      +'<div class="msort"><button type="button" class="msort-btn'+(st.sort==="loud"?" on":"")
-      +'" data-ssort="loud">Loudest</button>'
-      +'<button type="button" class="msort-btn'+(st.sort==="views"?" on":"")
-      +'" data-ssort="views">Most viewed</button></div>'
-      +"</div>"
-      +funnel+ceiling
-      +(order.length>1?'<div class="mchips">'+chips+"</div>":"")
-      +"</div>";
+    // The funnel is drawn every time, including on an empty result, so a
+    // person can tell "nothing happened" apart from "nothing was said".
+    var funnel='<div class="nt-signals-funnel">'
+      +statPill("eye",st.considered,"considered")+statPill("file-text",st.transcribed,"transcribed")
+      +statPill("mic",st.transcriptsAvailable,"had captions")+statPill("check",st.matched,"matched")+"</div>";
+    var head=mentionHead({icon:"mic",
+      title:"Spoken mentions of <b>"+esc(st.term)+"</b>",
+      total:esc(plural(st.matched,"video"))+" say it out loud"
+        +(st.platforms.length?" · "+esc(st.platforms.map(pTitle).join(" + ")):""),
+      switcher:segmented("Sort",[["loud","Loudest","msort-btn"],["views","Most viewed","msort-btn"]],st.sort,"data-ssort"),
+      funnel:funnel,chips:chips,
+      notes:st.ceilingReached?mentionNote("triangle-alert","Only the "+esc(String(st.maxTranscripts))+" most-viewed candidates were "
+        +"transcribed — "+esc(String(Math.max(0,st.considered-st.maxTranscripts)))+" more were found and never checked. "
+        +"Raise maxTranscripts to look further.","mention-down"):""});
 
     if(!shown.length){
       var emptyText=st.filter?"Nothing from "+esc(pTitle(st.filter))
         :st.transcribed===0?"No candidate posts were found to transcribe"
         :"Nobody said it on camera in what was checked";
-      app.innerHTML=head+'<div class="empty-state fade-in"><div class="icon">🔍</div>'
-        +'<div class="text">'+emptyText+"</div></div>";
+      app.innerHTML=mentionsShell(head,'<div class="nt-signals-pad">'+emptyState("mic",emptyText,"")+"</div>");
       setTimeout(reportSize,50);
       return;
     }
 
     var groups=shown.map(function(h){
       var post=h.post||{},plat=String(post.platform||"");
-      var reach=postReach(post),link=String(post.externalUrl||"");
       var handle=String(post.creatorHandle||post.author||post.username||"").replace(/^@/,"");
-      var title=String(post.title||post.caption||"").slice(0,160);
-      var thumb=String(post.thumbnailUrl||post.thumbnailProxyUrl||"");
-      var thumbFb=String((post.thumbnailUrl&&(post.thumbnailFallbackUrl||post.thumbnailProxyUrl))||"");
       var count=Number(h.matchCount||0);
-      var excerpts=(h.excerpts||[]).map(function(ex){
+      var moment=firstMoment([h]);
+      var exs=h.excerpts||[];
+      var moreMatches=count-exs.length;
+      var quotes=exs.map(function(ex){
         var text=String(ex.text||"");
-        var exAt=ex.timecode?String(ex.timecode):"";
-        return '<div class="quote-box" style="margin:0">'
-          +(exAt?'<span class="quote-at">'+esc(exAt)+"</span>":"")
-          +'<span class="mention-text" style="margin-top:0">'+highlightTerm(text,st.term)+"</span>"
-          +'<button class="copy-btn" data-copy="'+esc(text)+'">Copy</button></div>';
+        return '<blockquote class="nt-signals-quote quote-box">'
+          +(ex.timecode?'<span class="nt-signals-quote-at quote-at">'+ic("clock",12)+esc(String(ex.timecode))+"</span>":"")
+          +'<span class="nt-signals-quote-text mention-text">'+highlightTerm(text,st.term)+"</span>"
+          +btn("ghost","icon-sm",ic("copy",14),' aria-label="Copy quote" data-copy="'+esc(text)+'"',"nt-signals-quote-copy copy-btn")
+          +"</blockquote>";
       }).join("");
-      var spokenAt=null;
-      (h.excerpts||[]).forEach(function(ex){
-        if(!spokenAt&&ex&&ex.timecode)spokenAt={timecode:String(ex.timecode),startMs:ex.startMs};
-      });
-      var shownExcerpts=(h.excerpts||[]).length;
-      var moreMatches=count-shownExcerpts;
-      var meta=[];
-      if(h.wordCount)meta.push('<span class="chip">'+esc(fmtNum(h.wordCount))+" words</span>");
-      if(h.language)meta.push('<span class="chip">'+esc(String(h.language))+"</span>");
-      if(h.autoGenerated)meta.push('<span class="chip">auto-generated</span>');
-      return '<div class="mgroup" data-platform="'+esc(plat)+'">'
-        +(spokenAt?spokenStage(h,spokenAt.startMs):"")
-        +'<div class="mgroup-head">'
-        +'<span class="mgroup-plat" style="--brand:'+pColor(plat)+'">'+pSvg(plat,12)+" "+esc(pTitle(plat))+"</span>"
-        +(reach?'<span class="mgroup-reach">'+esc(reach)+"</span>":"")
-        +"</div>"
-        +'<div style="display:flex;gap:10px;align-items:flex-start">'
-        +(thumb?'<img class="sm-thumb" src="'+esc(thumb)+'"'
-            +(thumbFb&&thumbFb!==thumb?' data-fallback="'+esc(thumbFb)+'"':"")
-            +' alt="" loading="lazy"/>':"")
-        +'<div style="flex:1;min-width:0"><div class="mgroup-title">'
-        +(handle?'<span style="color:var(--muted);font-weight:500">@'+esc(handle)+"</span> — ":"")
-        +esc(title)+"</div></div></div>"
-        +'<div class="mgroup-actions">'
-        +(link
-          ?'<a class="mgroup-link" href="'+esc(linkAtMoment(link,plat,spokenAt&&spokenAt.startMs))
-            +'" target="_blank" rel="noopener">'
-            +(spokenAt?"Open at "+esc(spokenAt.timecode):"Open")+" ↗</a>"
-          :"")
-        +'<span class="mention-hits" title="names it '+esc(String(count))+' times">×'+esc(String(count))+"</span>"
-        +meta.join("")
-        +"</div>"
-        +'<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">'+excerpts
-        +(moreMatches>0?'<div class="faint" style="font-size:11px;color:var(--muted)">+'
-          +esc(String(moreMatches))+" more mention"+(moreMatches===1?"":"s")+" later in this video, not shown</div>":"")
-        +"</div></div>";
+      var meta=(h.wordCount?badge("outline",esc(grouped(h.wordCount))+" words"):"")
+        +(h.language?badge("outline",esc(String(h.language))):"")
+        +(h.autoGenerated?badge("outline","auto-generated"):"");
+      return mentionGroup({post:post,key:groupKey(h),startMs:moment&&moment.startMs,
+        title:(handle?'<span class="nt-muted">@'+esc(handle)+" — </span>":"")+esc(String(post.title||post.caption||"").slice(0,160)),
+        link:linkAtMoment(String(post.externalUrl||""),plat,moment&&moment.startMs),
+        linkLabel:moment?"Open at "+moment.timecode:"Open",
+        extra:(count?'<span class="nt-signals-hits mention-hits" title="names it '+esc(String(count))+' times">×'+esc(String(count))+"</span>":"")+meta,
+        rows:'<div class="nt-signals-quotes">'+quotes
+          +(moreMatches>0?'<div class="nt-signals-faint">+'+esc(plural(moreMatches,"more mention"))+" later in this video, not shown</div>":"")
+          +"</div>"});
     }).join("");
 
-    var unavail=st.unavailableCount
-      ? '<div class="faint" style="font-size:11px;color:var(--muted);margin-top:14px;text-align:center">'
-        +esc(String(st.unavailableCount))+" candidate"+(st.unavailableCount===1?"":"s")
-        +" could not be reached or transcribed.</div>"
-      : "";
-
-    app.innerHTML=head+'<div class="mgroups fade-in">'+groups+"</div>"+unavail;
+    app.innerHTML=mentionsShell(head,'<div class="nt-signals-groups mgroups">'+groups+"</div>",
+      st.unavailableCount?'<footer class="nt-view-foot">'+esc(plural(st.unavailableCount,"candidate"))+" could not be reached or transcribed.</footer>":"");
     setTimeout(reportSize,60);
   }
 
@@ -2265,17 +2450,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 
     var counts=feedCounts();
     var order=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
-    var chips=['<button type="button" class="mchip'+(feedFilter?"":" on")
-      +'" data-feed-filter="">All <b>'
-      +esc(String(feedSource==="typed"?typedTotal:feedSource==="spoken"?spokenTotal:typedTotal+spokenTotal))
-      +"</b></button>"]
-      .concat(order.map(function(k){
-        var n=counts[k];
-        return '<button type="button" class="mchip'+(feedFilter===k?" on":"")+(n?"":" quiet")
-          +'" data-feed-filter="'+esc(k)+'"'+(n?"":" disabled")+' style="--brand:'+pColor(k)+'">'
-          +'<span class="mchip-mark">'+pSvg(k,13)+"</span>"
-          +esc(pTitle(k))+" <b>"+esc(String(n))+"</b></button>";
-      })).join("");
+    var allN=feedSource==="typed"?typedTotal:feedSource==="spoken"?spokenTotal:typedTotal+spokenTotal;
+    var chips=order.length>1?filterChip("data-feed-filter","","All",allN,!feedFilter,false,"")
+      +order.map(function(k){
+        return filterChip("data-feed-filter",k,pTitle(k),counts[k],feedFilter===k,!counts[k],k);
+      }).join(""):"";
 
     var total=feedSource==="typed"?esc(String(typedTotal))+" typed"
       :feedSource==="spoken"?esc(String(spokenTotal))+" spoken"
@@ -2291,95 +2470,69 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +esc(String(spokenState.transcriptsAvailable))+" had captions, "
       +esc(String(spokenState.matched))+" matched.";
 
-    var head='<div class="mhead">'
-      +'<div class="mhead-top">'
-      +'<div><div class="mention-term">Mentions of <b>'+esc(term)+"</b> "
-      +(monitorState.since?'<span class="mention-window">since '+esc(monitorState.since)
-        +(monitorState.sinceApplied?"":" · not applied")+"</span>":"")+"</div>"
-      +'<div class="mention-total">'+total+"</div>"
-      +'<div class="mention-summary">'+summary+"</div></div>"
-      +'<div class="msort">'
-      +'<button type="button" class="msort-btn'+(feedSource==="both"?" on":"")+'" data-source="both">Both</button>'
-      +'<button type="button" class="msort-btn'+(feedSource==="typed"?" on":"")+'" data-source="typed">Typed</button>'
-      +'<button type="button" class="msort-btn'+(feedSource==="spoken"?" on":"")+'" data-source="spoken">Spoken</button>'
-      +"</div></div>"
-      +(order.length>1?'<div class="mchips">'+chips+"</div>":"")
-      +(spokenState.ceilingReached
-        ?'<div class="mention-down">Only the '+esc(String(spokenState.maxTranscripts))
-          +' most-viewed candidates were transcribed — '
-          +esc(String(spokenState.considered-spokenState.maxTranscripts))
-          +" more were found and never checked.</div>":"")
-      +"</div>";
+    var notes="";
+    if(spokenState.ceilingReached&&feedSource!=="typed")
+      notes+=mentionNote("triangle-alert","Only the "+esc(String(spokenState.maxTranscripts))
+        +" most-viewed candidates were transcribed — "
+        +esc(String(Math.max(0,spokenState.considered-spokenState.maxTranscripts)))+" more were found and never checked.","mention-down");
+    if(monitorState.unavailable.length&&feedSource!=="spoken")
+      notes+=mentionNote("circle-alert","Could not reach "
+        +monitorState.unavailable.map(function(u){return esc(pTitle(u&&u.platform||u||"?"));}).join(", ")
+        +" — those networks may have more.","mention-down");
+
+    var head=mentionHead({icon:"at-sign",
+      title:"Mentions of <b>"+esc(term)+"</b>",
+      total:total,since:sinceBadge(monitorState),
+      switcher:segmented("Source",[["both","Both","msort-btn"],["typed","Typed","msort-btn"],["spoken","Spoken","msort-btn"]],feedSource,"data-source"),
+      summary:summary,chips:chips,notes:notes});
 
     if(!groups.length){
       // "Nothing was said" and "nothing happened" are different answers, so
-      // the funnel is drawn even on an empty one. A spoken sweep that
-      // transcribed fourteen videos and matched none of them is a real
-      // result; a sweep that never found a candidate to transcribe is not.
-      var icon=feedSource==="spoken"?"🔊":"🔍";
+      // the funnel is drawn even on an empty one.
       var text=feedFilter?"Nothing from "+esc(pTitle(feedFilter))
         :feedSource==="spoken"?"Nobody said it out loud"
         :"Nobody has mentioned that yet";
       var why=feedSource==="spoken"&&typedTotal>0
-        ? '<div class="card card-wide"><div class="card-body">'
-          +'<div class="section-text" style="color:var(--muted)">'+summary
-          +" The "+esc(String(typedTotal))+" typed mention"+(typedTotal===1?" is":"s are")
-          +" still there — switch the source back to <b>Typed</b>.</div></div></div>"
+        ? summary+" The "+esc(String(typedTotal))+" typed mention"+(typedTotal===1?" is":"s are")
+          +" still there — switch the source back to <b>Typed</b>."
         : "";
-      app.innerHTML=head+'<div class="empty-state fade-in"><div class="icon">'+icon+"</div>"
-        +'<div class="text">'+text+"</div></div>"+why;
+      app.innerHTML=mentionsShell(head,'<div class="nt-signals-pad">'+emptyState(feedSource==="spoken"?"mic":"search",text,why)+"</div>");
       setTimeout(reportSize,50);
       return;
     }
 
     var html=groups.map(function(g){
       var post=g.post,plat=String(post.platform||"");
-      var reach=postReach(post),link=String(post.externalUrl||"");
       var open=expandedGroups[g.key];
       var cut=open?g.typed.length:Math.min(g.typed.length,GROUP_PEEK);
-      // The first spoken excerpt is what the group's "open at" link jumps
-      // to — the same moment its top row shows.
-      var firstAt=null;
-      g.spoken.forEach(function(h){
-        (h.excerpts||[]).forEach(function(ex){
-          if(!firstAt&&ex&&ex.timecode)firstAt={timecode:String(ex.timecode),startMs:ex.startMs};
-        });
-      });
-      var stage=firstAt?spokenStage(g.spoken[0],firstAt.startMs):"";
+      // The first spoken excerpt is what the group's "open at" link and its
+      // poster jump to — the same moment its top row shows.
+      var moment=firstMoment(g.spoken);
       var rows=g.spoken.map(function(h){
         return (h.excerpts||[]).map(function(ex,i){return spokenRow(h,ex,i,term);}).join("");
       }).join("")
         +g.typed.slice(0,cut).map(function(m){return typedRow(m,plat,term,true);}).join("");
       var selectable=g.spoken.reduce(function(n,h){return n+(h.excerpts||[]).length;},0)+g.typed.length;
-      return '<div class="mgroup" data-platform="'+esc(plat)+'">'
-        +stage
-        +'<div class="mgroup-head">'
-        +'<span class="mgroup-plat" style="--brand:'+pColor(plat)+'">'+pSvg(plat,12)+" "+esc(pTitle(plat))+"</span>"
-        +(g.spoken.length?'<span class="mgroup-about">said out loud</span>'
-          :g.postIsAboutTerm?'<span class="mgroup-about">about '+esc(term)+"</span>":"")
-        +(reach?'<span class="mgroup-reach">'+esc(reach)+"</span>":"")
-        +"</div>"
-        +'<div class="mgroup-title">'+esc(String(post.title||post.caption||"").slice(0,140))+"</div>"
-        +'<div class="mgroup-actions">'
-        +(link
-          ?'<a class="mgroup-link" href="'+esc(linkAtMoment(link,plat,firstAt&&firstAt.startMs))
-            +'" target="_blank" rel="noopener">'
-            +(firstAt?"Open at "+esc(firstAt.timecode):"Open")+" ↗</a>"
-          :"")
-        +(selectable?'<button type="button" class="mgroup-all" data-feed-all="'+esc(g.key)
-          +'">Select all '+esc(String(selectable))+"</button>":"")
-        +"</div>"
-        +(rows?'<div class="mentions">'+rows
-            +(g.typed.length>cut
-              ?'<button type="button" class="mgroup-rest" data-expand="'+esc(g.key)+'">'
-                +(open?"Show fewer":"Show "+(g.typed.length-cut)+" more from this post")+"</button>"
-              :"")
-            +"</div>"
-          :'<div class="mgroup-none">The post names '+esc(term)+", but none of its comments do.</div>")
-        +"</div>";
+      // The spoken hit's own copy of the post is the one that carries the
+      // stream; the comment sweep's copy of the same post often does not.
+      return mentionGroup({post:post,key:g.key,startMs:moment&&moment.startMs,
+        mediaPost:g.spoken.length?resolvePostMedia(g.spoken[0].post||{}).video?g.spoken[0].post:post:post,
+        about:g.spoken.length?badge("secondary",ic("mic",12)+"said out loud","mgroup-about")
+          :g.postIsAboutTerm?badge("secondary","about "+esc(term),"mgroup-about"):"",
+        title:esc(String(post.title||post.caption||"").slice(0,140)),
+        link:linkAtMoment(String(post.externalUrl||""),plat,moment&&moment.startMs),
+        linkLabel:moment?"Open at "+moment.timecode:"Open",
+        selectAttr:selectable?'data-feed-all="'+esc(g.key)+'"':"",selectCount:selectable,
+        rows:rows?'<div class="nt-signals-rows mentions">'+rows
+            +(g.typed.length>GROUP_PEEK?restButton(g.key,open,g.typed.length-cut):"")+"</div>"
+          :'<div class="nt-signals-none mgroup-none">The post names '+esc(term)+", but none of its comments do.</div>"});
     }).join("");
 
-    app.innerHTML=head+'<div class="mgroups fade-in">'+html+"</div>"+pickBarHtml();
+    var more=monitorState.hasMore&&!feedFilter&&feedSource!=="spoken"
+      ? '<div class="nt-signals-more">'+btn("outline","sm","Load more mentions",' data-next-offset="'+esc(String(monitorState.nextOffset))
+        +'" data-term="'+esc(term)+'"',"mention-more")+"</div>"
+      : "";
+    app.innerHTML=mentionsShell(head,'<div class="nt-signals-groups mgroups">'+html+"</div>",more+pickBarHtml("mentions"));
     initMentionPicks();
     applyMentionPicks();
     setTimeout(reportSize,60);
@@ -2450,7 +2603,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       var on=pickedMentions.indexOf(b.getAttribute("data-mid")||"")>=0;
       b.checked=on;
       var row=b.closest(".mention");
-      if(row)row.classList.toggle("picked",on);
+      if(row){row.classList.toggle("picked",on);row.classList.toggle("is-picked",on);}
     });
     document.querySelectorAll("[data-group-all]").forEach(function(b){
       var t=groupByKey(b.getAttribute("data-group-all")||"");
@@ -2576,7 +2729,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(box.checked&&i<0)pickedMentions.push(id);
     if(!box.checked&&i>=0)pickedMentions.splice(i,1);
     var row=box.closest(".mention");
-    if(row)row.classList.toggle("picked",box.checked);
+    if(row){row.classList.toggle("picked",box.checked);row.classList.toggle("is-picked",box.checked);}
     syncMentionBar();
   }
   function syncMentionBar(){
@@ -2591,12 +2744,22 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         var spoken=0;
         pickedMentions.forEach(function(id){if(id.indexOf("spoken:")===0)spoken++;});
         var typed=pickedMentions.length-spoken;
+        // Which posts the picks came from is the thing that decides whether
+        // "Analyse these" can run (analyze_comments reads one post), so the
+        // hint says it before the button has to refuse.
+        var posts={};
+        (monitorState?monitorState.threads:[]).forEach(function(t){
+          (t.mentions||[]).forEach(function(m){
+            if(pickedMentions.indexOf(String(m.id||""))>=0)posts[groupKey(t)]=true;
+          });
+        });
+        var nPosts=Object.keys(posts).length;
         hint.textContent=spoken
           ? spoken+" spoken, "+typed+" typed"
-          : pickedMentions.length===1?"1 comment selected":pickedMentions.length+" comments selected";
+          : nPosts>1?"from "+nPosts+" posts":"from 1 post";
       }
       var go=document.getElementById("pickgo");
-      if(go){go.disabled=false;go.textContent="Analyse these";}
+      if(go){go.disabled=false;setGoLabel(go,"Analyse these");}
     }else{
       bar.hidden=true;
     }
@@ -2633,20 +2796,23 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var spokenPicks=0;
     pickedMentions.forEach(function(id){if(id.indexOf("spoken:")===0)spokenPicks++;});
     var distinct=Object.keys(urls);
+    // Why not is said in the bar's own hint, where the eye already is, and
+    // the button keeps its label: a button that renames itself to explain a
+    // refusal reads as a different action.
     if(spokenPicks||distinct.length!==1){
-      var was=go.textContent;
-      go.textContent=spokenPicks?"Spoken lines are not comments"
-        :distinct.length===0?"Couldn't find that post":"Pick comments from one post only";
-      setTimeout(function(){go.textContent=was;},2200);
+      var hint=document.getElementById("pickhint");
+      var why=spokenPicks?"Spoken lines are not comments"
+        :distinct.length===0?"Couldn’t find that post":"Pick comments from one post only";
+      if(hint){hint.textContent=why;setTimeout(syncMentionBar,2200);}
       return;
     }
-    go.disabled=true;go.textContent="Sending…";
+    go.disabled=true;setGoLabel(go,"Sending…");
     invokeTool("analyze_comments",{url:distinct[0],limit:Math.max(pickedMentions.length,20)},function(){
-      go.textContent="Sent ✓";
-      setTimeout(function(){go.disabled=false;go.textContent="Analyse these";},1800);
+      setGoLabel(go,"Sent");
+      setTimeout(function(){go.disabled=false;setGoLabel(go,"Analyse these");},1800);
     },function(){
-      go.textContent="Try in chat";
-      setTimeout(function(){go.disabled=false;go.textContent="Analyse these";},1800);
+      setGoLabel(go,"Try in chat");
+      setTimeout(function(){go.disabled=false;setGoLabel(go,"Analyse these");},1800);
     });
   },true);
 
@@ -2697,6 +2863,39 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // stage is byte-for-byte identical between the two, which is the point:
   // controls must not move or change shape from one post to the next.
   var mpId=0;
+
+  /**
+   * compare_posts: the posts as numbered rows, the one that won marked, and
+   * the model's reasons under them. Every row keeps its own way back to the
+   * post, because a comparison you cannot check is an assertion.
+   */
+  function renderComparison(d){
+    var c=d.comparison||{},win=Number(c.winner)||0;
+    var rows=d.posts.map(function(p,i){
+      var isw=win===i+1,url=p.externalUrl||p.url||"";
+      return '<li class="nt-feeds-cmp-row'+(isw?" is-win":"")+'">'
+        +'<span class="nt-feeds-cmp-n">'+(i+1)+"</span>"
+        +'<div class="nt-feeds-cmp-main"><div class="nt-feeds-cmp-top">'+platTag(p.platform)
+        +(p.creatorHandle?'<span class="nt-feeds-muted">@'+esc(String(p.creatorHandle).replace(/^@/,""))+"</span>":"")
+        +(isw?badge("success",ic("trophy",12)+"Best"):"")+"</div>"
+        +'<p class="nt-feeds-cmp-cap">'+esc(String(p.title||p.caption||"").slice(0,140))+"</p>"
+        +'<div class="nt-feeds-stats"><span>'+ic("eye",13)+compact(p.views||0)+"</span><span>"+ic("heart",13)+compact(p.likes||0)+"</span>"
+        +(p.comments?"<span>"+ic("message-square",13)+compact(p.comments)+"</span>":"")+"</div></div>"
+        +(url?linkBtn("ghost","icon-sm",url,ic("arrow-up-right",14),"",' aria-label="Open post '+(i+1)+'"'):"")
+        +"</li>";
+    }).join("");
+    var diffs=(c.differences||[]).slice(0,5),lessons=(c.lessons||[]).slice(0,4);
+    var body='<ol class="nt-feeds-cmp-list">'+rows+"</ol>"
+      +(c.winnerReason?'<div class="nt-feeds-block"><h4 class="nt-feeds-label">Why it won</h4><p class="nt-feeds-prose">'+esc(c.winnerReason)+"</p></div>":"")
+      +(diffs.length?'<div class="nt-feeds-block"><h4 class="nt-feeds-label">What differed</h4><dl class="nt-feeds-kv">'
+        +diffs.map(function(x){return "<dt>"+esc(x.factor||"")+"</dt><dd>"+esc(x.detail||"")+"</dd>";}).join("")+"</dl></div>":"")
+      +(lessons.length?'<div class="nt-feeds-block"><h4 class="nt-feeds-label">Lessons</h4><ul class="nt-feeds-list">'
+        +lessons.map(function(l){return "<li>"+esc(l)+"</li>";}).join("")+"</ul></div>":"")
+      +(c.nextTest?'<div class="nt-feeds-block"><div class="nt-feeds-callout">'+ic("flask",16)
+        +"<div><b>Next test</b><p>"+esc(c.nextTest)+"</p></div></div></div>":"");
+    return viewShell({icon:"scales",title:"Comparing "+d.posts.length+" posts",cls:"nt-feeds-cmp",
+      meta:win?"Post #"+win+" performed best":"",body:body});
+  }
   // Aspect class of the most recent player, so the enclosing card can adopt it.
   var lastPlayerAr="v";
   var lastVideoFallback="";
@@ -2747,66 +2946,71 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       // which beats a black card.
       var slideFb=p.thumbnailFallbackUrl||p.thumbnailProxyUrl||p.thumbnailUrl||"";
       for(var i=0;i<images.length;i++)
-        stage+='<img class="mp-slide'+(i===0?" active":"")+'" src="'+esc(images[i])
+        stage+='<img class="nt-feeds-mp-slide mp-slide'+(i===0?" is-active active":"")+'" src="'+esc(images[i])
           +'" alt="slide '+(i+1)+'" loading="'+(i===0?"eager":"lazy")+'"'
           +(slideFb&&slideFb!==images[i]?' data-fallback="'+esc(slideFb)+'"':"")+"/>";
     }
 
     // Overlay: brand badge, slide counter, engagement rail, caption block.
-    var acts=[["heart",p.likes,"likes"],["comment",p.comments,"comments"],
+    var pname=pTitle(platform)||"Post";
+    var actsList=[["heart",p.likes,"likes"],["comment",p.comments,"comments"],
               ["share",p.shares,"shares"],["eye",p.views,"views"]]
-      .filter(function(a){return Number(a[1])>0;})
-      .map(function(a){
-        return '<div class="mp-act" title="'+fmtNum(a[1])+" "+a[2]+'">'
-          +'<div class="ic">'+mpIcon(a[0],19)+"</div>"
-          +'<div class="n">'+fmtNum(a[1])+"</div></div>";
+      .filter(function(a){return Number(a[1])>0;});
+    var acts=actsList.map(function(a){
+        return '<div class="nt-feeds-mp-act mp-act" title="'+esc(grouped(a[1]))+" "+a[2]+'">'
+          +'<span class="nt-feeds-mp-ic ic'+(a[0]==="share"?" is-flip":"")+'">'+mpIcon(a[0],18)+"</span>"
+          +'<span class="nt-feeds-mp-n n">'+compact(a[1])+"</span></div>";
       }).join("");
-    var handle=p.creatorHandle?'<div class="mp-handle">@'+esc(p.creatorHandle)+"</div>":"";
+    // Below 460px a wide player drops the rail and says the same numbers
+    // inline, under the caption; the CSS decides which of the two shows.
+    var inline=actsList.length?'<div class="nt-feeds-mp-inline">'
+      +actsList.map(function(a){return compact(a[1])+" "+a[2];}).join(" · ")+"</div>":"";
+    var handle=p.creatorHandle?'<div class="nt-feeds-mp-handle mp-handle">@'+esc(p.creatorHandle)+"</div>":"";
     var capText=p.caption||p.title||"";
-    var cap=capText?'<div class="mp-cap">'+esc(capText)+"</div>":"";
+    var cap=capText?'<div class="nt-feeds-mp-cap mp-cap">'+esc(capText)+"</div>":"";
     var song=songLabel||music
-      ? '<div class="mp-song"><span class="note">'+mpIcon("note",12)+"</span>"
+      ? '<div class="nt-feeds-mp-song mp-song">'+mpIcon("note",12)
         +'<span class="mp-song-t">'+esc(songLabel||"original sound")+"</span></div>"
       : "";
-    var counter=isSlideshow?'<div class="mp-chip"><span class="mp-idx">1</span>/'+images.length+"</div>":"";
+    var counter=isSlideshow?'<span class="nt-feeds-mp-chip mp-chip'+(pickable||pickUrl?" is-low":"")+'"><span class="mp-idx">1</span>/'+images.length+"</span>":"";
     var navs=isSlideshow
-      ? '<button class="mp-nav prev" type="button" data-dir="-1" aria-label="Previous slide">'+mpIcon("prev",20)+"</button>"
-        +'<button class="mp-nav next" type="button" data-dir="1" aria-label="Next slide">'+mpIcon("next",20)+"</button>"
+      ? '<button class="nt-feeds-mp-nav is-prev mp-nav prev" type="button" data-dir="-1" aria-label="Previous slide">'+ic("chevron-left",18)+"</button>"
+        +'<button class="nt-feeds-mp-nav is-next mp-nav next" type="button" data-dir="1" aria-label="Next slide">'+ic("chevron-right",18)+"</button>"
       : "";
 
     // Seek widget: one segment for video, one per slide for a slideshow.
     var segCount=isSlideshow?images.length:1,segs="";
-    for(var k=0;k<segCount;k++)segs+='<div class="mp-seg"><i></i></div>';
+    for(var k=0;k<segCount;k++)segs+='<div class="nt-feeds-mp-seg mp-seg"><i></i></div>';
 
     var label=(p.creatorHandle?"@"+p.creatorHandle+" — ":"")+(isSlideshow?"slideshow":"video");
     lastPlayerAr=ar;
-    return '<div class="mp '+ar+'" id="'+id+'" data-mp="'+(isSlideshow?"slides":"video")+'"'
+    return '<div class="nt-feeds-mp is-'+ar+' mp '+ar+'" id="'+id+'" data-mp="'+(isSlideshow?"slides":"video")+'"'
       +(Number(p.duration)>0?' data-mp-dur="'+Math.floor(Number(p.duration))+'"':"")
       +(lastVideoFallback?' data-mp-fallback="'+esc(lastVideoFallback)+'"':"")
       +(isSlideshow?' data-slides="'+images.length+'"':"")
       +' tabindex="0" role="group" aria-label="'+esc(label)+'">'
-      +'<div class="mp-stage">'+stage
-      +'<div class="mp-spin" hidden><i></i></div>'
-      +'<div class="mp-err" hidden>'+mpIcon("warn",22)
+      +'<div class="nt-feeds-mp-stage mp-stage">'+stage
+      +'<div class="nt-feeds-mp-spin mp-spin" hidden><i></i></div>'
+      +'<div class="nt-feeds-mp-err mp-err" hidden>'+ic("triangle-alert",22)
       +"<span>This media could not be loaded</span></div>"
       +"</div>"
-      +'<div class="mp-ov">'
-      +'<div class="mp-badge">'+pSvg(platform,12)+" "+esc(platform)+"</div>"
-      +(pickable?'<button class="mp-pick" type="button" aria-pressed="false" data-pick-id="'+id+'" data-pick="'+esc(pickUrl)+'" title="Select for comparison">'+mpIcon("check",15)+"</button>":"")
-      +(pickUrl?'<a class="mp-open'+(pickable?" with-pick":"")+'" href="'+esc(pickUrl)+'" target="_blank" rel="noopener" title="Open on '+esc(platform)+'" aria-label="Open on '+esc(platform)+'">'+mpIcon("open",14)+"</a>":"")
+      +'<div class="nt-feeds-mp-ov mp-ov">'
+      +'<span class="nt-feeds-mp-badge mp-badge">'+glyph(platform,12)+esc(pname)+"</span>"
+      +(pickable?'<button class="nt-feeds-mp-pick mp-pick" type="button" aria-pressed="false" data-pick-id="'+id+'" data-pick="'+esc(pickUrl)+'" title="Select for comparison" aria-label="Select for comparison">'+ic("check",14).replace('stroke-width="2"','stroke-width="3"')+"</button>":"")
+      +(pickUrl?'<a class="nt-feeds-mp-open mp-open'+(pickable?" with-pick":"")+'" href="'+esc(pickUrl)+'" target="_blank" rel="noopener" title="Open on '+esc(pname)+'" aria-label="Open on '+esc(pname)+'">'+ic("external-link",13)+"</a>":"")
       +counter+navs
-      +'<div class="mp-rail">'+acts+"</div>"
-      +'<div class="mp-meta">'+handle+cap+song+"</div>"
-      +'<button class="mp-tap" type="button" aria-label="Play"><span>'+mpIcon("play",28)+"</span></button>"
+      +'<div class="nt-feeds-mp-rail mp-rail">'+acts+"</div>"
+      +'<div class="nt-feeds-mp-meta mp-meta">'+handle+cap+inline+song+"</div>"
+      +'<button class="nt-feeds-mp-tap mp-tap" type="button" aria-label="Play"><span>'+mpIcon("play",26)+"</span></button>"
       +"</div>"
-      +'<div class="mp-ctl">'
-      +'<button class="mp-btn mp-play" type="button" aria-label="Play">'+mpIcon("play",16)+"</button>"
-      +'<span class="mp-time mp-cur">0:00</span>'
-      +'<div class="mp-seek" role="slider" tabindex="-1" aria-label="Seek"'
+      +'<div class="nt-feeds-mp-ctl mp-ctl">'
+      +'<button class="nt-feeds-mp-btn mp-btn mp-play" type="button" aria-label="Play">'+mpIcon("play",14)+"</button>"
+      +'<span class="nt-feeds-mp-time mp-time mp-cur">0:00</span>'
+      +'<div class="nt-feeds-mp-seek mp-seek" role="slider" tabindex="-1" aria-label="Seek"'
       +' aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">'
-      +'<div class="mp-segs">'+segs+"</div></div>"
-      +'<span class="mp-time mp-dur">0:00</span>'
-      +'<button class="mp-icon mp-mute" type="button" aria-label="Mute" aria-pressed="false">'
+      +'<div class="nt-feeds-mp-segs mp-segs">'+segs+"</div></div>"
+      +'<span class="nt-feeds-mp-time mp-time mp-dur">0:00</span>'
+      +'<button class="nt-feeds-mp-mute mp-icon mp-mute" type="button" aria-label="Mute" aria-pressed="false">'
       +mpIcon("volume",17)+"</button>"
       +"</div>"
       +(music?'<audio preload="metadata" src="'+esc(music)+'"'
@@ -2828,16 +3032,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var st=p.standing;
     if(!st||typeof st!=="object"||st.ratio===null||st.ratio===undefined)return "";
     var ratio=Number(st.ratio),verdict=String(st.verdict||"");
-    var sc=verdict==="breakout"||verdict==="above_baseline"?"var(--green)"
-      :verdict==="below_baseline"||verdict==="flop"?"var(--red)"
-      :verdict==="no_baseline"?"var(--muted)":"var(--amber)";
-    var label={breakout:"Breakout",above_baseline:"Above baseline",typical:"Typical",
-      below_baseline:"Below baseline",flop:"Underperformed",no_baseline:"No baseline"}[verdict]||"";
-    return '<div style="padding:7px 12px;display:flex;align-items:center;gap:7px;'
-      +'font-size:12.5px;border-top:1px solid var(--border)">'
-      +'<span style="font-weight:700;color:'+sc+'">'+ratio+"× median</span>"
-      +(label?'<span style="color:var(--muted)">'+esc(label)+"</span>":"")
-      +"</div>";
+    var V={breakout:["Breakout","up"],above_baseline:["Above baseline","up"],typical:["Typical","mid"],
+      below_baseline:["Below baseline","down"],flop:["Underperformed","down"],no_baseline:["No baseline","none"]}[verdict]||["","mid"];
+    var icon=V[1]==="up"?"trending-up":V[1]==="down"?"trending-down":"minus";
+    return '<div class="nt-feeds-standing is-'+V[1]+'">'+ic(icon,14)+"<b>"+ratio+"× median</b>"
+      +(V[0]?"<span>"+esc(V[0])+"</span>":"")+"</div>";
   }
 
   // What a post can actually show: the playable stream and the still images,
@@ -2865,93 +3064,193 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 
   // The poster for a thread in the brand sweep: small, because this is a
   // scanning feed, and only a picture until it is asked to play.
-  function mgroupMediaHtml(post,key,playing){
+  // The post's poster in a group header: small, because this is a scanning
+  // feed, and only a picture until it is asked to play. Asked, it plays in
+  // place — opened at the spoken moment when a line was said in it, because
+  // the whole claim of that row is that the words are in the video at that
+  // timecode, and making a reader scrub for them is asking them to take it on
+  // trust. A post with nothing to play keeps its still, and one with no
+  // picture at all draws nothing rather than an empty tile.
+  function mgroupMediaHtml(post,key,playing,startMs){
     var m=resolvePostMedia(post);
     var thumb=String(post.thumbnailUrl||post.thumbnailProxyUrl||m.images[0]||"");
-    if(!thumb&&!m.video&&m.images.length<2)return "";
-    var playable=!!m.video||m.images.length>1;
-    // Once asked for, it draws through the same player every other view uses,
-    // so the controls and the fallback retry are the proven ones.
+    if(!thumb&&!m.video)return "";
+    var playable=!!m.video;
     if(playing&&playable){
-      return '<div class="mgroup-stage">'
-        +mediaPlayerHtml(post,m.images,m.video,String(post.platform||""),false)+"</div>";
+      var at=typeof startMs==="number"?Math.max(0,Math.floor(startMs/1000)):0;
+      var fb=(m.rawVideo&&(post.videoFallbackUrl||post.videoProxyUrl))||"";
+      return '<div class="nt-signals-stage mgroup-stage"'+(at?' data-mp-start="'+at+'"':"")+">"
+        +'<video class="mp" src="'+esc(m.video)+'" controls autoplay playsinline preload="metadata"'
+        +(at?' data-mp-start="'+at+'"':"")
+        +(thumb?' poster="'+esc(thumb)+'"':"")+(fb?' data-fallback="'+esc(fb)+'"':"")+"></video></div>";
     }
-    return '<button type="button" class="mgroup-media'+(playable?" is-playable":"")+'"'
-      +' data-mplay="'+esc(String(key||""))+'"'
+    return '<button type="button" class="nt-signals-poster mgroup-media'+(playable?" is-playable":"")+'"'
+      +' data-mplay="'+esc(String(key||""))+'"'+(playable?"":" disabled")
       +' aria-label="'+(playable?"Play this post":"Post image")+'">'
       +(thumb?'<img class="mgroup-media-img" data-avatar src="'+esc(thumb)+'" alt="" loading="lazy"/>'
-             :'<span class="mgroup-media-blank">'+pSvg(String(post.platform||""),18)+"</span>")
-      +(playable?'<span class="mgroup-media-play">'+mpIcon("play",16)+"</span>":"")
+             :'<span class="nt-signals-poster-blank">'+glyph(String(post.platform||""),18)+"</span>")
+      +(playable?'<span class="nt-signals-poster-play mgroup-media-play">'+mpIcon("play",14)+"</span>":"")
       +"</button>";
   }
 
+  // A stage's video opens at its moment once, and retries its fallback once:
+  // the same two rules the full player keeps, for the small one.
+  document.addEventListener("loadedmetadata",function(e){
+    var v=e.target;
+    if(!v||v.tagName!=="VIDEO"||!v.closest||!v.closest(".mgroup-stage")||v.__sought)return;
+    v.__sought=true;
+    var at=Number(v.getAttribute("data-mp-start")||0);
+    if(at>0){try{v.currentTime=at;}catch(err){}}
+  },true);
+  document.addEventListener("error",function(e){
+    var v=e.target;
+    if(!v||v.tagName!=="VIDEO"||!v.closest||!v.closest(".mgroup-stage"))return;
+    var alt=v.getAttribute("data-fallback")||"";
+    if(!alt||v.getAttribute("src")===alt)return;
+    v.removeAttribute("data-fallback");
+    v.__sought=false;
+    v.setAttribute("src",alt);
+    try{v.load();}catch(err){}
+  },true);
+
+  /** The source of the first spoken moment in a set of hits, if any. */
+  function firstMoment(hits){
+    var at=null;
+    (hits||[]).forEach(function(h){
+      (h.excerpts||[]).forEach(function(ex){
+        if(!at&&ex&&ex.timecode)at={timecode:String(ex.timecode),startMs:ex.startMs};
+      });
+    });
+    return at;
+  }
+
+  /** A filter chip: a network (or a label) and its count; quiet when nothing came back there. */
+  function filterChip(dataAttr,value,label,count,on,quiet,plat){
+    return '<button type="button" class="nt-signals-fchip mchip'+(on?" is-on on":"")+(quiet?" is-quiet quiet":"")+'" '
+      +dataAttr+'="'+esc(value)+'" aria-pressed="'+(on?"true":"false")+'"'
+      +(quiet?' disabled title="We looked there and it was quiet"':"")+">"
+      +(plat?'<span class="mchip-mark">'+glyph(plat,13)+"</span>":"")
+      +"<span>"+esc(label)+"</span><b>"+esc(String(count))+"</b></button>";
+  }
+
+  /**
+   * The head every mention screen shares: the term, the totals, the switch
+   * on the right, then whatever the screen has to say about how far it
+   * looked — the funnel, the filters, the ceiling and the networks it could
+   * not reach. Those last are drawn as notes, never dropped: "we did not
+   * look" and "nobody said it" are opposite answers.
+   */
+  function mentionHead(o){
+    return '<div class="nt-signals-head mhead">'
+      +'<div class="nt-signals-head-top mhead-top"><div class="nt-signals-head-text">'
+      +'<div class="nt-signals-term mention-term">'+ic(o.icon,16,"nt-muted")+"<span>"+o.title+"</span></div>"
+      +'<div class="nt-signals-total mention-total">'+o.total+(o.since||"")+"</div></div>"
+      +'<div class="nt-signals-switch msort">'+o.switcher+"</div></div>"
+      +(o.summary?'<p class="nt-signals-summary mention-summary">'+o.summary+"</p>":"")
+      +(o.funnel||"")
+      +(o.chips?'<div class="nt-signals-chips mchips" role="toolbar" aria-label="Filter">'+o.chips+"</div>":"")
+      +(o.notes||"")
+      +"</div>";
+  }
+  function mentionNote(icon,text,cls){
+    return '<div class="nt-signals-note '+(cls||"")+'">'+ic(icon,14)+"<span>"+text+"</span></div>";
+  }
+  /** "since …", warning-toned with the reason when the window could not be honoured. */
+  function sinceBadge(st){
+    if(!st||!st.since)return "";
+    var why=st.sinceApplied?"Comments before this date were dropped"
+      :"Most networks do not date comments, so this window could not be applied";
+    return badge(st.sinceApplied?"outline":"warning",ic("calendar",12)+"since "+esc(st.since)
+      +(st.sinceApplied?"":" · not applied")
+      +(st.undatedMentions>0?" · "+esc(String(st.undatedMentions))+" undated":""),"mention-window",' title="'+esc(why)+'"');
+  }
+
+  /** One post and what was found under it. */
+  function mentionGroup(o){
+    var post=o.post,plat=String(post.platform||"");
+    var reach=postReach(post);
+    return '<article class="nt-signals-group mgroup" data-platform="'+esc(plat)+'">'
+      +'<div class="nt-signals-ghead">'+mgroupMediaHtml(o.mediaPost||post,o.key,!!expandedMedia[o.key],o.startMs)
+      +'<div class="nt-signals-ghead-main">'
+      +'<div class="nt-signals-gmeta mgroup-head"><span class="nt-signals-plat mgroup-plat">'+glyph(plat,12)+esc(pTitle(plat))+"</span>"
+      +(o.about||"")
+      +(reach?'<span class="nt-signals-reach mgroup-reach">'+esc(reach)+"</span>":"")+"</div>"
+      +(o.title?'<div class="nt-signals-gtitle mgroup-title">'+o.title+"</div>":"")
+      +'<div class="nt-signals-gactions mgroup-actions">'
+      +(o.link?linkBtn("outline","xs",o.link,esc(o.linkLabel||"Open")+ic("arrow-up-right",12),"mgroup-link"):"")
+      +(o.selectAttr?btn("ghost","xs","Select all "+o.selectCount,' '+o.selectAttr,"mgroup-all"):"")
+      +(o.extra||"")
+      +"</div></div></div>"
+      +o.rows
+      +"</article>";
+  }
+  function restButton(key,open,left){
+    return '<button type="button" class="nt-signals-rest mgroup-rest" data-expand="'+esc(key)+'">'
+      +ic(open?"chevron-up":"chevron-down",14)+(open?"Show fewer":"Show "+left+" more from this post")+"</button>";
+  }
+  function mentionsShell(head,body,tail){
+    return '<section class="nt-view nt-signals nt-in">'+head+body+(tail||"")+"</section>";
+  }
+
   function postCard(p,wide,pickable,hideActions){
-    var platform=p.platform||"unknown",color=pColor(platform),brandSvg=pSvg(platform);
-    var tcolor=pColorText(platform);
+    var platform=p.platform||"unknown",pname=pTitle(platform)||"Post";
     var title=p.title||p.caption||"",handle=p.creatorHandle||"",url=p.externalUrl||"";
     var thumb=p.thumbnailUrl||p.thumbnailProxyUrl||"",ct=p.contentType||"post";
-    var views=p.views||0,likes=p.likes||0,comments=p.comments||0,shares=p.shares||0;
-    var cls=wide?"card card-wide":"card";
-    var statsHtml=[[views,"eye"],[likes,"heart"],[comments,"comment"],[shares,"share"]]
-      .filter(function(s){return s[0]>0})
-      .map(function(s){return'<span class="stat-pill">'+mpIcon(s[1],13)+" "+fmtNum(s[0])+"</span>";}).join("");
-    var handleHtml=handle?'<span class="handle">@'+esc(handle)+"</span>":"";
-    var linkHtml=url?'<a href="'+esc(url)+'" target="_blank" class="btn" style="background:'+color+'">View on '+esc(platform)+' →</a>':"";
+    var statsHtml=[["views","eye","views"],["likes","heart","likes"],["comments","comment","comments"],["shares","share","shares"]]
+      .filter(function(s){return Number(p[s[0]])>0;})
+      .map(function(s){return '<span class="nt-feeds-pill stat-pill" title="'+esc(grouped(p[s[0]]))+" "+s[2]+'">'
+        +ic(MP_MAP[s[1]][0],13)+compact(p[s[0]])+"</span>";}).join("");
     // Prefer video playback over a static thumbnail when the post has one
-    // (videoUrl, or a video mediaItem preview_url). Videos are proxied /
-    // re-hosted to a permanent nooticr URL so they play inside the CSP.
-    // Play the platform URL directly. Going through /media/proxy did not fix
-    // playback in practice, and the direct link is one less hop that can fail.
-    // The proxied companion is kept as a fallback: the player retries with it
-    // once if the direct URL errors, which covers the CDNs that refuse a
-    // cross-origin request from this frame. Some feeds carry no stream at all
-    // - Douyin's search endpoint returns a permalink and a poster and nothing
-    // else - but the post detail does, so the resolver fetches it on demand.
+    // (videoUrl, or a video mediaItem preview_url). Play the platform URL
+    // directly; the proxied companion is kept as a fallback the player
+    // retries with once, which covers the CDNs that refuse a cross-origin
+    // request from this frame. Some feeds carry no stream at all - Douyin's
+    // search endpoint returns a permalink and a poster and nothing else - but
+    // the post detail does, so the resolver fetches it on demand.
     var resolved=resolvePostMedia(p);
     var video=resolved.video,images=resolved.images,rawVideo=resolved.rawVideo;
     // The retry target: the resolver re-fetches the post and hands back a
     // fresh link, which is the only thing that helps once the signed URL has
     // expired - a proxy of a dead link is just as dead.
     lastVideoFallback=(rawVideo&&(p.videoFallbackUrl||p.videoProxyUrl))||"";
-    var mediaHtml="";
-    var vh=wide?"340px":"200px";
     var bodyText=p.caption||p.text||"";
     var isSlideshow=(ct==="slideshow"||ct==="carousel")&&images.length>1;
     // Anything playable — a video or a slideshow — goes through the one
     // player, so the controls are the same on every card.
     if(video||isSlideshow||images.length>1){
-      mediaHtml=mediaPlayerHtml(p,images,video,platform,pickable);
+      var mediaHtml=mediaPlayerHtml(p,images,video,platform,pickable);
       // The player already carries the handle, caption and stats as overlay
-      // chrome, so the card body underneath is just the outbound link.
-      // repliesStrip here as well as on the plain card below, and this is the
-      // path that matters: a prospect post from a real search carries a
-      // videoUrl far more often than not, so a strip added only to the card
-      // body underneath would render in a test with a synthetic payload and
+      // chrome, so the card underneath is only the standing line and the
+      // replies. repliesStrip belongs here as well as on the plain card below,
+      // and this is the path that matters: a prospect post from a real search
+      // carries a videoUrl far more often than not, so a strip added only to
+      // the plain card would render in a test with a synthetic payload and
       // never once in production. Caught exactly that way.
-      return '<div class="'+cls+' card-media '+lastPlayerAr+'">'+mediaHtml
+      var card='<article class="nt-feeds-card is-media is-'+lastPlayerAr+(wide?" is-wide":"")+" card card-media "+lastPlayerAr+'">'+mediaHtml
         +standingBadge(p)
-        +(repliesStrip(p)?'<div class="card-body">'+repliesStrip(p)+"</div>":"")
-        +"</div>"
-        // Only on the single-post view — a gallery of these would be noise.
-        +(wide&&!hideActions?postAiActions(p):"");
+        +(repliesStrip(p)?'<div class="nt-feeds-card-body card-body">'+repliesStrip(p)+"</div>":"")
+        +"</article>";
+      // Only on the single-post view — a gallery of these would be noise.
+      return wide&&!hideActions?'<div class="nt-feeds-card-wrap">'+card+postAiActions(p)+"</div>":card;
     }
+    var media="";
     if(thumb){
       var tfb=(p.thumbnailUrl&&(p.thumbnailFallbackUrl||p.thumbnailProxyUrl))||"";
-      mediaHtml='<img src="'+esc(thumb)+'" alt="thumbnail" loading="lazy"'
-        +(tfb?' data-fallback="'+esc(tfb)+'"':"")+"/>";
+      media='<div class="nt-feeds-thumb'+(wide?" is-wide":"")+'"><img src="'+esc(thumb)+'" alt="Thumbnail" loading="lazy"'
+        +(tfb?' data-fallback="'+esc(tfb)+'"':"")+"/></div>";
     }else if(bodyText){
-      // Text-only post (LinkedIn / X) — styled quote block.
-      mediaHtml='<div style="padding:16px 18px;border-bottom:1px solid var(--border);background:var(--card)">'
-        +'<div style="font-size:13px;line-height:1.55;color:var(--fg);white-space:pre-line">'+esc(bodyText.length>400?bodyText.slice(0,400)+"…":bodyText)+'</div></div>';
+      // Text-only post (LinkedIn / X) — a quote block.
+      media='<div class="nt-feeds-quote"><p>'+esc(bodyText.length>400?bodyText.slice(0,400)+"…":bodyText)+"</p></div>";
     }
-    var ctTag=wide?'<span style="font-size:12px;color:var(--muted);text-transform:capitalize">'+esc(ct)+"</span>":"";
-    return '<div class="'+cls+'">'+mediaHtml+'<div class="card-body">'
-      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-      +'<span class="badge" style="background:'+color+'15;color:'+tcolor+';display:inline-flex;align-items:center;gap:4px">'+brandSvg+" "+esc(platform)+"</span>"
-      +ctTag+handleHtml+"</div>"
-      +'<div class="title">'+esc(title.length>160?title.slice(0,160)+"…":title)+"</div>"
-      +'<div class="stats">'+statsHtml+"</div>"
-      +linkHtml+repliesStrip(p)+"</div>"+standingBadge(p)+"</div>";
+    return '<article class="nt-feeds-card'+(wide?" is-wide card-wide":"")+' card">'+media
+      +'<div class="nt-feeds-card-body card-body">'
+      +'<div class="nt-feeds-card-head">'+platTag(platform)
+      +(wide&&p.contentType?'<span class="nt-feeds-muted">'+esc(String(ct).charAt(0).toUpperCase()+String(ct).slice(1))+"</span>":"")
+      +(handle?'<span class="nt-feeds-handle handle">@'+esc(handle)+"</span>":"")+"</div>"
+      +(title?'<p class="nt-feeds-title title">'+esc(title.length>160?title.slice(0,160)+"…":title)+"</p>":"")
+      +(statsHtml?'<div class="nt-feeds-stats stats">'+statsHtml+"</div>":"")
+      +(url?linkBtn("default","sm",url,"View on "+esc(pname)+ic("arrow-right",14),"nt-feeds-view btn"):"")
+      +repliesStrip(p)+"</div>"+standingBadge(p)+"</article>";
   }
 
   /**
@@ -2976,48 +3275,45 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var read=p.commentsRead;
     var hasSample=sample&&sample.length;
     if(!hasSample&&read!==0)return "";
-    var out='<div class="replies-strip">';
+    var out='<div class="nt-feeds-replies replies-strip">';
     if(!hasSample){
-      return out+'<div class="replies-none">This thread would not open — not that nobody replied.</div></div>';
+      return out+'<p class="nt-feeds-replies-none replies-none">This thread would not open — not that nobody replied.</p></div>';
     }
-    out+='<div class="replies-head">'+esc(String(sample.length))
-      +(sample.length===1?" reply":" replies")+" under this post</div>";
+    out+='<p class="nt-feeds-replies-head replies-head">'+esc(String(sample.length))
+      +(sample.length===1?" reply":" replies")+" under this post</p>";
     out+=sample.slice(0,4).map(function(m){
       var who=String(m.username||m.author||"");
-      var likes=m.likes?fmtNum(m.likes)+" likes":"";
-      return '<div class="reply-row">'
-        +'<div class="reply-meta">'+(who?'<span class="reply-who">@'+esc(who)+"</span>":"")
-        +(likes?'<span class="reply-stat">'+esc(likes)+"</span>":"")+labelChips(m)+"</div>"
-        +'<div class="reply-text">'+esc(String(m.text||m.comment||""))+"</div></div>";
+      return '<div class="nt-feeds-reply reply-row">'
+        +'<div class="nt-feeds-reply-meta reply-meta">'+(who?'<b class="reply-who">@'+esc(who)+"</b>":"")
+        +(m.likes?'<span class="reply-stat">'+esc(compact(m.likes))+" likes</span>":"")+labelChips(m)+"</div>"
+        +'<p class="nt-feeds-reply-text reply-text">'+esc(String(m.text||m.comment||""))+"</p></div>";
     }).join("");
     if(sample.length>4){
-      out+='<div class="replies-none">'+esc(String(sample.length-4))+" more under this post.</div>";
+      out+='<p class="nt-feeds-replies-none replies-none">'+esc(String(sample.length-4))+" more under this post.</p>";
     }
     return out+"</div>";
   }
 
   // ─── Creator Card ───
   function creatorCard(c){
-    var platform=c.platform||"tiktok",color=pColor(platform),brandSvg=pSvg(platform,22);
-    var username=c.username||c.uniqueId||"",nickname=c.nickname||c.displayName||username;
+    var platform=c.platform||"tiktok";
+    var username=c.username||c.uniqueId||c.handle||"",nickname=c.nickname||c.displayName||username;
     var followers=c.followers||c.followerCount||0,sig=(c.signature||c.bio||"").slice(0,100);
-    var verified=c.verified||false,avatar=c.avatarUrl||c.avatar_thumb||"";
-    var avatarHtml=avatar
-      ?'<img class="avatar" src="'+esc(avatar)+'" alt="avatar" loading="lazy"/>'
-      :'<div class="avatar-placeholder" style="background:'+color+'20">'+brandSvg+"</div>";
-    var vBadge=verified?'<span class="verified" style="background:'+color+'">✓</span>':"";
-    return '<div class="creator-card">'
-      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'
-      +avatarHtml+"<div>"
-      +'<div style="display:flex;align-items:center"><span style="font-size:14px;font-weight:700">'+esc(nickname)+"</span>"+vBadge+"</div>"
-      +'<div class="handle">@'+esc(username)+"</div></div></div>"
-      +'<div style="font-size:13px;color:var(--fg);font-weight:600;margin-bottom:6px">'+fmtNum(followers)+" followers</div>"
-      // Parenthesised: + binds tighter than the ternary, so without these the whole
-      // concatenation became the condition and the function returned only the
-      // bio — no card, no avatar, no name, no follower count.
-      +(sig?'<div style="font-size:12px;color:var(--muted);line-height:1.4">'+esc(sig)+"</div>":"")
+    var avatar=c.avatarUrl||c.avatar_thumb||"";
+    // The network's mark sits under the photo, so a photo that will not load
+    // uncovers a face-shaped answer rather than a broken-image glyph.
+    return '<article class="nt-feeds-creator creator-card">'
+      +'<div class="nt-feeds-creator-head">'
+      +'<span class="nt-avatar nt-feeds-creator-av" style="width:52px;height:52px;font-size:20px">'
+      +'<span class="nt-avatar-fallback">'+glyph(platform,22)+"</span>"
+      +(avatar?'<img class="avatar" data-avatar src="'+esc(avatar)+'" alt="'+esc(nickname)+'" loading="lazy"/>':"")+"</span>"
+      +'<div class="nt-feeds-creator-id"><div class="nt-feeds-creator-name"><span>'+esc(nickname)+"</span>"
+      +(c.verified?'<span class="verified" role="img" aria-label="Verified">'+ic("badge-check",14)+"</span>":"")+"</div>"
+      +'<div class="nt-feeds-creator-handle handle">'+glyph(platform,12)+"<span>@"+esc(String(username).replace(/^@/,""))+"</span></div></div></div>"
+      +'<div class="nt-feeds-creator-f"><b>'+compact(followers)+"</b> followers</div>"
+      +(sig?'<p class="nt-feeds-creator-bio">'+esc(sig)+"</p>":"")
       +vetting(c)
-      +"</div>";
+      +"</article>";
   }
 
   // ─── Identity suggestions (suggest_creator_identity) ───
@@ -3029,41 +3325,36 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // Every card says "suggestion" on its face for the same reason.
   function renderIdentity(d){
     var seed=d.seed||{},list=d.suggestions||[];
-    var searched=(d.searched||[]).join(", ");
-    var head='<div style="margin-bottom:12px"><div style="font-size:15px;font-weight:700">Possibly the same person as @'
-      +esc(seed.handle||"")+" on "+esc(seed.platform||"")+"</div>"
-      +'<div style="font-size:12px;color:var(--muted);margin-top:3px">'
-      +list.length+" suggestion"+(list.length===1?"":"s")+(searched?" · looked on "+esc(searched):"")
-      +" · nothing merged, a human confirms</div>"
-      +(d.note?'<div style="font-size:12px;color:var(--muted);margin-top:6px">'+esc(d.note)+"</div>":"")
-      +"</div>";
+    var searched=(d.searched||[]).map(pTitle).join(", ");
+    var meta=plural(list.length,"suggestion")+(searched?" · looked on "+esc(searched):"")+" · nothing merged, a human confirms";
     var cards=list.map(function(c){
-      var high=c.confidence==="high",color=pColor(c.platform||"");
+      var high=c.confidence==="high";
       var ev=(c.evidence||[]).map(function(e){
         var strong=e.strength==="strong";
-        return '<li style="margin:3px 0"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:'
-          +(strong?"var(--green)":"var(--muted)")+'">'+esc(e.strength||"")+"</span> "
-          +'<span style="font-weight:600">'+esc(String(e.signal||"").split("_").join(" "))+"</span>"
-          +(e.detail?' <span style="color:var(--muted)">· '+esc(e.detail)+"</span>":"")+"</li>";
+        return "<li>"+tone(strong?"success":"muted",strong?"check":"minus",esc(e.strength||""))+" "
+          +"<b>"+esc(String(e.signal||"").split("_").join(" "))+"</b>"
+          +(e.detail?' <span class="nt-muted">· '+esc(e.detail)+"</span>":"")+"</li>";
       }).join("");
       var link=c.profileUrl&&String(c.profileUrl).indexOf("http")===0
-        ?'<a href="'+esc(c.profileUrl)+'" style="font-size:12px;color:var(--fg)">Open profile</a>':"";
-      return '<div class="creator-card" data-identity-candidate>'
-        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
-        +'<div class="avatar-placeholder" style="flex-shrink:0;background:'+color+'20">'+pSvg(c.platform||"",22)+"</div>"
-        +'<div style="min-width:0"><div style="font-size:14px;font-weight:700">'+esc(c.nickname||c.username||"")+"</div>"
-        +'<div class="handle" style="overflow-wrap:anywhere">@'+esc(c.username||"")+" · "+esc(c.platform||"")+"</div></div></div>"
-        +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;color:'
-        +(high?"var(--green)":"var(--muted)")+'">'+(high?"likely":"possible")+" · suggestion</div>"
-        +(c.followers!=null?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+fmtNum(c.followers)+" followers on this account alone</div>":"")
-        +(ev?'<ul style="list-style:none;padding:0;margin:0;font-size:12px;line-height:1.4">'+ev+"</ul>":"")
-        +(link?'<div style="margin-top:8px">'+link+"</div>":"")
-        +"</div>";
+        ?linkBtn("outline","xs",c.profileUrl,"Open profile"+ic("arrow-up-right",12)):"";
+      return '<article class="nt-feeds-creator creator-card" data-identity-candidate>'
+        +'<div class="nt-feeds-creator-head"><span class="nt-avatar nt-feeds-creator-av" style="width:52px;height:52px">'
+        +'<span class="nt-avatar-fallback">'+glyph(c.platform||"",22)+"</span></span>"
+        +'<div class="nt-feeds-creator-id"><div class="nt-feeds-creator-name"><span>'+esc(c.nickname||c.username||"")+"</span></div>"
+        +'<div class="nt-feeds-creator-handle handle">'+glyph(c.platform||"",12)+"<span>@"+esc(c.username||"")+"</span></div></div></div>"
+        +'<div class="nt-feeds-vet-top">'+badge(high?"success":"outline",(high?"Likely":"Possible")+" · suggestion")+"</div>"
+        +(c.followers!=null?'<p class="nt-feeds-vet-by">'+esc(compact(c.followers))+" followers on this account alone</p>":"")
+        +(ev?'<ul class="nt-identity-ev">'+ev+"</ul>":"")
+        +(link?'<div class="nt-identity-link">'+link+"</div>":"")
+        +"</article>";
     }).join("");
-    var none=list.length?"":'<div class="empty-state"><div class="icon">👤</div><div class="text">No account cleared the bar. A creator with no links in their bio is hard to match this way; that is not proof they have no other accounts.</div></div>';
-    var gaps=(d.unavailable||[]).map(function(u){return esc(u.platform||"")+" could not be searched";}).join(" · ");
-    return '<div class="fade-in">'+head+none+(cards?'<div class="gallery">'+cards+"</div>":"")
-      +(gaps?'<div style="font-size:12px;color:var(--muted);margin-top:10px">'+gaps+"</div>":"")+"</div>";
+    var none=list.length?"":'<div class="nt-signals-pad">'+emptyState("user","No account cleared the bar",
+      "A creator with no links in their bio is hard to match this way; that is not proof they have no other accounts.")+"</div>";
+    var gaps=(d.unavailable||[]).map(function(u){return esc(pTitle(u.platform||""))+" could not be searched";}).join(" · ");
+    return viewShell({icon:"users",title:"Possibly the same person as @"+esc(seed.handle||"")+" on "+esc(pTitle(seed.platform||"")),
+      meta:meta+(d.note?"<br>"+esc(d.note):""),
+      body:none+(cards?'<div class="nt-commerce-pad nt-commerce-pad-b">'+galleryWrap(cards,list.length,list.length+" suggestions")+"</div>":""),
+      footer:gaps});
   }
 
   // ─── Getting started (nooticr_getting_started) ───
@@ -3072,31 +3363,21 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // carries a balance too. A null is drawn as "could not read", never as 0 —
   // "no balance" and "no connections" are claims this view has not checked.
   function renderGettingStarted(d){
-    function stat(label,val,unknown){
-      return '<div style="flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
-        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
-        +'<div style="font-size:16px;font-weight:700;margin-top:3px">'+(val==null?'<span style="color:var(--muted);font-weight:500;font-size:13px">'+esc(unknown)+"</span>":esc(String(val)))+"</div></div>";
-    }
-    var head='<div style="font-size:15px;font-weight:700;margin-bottom:10px">'
-      +(d.signedIn?"Where your nooticr account stands":"Not signed in to nooticr yet")+"</div>";
-    var stats=d.signedIn
-      ?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'
-        +stat("Credits",d.balance,"could not read")
-        +stat("Connected accounts",d.connectedCount,"could not read")
-        +stat("Watching",d.watching,"could not read")+"</div>"
-      :"";
+    var stats=d.signedIn?statStrip([
+      statTile("Credits",d.balance==null?null:grouped(d.balance),"","could not read"),
+      statTile("Connected accounts",d.connectedCount,"","could not read"),
+      statTile("Watching",d.watching,"","could not read")]):"";
     var steps=(d.nextSteps||[]).map(function(n){
-      var price=Number(n.credits)>0?esc(String(n.credits))+" cr":"free";
+      var free=!(Number(n.credits)>0);
       var ex=n.example&&typeof n.example==="object"?JSON.stringify(n.example):"";
-      return '<div data-next-step style="padding:10px 0;border-top:1px solid var(--border)">'
-        +'<div style="display:flex;align-items:baseline;gap:8px"><code style="font-weight:700">'+esc(n.tool||"")+"</code>"
-        +'<span style="margin-left:auto;font-size:11px;font-weight:700;color:'+(price==="free"?"var(--green)":"var(--muted)")+'">'+price+"</span></div>"
-        +'<div style="font-size:13px;margin-top:3px">'+esc(n.why||"")+"</div>"
-        +(ex?'<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:ui-monospace,monospace">'+esc(ex)+"</div>":"")
-        +"</div>";
+      return '<div class="nt-row" data-next-step><div class="nt-row-main">'
+        +'<div class="nt-row-title"><code class="nt-mono">'+esc(n.tool||"")+"</code></div>"
+        +'<div class="nt-row-note">'+esc(n.why||"")+"</div>"
+        +(ex?'<div class="nt-row-meta nt-mono">'+esc(ex)+"</div>":"")+"</div>"
+        +'<div class="nt-row-end">'+(free?badge("success","Free"):badge("secondary",esc(String(n.credits))+" cr"))+"</div></div>";
     }).join("");
-    return '<div class="fade-in">'+head+stats
-      +'<div class="sec-label">Try next</div>'+steps+"</div>";
+    return viewShell({icon:"sparkles",title:d.signedIn?"Where your nooticr account stands":"Not signed in to nooticr yet",
+      body:stats+(steps?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Try next</div><div class="nt-rows">'+steps+"</div>":"")});
   }
 
   // ─── Connector reads (get_google_analytics, get_search_console_data,
@@ -3109,50 +3390,42 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var name=names[d.connector]||"Analytics";
     var when=String(d.synced_at||d.lastSync||d.lastRefresh||"");
     var asOf=when?"as of "+esc(when.slice(0,16).split("T").join(" "))+" UTC · not live":"sync time not reported";
-    var head='<div style="margin-bottom:12px"><div style="font-size:15px;font-weight:700">'+esc(name)
-      +(d.appName?" · "+esc(d.appName):"")+"</div>"
-      +'<div data-as-of style="font-size:12px;color:var(--muted);margin-top:2px">'+asOf+"</div></div>";
+    var title=esc(name)+(d.appName?" · "+esc(d.appName):"");
+    var meta='<span data-as-of>'+asOf+"</span>";
     if(d.message){
-      return '<div class="fade-in">'+head+'<div class="empty-state"><div class="icon">📊</div><div class="text">'+esc(d.message)+"</div></div></div>";
-    }
-    function tile(label,val){
-      return '<div style="flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
-        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
-        +'<div style="font-size:18px;font-weight:700;margin-top:3px">'+esc(String(val))+"</div></div>";
+      return viewShell({icon:"chart-line",title:title,meta:meta,body:'<div class="nt-signals-pad">'+emptyState("chart-line","",esc(d.message))+"</div>"});
     }
     var body="";
     if(d.connector==="search_console"){
       var clicks=Number(d.clicks)||0,imp=Number(d.impressions)||0;
-      body='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
-        +tile("Clicks",fmtNum(clicks))+tile("Impressions",fmtNum(imp))
-        +tile("Click-through",imp?(Math.round(clicks/imp*1000)/10)+"%":"—")+"</div>"
-        +(d.error?'<div style="font-size:12px;color:var(--red);margin-bottom:8px">Search Console refused the last sync: '+esc(d.error)+"</div>":"")
+      body=statStrip([statTile("Clicks",compact(clicks)),statTile("Impressions",compact(imp)),
+          statTile("Click-through",imp?(Math.round(clicks/imp*1000)/10)+"%":"—")])
+        +(d.error?'<div class="nt-commerce-pad"><div class="nt-commerce-note is-error">'+ic("circle-alert",14)+"<span>Search Console refused the last sync: "+esc(d.error)+"</span></div></div>":"")
         +((d.topQueries||[]).length
-          ?'<div class="sec-label">Top queries</div>'+(d.topQueries||[]).map(function(q,i){
-            return '<div data-query style="padding:6px 0;border-top:1px solid var(--border);font-size:13px"><span style="color:var(--muted);margin-right:8px">'+(i+1)+"</span>"+esc(q)+"</div>";
-          }).join("")
+          ?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Top queries</div><ol class="nt-signals-tags">'+(d.topQueries||[]).map(function(q,i){
+            return '<li><div class="nt-signals-tag" data-query><span class="nt-signals-rank">'+(i+1)+'</span><span class="nt-signals-tag-body"><span class="nt-signals-tag-name">'+esc(q)+"</span></span></div></li>";
+          }).join("")+"</ol>"
           :"");
     }else if(d.connector==="google_analytics"){
       var r=d.dateRange||{};
-      body='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
-        +tile("Days synced",d.rowsSynced==null?"—":d.rowsSynced)
-        +tile("Range",(r.from||"?")+" → "+(r.to||"?"))+"</div>"
-        +(d.propertyId?'<div style="font-size:12px;color:var(--muted)">Property '+esc(d.propertyId)+"</div>":"")
-        +'<div style="font-size:12px;color:var(--muted);margin-top:6px">The metrics themselves feed post performance and the growth brief.</div>';
+      body=statStrip([statTile("Days synced",d.rowsSynced==null?"—":d.rowsSynced),statTile("Range",(r.from||"?")+" → "+(r.to||"?"))])
+        +'<div class="nt-commerce-pad nt-commerce-pad-b"><p class="nt-commerce-prose nt-muted">'
+        +(d.propertyId?"Property "+esc(d.propertyId)+". ":"")
+        +"The metrics themselves feed post performance and the growth brief.</p></div>";
     }else{
       var series=Array.isArray(d.result)?d.result:[];
       body=series.length?series.map(function(s){
         var pts=Array.isArray(s.data)?s.data.map(Number):[];
         var total=pts.reduce(function(a,b){return a+(b||0);},0),max=Math.max.apply(null,pts.concat([1]));
         var bars=pts.slice(-30).map(function(v){
-          return '<span style="display:inline-block;width:6px;margin-right:2px;background:var(--fg);opacity:.55;height:'+Math.max(2,Math.round((v||0)/max*40))+'px"></span>';
+          return '<div class="nt-signals-bar is-last"><span style="height:'+Math.max(1.5,(v||0)/max*100)+'%"></span></div>';
         }).join("");
-        return '<div data-series style="margin-bottom:12px"><div style="font-size:13px;font-weight:600">'+esc(s.label||s.action&&s.action.name||"Pageviews")
-          +' <span style="color:var(--muted);font-weight:500">· '+fmtNum(total)+" total</span></div>"
-          +'<div style="display:flex;align-items:flex-end;height:44px;margin-top:6px">'+bars+"</div></div>";
-      }).join(""):'<div style="font-size:13px;color:var(--muted)">No trend in the last sync.</div>';
+        return '<div class="nt-signals-pad" data-series><div class="nt-commerce-block-title">'+esc(s.label||s.action&&s.action.name||"Pageviews")
+          +' <span class="nt-muted">· '+esc(compact(total))+" total</span></div>"
+          +'<div class="nt-signals-plot nt-series"><div class="nt-signals-bars">'+bars+"</div></div></div>";
+      }).join(""):'<div class="nt-signals-pad"><p class="nt-empty-line">No trend in the last sync.</p></div>';
     }
-    return '<div class="fade-in">'+head+body+"</div>";
+    return viewShell({icon:"chart-line",title:title,meta:meta,body:body});
   }
 
   // ─── Usage report (get_usage_report) ───
@@ -3162,39 +3435,38 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // tool's price.
   function renderUsageReport(d){
     var t=d.totals||{};
-    function tile(label,val){
-      return '<div style="flex:1;min-width:110px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">'
-        +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+esc(label)+"</div>"
-        +'<div style="font-size:18px;font-weight:700;margin-top:3px">'+esc(String(val==null?"—":val))+"</div></div>";
-    }
     function table(title,cols,rows){
       if(!rows.length)return "";
-      return '<div class="sec-label" style="margin-top:14px">'+esc(title)+"</div>"
-        +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
-        +"<tr>"+cols.map(function(c,i){return '<th style="text-align:'+(i?"right":"left")+';font-weight:600;color:var(--muted);padding:4px 0">'+esc(c)+"</th>";}).join("")+"</tr>"
-        +rows.map(function(r){return '<tr data-usage-row style="border-top:1px solid var(--border)">'+r.map(function(v,i){return '<td style="padding:6px 0;text-align:'+(i?"right":"left")+'">'+esc(String(v))+"</td>";}).join("")+"</tr>";}).join("")
-        +"</table>";
+      return '<div class="nt-commerce-block-title nt-commerce-pad sec-label">'+esc(title)+"</div>"
+        +'<div class="nt-table-wrap nt-usage-table"><table class="nt-table">'
+        +"<thead><tr>"+cols.map(function(c,i){return "<th"+(i?' class="is-num"':"")+">"+esc(c)+"</th>";}).join("")+"</tr></thead><tbody>"
+        +rows.map(function(r){return "<tr data-usage-row>"+r.map(function(v,i){
+          return i?'<td class="is-num">'+esc(String(v))+"</td>":'<td class="is-name nt-mono">'+esc(String(v))+"</td>";}).join("")+"</tr>";}).join("")
+        +"</tbody></table></div>";
     }
     var from=String(d.from||"").slice(0,10),to=String(d.to||"").slice(0,10);
     var days=(d.byDay||[]),max=1;
     days.forEach(function(x){max=Math.max(max,Number(x.credits)||0);});
-    var bars=days.length?'<div class="sec-label" style="margin-top:14px">Credits per day</div><div style="display:flex;align-items:flex-end;gap:2px;height:48px">'
-      +days.map(function(x){var c=Number(x.credits)||0;return '<span title="'+esc(String(x.day))+": "+c+' cr" style="flex:1;min-width:2px;background:var(--fg);opacity:'+(c?".6":".12")+';height:'+Math.max(2,Math.round(c/max*46))+'px"></span>';}).join("")+"</div>":"";
+    var bars=days.length?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Credits per day</div>'
+      +'<div class="nt-signals-pad"><div class="nt-signals-plot nt-series"><div class="nt-signals-bars">'
+      +days.map(function(x){var c=Number(x.credits)||0;
+        return '<div class="nt-signals-bar'+(c?" is-last":"")+'" title="'+esc(String(x.day))+": "+c+' cr"><span style="height:'+Math.max(1.5,c/max*100)+'%"></span></div>';}).join("")
+      +"</div></div></div>":"";
     var fails=(d.recentFailures||[]).map(function(f){
-      return '<div style="padding:6px 0;border-top:1px solid var(--border);font-size:12.5px"><b>'+esc(f.tool||"")+"</b> "
-        +'<span style="color:var(--muted)">'+esc(String(f.startedAt||"").slice(0,16).split("T").join(" "))+"</span>"
-        +(f.error?'<div style="color:var(--muted);word-break:break-word">'+esc(f.error)+"</div>":"")+"</div>";
+      return '<div class="nt-row is-failed"><div class="nt-row-main"><div class="nt-row-title nt-mono">'+ic("x",13,"nt-destructive")+esc(f.tool||"")+"</div>"
+        +'<div class="nt-row-meta">'+esc(String(f.startedAt||"").slice(0,16).split("T").join(" "))+"</div>"
+        +(f.error?'<div class="nt-row-error">'+esc(f.error)+"</div>":"")+"</div></div>";
     }).join("");
-    return '<div class="fade-in">'
-      +'<div style="font-size:15px;font-weight:700">'+(d.scope==="workspace"?"Workspace usage":"Your usage")+"</div>"
-      +'<div style="font-size:12px;color:var(--muted);margin:2px 0 12px">'+esc(from)+" → "+esc(to)+"</div>"
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'+tile("Credits",t.credits)+tile("Calls",t.calls)+tile("Failures",t.failures)
-      +(d.scope==="workspace"?tile("Seats",t.seats):"")+"</div>"
-      +table("By tool",["Tool","Calls","Failed","Credits"],(d.byTool||[]).map(function(r){return [r.tool,r.calls,r.failures,r.credits];}))
-      +table("By seat",["Member","Calls","Failed","Credits"],(d.bySeat||[]).map(function(r){return [r.name||r.email||String(r.userId||"").slice(0,8),r.calls,r.failures,r.credits];}))
-      +bars
-      +(fails?'<div class="sec-label" style="margin-top:14px">Recent failures</div>'+fails:"")
-      +"</div>";
+    var tiles=[statTile("Credits",t.credits==null?"—":grouped(t.credits)),statTile("Calls",t.calls==null?"—":grouped(t.calls)),
+      statTile("Failures",t.failures==null?"—":grouped(t.failures))];
+    if(d.scope==="workspace")tiles.push(statTile("Seats",t.seats==null?"—":t.seats));
+    return viewShell({icon:"chart-line",title:d.scope==="workspace"?"Workspace usage":"Your usage",meta:esc(from)+" → "+esc(to),
+      body:statStrip(tiles)
+        +table("By tool",["Tool","Calls","Failed","Credits"],(d.byTool||[]).map(function(r){return [r.tool,r.calls,r.failures,r.credits];}))
+        +table("By seat",["Member","Calls","Failed","Credits"],(d.bySeat||[]).map(function(r){return [r.name||r.email||String(r.userId||"").slice(0,8),r.calls,r.failures,r.credits];}))
+        +bars
+        +(fails?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Recent failures</div><div class="nt-rows">'+fails+"</div>":""),
+      footer:"Credits are what was actually taken: a free first use or a refunded fetch reads as 0, not as the tool’s price."});
   }
 
   // ─── Vetting strip ───
@@ -3208,63 +3480,47 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function vetting(c){
     var hasScore=typeof c.score==="number";
     if(!hasScore&&!c.verdict&&!c.why&&!(c.links&&c.links.length))return "";
-    var out='<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border)">';
-
-    if(hasScore||c.verdict||c.rank){
-      var vColor=c.verdict==="approach"?"var(--green)":c.verdict==="pass"?"var(--muted)":"var(--fg)";
-      out+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
-        +(c.rank?'<span style="font-size:11px;font-weight:700;color:var(--muted)">#'+esc(String(c.rank))+"</span>":"")
-        +(hasScore?'<span style="font-size:17px;font-weight:700;line-height:1">'+esc(String(Math.round(c.score)))
-          +'<span style="font-size:11px;font-weight:600;color:var(--muted)">/100</span></span>':"")
-        +(c.verdict?'<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:'+vColor
-          +';border:1px solid '+vColor+';border-radius:4px;padding:1px 6px">'+esc(String(c.verdict))+"</span>":"")
+    var vv=String(c.verdict||"");
+    var out='<div class="nt-feeds-vet">';
+    if(hasScore||vv||c.rank){
+      out+='<div class="nt-feeds-vet-top">'
+        +(c.rank?'<span class="nt-feeds-muted">#'+esc(String(c.rank))+"</span>":"")
+        +(hasScore?'<span class="nt-feeds-score">'+esc(String(Math.round(c.score)))+"<small>/100</small></span>":"")
+        +(vv?badge(vv==="approach"?"success":vv==="pass"?"off":"outline",(vv==="approach"?ic("check",12):"")+esc(vv.charAt(0).toUpperCase()+vv.slice(1))):"")
         +"</div>";
       // Whose number this is, stated wherever a number is shown.
       if(hasScore){
-        out+='<div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Scored by '
-          +esc(String(c.scoredBy||"the assistant"))
-          +(c.unverifiedScore?" · nothing was opened to reach this":"")+"</div>";
+        out+='<p class="nt-feeds-vet-by">Scored by '+esc(String(c.scoredBy||"the assistant"))
+          +(c.unverifiedScore?" · nothing was opened to reach this":"")+"</p>";
       }
     }
-
-    if(c.why)out+='<div style="font-size:12.5px;line-height:1.45;margin-bottom:6px">'+esc(String(c.why))+"</div>";
-
+    if(c.why)out+='<p class="nt-feeds-vet-why">'+esc(String(c.why))+"</p>";
     if(c.checked&&c.checked.length){
-      out+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Read: '
-        +c.checked.slice(0,4).map(function(x){return esc(String(x));}).join(" · ")+"</div>";
+      out+='<p class="nt-feeds-vet-by">Read: '+c.checked.slice(0,4).map(function(x){return esc(String(x));}).join(" · ")+"</p>";
     }
-
     if(c.concerns&&c.concerns.length){
       out+=c.concerns.slice(0,3).map(function(x){
-        return '<div style="font-size:11.5px;line-height:1.4;color:var(--fg);margin-bottom:3px">⚠ '+esc(String(x))+"</div>";
+        return '<p class="nt-feeds-vet-concern">'+ic("triangle-alert",13)+"<span>"+esc(String(x))+"</span></p>";
       }).join("");
     }
-
     if(c.links&&c.links.length){
       // Deliberately not anchors. These hosts came out of a bio a stranger
       // controls and are not on the platform-link allowlist, so a host that
       // enforces it would block the navigation silently and a host that did
       // not would follow an arbitrary URL from inside a widget. Shown as text
       // so a person can see what is there and decide themselves.
-      out+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:7px">'
-        +c.links.slice(0,6).map(function(l){
-          var opaque=!!l.opaque;
-          return '<span title="'+esc(String(l.readable||""))+'" style="font-size:10.5px;padding:1px 6px;border-radius:4px;'
-            +'border:1px '+(opaque?"dashed":"solid")+' var(--border);color:var(--muted)">'
-            +esc(String(l.kind||"link"))+" · "+esc(String(l.host||""))+(opaque?" ?":"")+"</span>";
-        }).join("")+"</div>";
+      out+='<div class="nt-feeds-vet-links">'+c.links.slice(0,6).map(function(l){
+        var opaque=!!l.opaque;
+        return '<span class="nt-feeds-link'+(opaque?" is-opaque":"")+'" title="'+esc(String(l.readable||""))+'">'
+          +esc(String(l.kind||"link"))+" · "+esc(String(l.host||""))+(opaque?" ?":"")+"</span>";
+      }).join("")+"</div>";
     }
     return out+"</div>";
   }
 
   // ─── Expandable Section ───
   function section(label,contentHtml,openByDefault){
-    var id="sec_"+Math.random().toString(36).slice(2,8);
-    return '<div class="section">'
-      +'<div class="section-header'+(openByDefault?" open":"")+'" onclick="toggleSection(this)">'
-      +'<span class="section-label">'+esc(label)+'</span>'
-      +'<span class="section-chevron">▼</span></div>'
-      +'<div class="section-content'+(openByDefault?" open":"")+'">'+contentHtml+'</div></div>';
+    return accordion(esc(label),contentHtml,openByDefault);
   }
 
   // ─── Analysis Card ───
@@ -3276,151 +3532,144 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // view (as this previously did) is throwing away what the user paid for.
   function analysisCard(d){
     var a=d.analysis||{};
-    var postHtml=postCard(d.post||d,true,false,true);
-    var out="";
+    var postHtml='<div class="nt-feeds-an-post">'+postCard(d.post||d,true,false,true)+"</div>";
+    var parts="";
+    var steps=function(rows){
+      var r=rows.filter(function(x){return x[1];});
+      return r.length?'<dl class="nt-feeds-steps steps-list">'+r.map(function(x){
+        return '<dt class="step-k">'+esc(x[0])+'</dt><dd class="step-v">'+esc(x[1])+"</dd>";}).join("")+"</dl>":"";
+    };
+    var prose=function(t){return '<p class="nt-feeds-prose section-text">'+esc(t)+"</p>";};
+    var tags=function(list,warn){
+      return '<div class="nt-feeds-tags chiprow">'+list.map(function(t){
+        return warn?'<span class="nt-feeds-tag is-static is-warn tag warn">'+ic("triangle-alert",12)+esc(t)+"</span>"
+          :'<span class="nt-feeds-tag is-static tag">'+esc(t)+"</span>";}).join("")+"</div>";
+    };
 
     // ── Verdict strip ──
     var meters="";
     if(a.hookStrength!=null)meters+=meter("Hook strength",Number(a.hookStrength));
     if(a.commentBaitLevel!=null)meters+=meter("Comment bait",Number(a.commentBaitLevel));
-    if(meters)out+='<div class="verdict">'+meters+"</div>";
 
     var chips=[];
     if(a.niche)chips.push(chip(a.niche,"eye"));
-    if(a.trendAlignment)chips.push(chip(a.trendAlignment,"share"));
-    if(a.audioTrack)chips.push(chip(a.audioTrack,"note"));
-    if(a.callToAction)chips.push(chip(a.callToAction,"comment"));
-    if(chips.length)out+='<div class="chiprow">'+chips.join("")+"</div>";
-
-    if(a.summary)out+='<div class="lede-box">'+esc(a.summary)+"</div>";
+    if(a.trendAlignment)chips.push(chip(a.trendAlignment,"trending-up"));
+    if(a.audioTrack)chips.push(chip(a.audioTrack,"music"));
+    if(a.callToAction)chips.push(chip(a.callToAction,"message-square"));
 
     // ── Script structure: the most actionable single field ──
     var sc=a.scriptStructure;
-    if(sc&&(sc.hook||sc.buildUp||sc.payoff||sc.cta)){
-      var steps=[["Hook",sc.hook],["Build-up",sc.buildUp],["Payoff",sc.payoff],["CTA",sc.cta]]
-        .filter(function(x){return x[1];})
-        .map(function(x){
-          return '<div class="step-row"><span class="step-k">'+esc(x[0])+"</span>"
-            +'<span class="step-v">'+esc(x[1])+"</span></div>";
-        }).join("");
-      out+=section("Script structure",'<div class="steps-list">'+steps+"</div>",true);
-    }
-
-    if(a.whyItWorks)out+=section("Why it works",expandable(a.whyItWorks),true);
+    if(sc&&(sc.hook||sc.buildUp||sc.payoff||sc.cta))
+      parts+=section("Script structure",steps([["Hook",sc.hook],["Build-up",sc.buildUp],["Payoff",sc.payoff],["CTA",sc.cta]]),true);
+    if(a.whyItWorks)parts+=section("Why it works",expandable(a.whyItWorks),true);
 
     // ── Copyables: what a strategist actually lifts from the card ──
-    if(a.suggestedHook)out+=section("Suggested hook",quote(a.suggestedHook),true);
+    if(a.suggestedHook)parts+=section("Suggested hook",quote(a.suggestedHook),true);
     if(a.keyQuotes&&a.keyQuotes.length)
-      out+=section("Quotable lines",a.keyQuotes.slice(0,6).map(quote).join(""));
+      parts+=section("Quotable lines",'<div class="nt-feeds-stack">'+a.keyQuotes.slice(0,6).map(quote).join("")+"</div>");
     if(a.suggestedHashtags&&a.suggestedHashtags.length){
-      var tags=a.suggestedHashtags.slice(0,12).map(function(t){
-        var c=String(t).replace(/^#/,"");
-        return '<button class="tag copyable" data-copy="#'+esc(c)+'">#'+esc(c)+"</button>";
-      }).join("");
-      out+=section("Hashtags",'<div class="chiprow">'+tags
-        +'<button class="tag copyable" data-copy="'+esc(a.suggestedHashtags.map(function(t){return "#"+String(t).replace(/^#/,"");}).join(" "))+'">Copy all</button></div>',true);
+      var hs=a.suggestedHashtags.map(function(t){return "#"+String(t).replace(/^#/,"");});
+      parts+=section("Hashtags",'<div class="nt-feeds-tags chiprow">'
+        +hs.slice(0,12).map(function(t){return chip(t,"");}).join("")
+        +'<button type="button" class="nt-feeds-tag is-ghost tag copyable" data-copy="'+esc(hs.join(" "))+'" title="Copy">'
+        +ic("copy",12)+"<span>Copy all</span></button></div>",true);
     }
 
     // ── Who it is for ──
     var ta=a.targetAudience;
-    if(ta&&typeof ta==="object"){
-      var rows=[["Demographics",ta.demographics],["Psychographics",ta.psychographics],["Interests",ta.interests]]
-        .filter(function(x){return x[1];})
-        .map(function(x){return '<div class="step-row"><span class="step-k">'+esc(x[0])+'</span><span class="step-v">'+esc(x[1])+"</span></div>";}).join("");
-      if(rows)out+=section("Target audience",'<div class="steps-list">'+rows+"</div>");
+    if(ta&&typeof ta==="object"&&(ta.demographics||ta.psychographics||ta.interests)){
+      parts+=section("Target audience",steps([["Demographics",ta.demographics],["Psychographics",ta.psychographics],["Interests",ta.interests]]));
     }else if(typeof ta==="string"&&ta){
-      out+=section("Target audience",'<div class="section-text">'+esc(ta)+"</div>");
+      parts+=section("Target audience",prose(ta));
     }
 
     // ── On-screen text: per-scene for slideshows ──
     if(a.overlayTexts&&a.overlayTexts.length){
-      var ov=a.overlayTexts.slice(0,20).map(function(t,i){
-        return '<div class="step-row"><span class="step-k">'+(i+1)+'</span><span class="step-v">'+esc(t)+"</span></div>";
-      }).join("");
-      out+=section("On-screen text",'<div class="steps-list">'+ov+"</div>");
+      parts+=section("On-screen text",steps(a.overlayTexts.slice(0,20).map(function(t,i){return [String(i+1),t];})));
     }else if(a.overlayText){
-      out+=section("On-screen text",'<div class="section-text">'+esc(a.overlayText)+"</div>");
+      parts+=section("On-screen text",prose(a.overlayText));
     }
 
     // ── Signals ──
     if(a.viralTriggers&&a.viralTriggers.length)
-      out+=section("Viral triggers",'<div class="chiprow">'
-        +a.viralTriggers.slice(0,10).map(function(t){return '<button class="tag copyable" data-copy="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+"</div>");
+      parts+=section("Viral triggers",'<div class="nt-feeds-tags chiprow">'+a.viralTriggers.slice(0,10).map(function(t){return chip(t,"");}).join("")+"</div>");
     var es=a.engagementSignals;
-    if(es&&typeof es==="object"&&(es.commentSentiment||es.shareMotivation)){
-      var er=[["Comments","commentSentiment"],["Why shared","shareMotivation"]]
-        .filter(function(x){return es[x[1]];})
-        .map(function(x){return '<div class="step-row"><span class="step-k">'+esc(x[0])+'</span><span class="step-v">'+esc(es[x[1]])+"</span></div>";}).join("");
-      out+=section("Engagement signals",'<div class="steps-list">'+er+"</div>");
-    }
-    if(a.emotionalArc)out+=section("Emotional arc",'<div class="section-text">'+esc(a.emotionalArc)+"</div>");
+    if(es&&typeof es==="object"&&(es.commentSentiment||es.shareMotivation))
+      parts+=section("Engagement signals",steps([["Comments",es.commentSentiment],["Why shared",es.shareMotivation]]));
+    if(a.emotionalArc)parts+=section("Emotional arc",prose(a.emotionalArc));
 
     // ── What to fix, what to try ──
-    if(a.negativeSignals&&a.negativeSignals.length)
-      out+=section("Weaknesses",'<div class="chiprow">'
-        +a.negativeSignals.slice(0,8).map(function(n){return '<span class="tag warn">'+esc(n)+"</span>";}).join("")+"</div>",true);
-    if(a.variationIdeas&&a.variationIdeas.length)
-      out+=section("Variations to try",bullets(a.variationIdeas,8));
+    if(a.negativeSignals&&a.negativeSignals.length)parts+=section("Weaknesses",tags(a.negativeSignals.slice(0,8),true),true);
+    if(a.variationIdeas&&a.variationIdeas.length)parts+=section("Variations to try",bullets(a.variationIdeas,8));
 
     // ── Reference, folded away ──
-    if(a.formatBreakdown)out+=section("Format breakdown",expandable(a.formatBreakdown));
-    if(a.visualStyle)out+=section("Visual style",'<div class="section-text">'+esc(a.visualStyle)+"</div>");
-    if(a.whatHappens)out+=section("What happens",expandable(a.whatHappens));
-    if(a.coreNarrative)out+=section("Core narrative",expandable(a.coreNarrative));
-    if(a.transcript)out+=section("Transcript",
-      '<div class="section-text" style="white-space:pre-wrap">'+esc(a.transcript)+"</div>"
-      +'<button class="tag copyable" style="margin-top:8px" data-copy="'+esc(a.transcript)+'">Copy transcript</button>');
-    if(a.brandMentions&&a.brandMentions.length)
-      out+=section("Brands mentioned",'<div class="chiprow">'+a.brandMentions.map(function(b){return '<span class="tag">'+esc(b)+"</span>";}).join("")+"</div>");
-    if(a.contentSafetyFlags&&a.contentSafetyFlags.length)
-      out+=section("Brand safety",'<div class="chiprow">'+a.contentSafetyFlags.map(function(f){return '<span class="tag warn">'+esc(f)+"</span>";}).join("")+"</div>");
+    if(a.formatBreakdown)parts+=section("Format breakdown",expandable(a.formatBreakdown));
+    if(a.visualStyle)parts+=section("Visual style",prose(a.visualStyle));
+    if(a.whatHappens)parts+=section("What happens",expandable(a.whatHappens));
+    if(a.coreNarrative)parts+=section("Core narrative",expandable(a.coreNarrative));
+    if(a.transcript)parts+=section("Transcript",
+      '<p class="nt-feeds-prose is-pre section-text">'+esc(a.transcript)+"</p>"
+      +'<button type="button" class="nt-feeds-tag is-ghost tag copyable" data-copy="'+esc(a.transcript)+'" title="Copy">'
+      +ic("copy",12)+"<span>Copy transcript</span></button>");
+    if(a.brandMentions&&a.brandMentions.length)parts+=section("Brands mentioned",tags(a.brandMentions,false));
+    if(a.contentSafetyFlags&&a.contentSafetyFlags.length)parts+=section("Brand safety",tags(a.contentSafetyFlags,true));
 
     // Turn the analysis into the next piece of work rather than ending on it.
     var src=(d.post||d);
     var srcUrl=src&&(src.externalUrl||src.url);
-    var follow=srcUrl?'<div class="ai-actions">'
-      +aiBtn("create_variants","Create variants",JSON.stringify({url:srcUrl}))
-      +aiBtn("write_hooks","More hooks",JSON.stringify({url:srcUrl}))
-      +aiBtn("repurpose_post","Repurpose",JSON.stringify({url:srcUrl}))
-      +aiBtn("analyze_comments","Read comments",JSON.stringify({url:srcUrl}))
-      +'</div><div class="ai-note">Each action runs a tool and spends the credits shown.</div>':"";
+    var args=JSON.stringify({url:srcUrl});
+    var follow=srcUrl?'<div class="nt-feeds-ai is-foot"><div class="nt-feeds-ai-row ai-actions">'
+      +aiBtn("create_variants","Create variants",args)
+      +aiBtn("write_hooks","More hooks",args)
+      +aiBtn("repurpose_post","Repurpose",args)
+      +aiBtn("analyze_comments","Read comments",args)
+      +'</div><p class="nt-feeds-ai-note ai-note">Each action runs a tool and spends the credits shown.</p></div>':"";
 
-    if(!out)return postHtml;
-    return postHtml+'<div class="card card-wide fade-in" style="margin-top:10px"><div class="card-body">'
-      +'<div class="an-title">'+mpIcon("eye",16)+"<span>AI analysis</span></div>"+out+follow+"</div></div>";
+    if(!meters&&!chips.length&&!a.summary&&!parts)return postHtml;
+    return '<div class="nt-feeds-analysis">'+postHtml
+      +viewShell({icon:"sparkles",title:"AI analysis",cls:"an-card",body:
+        (meters?'<div class="nt-feeds-meters verdict">'+meters+"</div>":"")
+        +(chips.length?'<div class="nt-feeds-tags is-pad chiprow">'+chips.join("")+"</div>":"")
+        +(a.summary?'<p class="nt-feeds-lede lede-box">'+esc(a.summary)+"</p>":"")
+        +(parts?'<div class="nt-feeds-secs">'+parts+"</div>":"")
+        +follow})
+      +"</div>";
   }
 
   /** 0-10 score as a labelled bar. */
+  /** 0-10 score: a label, the number in its colour, a 6px bar — never colour alone. */
   function meter(label,val){
     var v=Math.max(0,Math.min(10,Number(val)||0));
-    var c=v>=7?"var(--green)":v>=4?"var(--amber)":"var(--red)";
-    return '<div class="meter"><div class="meter-top"><span>'+esc(label)+"</span>"
-      +'<b style="color:'+c+'">'+v+"/10</b></div>"
-      +'<div class="meter-track"><i style="width:'+(v*10)+"%;background:"+c+'"></i></div></div>';
+    var t=v>=7?"success":v>=4?"warning":"destructive",word=v>=7?"strong":v>=4?"fair":"weak";
+    return '<div class="nt-feeds-meter is-'+t+' meter"><div class="nt-feeds-meter-top meter-top"><span>'+esc(label)+"</span>"
+      +'<b title="'+word+'">'+v+"/10</b></div>"
+      +'<div class="nt-feeds-meter-track meter-track" role="meter" aria-valuemin="0" aria-valuemax="10" aria-valuenow="'+v
+      +'" aria-label="'+esc(label)+": "+v+" of 10, "+word+'"><i style="width:'+(v*10)+'%"></i></div></div>';
   }
 
+  /** A tag that copies itself; the icon turns to a tick for a moment when it does. */
   function chip(text,icon){
-    return '<button class="tag copyable" data-copy="'+esc(text)+'">'
-      +(icon?mpIcon(icon,11):"")+"<span>"+esc(text)+"</span></button>";
+    return '<button type="button" class="nt-feeds-tag tag copyable" data-copy="'+esc(text)+'" title="Copy">'
+      +(icon?ic(icon,12):"")+"<span>"+esc(text)+"</span></button>";
   }
 
   function quote(text){
-    return '<div class="quote-box">'+esc(text)
-      +'<button class="copy-btn" data-copy="'+esc(text)+'">Copy</button></div>';
+    return quoteBox(String(text||""));
   }
 
   function bullets(arr,cap){
-    return '<ul class="an-list">'+arr.slice(0,cap||6).map(function(x){
+    return '<ul class="nt-feeds-list an-list">'+arr.slice(0,cap||6).map(function(x){
       return "<li>"+esc(x)+"</li>";}).join("")+"</ul>";
   }
 
   /** Long prose: clamp with an expander instead of cutting it off. */
+  /** Long prose: clamp with an expander instead of cutting it off. */
   function expandable(text){
     var t=String(text||"");
-    if(t.length<=260)return '<div class="section-text">'+esc(t)+"</div>";
+    if(t.length<=260)return '<p class="nt-feeds-prose section-text">'+esc(t)+"</p>";
     var id="x"+(mpId++);
-    return '<div class="section-text clamp6" data-x="'+id+'">'+esc(t)+"</div>"
-      +'<button class="cmore" data-xmore="'+id+'">Show more</button>';
+    return '<p class="nt-feeds-prose is-clamp6 section-text clamp6" data-x="'+id+'">'+esc(t)+"</p>"
+      +'<button type="button" class="nt-feeds-more cmore" data-xmore="'+id+'" aria-expanded="false">Show more</button>';
   }
 
 
@@ -3456,53 +3705,60 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   }
 
   var galleryId=0;
-  function galleryWrap(cardsHtml,count){
+  function galleryWrap(cardsHtml,count,label){
     var id="gal"+(galleryId++);
-    if(count<=1)return cardsHtml;
+    if(count<=1)return '<div class="nt-feeds-gallery nt-in"><div class="nt-feeds-single">'+cardsHtml+"</div></div>";
     var dots="";
-    for(var i=0;i<count;i++)dots+='<button class="dot'+(i===0?" active":"")+'" data-g="'+id+'" data-i="'+i+'"></button>';
-    return '<div class="gallery-wrap fade-in">'
-      +'<button class="gallery-nav prev" data-gnav="'+id+'" data-dir="-1">‹</button>'
-      +'<div class="gallery" id="'+id+'">'+cardsHtml+'</div>'
-      +'<button class="gallery-nav next" data-gnav="'+id+'" data-dir="1">›</button>'
-      +'<div class="gallery-dots" id="'+id+'-dots">'+dots+'</div>'
-      +'</div>';
+    for(var i=0;i<count;i++)dots+='<button type="button" class="nt-gallery-dot dot'+(i===0?" is-active active":"")+'" data-g="'+id+'" data-i="'+i+'" aria-label="Go to item '+(i+1)+'"></button>';
+    return '<div class="nt-feeds-gallery nt-in"><div class="nt-gallery-wrap gallery-wrap" role="region" aria-roledescription="carousel" aria-label="'+esc(label||(count+" results"))+'">'
+      +'<div class="nt-gallery gallery" id="'+id+'">'+cardsHtml+'</div>'
+      +'<button type="button" class="nt-gallery-nav is-prev gallery-nav prev" data-gnav="'+id+'" data-dir="-1" aria-label="Previous">'+ic("chevron-left",16)+"</button>"
+      +'<button type="button" class="nt-gallery-nav is-next gallery-nav next" data-gnav="'+id+'" data-dir="1" aria-label="Next">'+ic("chevron-right",16)+"</button>"
+      +'<div class="nt-gallery-dots gallery-dots" id="'+id+'-dots">'+dots+'</div>'
+      +'</div></div>';
   }
   function initGalleryNav(){
+    function items(g){return g?g.children:[];}
+    function mark(dots,active){
+      if(!dots)return;
+      dots.querySelectorAll(".dot").forEach(function(d,i){
+        d.classList.toggle("active",i===active);d.classList.toggle("is-active",i===active);
+        if(i===active)d.setAttribute("aria-current","true");else d.removeAttribute("aria-current");
+      });
+    }
     document.addEventListener('click',function(e){
       var navBtn=e.target.closest('.gallery-nav[data-gnav]');
       if(navBtn){
         var g=document.getElementById(navBtn.getAttribute('data-gnav'));
         if(!g)return;
         var dir=Number(navBtn.getAttribute('data-dir'));
-        var cardW=g.querySelector('.card')?.offsetWidth||380;
+        var first=items(g)[0];
+        var cardW=first?first.offsetWidth:380;
         g.scrollBy({left:dir*(cardW+12),behavior:'smooth'});
         return;
       }
       var dotBtn=e.target.closest('.dot[data-g]');
       if(dotBtn){
         var gId=dotBtn.getAttribute('data-g');
-        var g=document.getElementById(gId);
-        var dots=document.getElementById(gId+'-dots');
-        if(!g||!dots)return;
+        var gal=document.getElementById(gId);
+        if(!gal)return;
         var idx=Number(dotBtn.getAttribute('data-i'));
-        var cards=g.querySelectorAll('.card');
-        if(cards[idx])cards[idx].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
-        dots.querySelectorAll('.dot').forEach(function(d){d.classList.remove('active')});
-        dotBtn.classList.add('active');
+        var card=items(gal)[idx];
+        if(card)gal.scrollTo({left:card.offsetLeft-gal.offsetLeft,behavior:'smooth'});
+        mark(document.getElementById(gId+'-dots'),idx);
       }
     });
     document.addEventListener('scroll',function(e){
       if(!e.target.classList||!e.target.classList.contains('gallery'))return;
-      var g=e.target;var gId=g.id;
-      var dots=document.getElementById(gId+'-dots');
-      if(!dots)return;
-      var cards=g.querySelectorAll('.card');
-      if(!cards.length)return;
-      var scrollLeft=g.scrollLeft;var cardW=cards[0].offsetWidth+12;
-      var active=Math.round(scrollLeft/cardW);
-      active=Math.max(0,Math.min(active,cards.length-1));
-      dots.querySelectorAll('.dot').forEach(function(d,i){d.classList.toggle('active',i===active)});
+      var g=e.target;
+      var kids=items(g);
+      if(!kids.length)return;
+      var best=0,d=1e9;
+      for(var i=0;i<kids.length;i++){
+        var x=Math.abs(kids[i].offsetLeft-g.offsetLeft-g.scrollLeft);
+        if(x<d){d=x;best=i;}
+      }
+      mark(document.getElementById(g.id+'-dots'),best);
     },true);
   }
   initGalleryNav();
@@ -3526,12 +3782,479 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var app=document.getElementById("app");if(!app)return;
     var b=document.createElement("div");
     b.setAttribute("data-verification","unverified");
-    b.style.cssText="font-size:12px;padding:8px 10px;margin:0 0 10px;border-radius:8px;border:1px solid var(--border);background:rgba(180,35,24,.06)";
-    b.innerHTML="<b>Not checked against nooticr</b> · "+esc(v.note||"");
+    b.className="nt-commerce-note is-error nt-verify";
+    b.setAttribute("role","status");
+    b.innerHTML=ic("triangle-alert",14)+"<span><b>Not checked against nooticr</b> · "+esc(v.note||"")+"</span>";
     app.insertBefore(b,app.firstChild);
   }
 
   // ─── Own account ───
+
+  // ─── Standings (compare_creators / watchlist_standings) ───
+  // A table, because the question is comparative — and every row carries the
+  // window it was scored over. A hit rate whose denominator is invisible
+  // cannot be told apart from one that means something (issue #30).
+  function renderStandings(d){
+    var thin=Array.isArray(d.tooThin)?d.tooThin.map(String):[];
+    var floor=typeof d.thinWindow==="number"?d.thinWindow:8;
+    var above=typeof d.aboveRatio==="number"?d.aboveRatio:1.25;
+    var met=String(d.metric||"views");
+    var rows=d.creators.map(function(c){
+      var un=c.unavailable;
+      // A window shorter than the floor, or one the model flagged, is drawn
+      // unranked. Bottom of a table is a claim; unranked is the truth.
+      var short=!un&&(thin.indexOf(String(c.handle))>=0||(typeof c.window==="number"&&c.window<floor));
+      var med=c.baseline&&c.baseline.median!=null?compact(c.baseline.median):"–";
+      var hit=c.hitRate!=null?Math.round(c.hitRate*100)+"%":"–";
+      var win=c.medianWinRatio!=null?(Math.round(c.medianWinRatio*100)/100)+"×":"–";
+      var best=c.best&&(c.best.title||c.best.caption)?String(c.best.title||c.best.caption):"";
+      var hasBest=best&&!un;
+      var cls=[un?"is-un":"",short?"is-thin":"",hasBest?"has-sub":""].filter(Boolean).join(" ");
+      return '<tr'+(cls?' class="'+cls+'"':"")+'><td class="nt-feeds-st-who">'
+        +'<div class="nt-feeds-st-id">'+(c.platform?glyph(c.platform,12):"")+"<b>@"+esc(String(c.handle||""))+"</b>"
+        +(c.platform?'<span class="nt-feeds-muted">'+esc(pTitle(c.platform))+"</span>":"")+"</div>"
+        +(short?badge("warning",ic("triangle-alert",12)+"Too thin to rank","nt-feeds-st-thin"):"")+"</td>"
+        +(un
+          ?'<td colspan="4" class="nt-feeds-st-un">'+esc(String(un))+"</td>"
+          :'<td class="is-num" data-label="Window">'+esc(grouped(c.window||0))+"</td>"
+            +'<td class="is-num" data-label="Median">'+med+"</td>"
+            +'<td class="is-num" data-label="Beat it">'+hit+"</td>"
+            +'<td class="is-num" data-label="By">'+win+"</td>")
+        +"</tr>"
+        +(hasBest?'<tr class="nt-feeds-st-sub'+(short?" is-thin":"")+'"><td colspan="5"><span>Best: </span>'+esc(best.slice(0,120))+"</td></tr>":"");
+    }).join("");
+    var meta=plural(d.creators.length,"creator")+" · each against their own median "+esc(met)
+      +(d.watching!=null?" · watchlist of "+esc(grouped(d.watching)):"");
+    return viewShell({icon:"trophy",title:"Standings",meta:meta,cls:"nt-feeds-standings",
+      body:(d.ranking?'<p class="nt-feeds-st-rank">Ordered on: <b>'+esc(String(d.ranking))+"</b></p>":"")
+        +'<div class="nt-feeds-st-wrap"><div class="nt-table-wrap"><table class="nt-table nt-feeds-st">'
+        +'<thead><tr><th>Creator</th><th class="is-num" title="Posts scored">Window</th><th class="is-num">Their median</th>'
+        +'<th class="is-num">Beat it</th><th class="is-num" title="Median win ratio">By</th></tr></thead>'
+        +"<tbody>"+rows+"</tbody></table></div></div>"
+        +(d.verdict?'<p class="nt-feeds-lede is-verdict">'+esc(String(d.verdict))+"</p>":""),
+      footer:"“Beat it” is the share of the window at or above "+above+"× that creator’s own median. "
+        +"A raw view count mostly measures follower count, so nothing here compares raw numbers. "
+        +"A window under "+floor+" posts is one post either way, and no ratio here says whether a "
+        +"baseline is itself moving — that needs a second point in time."});
+  }
+
+  // ─── Transcript (get_post_transcript / generate_captions) ───
+  // Timed when the track carried timings, plain otherwise, and a switch
+  // between the two. Copy copies what is on screen. A cue from
+  // get_post_transcript carries no words of its own — only where its words
+  // begin in the transcript — so its text is cut from there to where the
+  // next cue begins; generate_captions sends the words with each line.
+  var transcriptState=null;
+  function cueSeconds(c){
+    var v=c.startMs!=null?Number(c.startMs)/1000:c.start_sec!=null?Number(c.start_sec)
+      :c.start!=null?Number(c.start):c.from!=null?Number(c.from):null;
+    return v==null||isNaN(v)?null:Math.max(0,v);
+  }
+  function cueClock(v){
+    if(v==null)return "";
+    v=Math.floor(v);
+    var hr=Math.floor(v/3600),mn=Math.floor(v%3600/60),sc=v%60;
+    return (hr?hr+":"+("0"+mn).slice(-2):String(mn))+":"+("0"+sc).slice(-2);
+  }
+  function transcriptCues(d){
+    var raw=Array.isArray(d.cues)?d.cues.filter(function(c){return c&&typeof c==="object";}):[];
+    var text=String(d.transcript||"");
+    var out=raw.map(function(c,i){
+      var t=c.text!=null?String(c.text):"";
+      if(!t&&typeof c.offset==="number"&&text){
+        var next=raw[i+1]&&typeof raw[i+1].offset==="number"?raw[i+1].offset:text.length;
+        t=text.slice(c.offset,next);
+      }
+      return {at:cueSeconds(c),startMs:c.startMs!=null?Number(c.startMs):(cueSeconds(c)!=null?cueSeconds(c)*1000:null),text:t.trim()};
+    });
+    return out.filter(function(c){return c.text;});
+  }
+  function wordsIn(text){
+    var n=0,inWord=false,s=String(text||"");
+    for(var i=0;i<s.length;i++){
+      var code=s.charCodeAt(i),space=code===32||code===9||code===10||code===13;
+      if(space)inWord=false;
+      else if(!inWord){inWord=true;n++;}
+    }
+    return n;
+  }
+  function renderTranscript(){
+    var app=document.getElementById("app");
+    if(!app||!transcriptState)return;
+    var d=transcriptState.d;
+    var cues=transcriptCues(d);
+    var text=String(d.transcript||cues.map(function(c){return c.text;}).join(" "));
+    var title=d.title?esc(String(d.title)):"Transcript";
+    if(!d.available&&!text){
+      app.innerHTML=viewShell({icon:"file-text",title:title,
+        body:'<div class="nt-signals-pad">'+emptyState("mic","No transcript",esc(String(d.reason||"No transcript available.")))+"</div>"});
+      return;
+    }
+    var view=transcriptState.view||(cues.length?"timed":"plain");
+    transcriptState.view=view;
+    var wc=Number(d.wordCount)||wordsIn(text);
+    // Only YouTube reads a moment off its URL; anywhere else a timecode that
+    // looked like a link would promise a jump that never happens.
+    var url=String(d.url||d.externalUrl||(d.post&&(d.post.externalUrl||d.post.url))||"");
+    var seekable=platformOfUrl(url)==="youtube";
+    var meta='<span class="nt-signals-tmeta"><span>'+esc(grouped(wc))+" words</span>"
+      +(d.language?badge("outline",ic("languages",12)+esc(String(d.language))):"")
+      +(d.autoGenerated?badge("secondary","auto-generated"):"")
+      +(cues.length?"<span>"+plural(cues.length,"cue")+"</span>":"")+"</span>";
+    var NL=String.fromCharCode(10);
+    var copy=view==="timed"&&cues.length
+      ?cues.map(function(c){return "["+cueClock(c.at)+"] "+c.text;}).join(NL):text;
+    var action='<div class="nt-signals-taction">'
+      +(cues.length?segmented("View",[["timed","Timed"],["plain","Plain"]],view,"data-tview"):"")
+      +btn("outline","sm",ic("copy",14)+'<span class="nt-lbl">Copy</span>',' data-tcopy="'+esc(copy)+'"',"copyable-t")
+      +"</div>";
+    var body=view==="timed"&&cues.length
+      ?'<ol class="nt-signals-cues">'+cues.map(function(c){
+        var at=cueClock(c.at);
+        var stamp=seekable&&c.startMs!=null
+          ?'<a class="nt-signals-cue-at is-link" href="'+esc(linkAtMoment(url,"youtube",c.startMs))+'" target="_blank" rel="noopener" title="Open the video at '+esc(at)+'">'+esc(at)+"</a>"
+          :'<span class="nt-signals-cue-at">'+esc(at)+"</span>";
+        return '<li class="nt-signals-cue">'+stamp+'<span class="nt-signals-cue-text">'+esc(c.text)+"</span></li>";
+      }).join("")+"</ol>"
+      :'<div class="nt-signals-transcript">'+esc(text)+"</div>";
+    app.innerHTML='<section class="nt-view nt-signals nt-in"><header class="nt-view-head">'
+      +'<h3 class="nt-view-title">'+ic("file-text",16,"nt-muted")+title+"</h3>"
+      +'<div class="nt-card-action">'+action+"</div>"
+      +'<div class="nt-view-desc">'+meta+"</div></header>"+body+"</section>";
+    setTimeout(reportSize,50);
+  }
+  document.addEventListener("click",function(e){
+    if(!transcriptState||!e.target.closest)return;
+    var v=e.target.closest("[data-tview]");
+    if(v){transcriptState.view=v.getAttribute("data-tview")||"plain";renderTranscript();return;}
+    var c=e.target.closest("[data-tcopy]");
+    if(c){
+      copyText(c.getAttribute("data-tcopy")||"");
+      var l=c.querySelector(".nt-lbl"),svg=c.querySelector("svg");
+      if(l)l.textContent="Copied";
+      if(svg)svg.outerHTML=ic("check",14);
+      setTimeout(function(){
+        var now=c.querySelector("svg");if(now)now.outerHTML=ic("copy",14);
+        if(l)l.textContent="Copy";
+      },1400);
+    }
+  });
+
+  // ─── A run series (mention_trend) ───
+  // Bars rather than a line: the points are sweeps on a cadence, not a
+  // continuous signal, and a line between two sweeps asserts the shape of
+  // something nobody measured. Both caveats the tool computes are drawn — a
+  // chart that hides "too few points" or "this is where the record starts,
+  // not where the conversation did" is the view making a claim the tool
+  // refused to (issue #28). Hovering or focusing a bar reads it out.
+  var trendState=null;
+  function renderTrend(d){
+    var metric=String(d.metric||"found");
+    var pts=d.points.slice().sort(function(a,b){return String(a.ranAt||"")<String(b.ranAt||"")?-1:1;});
+    var vals=pts.map(function(p){var v=p[metric];return typeof v==="number"?v:0;});
+    var top=Math.max.apply(null,vals.concat([1]));
+    trendState={pts:pts,vals:vals,metric:metric,edge:!!d.edgeIsRecordStart};
+    var first=pts.length?String(pts[0].ranAt||"").slice(0,10):"";
+    var last=pts.length?String(pts[pts.length-1].ranAt||"").slice(0,10):"";
+    var bars=pts.map(function(p,i){
+      var pct=Math.max(1.5,(vals[i]/top)*100);
+      return '<div role="listitem" tabindex="0" class="nt-signals-bar'+(i===pts.length-1?" is-last is-cur":"")+'" data-bar="'+i+'"'
+        +' aria-label="'+esc(String(p.ranAt||"").slice(0,10)+": "+vals[i]+" "+metric)+'">'
+        +'<span style="height:'+pct+'%"></span>'
+        +(i===0&&d.edgeIsRecordStart?'<i class="nt-signals-edge" aria-hidden="true"></i>':"")+"</div>";
+    }).join("");
+    var footer="Each bar is one sweep, not a day"
+      +(d.edgeIsRecordStart?" — and the earliest bar is where the kept record begins, not where the conversation did":"")
+      +". A flat run of bars is a conversation that has stopped moving, which is not the same as one that has stopped.";
+    return viewShell({icon:"chart-line",title:d.term?esc(String(d.term)):"Trend",cls:"nt-signals",
+      meta:plural(pts.length,"run")+" · "+esc(metric)+" per sweep",footer:footer,
+      body:'<div class="nt-signals-pad nt-signals-trend">'
+        +(d.tooShort?'<div class="nt-signals-note is-warn">'+ic("triangle-alert",14)+"<span>Too few points to call a direction</span></div>":"")
+        +(pts.length?'<div class="nt-signals-readout" aria-live="polite">'+trendReadout(pts.length-1)+"</div>":"")
+        +'<div class="nt-signals-plot"><div class="nt-signals-yaxis"><span>'+compact(top)+"</span><span>0</span></div>"
+        +'<div class="nt-signals-bars" role="list">'+bars+"</div></div>"
+        +'<div class="nt-signals-xaxis"><span>'+esc(first)+(d.edgeIsRecordStart?" · record starts here":"")+"</span><span>"+esc(last)+"</span></div>"
+        +(d.verdict?'<p class="nt-signals-verdict">'+esc(String(d.verdict))+"</p>":"")
+        +"</div>"});
+  }
+  function trendReadout(i){
+    var st=trendState,p=st.pts[i]||{};
+    return '<span class="nt-signals-readout-v">'+esc(grouped(st.vals[i]||0))+"</span>"
+      +'<span class="nt-muted">'+esc(st.metric)+" · "+esc(String(p.ranAt||"").slice(0,10))
+      +(p.reported!=null?" · "+esc(grouped(p.reported))+" new":"")
+      +(i===0&&st.edge?" · record starts here":"")+"</span>";
+  }
+  function pointTrend(bar){
+    if(!trendState||!bar)return;
+    var i=Number(bar.getAttribute("data-bar"));
+    var box=document.querySelector(".nt-signals-readout");
+    if(box)box.innerHTML=trendReadout(i);
+    document.querySelectorAll(".nt-signals-bar").forEach(function(b){b.classList.toggle("is-cur",b===bar);});
+  }
+  document.addEventListener("mouseover",function(e){
+    var b=e.target.closest&&e.target.closest(".nt-signals-bar[data-bar]");
+    if(b)pointTrend(b);
+  });
+  document.addEventListener("focusin",function(e){
+    var b=e.target.closest&&e.target.closest(".nt-signals-bar[data-bar]");
+    if(b)pointTrend(b);
+  });
+  document.addEventListener("mouseout",function(e){
+    var bars=e.target.closest&&e.target.closest(".nt-signals-bars");
+    if(!bars||bars.contains(e.relatedTarget))return;
+    var lastBar=bars.querySelector(".nt-signals-bar.is-last");
+    if(lastBar)pointTrend(lastBar);
+  });
+
+  // ─── Trending hashtags ───
+  // Two sources with different evidence behind them: the TikTok trend board,
+  // which measures direction over time, and a count across one niche sweep,
+  // which cannot. The header names which, and a counted row draws no trend
+  // arrow — an arrow for a direction nobody measured is the view asserting
+  // something the tool did not.
+  function renderHashtags(d){
+    var derived=d.source==="derived-from-sweep";
+    var where=derived
+      ?esc(pTitle(d.platform)||"this network")+" · counted across "+plural(Number(d.sweptPosts||0),"post")+(d.niche?" matching “"+esc(d.niche)+"”":"")
+      :"TikTok trend board · "+esc(d.country||"US")+" · last "+esc(String(d.days||7))+" days";
+    var title=derived?"Tags in this niche":"Trending hashtags";
+    if(!d.hashtags.length){
+      return viewShell({icon:"hash",title:title,meta:where,cls:"nt-signals",
+        body:'<div class="nt-signals-pad">'+emptyState("hash",esc(d.reason||(derived?"No tag was used by more than one post in that sweep":"No trending hashtags found")),"")+"</div>"});
+    }
+    var TR={rising:["trending-up","success"],cooling:["trending-down","destructive"]};
+    var rows=d.hashtags.slice(0,30).map(function(t,i){
+      var np=Number(t.posts||0),stat=esc(grouped(np))+" post"+(np===1?"":"s");
+      // A counted sample reports the middle post, because one outlier in a
+      // 30-post sweep moves a total and not a median.
+      if(derived){if(t.medianViews!=null)stat+=" · median "+compact(t.medianViews)+" views";}
+      else if(t.views!=null)stat+=" · "+compact(t.views)+" views";
+      var href=t.url||t.example||"";
+      var tr=!derived&&t.trend?String(t.trend):"";
+      var tn=TR[tr]||["minus","muted"];
+      var inner='<span class="nt-signals-rank">'+(i+1)+"</span>"
+        +'<span class="nt-signals-tag-body"><span class="nt-signals-tag-name">#'+esc(String(t.hashtag||"").replace(/^#/,""))+"</span>"
+        +'<span class="nt-signals-tag-stat">'+stat+"</span></span>"
+        +(tr?'<span class="nt-signals-trendtag is-'+tn[1]+'">'+ic(tn[0],14)+esc(tr)+"</span>":"")
+        +(href?ic("arrow-up-right",14,"nt-muted"):"");
+      return "<li>"+(href
+        ?'<a class="nt-signals-tag is-link comment-row" href="'+esc(href)+'" target="_blank" rel="noopener">'+inner+"</a>"
+        :'<div class="nt-signals-tag">'+inner+"</div>")+"</li>";
+    }).join("");
+    return viewShell({icon:"hash",title:title,meta:where,cls:"nt-signals",
+      body:'<ol class="nt-signals-tags">'+rows+"</ol>",
+      // The caveat goes in front of the person too, not only into the
+      // context handed to the model: a ranked list reads as a trend whatever
+      // the payload says, so the sentence saying it is not sits under it.
+      footer:derived&&d.note?'<span class="nt-signals-caveat">'+ic("info",14)+"<span>"+esc(String(d.note))+"</span></span>":""});
+  }
+
+  // ─── Comment analysis (analyze_comments) ───
+  // The report's own verdict, and the sample it rests on, always: a verdict
+  // drawn from 12 comments must not read like one drawn from 500.
+  function renderCommentReport(d){
+    var r=d.report||{},s=String(r.sentiment||"").toLowerCase();
+    var tn=s==="positive"?"success":s==="negative"?"destructive":"warning";
+    var icon=s==="positive"?"thumbs-up":s==="negative"?"thumbs-down":"circle-half";
+    var list=function(arr,label){
+      if(!arr||!arr.length)return "";
+      return '<div class="nt-feeds-block"><h4 class="nt-feeds-label sec-label">'+esc(label)+'</h4><ul class="nt-feeds-list">'
+        +arr.slice(0,6).map(function(x){return "<li>"+esc(x)+"</li>";}).join("")+"</ul></div>";
+    };
+    var th=(r.topThemes||[]).slice(0,5);
+    var body=(s||r.sentimentNote?'<div class="nt-feeds-block is-top">'
+        +(s?'<span class="nt-feeds-sent is-'+tn+'">'+ic(icon,12)+esc(s.charAt(0).toUpperCase()+s.slice(1))+"</span>":"")
+        +(r.sentimentNote?'<p class="nt-feeds-prose">'+esc(r.sentimentNote)+"</p>":"")+"</div>":"")
+      +(th.length?'<div class="nt-feeds-block"><h4 class="nt-feeds-label sec-label">Themes</h4><dl class="nt-feeds-kv">'
+        +th.map(function(t){return "<dt>"+esc(t.theme||"")+"</dt><dd>"+esc(t.summary||"")+"</dd>";}).join("")+"</dl></div>":"")
+      +list(r.questions,"Questions asked")+list(r.objections,"Objections")
+      +list(r.contentRequests,"Content requests")+list(r.nextVideoIdeas,"Next video ideas");
+    return viewShell({icon:"message-square",title:"Comment analysis",cls:"nt-feeds-report",body:body,
+      footer:"Based on "+esc(grouped(d.commentsAnalyzed||0))+" comments"});
+  }
+
+  // ─── Comments (get_post_comments) ───
+  // Themes first: on a post with thousands of comments, "what do people keep
+  // saying" is the answer someone actually wants. The raw list is the
+  // evidence underneath it, a page at a time — every comment is already in
+  // the payload, so showing more costs nothing and asks nobody.
+  var COMMENTS_PAGE=25;
+  var commentsState=null;
+  function renderComments(){
+    var app=document.getElementById("app");
+    if(!app||!commentsState)return;
+    var d=commentsState.d,list=d.comments,shown=Math.min(commentsState.shown,list.length);
+    var themes=(d.themes||[]).slice(0,12);
+    var themeHtml=themes.length?'<div class="nt-feeds-block is-top"><h4 class="nt-feeds-label sec-label">What people keep mentioning</h4>'
+      +'<div class="nt-feeds-tags">'+themes.map(function(t){
+        var k=typeof t==="string"?t:t.keyword;
+        return '<span class="nt-feeds-theme theme-chip">'+esc(k)+(t&&t.count?"<b>"+esc(grouped(t.count))+"</b>":"")+"</span>";
+      }).join("")+"</div></div>":"";
+    var rows=list.slice(0,shown).map(function(c,i){
+      var user=c.username||c.user||"";
+      var text=String(c.text||c.comment||"");
+      var likes=c.likes||c.likeCount||0,replies=c.replies||0;
+      var when=c.postedAt?relTime(c.postedAt):"";
+      // Long comments clamp to three lines with an expander rather than
+      // being cut mid-sentence — in a chat there is nowhere else to read it.
+      var longish=text.length>180;
+      return '<li class="nt-feeds-comment comment-row">'
+        +'<div class="nt-feeds-comment-by"><b>@'+esc(user)+"</b>"
+        +(c.pinned?badge("outline",ic("pin",12)+"Pinned","cbadge pin"):"")
+        +(c.creatorLiked?badge("outline",ic("heart",12)+"Creator liked","cbadge liked"):"")+"</div>"
+        +'<p class="nt-feeds-comment-text ctext'+(longish?" is-clamp3 clamp":"")+'" data-c="'+i+'">'+esc(text)+"</p>"
+        +(longish?'<button type="button" class="nt-feeds-more cmore" data-more="'+i+'" aria-expanded="false">Show more</button>':"")
+        +(likes>0||replies>0||when?'<div class="nt-feeds-stats is-meta cmeta">'
+          +(likes>0?'<span title="'+esc(grouped(likes))+' likes">'+ic("heart",12)+compact(likes)+"</span>":"")
+          +(replies>0?'<span title="'+esc(grouped(replies))+' replies">'+ic("message-square",12)+compact(replies)+"</span>":"")
+          +(when?"<span>"+esc(when)+" ago</span>":"")+"</div>":"")
+        +"</li>";
+    }).join("");
+    var more=list.length>shown;
+    app.innerHTML=viewShell({icon:"message-square",title:"Comments ("+esc(grouped(list.length))+")",cls:"nt-feeds-comments",
+      meta:d.summary?esc(d.summary):"",
+      body:themeHtml+(list.length?'<ul class="nt-feeds-clist">'+rows+"</ul>":'<p class="nt-empty-line">No comments on this post.</p>'),
+      footer:more?'<div class="nt-feeds-foot-row"><span>Showing '+shown+" of "+esc(grouped(list.length))+"</span>"
+        +btn("outline","xs","Show "+Math.min(COMMENTS_PAGE,list.length-shown)+" more",' data-comments-more="1"')+"</div>":""});
+    setTimeout(reportSize,50);
+  }
+  document.addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest("[data-comments-more]");
+    if(!b||!commentsState)return;
+    commentsState.shown+=COMMENTS_PAGE;
+    renderComments();
+  });
+
+  // ─── The views the design system has no card for ───
+  // Built from the same primitives as the ones it does, so they sit beside
+  // them without a seam: a ViewShell card, a row list, stat tiles, badges.
+
+  /** A stat tile, as the marketplace rollup strip draws one. */
+  function statTile(k,v,sub,unknown){
+    return '<div class="nt-commerce-stat"><div class="nt-commerce-stat-k">'+esc(k)+"</div>"
+      +'<div class="nt-commerce-stat-v">'+(v==null?'<span class="nt-muted nt-unknown">'+esc(unknown||"—")+"</span>":esc(String(v)))+"</div>"
+      +(sub?'<div class="nt-commerce-stat-d">'+esc(sub)+"</div>":"")+"</div>";
+  }
+  function statStrip(tiles){return '<div class="nt-commerce-pad"><div class="nt-commerce-strip">'+tiles.join("")+"</div></div>";}
+
+  // ─── Sounds (discover_sounds) ───
+  function renderSounds(d){
+    if(!d.sounds.length)return emptyState("music","No sounds found","Try another platform or a different niche.");
+    return galleryWrap(d.sounds.map(function(s,i){
+      var coverSrc=s.coverUrl||s.coverProxyUrl||"";
+      var cover='<span class="nt-sound-cover">'+ic("music",20)
+        +(coverSrc?'<img class="sound-cover" data-avatar src="'+esc(coverSrc)+'" alt="" loading="lazy"/>':"")+"</span>";
+      // The raw CDN URL is signed and cross-origin — only the proxied one
+      // actually plays in this sandboxed frame. A bare link never played
+      // anything in-place, which is why sound cards were silent.
+      var play=s.playUrl||s.playProxyUrl||s.url||"";
+      var secs=Number(s.duration)||0;
+      var meta=[s.artist||s.author||"",secs>0?fmtTime(secs):""].filter(Boolean).join(" · ");
+      var player=play
+        ? '<div class="nt-sound-player au" data-au="au'+i+'">'
+          +'<button type="button" class="nt-sound-play au-play" aria-label="Play sound">'+mpIcon("play",14)+"</button>"
+          +'<div class="au-body"><div class="nt-sound-seek au-seek"><i></i></div>'
+          +'<div class="nt-sound-time au-time"><span class="au-cur">0:00</span><span class="au-dur">'
+          +(secs>0?fmtTime(secs):"--:--")+"</span></div></div>"
+          +'<audio preload="metadata" src="'+esc(play)+'"></audio></div>'
+        : '<div class="nt-sound-missing au-missing">'+ic("triangle-alert",13)+"<span>No preview for this track</span></div>";
+      return '<article class="nt-feeds-card nt-sound sound-card"><div class="nt-sound-head">'+cover
+        +'<div class="nt-min0"><div class="nt-sound-title nt-trunc">'+esc(s.title||"")+"</div>"
+        +'<div class="nt-sound-meta nt-trunc">'+esc(meta)+"</div>"
+        +(s.videoCount?'<div class="nt-sound-meta">'+esc(compact(s.videoCount))+" videos</div>":"")
+        +"</div></div>"+player+"</article>";
+    }).join(""),d.sounds.length,d.sounds.length+" sounds");
+  }
+
+  // ─── Run history (list_tool_runs / get_tool_run) ───
+  // One row per call, the credits it actually took on the right, so the
+  // expensive calls are the ones the eye lands on.
+  function renderRuns(d){
+    var runs=Array.isArray(d.runs)?d.runs:[d.run];
+    if(!runs.length)return emptyState("history","No runs in this window","Calls you make show up here with what they cost.");
+    var rows=runs.map(function(r){
+      var when=r.startedAt?String(r.startedAt).slice(0,16).split("T").join(" ")+" UTC":"";
+      var secs=Number(r.durationMs)>0?(Number(r.durationMs)/1000).toFixed(1)+"s":"";
+      var meta=[when,secs,r.userId?"user "+String(r.userId).slice(0,8):""].filter(Boolean).join(" · ");
+      var cr=Number(r.credits)||0;
+      return '<div class="nt-row'+(r.ok===false?" is-failed":"")+'">'
+        +'<div class="nt-row-main"><div class="nt-row-title nt-mono">'+(r.ok===false?ic("x",13,"nt-destructive"):"")+esc(r.tool||"")+"</div>"
+        +'<div class="nt-row-meta">'+esc(meta)+"</div>"
+        +(r.error?'<div class="nt-row-error">'+esc(String(r.error))+"</div>":"")+"</div>"
+        +'<div class="nt-row-end">'+(cr?esc(String(cr))+" cr":badge("success","Free"))+"</div></div>";
+    }).join("");
+    var total=d.creditsOnThisPage!=null?esc(String(d.creditsOnThisPage))+" credits across "+plural(runs.length,"call")+(d.scope==="workspace"?" in the workspace":""):"";
+    return viewShell({icon:"history",title:d.run?"Tool run":"Where your credits went",meta:total,
+      body:'<div class="nt-rows">'+rows+"</div>",
+      footer:d.nextBefore!=null?"More runs are older than these.":""});
+  }
+
+  // ─── Watchlist (list_watchlist) ───
+  function renderWatchlist(d){
+    if(!d.entries.length)return emptyState("eye","You are not watching anyone yet","Watch a creator to catch up on what they posted since you last looked.");
+    var rows=d.entries.map(function(e){
+      if(!e)return "";
+      var since=e.lastCaughtUpAt?"caught up "+String(e.lastCaughtUpAt).slice(0,10):"never caught up";
+      var added=e.addedAt?"added "+String(e.addedAt).slice(0,10):"";
+      return '<div class="nt-row"><div class="nt-row-main">'
+        +'<div class="nt-row-title">'+(e.platform?glyph(e.platform,12):"")+"@"+esc(e.handle||"")
+        +(e.platform?' <span class="nt-muted">'+esc(pTitle(e.platform))+"</span>":"")+"</div>"
+        +'<div class="nt-row-meta">'+esc([added,since].filter(Boolean).join(" · "))+"</div>"
+        +(e.note?'<div class="nt-row-note">'+esc(String(e.note))+"</div>":"")
+        +"</div></div>";
+    }).join("");
+    return viewShell({icon:"eye",title:"Watching "+esc(String(d.watching)),body:'<div class="nt-rows">'+rows+"</div>"});
+  }
+
+  // ─── Credits (check_nooticr_credits) ───
+  function renderCredits(d){
+    var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];
+    return viewShell({icon:"coins",title:"Your credits",cls:"credits-card",
+      action:tier?badge("secondary",esc(tier),"tier-badge"):"",
+      body:'<div class="nt-commerce-pad nt-credits"><div class="nt-credits-v">'+esc(grouped(bal))+"</div>"
+        +'<div class="nt-muted">credits remaining</div>'
+        +(ff.length?'<div class="nt-credits-free"><div class="nt-feeds-label">Free first uses remaining</div><div class="nt-feeds-tags">'
+          +ff.map(function(t){return badge("success",ic("sparkles",12)+'<span class="nt-mono">'+esc(t)+"</span> free","free-tag");}).join("")+"</div></div>":"")
+        +"</div>"});
+  }
+
+  // ─── Hooks (show_hooks) — each one its own quote with its own Copy ───
+  function renderHooks(d){
+    if(!d.hooks.length)return emptyState("message-square","No hooks yet","");
+    var rows=d.hooks.map(function(h){
+      return '<div class="nt-hook">'+quote(h.hook||"")
+        +(h.mechanism||h.why?'<div class="nt-hook-meta">'+(h.mechanism?chip(h.mechanism,"music"):"")
+          +(h.why?'<p class="nt-feeds-prose section-text">'+esc(h.why)+"</p>":"")+"</div>":"")+"</div>";
+    }).join("");
+    return viewShell({icon:"message-square",title:"Hooks",meta:d.topic?esc(d.topic):"",body:'<div class="nt-commerce-pad nt-stack">'+rows+"</div>"});
+  }
+
+  // ─── Variants (show_variants) ───
+  function renderVariants(d){
+    if(!d.variants.length)return emptyState("layers","No variants yet","");
+    var src=(d.post&&(d.post.externalUrl||d.post.platform))?'<div class="nt-feeds-an-post">'+postCard(d.post,true,false,true)+"</div>":"";
+    var parts=d.variants.map(function(v,i){
+      var body=(v.hook?quote(v.hook):"")
+        +(v.angle?'<p class="nt-feeds-prose section-text"><b>Angle:</b> '+esc(v.angle)+"</p>":"")
+        +(v.beats&&v.beats.length?bullets(v.beats,8):"")
+        +(v.cta?'<p class="nt-feeds-prose section-text"><b>CTA:</b> '+esc(v.cta)+"</p>":"")
+        +(v.whyItCouldWork?'<p class="nt-feeds-prose section-text nt-muted">'+esc(v.whyItCouldWork)+"</p>":"");
+      return accordion((i+1)+". "+esc(v.title||"Variant"),'<div class="nt-stack">'+body+"</div>",i===0);
+    }).join("");
+    return '<div class="nt-feeds-analysis">'+src+viewShell({icon:"layers",title:"Variants",body:'<div class="nt-feeds-secs">'+parts+"</div>"})+"</div>";
+  }
+
+  // ─── Repurposed copy (show_repurposed_post) ───
+  function renderVersions(d){
+    if(!d.versions.length)return emptyState("pencil","Nothing repurposed yet","");
+    var parts=d.versions.map(function(v,i){
+      return accordion(esc(v.surface||"Version "+(i+1)),
+        expandable(v.content||"")
+        +'<button type="button" class="nt-feeds-tag is-ghost tag copyable" data-copy="'+esc(v.content||"")+'" title="Copy">'+ic("copy",12)+"<span>Copy</span></button>",
+        i===0);
+    }).join("");
+    return viewShell({icon:"pencil",title:"Repurposed",body:'<div class="nt-feeds-secs">'+parts+"</div>"});
+  }
 
   /** yes / no / unknown, as the chip that says which. */
   // Three-valued, and the third value is the whole point: an absent scope
@@ -3540,19 +4263,17 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // refusal the grant never made.
   function capChip(label,value){
     var v=String(value==null?"unknown":value).toLowerCase();
-    var cls=v==="yes"?"chip-positive":v==="no"?"chip-negative":"chip-mixed";
-    return '<span class="chip '+cls+'">'+esc(label)+" · "+esc(v)+"</span>";
+    if(v==="true")v="yes";else if(v==="false")v="no";
+    var t=v==="yes"?["success","check","chip-positive","Granted"]:v==="no"?["destructive","x","chip-negative","Not granted"]
+      :["muted","circle-question-mark","chip-mixed","Not recorded — not a refusal"];
+    return tone(t[0],t[1],esc(label)+" · "+esc(v),"chip "+t[2],t[3]);
   }
 
   /** The account row's face: the handle's initial under the network's mark. */
   function connAvatar(name,plat,dashed){
-    if(dashed){
-      return '<span class="conn-av conn-av-empty" style="--brand:'+pColor(plat)+'">'
-        +'<span class="conn-av-mark">'+pSvg(plat,14)+"</span></span>";
-    }
-    return '<span class="conn-av" style="--brand:'+pColor(plat)+'">'
-      +'<span class="mention-av-init" style="font-size:12px">'+esc(initialOf(name))+"</span>"
-      +'<span class="mention-av-badge">'+pSvg(plat,9)+"</span></span>";
+    if(dashed)return '<span class="nt-commerce-cav is-empty conn-av conn-av-empty">'+glyph(plat,15)+"</span>";
+    return '<span class="nt-commerce-cav conn-av"><span class="nt-commerce-cav-init mention-av-init">'+esc(initialOf(name||pTitle(plat)))+"</span>"
+      +'<span class="nt-commerce-cav-badge mention-av-badge">'+glyph(plat,10)+"</span></span>";
   }
 
   /**
@@ -3567,42 +4288,39 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
    */
   function renderConnections(d){
     var conns=Array.isArray(d.connections)?d.connections.filter(Boolean):[];
-    var connectable=(Array.isArray(d.connectable)?d.connectable:[]).map(String);
+    var connectable=(Array.isArray(d.connectable)?d.connectable:[]).map(function(k){return String(k).toLowerCase();});
     var linked={};
-    conns.forEach(function(c){linked[String(c.platform||"")]=true;});
+    conns.forEach(function(c){linked[String(c.platform||"").toLowerCase()]=true;});
 
     var rows=conns.map(function(c){
-      var plat=String(c.platform||"");
+      var plat=String(c.platform||"").toLowerCase();
       var who=String(c.accountName||"").replace(/^@/,"");
       var status=String(c.status||"active").toLowerCase();
-      var statusCls=status==="active"?"chip-positive":status==="expired"?"chip-mixed":"chip-negative";
+      var st=status==="active"?["success","check","chip-positive"]:status==="expired"?["warning","clock","chip-mixed"]:["destructive","x","chip-negative"];
       var owner=[pTitle(plat),String(c.influencerName||c.appName||"")].filter(Boolean).join(" · ");
-      return '<div class="conn-row">'
+      return '<div class="nt-commerce-conn conn-row">'
         +connAvatar(who,plat,false)
-        +'<div class="conn-body">'
-        +'<div class="conn-who">'+(who?"@"+esc(who):esc(pTitle(plat)+" account"))+"</div>"
-        +'<div class="conn-sub">'+esc(owner)+"</div>"
-        +'<div class="chiprow" style="margin-top:6px">'
+        +'<div class="nt-commerce-conn-body conn-body">'
+        +'<div class="nt-commerce-conn-top"><div class="nt-commerce-conn-who conn-who">'+(who?"@"+esc(who):esc(pTitle(plat)+" account"))+"</div>"
+        +tone(st[0],st[1],esc(status),"nt-commerce-conn-status chip conn-status "+st[2])+"</div>"
+        +'<div class="nt-commerce-conn-sub conn-sub">'+esc(owner)+"</div>"
+        +'<div class="nt-commerce-chiprow">'
         +capChip("read",c.canReadAccount)+capChip("publish",c.canPublishPost)
         +capChip("comments",c.canManageComments)+"</div>"
         // Said once per connection that needs it, rather than once at the
         // bottom where it would be read as being about all of them.
         +(c.scopeRecorded===false
-          ?'<div class="conn-note">Unknown means the grant predates scope recording — try it, '
+          ?'<div class="nt-commerce-conn-note conn-note">Unknown means the grant predates scope recording — try it, '
             +"it is not a refusal.</div>":"")
-        +"</div>"
-        +'<span class="chip '+statusCls+' conn-status">'+esc(status)+"</span>"
-        +"</div>";
+        +"</div></div>";
     }).join("");
 
     var open=connectable.filter(function(k){return !linked[k];}).map(function(plat){
-      return '<div class="conn-row">'
+      return '<div class="nt-commerce-conn conn-row">'
         +connAvatar("",plat,true)
-        +'<div class="conn-body">'
-        +'<div class="conn-who">'+esc(pTitle(plat))+"</div>"
-        +'<div class="conn-sub">not connected · can be linked</div>'
-        +"</div>"
-        +'<button type="button" class="ai-btn conn-connect" data-connect="'+esc(plat)+'">Connect</button>'
+        +'<div class="nt-commerce-conn-body conn-body"><div class="nt-commerce-conn-who conn-who">'+esc(pTitle(plat))+"</div>"
+        +'<div class="nt-commerce-conn-sub conn-sub">Not connected · can be linked</div></div>'
+        +btn("outline","sm",ic("plus",14)+'<span class="nt-lbl">Connect</span>',' data-connect="'+esc(plat)+'"',"conn-connect ai-btn")
         +"</div>";
     }).join("");
 
@@ -3610,32 +4328,19 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // from what the payload says is connectable rather than hard-coded, so a
     // network that becomes linkable stops being listed here on its own.
     var readOnly=ALL_PLATFORMS.filter(function(k){return connectable.indexOf(k)<0;});
-    var readOnlyTags=readOnly.map(function(k){
-      return '<span class="tag">'+esc(pTitle(k))+"</span>";
-    }).join("");
-
     var n=conns.length;
-    return '<div class="fade-in">'
-      +'<div class="own-title">Connected accounts</div>'
-      +'<div class="own-sub">'+esc(String(n))+" connected · "+esc(String(connectable.length))
-      +" platform"+(connectable.length===1?"":"s")+" can be linked. Free to call, and nothing "
-      +"here spends credits.</div>"
-      +(rows||open
-        ?'<div class="card card-wide"><div class="card-body" style="padding:4px 14px 12px">'+rows+open+"</div></div>"
-        :'<div class="empty-state"><div class="icon">🔌</div>'
-          +'<div class="text">No accounts connected yet</div></div>')
-      +'<div class="ai-note">Each press mints a fresh link — an old one does not work twice. '
-      +"Approve in your own browser; nothing is connected until you do.</div>"
-      +(readOnlyTags
-        ?'<div class="card card-wide" style="margin-top:12px"><div class="card-body">'
-          +'<div class="sec-label">Read-only — nooticr can sweep these, no account to link</div>'
-          +'<div class="chiprow">'+readOnlyTags+"</div>"
-          +'<div class="section-text" style="margin-top:12px;color:var(--muted)">So "monitor my '
-          +'brand on Weibo" works and "reply to that Weibo comment" cannot — nooticr does not '
-          +"post replies on any network, whatever a connection is allowed to do.</div>"
-          +"</div></div>"
-        :"")
-      +"</div>";
+    return viewShell({icon:"plug",title:'<span class="own-title">Connected accounts</span>',cls:"nt-commerce-own",
+      action:badge("success",ic("check",12)+"Free"),
+      meta:'<span class="own-sub">'+esc(String(n))+" connected · "+esc(String(connectable.length))
+        +" platform"+(connectable.length===1?"":"s")+" can be linked. Free to call, and nothing here spends credits.</span>",
+      body:(rows||open?'<div class="nt-commerce-conns card-body">'+rows+open+"</div>"
+          :'<div class="nt-commerce-pad nt-commerce-pad-b">'+emptyState("plug","No accounts connected yet","")+"</div>")
+        +(readOnly.length?'<div class="nt-commerce-readonly"><div class="nt-commerce-block-title sec-label">Read-only — nooticr can sweep these, no account to link</div>'
+          +'<div class="nt-commerce-chiprow">'+readOnly.map(function(k){
+            return '<span class="nt-tag nt-commerce-nettag tag">'+glyph(k,12)+esc(pTitle(k))+"</span>";}).join("")+"</div>"
+          +'<p class="nt-commerce-conn-sub" style="margin-top:8px">So "monitor my brand on Weibo" works and "reply to that Weibo comment" cannot — '
+          +"nooticr does not post replies on any network, whatever a connection is allowed to do.</p></div>":""),
+      footer:'<span class="ai-note">Each press mints a fresh link — an old one does not work twice. Approve in your own browser; nothing is connected until you do.</span>'});
   }
 
   /**
@@ -3648,17 +4353,15 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function renderConnectLink(d){
     var plat=String(d.platform||"");
     var url=String(d.connectUrl||"");
-    return '<div class="fade-in own-connect">'
-      +mkSvg(96,55,true)
-      +'<div class="own-title" style="margin-top:14px">Waiting for you</div>'
-      +'<div class="own-sub" style="max-width:34ch;margin-inline:auto">'
-      +esc(String(d.message||"Open this link and approve the connection there. Nothing is "
-        +"connected until you do."))+"</div>"
-      +(url?'<a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener">Open '
-        +esc(pTitle(plat))+"'s consent screen ↗</a>":"")
-      +'<div class="ai-note">This link is fresh and single-use. When you have approved it, ask '
-      +"for your connections again to see what the grant actually covers.</div>"
-      +"</div>";
+    return '<section class="nt-view nt-commerce-connect own-connect nt-in">'
+      +mkSvg(63,36,true)
+      +'<div class="nt-commerce-connect-title own-title">Waiting for you</div>'
+      +'<p class="nt-commerce-connect-desc own-sub">'
+      +esc(String(d.message||"Open this link and approve the connection there. Nothing is connected until you do."))+"</p>"
+      +(url?linkBtn("default","default",url,(plat?glyph(plat,14):"")+"Open "+(plat?esc(pTitle(plat))+"’s":"the")+" consent screen"+ic("external-link",14),"btn"):"")
+      +'<p class="nt-commerce-connect-note ai-note">This link is fresh and single-use. When you have approved it, ask '
+      +"for your connections again to see what the grant actually covers.</p>"
+      +"</section>";
   }
 
   /**
@@ -3682,8 +4385,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var name=String(pr.name||"Product");
     var slug=String(pr.slug||"");
     var type=String(pr.productType||"");
-    var idLine=[pr.appId!=null?"appId "+esc(String(pr.appId)):"",
-      slug?'<span class="mono">'+esc(slug)+"</span>":"",
+    var idLine=[pr.appId!=null?'appId <span class="nt-mono">'+esc(String(pr.appId))+"</span>":"",
+      slug?'<span class="nt-mono mono">'+esc(slug)+"</span>":"",
       type?esc(type):""].filter(Boolean).join(" · ");
 
     // Which fields moved, and which were left alone on purpose. An omitted
@@ -3698,84 +4401,75 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       icon_url:"iconUrl",primary_cta_label:"primaryCtaLabel",
       primary_cta_url:"primaryCtaUrl",external_listing_id:"externalListingId",
       ios_bundle_id:"iosBundleId",android_package:"androidPackage"};
-    var steps=patched.map(function(k){
-      var v=pr[VALUE_OF[k]||k];
-      return '<div class="step-row"><span class="step-k">'+esc(FIELD_LABELS[k]||k)+"</span>"
-        +'<span class="step-v">'+esc(v==null?"—":String(v))
-        +' <span class="chip chip-mixed">patched</span></span></div>';
-    }).join("");
-
     // What the row actually holds. The server returns the whole product
     // rather than a list of which columns moved, so the honest thing to draw
-    // for a patch is its current state rather than an invented diff.
+    // for a patch with no list is its current state, not an invented diff.
     var FIELD_ORDER=["websiteUrl","niche","productType","primaryCtaLabel",
       "primaryCtaUrl","iosBundleId","androidPackage","description"];
     var FIELD_TITLES={websiteUrl:"Website",niche:"Niche",productType:"Type",
       primaryCtaLabel:"CTA label",primaryCtaUrl:"CTA link",iosBundleId:"iOS",
       androidPackage:"Android",description:"Description"};
-    function currentFields(row){
-      return FIELD_ORDER.filter(function(k){return row[k]!=null&&row[k]!=="";})
-        .map(function(k){
-          return '<div class="step-row"><span class="step-k">'+esc(FIELD_TITLES[k])+"</span>"
-            +'<span class="step-v">'+esc(String(row[k]))+"</span></div>";
-        }).join("");
-    }
+    var fields=patched.length
+      ?patched.map(function(k){var v=pr[VALUE_OF[k]||k];return {k:FIELD_LABELS[k]||k,v:v==null?"—":String(v),patched:true};})
+      :FIELD_ORDER.filter(function(k){return pr[k]!=null&&pr[k]!=="";}).map(function(k){return {k:FIELD_TITLES[k],v:String(pr[k])};});
+    var fieldsHtml='<dl class="nt-commerce-fields steps-list">'+fields.map(function(f){
+      return '<div class="nt-commerce-field"><dt class="step-k">'+esc(f.k)+'</dt><dd class="step-v"><span class="nt-commerce-field-v">'+esc(f.v)+"</span>"
+        +(f.patched?badge("secondary","patched","chip chip-mixed"):"")+"</dd></div>";
+    }).join("")+"</dl>";
 
-    var head=created
-      ? '<div class="own-head"><span class="own-tick">'+mpIcon("check",18)+"</span>"
-        +"<span>"+esc(name)+"</span></div>"
-      : '<div class="own-head"><span>'+esc(name)+"</span>"
-        +(pr.appId!=null?'<span class="chip chip-cat" style="margin-left:auto">appId '
-          +esc(String(pr.appId))+"</span>":"")+"</div>";
-
-    return '<div class="fade-in"><div class="card card-wide"><div class="card-body">'
-      +head
-      +'<div class="own-sub">'+idLine+"</div>"
+    return '<section class="nt-view nt-commerce-product nt-in">'
+      +'<header class="nt-commerce-phead own-head">'
+      +(created?'<span class="nt-commerce-ptick own-tick" aria-label="Created">'+ic("check",16)+"</span>"
+        :'<span class="nt-commerce-ptick is-edit" aria-label="Updated">'+ic("pencil",15)+"</span>")
+      +'<div class="nt-commerce-head-text"><h3 class="nt-commerce-head-title">'+esc(name)+"</h3>"
+      +'<p class="nt-commerce-head-sub nt-commerce-idline own-sub">'+idLine+"</p></div>"
+      +badge(created?"success":"outline",created?"Created":"Updated")+"</header>"
       +(created
-        ?'<div class="lede-box">'+esc(String(d.note
+        ?'<div class="nt-commerce-pad"><p class="nt-commerce-lede lede-box">'+esc(String(d.note
             ||"The row exists and every other own-account tool can reach it. It has no brand "
-              +"playbook yet — that is a separate call, and it is the one that costs."))+"</div>"
-        :(steps||currentFields(pr)
-          ?'<div class="steps-list">'+(steps||currentFields(pr))+"</div>"
-            +'<div class="ai-note">The row as it now stands. An omitted field was left alone '
-            +"rather than blanked — and a field you sent that is not here was not recognised, "
-            +"since these are read by exact snake_case key.</div>"
-          :'<div class="lede-box">The row is saved. Nothing else is set on it yet.</div>'))
-      +'<div class="chiprow" style="margin-top:12px">'
-      +'<span class="tag">'+(pr.hasBrandPlaybook?"playbook: set":"playbook: none")+"</span>"
-      +(pr.websiteUrl?'<span class="tag">'+esc(String(pr.websiteUrl))+"</span>":"")
+              +"playbook yet — that is a separate call, and it is the one that costs."))+"</p></div>"
+        :(fields.length
+          ?fieldsHtml+'<div class="nt-commerce-pad"><div class="nt-commerce-note ai-note">'+ic("info",14)
+            +"<span>The row as it now stands. An omitted field was left alone rather than blanked — and a field you sent "
+            +"that is not here was not recognised, since these are read by exact snake_case key.</span></div></div>"
+          :'<div class="nt-commerce-pad"><p class="nt-commerce-lede lede-box">The row is saved. Nothing else is set on it yet.</p></div>'))
+      +'<div class="nt-commerce-pad nt-commerce-chiprow nt-commerce-ptags">'
+      +tone(pr.hasBrandPlaybook?"success":"muted",pr.hasBrandPlaybook?"check":"minus",pr.hasBrandPlaybook?"Playbook: set":"Playbook: none","tag")
+      +(created&&pr.websiteUrl?'<span class="nt-tag nt-commerce-nettag tag">'+ic("globe",12)+esc(String(pr.websiteUrl))+"</span>":"")
       +"</div>"
-      // Both buttons the design drew. analyze_product is a real tool now, and
-      // it is the call that writes the playbook the row above says it lacks -
-      // billed against the workspace's plan AI credits rather than the
-      // personal MCP balance, which is why the pill carries no number.
-      +'<div class="ai-actions">'
-      +(pr.hasBrandPlaybook?"":'<button type="button" class="ai-btn" data-analyze-product="1">'
-        +'<span class="spark">'+mpIcon("sparkle",14)+"</span>Analyse the product"
-        +'<span class="price">plan AI credits</span></button>')
-      +'<button type="button" class="ai-btn" data-list-connections="1">Connect an account'
-      +'<span class="price">free</span></button></div>'
-      +'<div class="ai-note">analyze_product runs in the background and returns a jobId - poll '
-      +"it with analyze_product_status, which is free because the spend already happened.</div>"
-      +"</div></div></div>";
+      // Both buttons the design drew. analyze_product is the call that writes
+      // the playbook the row above says it lacks - billed against the
+      // workspace's plan AI credits rather than the personal MCP balance,
+      // which is why its price reads "Plan AI credits" and not a number.
+      +'<div class="nt-commerce-pad nt-commerce-pactions ai-actions">'
+      +(pr.hasBrandPlaybook?"":btn("outline","sm",ic("sparkles",14)+'<span class="nt-lbl">Analyse the product</span>'
+        +'<span class="nt-commerce-price-tag price">Plan AI credits</span>',' data-analyze-product="1"',"ai-btn"))
+      +btn("outline","sm",ic("plug",14)+'<span class="nt-lbl">Connect an account</span><span class="nt-commerce-price-tag price">Free</span>',
+        ' data-list-connections="1"',"ai-btn")
+      +"</div>"
+      +'<footer class="nt-view-foot"><span class="nt-mono">analyze_product</span> runs in the background and returns a jobId — poll it with '
+      +'<span class="nt-mono">analyze_product_status</span>, which is free because the spend already happened.</footer>'
+      +"</section>";
   }
 
   // Connecting is the one action on these screens, and it is a hand-off: the
   // tool mints a link, the view swaps itself for the screen that shows it, and
   // the user approves in their own browser. A host that cannot run the call
   // in-band says so rather than leaving a dead button.
-  function ownActionButton(btn,tool,args,busyLabel){
-    if(btn.disabled)return;
-    var was=btn.innerHTML;
-    btn.disabled=true;
-    btn.textContent=busyLabel;
+  function ownActionButton(btnEl,tool,args,busyLabel){
+    if(btnEl.disabled)return;
+    var was=btnEl.innerHTML;
+    btnEl.disabled=true;
+    btnEl.setAttribute("aria-busy","true");
+    btnEl.innerHTML=ic("loader-circle",14,"nt-spin")+"<span>"+esc(busyLabel)+"</span>";
     var restore=function(label){
-      btn.disabled=false;
+      btnEl.disabled=false;
+      btnEl.removeAttribute("aria-busy");
       if(label){
-        btn.textContent=label;
-        setTimeout(function(){btn.innerHTML=was;},1800);
+        btnEl.innerHTML=ic("message",14)+"<span>"+esc(label)+"</span>";
+        setTimeout(function(){btnEl.innerHTML=was;},1800);
       }else{
-        btn.innerHTML=was;
+        btnEl.innerHTML=was;
       }
     };
     invokeTool(tool,args,function(r){
@@ -3920,21 +4614,21 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var key=String(name||"").toLowerCase();
     var b=MARKET_BRAND[key];
     var mark=MARKET_LOGO[key]||"";
-    if(!mark&&key==="amazon")mark=amazonMark(size);
+    var inner=Math.round(size*0.42);
+    if(!mark&&key==="amazon")mark=amazonMark(inner);
     if(!mark&&b&&b.path){
       mark='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
         +'<path fill="'+b.color+'" d="'+b.path+'"></path></svg>';
     }
     if(mark){
-      return '<span class="mkt-logo" style="height:'+size+'px" aria-label="'
-        +esc(marketLabel(name))+'" role="img">'+mark+"</span>";
+      // Every real mark sits on a white tile in both themes: a navy wordmark
+      // recoloured for a dark host is a wrong logo.
+      return '<span class="nt-commerce-mtile is-wordmark" style="height:'+size+"px;min-width:"+size+'px" aria-label="'
+        +esc(marketLabel(name))+'" role="img"><span class="mkt-logo" style="height:'+inner+'px">'+mark+"</span></span>";
     }
-    var initials=(b?b.label:String(name||"market")).replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase();
-    return '<span class="mkt-generic" style="display:inline-flex;align-items:center;justify-content:center;'
-      +"width:"+size+"px;height:"+size+"px;border-radius:5px;font-weight:800;line-height:1;"
-      +"background:"+(b?b.color:"#6B7280")+";color:"+(b?b.on:"#fff")+";"
-      +'font-size:'+Math.round(size*0.44)+'px" aria-label="'+esc(marketLabel(name))+'" role="img">'
-      +esc(initials)+"</span>";
+    var initials=(b?b.label:String(name||"market")).replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase()||"?";
+    return '<span class="nt-commerce-mtile is-generic mkt-generic" style="width:'+size+"px;height:"+size+"px;font-size:"
+      +Math.round(size*0.36)+'px" aria-label="'+esc(marketLabel(name))+'" role="img">'+esc(initials)+"</span>";
   }
 
   /**
@@ -3950,11 +4644,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     return d.indexOf("www.")===0?d.slice(4):d;
   }
 
-  function starGlyphs(rating){
-    var r=Number(rating)||0;
-    var out="";
-    for(var i=1;i<=5;i++)out+=(r>=i-0.25?"★":"☆");
-    return '<span class="amz-stars">'+out+"</span>";
+  function starGlyphs(rating,size){
+    var r=Number(rating)||0,s=size||12,out="";
+    for(var i=1;i<=5;i++){var on=r>=i-0.25;out+=ic("star",s,on?"is-on":"",on);}
+    return '<span class="nt-commerce-stars amz-stars" role="img" aria-label="'+(rating==null?"no":r)+' out of 5 stars">'+out+"</span>";
   }
 
   /**
@@ -4033,26 +4726,25 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     for(var star=5;star>=1;star--){
       var pct=pctNum(h[String(star)]);
       if(pct==null)continue;
-      var tone=star>=4?"amz-bar-good":(star===3?"amz-bar-mid":"amz-bar-bad");
-      rows+='<div class="amz-hrow"><span class="amz-hstar">'+star+"★</span>"
-        +'<span class="amz-htrack"><span class="amz-hfill '+tone+'" style="width:'+Math.max(1,pct)+'%"></span></span>'
-        +'<span class="amz-hpct">'+pct+"%</span></div>";
+      var tn=star>=4?"is-good":(star===3?"is-mid":"is-bad");
+      rows+='<div class="nt-commerce-hrow amz-hrow"><span class="nt-commerce-hstar">'+star+ic("star",11,"",true)+"</span>"
+        +'<span class="nt-commerce-htrack"><span class="nt-commerce-hfill '+tn+'" style="width:'+Math.max(1,Math.min(100,pct))+'%"></span></span>'
+        +'<span class="nt-commerce-hpct">'+pct+"%</span></div>";
     }
-    return rows?'<div class="amz-hist">'+rows+"</div>":"";
+    return rows?'<div class="nt-commerce-hist amz-hist" role="group" aria-label="Star distribution">'+rows+"</div>":"";
   }
 
   function aspectTone(s){
     var v=String(s||"").toLowerCase();
-    return v==="positive"?"chip-positive":(v==="negative"?"chip-negative":"chip-mixed");
+    return v==="positive"?["success","thumbs-up"]:(v==="negative"?["destructive","thumbs-down"]:["warning","minus"]);
   }
 
   function aspectChips(list,limit){
     var rows=(list||[]).slice(0,limit||8).map(function(a){
-      var n=Number(a.mentions)||0;
-      return '<span class="chip '+aspectTone(a.sentiment)+'">'+esc(a.name||"")
-        +(n?' <b>'+fmtNum(n)+"</b>":"")+"</span>";
+      var n=Number(a.mentions)||0,t=aspectTone(a.sentiment);
+      return tone(t[0],t[1],esc(a.name||"")+(n?"<b>"+compact(n)+"</b>":""),"chip",(a.sentiment||"mixed")+" across reviews");
     }).join("");
-    return rows?'<div class="chiprow">'+rows+"</div>":"";
+    return rows?'<div class="nt-commerce-chiprow">'+rows+"</div>":"";
   }
 
   function productOf(asin){
@@ -4064,11 +4756,12 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   }
 
   /** The picture, or an honest stand-in — never an empty grey rectangle. */
-  function productThumb(p){
-    var img=String(p.image||"");
-    if(img)return '<span class="amz-thumb"><img src="'+esc(img)+'" alt="" loading="lazy"></span>';
+  function productThumb(p,size){
+    var s=size||56,img=String(p.image||"");
+    if(img)return '<span class="nt-commerce-thumb amz-thumb" style="width:'+s+"px;height:"+s+'px"><img src="'+esc(img)+'" alt="" loading="lazy"></span>';
     var word=String(p.brand||p.title||"?").trim();
-    return '<span class="amz-thumb amz-thumb-empty"><span>'+esc(word.slice(0,2).toUpperCase())+"</span></span>";
+    return '<span class="nt-commerce-thumb is-empty amz-thumb" style="width:'+s+"px;height:"+s+"px;font-size:"+Math.round(s*0.3)
+      +'px" aria-hidden="true">'+esc(word.slice(0,2).toUpperCase())+"</span>";
   }
 
   function reviewCountLabel(p){
@@ -4079,41 +4772,43 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 
   /** One listing, as a card in the grid. */
   function amazonTile(p){
-    var open=amazonState.open===String(p.asin||"");
     var neg=null;
     (((amazonState.rollup||{}).perProduct)||[]).forEach(function(r){
       // The Amazon rollup keys each row by "asin" and the generic one by "id";
       // reading only the first left every other site without its 1-2 star share.
       if(String(r.asin||r.id||"")===String(p.asin||""))neg=r.negativeStarShare;
     });
-    return '<button type="button" class="amz-tile'+(open?" amz-tile-open":"")+'" data-amz-open="'+esc(p.asin||"")+'">'
-      +productThumb(p)
-      +'<span class="amz-tile-body">'
-      +'<span class="amz-brand">'+esc(p.brand||"")+"</span>"
-      +'<span class="amz-title">'+esc(String(p.title||"").slice(0,110))+"</span>"
-      +'<span class="amz-line">'+starGlyphs(p.rating)
-      +'<span class="amz-rating">'+(p.rating==null?"—":p.rating)+"</span>"
-      +'<span class="amz-count">'+(p.ratingCount?fmtNum(p.ratingCount)+" ratings":"")+"</span></span>"
-      +'<span class="amz-line"><span class="amz-price">'+esc(money(p))+"</span>"
-      +(neg!=null?'<span class="amz-neg" title="share of all ratings at 1-2 stars">'+neg+"% at 1-2★</span>":"")
+    return '<button type="button" class="nt-commerce-tile amz-tile" data-amz-open="'+esc(p.asin||"")+'" aria-label="Open '
+      +esc((p.brand?p.brand+" ":"")+(p.title||"listing"))+'">'
+      +productThumb(p,56)
+      +'<span class="nt-commerce-tile-body">'
+      +(p.brand?'<span class="nt-commerce-brand amz-brand">'+esc(p.brand)+"</span>":"")
+      +'<span class="nt-commerce-title amz-title">'+esc(String(p.title||"").slice(0,110))+"</span>"
+      +'<span class="nt-commerce-line">'+starGlyphs(p.rating)
+      +'<span class="nt-commerce-rating amz-rating">'+(p.rating==null?"—":esc(String(p.rating)))+"</span>"
+      +(p.ratingCount?'<span class="nt-commerce-count amz-count">'+compact(p.ratingCount)+" ratings</span>":"")+"</span>"
+      +'<span class="nt-commerce-line"><span class="nt-commerce-price amz-price">'+esc(money(p))+"</span>"
+      +(neg!=null?'<span class="nt-commerce-neg amz-neg" title="Share of all ratings at 1-2 stars">'+esc(String(neg))+"% at 1-2"+ic("star",10,"",true)+"</span>":"")
       +"</span>"
-      +'<span class="amz-sub">'+esc(reviewCountLabel(p))+"</span>"
-      +"</span></button>";
+      +'<span class="nt-commerce-sub amz-sub">'+esc(reviewCountLabel(p))+"</span>"
+      +"</span>"+ic("chevron-right",16,"nt-commerce-tile-go")+"</button>";
   }
 
   /** One review, as a row a claim can point at. */
   function amazonReviewRow(r,focused){
     var rating=Number(r.rating)||0;
-    var tone=rating>=4?"amz-rev-good":(rating===3?"amz-rev-mid":"amz-rev-bad");
-    return '<div class="amz-rev '+tone+(focused?" amz-rev-focus":"")+'" data-amz-review="'+esc(r.id||"")+'">'
-      +'<div class="amz-rev-head">'+starGlyphs(rating)
-      +'<span class="amz-rev-title">'+esc(r.title||"")+"</span></div>"
-      +'<div class="amz-rev-body">'+esc(r.body||"")+"</div>"
-      +'<div class="amz-rev-meta">'+esc(r.author||"someone")
-      +(r.brand?" · "+esc(r.brand):"")
-      +(r.date?" · "+esc(r.date):"")
-      +(r.verified?' · <span class="amz-verified">verified purchase</span>':"")
-      +(r.helpful?" · "+esc(String(r.helpful)):"")
+    var meta=[esc(r.author||"someone")];
+    if(r.brand)meta.push(esc(r.brand));
+    if(r.date)meta.push(esc(r.date));
+    return '<div class="nt-commerce-rev amz-rev'+(focused?" is-focus amz-rev-focus":"")+'" data-amz-review="'+esc(r.id||"")+'">'
+      +'<div class="nt-commerce-rev-head">'+starGlyphs(rating)
+      +(r.title?'<span class="nt-commerce-rev-title">'+esc(r.title)+"</span>":"")
+      +(focused?badge("secondary",ic("crosshair",12)+"Cited","nt-commerce-rev-pin"):"")+"</div>"
+      +(r.body?'<div class="nt-commerce-rev-body">'+esc(r.body)+"</div>":"")
+      +'<div class="nt-commerce-rev-meta">'+meta.join(" · ")
+      +(r.verified?'<span class="nt-commerce-verified amz-verified">'+ic("badge-check",12)+"Verified purchase</span>":"")
+      +(r.helpful?"<span>"+esc(String(r.helpful))+"</span>":"")
+      +(r.id?'<span class="nt-mono nt-commerce-rid">'+esc(r.id)+"</span>":"")
       +"</div></div>";
   }
 
@@ -4122,35 +4817,34 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var feats=(p.features||[]).slice(0,4).map(function(f){
       return "<li>"+esc(String(f).slice(0,220))+"</li>";
     }).join("");
-    var revs=(p.reviews||[]).map(function(r){return amazonReviewRow(r,false);}).join("");
-    var gated=p.reviewsGated
-      ?'<div class="amz-note">Amazon served this session the sign-in gate instead of the review '
-        +"bodies. The rating, the histogram and the aspect counts below are still its own and still "
-        +"public — only the individual reviews are withheld.</div>"
-      :"";
-    return '<div class="amz-detail fade-in">'
-      +'<div class="amz-detail-head">'
-      +productThumb(p)
-      +'<div class="amz-detail-facts">'
-      +'<div class="amz-title amz-title-lg">'+esc(p.title||"")+"</div>"
-      +'<div class="amz-line">'+starGlyphs(p.rating)
-      +'<span class="amz-rating">'+(p.rating==null?"—":p.rating)+"</span>"
-      +'<span class="amz-count">'+(p.ratingCount?fmtNum(p.ratingCount)+" ratings":"")+"</span>"
-      +'<span class="amz-price">'+esc(money(p))+"</span>"
-      +(p.listPrice?'<span class="amz-list">was '+esc(String(p.listPrice))+"</span>":"")
+    var revs=(p.reviews||[]);
+    var dom=marketDomain(amazonState.domain);
+    var site=marketLabel(amazonState.marketplace);
+    var block=function(title,body){return '<div class="nt-commerce-block amz-block"><div class="nt-commerce-block-title">'+esc(title)+"</div>"+body+"</div>";};
+    return '<div class="nt-commerce-detail nt-commerce-fade amz-detail">'
+      +'<div class="nt-commerce-pad">'+btn("ghost","sm",ic("chevron-left",16)+"All listings",' data-amz-back="1"',"nt-commerce-back")+"</div>"
+      +'<div class="nt-commerce-dhead">'+productThumb(p,72)
+      +'<div class="nt-commerce-dfacts">'
+      +(p.brand?'<span class="nt-commerce-brand">'+esc(p.brand)+"</span>":"")
+      +'<div class="nt-commerce-dtitle">'+esc(p.title||"")+"</div>"
+      +'<div class="nt-commerce-line is-wrap">'+starGlyphs(p.rating)
+      +'<span class="nt-commerce-rating">'+(p.rating==null?"—":esc(String(p.rating)))+"</span>"
+      +(p.ratingCount?'<span class="nt-commerce-count">'+esc(grouped(p.ratingCount))+" ratings</span>":"")
+      +'<span class="nt-commerce-price">'+esc(money(p))+"</span>"
+      +(p.listPrice?'<s class="nt-commerce-count amz-list">was '+esc(String(p.listPrice))+"</s>":"")
       +"</div>"
-      +(p.availability?'<div class="amz-sub">'+esc(String(p.availability))+"</div>":"")
-      +(p.url?'<button type="button" class="ai-btn amz-open" data-amz-link="'+esc(p.url)+'">Open on '
-        +esc(marketDomain(amazonState.domain))+"</button>":"")
+      +(p.availability?'<div class="nt-commerce-sub">'+esc(String(p.availability))+"</div>":"")
+      +(p.url?"<div>"+btn("outline","sm","Open on "+esc(dom||site)+ic("external-link",14),' data-amz-link="'+esc(p.url)+'"',"amz-open")+"</div>":"")
       +"</div></div>"
-      +histogramBars(p.ratingHistogram)
-      +(p.reviewSummary?'<div class="amz-summary"><div class="sec-label">Amazon: customers say</div>'
-        +'<div class="section-text">'+esc(String(p.reviewSummary))+"</div></div>":"")
-      +(p.aspects&&p.aspects.length?'<div class="amz-block"><div class="sec-label">What reviews are about</div>'
-        +aspectChips(p.aspects,10)+"</div>":"")
-      +(feats?'<div class="amz-block"><div class="sec-label">From the listing</div><ul class="amz-feats">'+feats+"</ul></div>":"")
-      +gated
-      +(revs?'<div class="amz-block"><div class="sec-label">Reviews collected ('+(p.reviews||[]).length+")</div>"+revs+"</div>":"")
+      +(p.ratingHistogram&&histogramBars(p.ratingHistogram)?block("Star distribution",histogramBars(p.ratingHistogram)):"")
+      +(p.reviewSummary?block(site+": customers say",'<p class="nt-commerce-prose">'+esc(String(p.reviewSummary))+"</p>"):"")
+      +(p.aspects&&p.aspects.length?block("What reviews are about",aspectChips(p.aspects,10)):"")
+      +(feats?block("From the listing",'<ul class="nt-commerce-feats">'+feats+"</ul>"):"")
+      +(p.reviewsGated?'<div class="nt-commerce-pad"><div class="nt-commerce-note amz-note">'+ic("info",14)+"<span>"+esc(site)
+        +" served this session the sign-in gate instead of the review bodies. The rating, the histogram and the aspect counts are "
+        +"still its own and still public — only the individual reviews are withheld.</span></div></div>":"")
+      +(revs.length?'<div class="nt-commerce-revlist"><div class="nt-commerce-block-title nt-commerce-pad">Reviews collected ('+revs.length+")</div>"
+        +revs.map(function(r){return amazonReviewRow(r,false);}).join("")+"</div>":"")
       +"</div>";
   }
 
@@ -4158,61 +4852,64 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function amazonAllReviews(){
     var all=[];
     (amazonState.products||[]).forEach(function(p){
-      (p.reviews||[]).forEach(function(r){all.push(r);});
+      (p.reviews||[]).forEach(function(r){
+        var copy={};for(var k in r)copy[k]=r[k];
+        if(p.brand&&!copy.brand)copy.brand=p.brand;
+        all.push(copy);
+      });
     });
     all.sort(function(a,b){return (Number(a.rating)||5)-(Number(b.rating)||5);});
     var focus=amazonState.focus;
     if(focus){
       var hit=null;
       all.forEach(function(r){if(String(r.id||"")===focus)hit=r;});
-      if(hit){
-        all=[hit].concat(all.filter(function(r){return r!==hit;}));
-      }
+      if(hit)all=[hit].concat(all.filter(function(r){return r!==hit;}));
     }
     var star=amazonState.star;
     var shown=star?all.filter(function(r){return Math.round(Number(r.rating)||0)===star;}):all;
-    var chips=[["",all.length+" all"]].concat([5,4,3,2,1].map(function(s){
-      var n=all.filter(function(r){return Math.round(Number(r.rating)||0)===s;}).length;
-      return [String(s),s+"★ "+n];
-    })).map(function(pair){
-      var on=String(star||"")===pair[0];
-      return '<button type="button" class="msort-btn'+(on?" is-on":"")+'" data-amz-star="'+pair[0]+'">'
-        +esc(pair[1])+"</button>";
+    var chips=[[0,"All",all.length]].concat([5,4,3,2,1].map(function(s){
+      return [s,String(s),all.filter(function(r){return Math.round(Number(r.rating)||0)===s;}).length];
+    })).map(function(c){
+      var on=(star||0)===c[0];
+      return '<button type="button" class="nt-commerce-toggle msort-btn'+(on?" is-on":"")+'" aria-pressed="'+(on?"true":"false")
+        +'" data-amz-star="'+(c[0]||"")+'">'+esc(c[1])+(c[0]?ic("star",11,"",true):"")+"<b>"+c[2]+"</b></button>";
     }).join("");
     var rows=shown.slice(0,120).map(function(r){
-      return amazonReviewRow(r,focus&&String(r.id||"")===focus);
+      return amazonReviewRow(r,!!focus&&String(r.id||"")===focus);
     }).join("");
-    return '<div class="msort">'+chips+"</div>"
-      +(focus?'<div class="amz-note">Showing the review a claim pointed at first. '
-        +'<button type="button" class="ai-btn amz-clear" data-amz-clear="1">Clear</button></div>':"")
-      +(rows||'<div class="empty-state"><div class="icon">📝</div><div class="text">No reviews at that rating</div></div>');
+    return '<div class="nt-commerce-fade"><div class="nt-commerce-filters nt-commerce-pad" role="group" aria-label="Filter by stars">'+chips+"</div>"
+      +(focus?'<div class="nt-commerce-pad"><div class="nt-commerce-note is-row amz-note">'+ic("crosshair",14)
+        +'<span class="nt-grow">Showing the review a claim pointed at first.</span>'
+        +btn("outline","xs","Clear",' data-amz-clear="1"',"amz-clear")+"</div></div>":"")
+      +(rows?'<div class="nt-commerce-revlist">'+rows+"</div>"
+        :'<div class="nt-commerce-pad nt-commerce-pad-b"><p class="nt-empty-line">'
+          +(all.length?"No reviews at that rating":"No review bodies were collected in this scan")+"</p></div>")
+      +"</div>";
   }
 
   /** The category arithmetic, which is the half a reader should not do by hand. */
   function amazonAspects(){
     var roll=amazonState.rollup||{};
-    var rows=(roll.aspects||[]).slice(0,14).map(function(a){
-      var brands=Number(a.brands)||0;
-      var neg=Number(a.negativeBrands)||0;
-      var pos=Number(a.positiveBrands)||0;
-      var tone=neg>pos?"amz-bar-bad":(pos>=brands?"amz-bar-good":"amz-bar-mid");
-      var top=Number((roll.aspects||[])[0]&&(roll.aspects||[])[0].mentions)||1;
+    var list=(roll.aspects||[]).slice(0,14);
+    if(!list.length)return '<div class="nt-commerce-pad nt-commerce-pad-b"><p class="nt-empty-line">No aspect breakdown in this scan</p></div>';
+    var top=Number(list[0].mentions)||1;
+    var rows=list.map(function(a){
+      var brands=Number(a.brands)||0,neg=Number(a.negativeBrands)||0,pos=Number(a.positiveBrands)||0;
+      var tn=neg>pos?"is-bad":(pos>=brands?"is-good":"is-mid");
+      var word=neg>pos?"negative across brands":(pos>=brands?"positive everywhere":"mixed");
       var w=Math.max(3,Math.round((Number(a.mentions)||0)/top*100));
-      return '<div class="amz-arow">'
-        +'<div class="amz-aname">'+esc(a.name||"")
-        +'<span class="amz-abrands">'+brands+" brand"+(brands===1?"":"s")
-        +(neg?" · "+neg+" negative":"")+(pos?" · "+pos+" positive":"")+"</span></div>"
-        +'<div class="amz-atrack"><span class="amz-afill '+tone+'" style="width:'+w+'%"></span></div>'
-        +'<div class="amz-amentions">'+fmtNum(Number(a.mentions)||0)+"</div>"
+      return '<div class="nt-commerce-arow amz-arow">'
+        +'<div class="nt-commerce-aname"><span class="nt-commerce-aname-t">'+esc(a.name||"")+"</span>"
+        +'<span class="nt-commerce-abrands">'+brands+" brand"+(brands===1?"":"s")+(neg?" · "+neg+" negative":"")+(pos?" · "+pos+" positive":"")+"</span></div>"
+        +'<div class="nt-commerce-atrack" title="'+word+'"><span class="nt-commerce-afill '+tn+'" style="width:'+w+'%"></span></div>'
+        +'<div class="nt-commerce-amentions">'+esc(grouped(Number(a.mentions)||0))+"</div>"
         +"</div>";
     }).join("");
-    return rows
-      ?'<div class="amz-block"><div class="sec-label">What the category argues about — every brand, summed</div>'
-        +rows
-        +'<div class="ai-note">Amazon computes these per listing; the counts are summed across the set and the '
-        +"brand column says how many of them carry each aspect. One that is negative across several brands is "
-        +"where a category is not being served.</div></div>"
-      :'<div class="empty-state"><div class="icon">📊</div><div class="text">No aspect breakdown in this scan</div></div>';
+    return '<div class="nt-commerce-fade"><div class="nt-commerce-block-title nt-commerce-pad">What the category argues about — every brand, summed</div>'
+      +'<div class="nt-commerce-arows">'+rows+"</div>"
+      +'<div class="nt-commerce-pad nt-commerce-pad-b"><div class="nt-commerce-note">'+ic("info",14)+"<span>"+esc(marketLabel(amazonState.marketplace))
+      +" computes these per listing; the counts are summed across the set and the brand column says how many of them carry each "
+      +"aspect. One that is negative across several brands is where a category is not being served.</span></div></div></div>";
   }
 
   /** Price, rating and star-mass, stated once for the whole set. */
@@ -4224,56 +4921,47 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(price.min!=null&&price.max!=null){
       var cur=marketCurrency();
       var amt=function(v){return joinPrice(cur,v);};
-      cells.push(["Price", amt(price.min)+" – "+amt(price.max),
-        price.median!=null?("median "+amt(price.median)):""]);
+      cells.push(statTile("Price",amt(price.min)+" – "+amt(price.max),price.median!=null?("median "+amt(price.median)):""));
     }
     if(rating.mean!=null){
-      cells.push(["Rating", String(rating.mean),
-        (rating.min!=null&&rating.max!=null)?(rating.min+" – "+rating.max+" across the set"):""]);
+      cells.push(statTile("Rating",String(rating.mean),(rating.min!=null&&rating.max!=null)?(rating.min+" – "+rating.max+" across the set"):""));
     }
-    if(r.negativeStarShareMean!=null){
-      cells.push(["At 1-2★", r.negativeStarShareMean+"%", "of all ratings, on average"]);
-    }
-    if(r.ratingsRepresented){
-      cells.push(["Ratings behind it", fmtNum(Number(r.ratingsRepresented)),
-        (r.reviewsCollected||0)+" review bodies read"]);
-    }
-    if(!cells.length)return "";
-    return '<div class="amz-strip">'+cells.map(function(c){
-      return '<div class="amz-stat"><div class="amz-stat-k">'+esc(c[0])+"</div>"
-        +'<div class="amz-stat-v">'+esc(c[1])+"</div>"
-        +(c[2]?'<div class="amz-stat-d">'+esc(c[2])+"</div>":"")+"</div>";
-    }).join("")+"</div>";
+    if(r.negativeStarShareMean!=null)cells.push(statTile("At 1-2 stars",r.negativeStarShareMean+"%","of all ratings, on average"));
+    if(r.ratingsRepresented)cells.push(statTile("Ratings behind it",compact(Number(r.ratingsRepresented)),(r.reviewsCollected||0)+" review bodies read"));
+    return cells.length?statStrip(cells).replace('class="nt-commerce-strip"','class="nt-commerce-strip amz-strip"'):"";
   }
 
   /** One finding the model wrote, with the reviews it rests on. */
   function amazonFinding(f,kind){
     var ev=(f.evidence||[]).slice(0,6).map(function(id){
-      var known=/* an id we can actually jump to */ false;
+      var known=false;
       (amazonState.products||[]).forEach(function(p){
         (p.reviews||[]).forEach(function(r){if(String(r.id||"")===String(id))known=true;});
       });
       return known
-        ?'<button type="button" class="amz-ev" data-amz-ev="'+esc(String(id))+'">'+esc(String(id))+"</button>"
-        :'<span class="amz-ev amz-ev-quote">'+esc(String(id).slice(0,120))+"</span>";
+        ?'<button type="button" class="nt-commerce-ev amz-ev" data-amz-ev="'+esc(String(id))+'" title="Read the review this rests on">'
+          +ic("quote",12)+'<span class="nt-mono">'+esc(String(id))+"</span></button>"
+        :'<span class="nt-commerce-ev is-quote amz-ev amz-ev-quote">'+esc(String(id).slice(0,120))+"</span>";
     }).join("");
     var strength=String(f.strength||"");
-    return '<div class="amz-find amz-find-'+kind+'">'
-      +'<div class="amz-find-head"><span class="amz-find-label">'+esc(f.label||"")+"</span>"
-      +(strength?'<span class="chip '+(strength==="strong"?"chip-positive":(strength==="thin"?"chip-negative":"chip-mixed"))
-        +'">'+esc(strength)+" evidence</span>":"")
+    var st=strength==="strong"?["success","check"]:strength==="thin"?["destructive","triangle-alert"]:["warning","minus"];
+    var K={driver:["trend-up","Driver"],barrier:["trend-down","Barrier"],gap:["crosshair","Gap"]}[kind]||["dot",""];
+    return '<div class="nt-commerce-find is-'+kind+" amz-find amz-find-"+kind+'">'
+      +'<div class="nt-commerce-find-head"><span class="nt-commerce-find-kind" title="'+K[1]+'">'+ic(K[0],14)+"</span>"
+      +'<span class="nt-commerce-find-label amz-find-label">'+esc(f.label||"")+"</span>"
+      +(strength?tone(st[0],st[1],esc(strength)+" evidence","chip"):"")
       +"</div>"
-      +(f.detail?'<div class="amz-find-detail">'+esc(f.detail)+"</div>":"")
-      +(ev?'<div class="amz-evrow">'+ev+"</div>":"")
+      +(f.detail?'<div class="nt-commerce-find-detail">'+esc(f.detail)+"</div>":"")
+      +(ev?'<div class="nt-commerce-evrow">'+ev+"</div>":"")
       +"</div>";
   }
 
   function amazonInsightsPane(){
     var ins=amazonState.insights;
     if(!ins)return "";
-    var block=function(title,note,rows){
-      return rows?'<div class="amz-block"><div class="sec-label">'+esc(title)+"</div>"
-        +(note?'<div class="amz-blocknote">'+esc(note)+"</div>":"")+rows+"</div>":"";
+    var block=function(title,icon,note,rows){
+      return rows?'<div class="nt-commerce-block amz-block"><div class="nt-commerce-block-title">'+(icon?ic(icon,14):"")+esc(title)+"</div>"
+        +(note?'<div class="nt-commerce-block-note">'+esc(note)+"</div>":"")+rows+"</div>":"";
     };
     var drivers=(ins.drivers||[]).map(function(f){return amazonFinding(f,"driver");}).join("");
     var barriers=(ins.barriers||[]).map(function(f){return amazonFinding(f,"barrier");}).join("");
@@ -4285,44 +4973,39 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var unknown=(ver&&ver.unknownAsins)||[];
     var strengths=(ins.strengths||[]).map(function(s){
       var off=s.asin&&unknown.indexOf(s.asin)!==-1;
-      return '<div class="amz-strength"><span class="amz-strength-brand">'+esc(s.brand||"")+"</span>"
-        +'<span class="amz-strength-detail">'+esc(s.detail||"")+"</span>"
-        +(off?'<span data-not-in-scan style="margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red,#b42318)">not in the scan</span>':"")
-        +"</div>";
+      return '<div class="nt-commerce-strength"><span class="nt-commerce-strength-brand">'+esc(s.brand||"")+"</span>"
+        +'<span class="nt-commerce-strength-detail">'+esc(s.detail||"")
+        +(off?" "+badge("destructive","not in the scan","",' data-not-in-scan'):"")+"</span></div>";
     }).join("");
     var verBox=ver
-      ?'<div data-verification="'+(verified?"verified":"unverified")+'" style="font-size:12px;padding:8px 10px;margin-bottom:10px;border-radius:8px;border:1px solid var(--border);'
-        +(verified?"":"background:rgba(180,35,24,.06);")+'">'
-        +'<b>'+(verified?"Listings re-read from the scan":"Listings not checked against a scan")+"</b> · "+esc(ver.note||"")+"</div>"
+      ?'<div class="nt-commerce-pad"><div class="nt-commerce-note'+(verified?"":" is-error")+'" data-verification="'+(verified?"verified":"unverified")+'">'
+        +ic(verified?"badge-check":"triangle-alert",14)+"<span><b>"+(verified?"Listings re-read from the scan":"Listings not checked against a scan")+"</b> · "+esc(ver.note||"")+"</span></div></div>"
       :"";
     var angles=(ins.positioning||[]).map(function(a){
-      return '<div class="amz-angle"><div class="amz-angle-claim">'+esc(a.angle||"")+"</div>"
-        +(a.who?'<div class="amz-angle-row"><b>For</b> '+esc(a.who)+"</div>":"")
-        +(a.why?'<div class="amz-angle-row"><b>Because</b> '+esc(a.why)+"</div>":"")
-        +(a.risk?'<div class="amz-angle-row amz-angle-risk"><b>Only if</b> '+esc(a.risk)+"</div>":"")
+      return '<div class="nt-commerce-angle"><div class="nt-commerce-angle-claim">'+esc(a.angle||"")+"</div>"
+        +(a.who?'<div class="nt-commerce-angle-row"><b>For</b>'+esc(a.who)+"</div>":"")
+        +(a.why?'<div class="nt-commerce-angle-row"><b>Because</b>'+esc(a.why)+"</div>":"")
+        +(a.risk?'<div class="nt-commerce-angle-row is-risk"><b>Only if</b>'+esc(a.risk)+"</div>":"")
         +"</div>";
     }).join("");
-    return '<div class="fade-in">'
+    return '<div class="nt-commerce-fade">'
       +verBox
-      +(ins.summary?'<div class="lede-box">'+esc(ins.summary)+"</div>":"")
-      +block("Purchase drivers","What makes someone buy. Click an id to read the review it rests on.",drivers)
-      +block("Purchase barriers","What stops them, or brings it back.",barriers)
-      +block("What the incumbents do well","",strengths)
-      +block("Gaps in the category","Asked for repeatedly, served by nobody in this set.",gaps)
-      +block("Positioning angles","",angles)
-      +'<div class="ai-note">This read is your model’s, from the reviews on this screen — not a nooticr '
-      +"rating of anyone’s product."
-      +(verified||!ver?" Every claim above can be checked against the text it came from.":" The listings were not checked against a scan, so check them before relying on them.")+"</div>"
-      +"</div>";
+      +(ins.summary?'<div class="nt-commerce-pad"><p class="nt-commerce-lede lede-box">'+esc(ins.summary)+"</p></div>":"")
+      +block("Purchase drivers","trend-up","What makes someone buy. Click an id to read the review it rests on.",drivers)
+      +block("Purchase barriers","trend-down","What stops them, or brings it back.",barriers)
+      +block("What the incumbents do well","trophy","",strengths)
+      +block("Gaps in the category","crosshair","Asked for repeatedly, served by nobody in this set.",gaps)
+      +block("Positioning angles","lightbulb","",angles)
+      +'<div class="nt-commerce-pad nt-commerce-pad-b"><div class="nt-commerce-note ai-note">'+ic("info",14)
+      +"<span>This read is your model’s, from the reviews on this screen — not a nooticr rating of anyone’s product."
+      +(verified||!ver?" Every claim above can be checked against the text it came from.":" The listings were not checked against a scan, so check them before relying on them.")
+      +"</span></div></div></div>";
   }
 
   function amazonTabs(){
     var tabs=[["listings","Listings"],["reviews","Reviews"],["aspects","Category"]];
     if(amazonState.insights)tabs.unshift(["insights","The read"]);
-    return '<div class="msort">'+tabs.map(function(t){
-      return '<button type="button" class="msort-btn'+(amazonState.tab===t[0]?" is-on":"")+'" data-amz-tab="'
-        +t[0]+'">'+esc(t[1])+"</button>";
-    }).join("")+"</div>";
+    return '<div class="nt-commerce-tabbar">'+tabsList(tabs,amazonState.tab,"data-amz-tab")+"</div>";
   }
 
   function amazonHeader(){
@@ -4331,56 +5014,67 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var reviews=0;
     (s.products||[]).forEach(function(p){reviews+=(p.reviews||[]).length;});
     var running=s.complete===false;
-    var prog=s.progress||{};
-    var sub=n+" listing"+(n===1?"":"s")+" · "+reviews+" review"+(reviews===1?"":"s")+" read";
-    return '<div class="amz-head">'
-      +'<span class="amz-mark">'+marketplaceMark(s.marketplace,34)+"</span>"
-      +'<div class="amz-head-text">'
-      +'<div class="amz-head-title">'+esc(s.title||"Category scan")+"</div>"
-      +'<div class="amz-head-sub">'+esc(marketDomain(s.domain))+" · "+esc(sub)+"</div>"
+    var prog=s.progress||{},done=Number(prog.done)||0,total=Number(prog.total)||0;
+    var sub=[marketDomain(s.domain)||marketLabel(s.marketplace),plural(n,"listing"),reviews+" review"+(reviews===1?"":"s")+" read"].join(" · ");
+    return '<header class="nt-commerce-head amz-head">'
+      +'<span class="amz-mark">'+marketplaceMark(s.marketplace,36)+"</span>"
+      +'<div class="nt-commerce-head-text">'
+      +'<h3 class="nt-commerce-head-title amz-head-title">'+esc(s.title||"Category scan")+"</h3>"
+      +'<p class="nt-commerce-head-sub amz-head-sub">'+esc(sub)+"</p>"
       +"</div>"
-      +(running
-        ?'<span class="chip chip-mixed amz-running">collecting '+(Number(prog.done)||0)+"/"
-          +(Number(prog.total)||0)+"</span>"
-        :"")
-      +"</div>";
+      +(running?badge("outline",ic("loader-circle",12,"nt-spin")+"Collecting "+done+"/"+total,"nt-commerce-running amz-running"):"")
+      +"</header>"
+      // A scan that is still running says how far it has got, not only that
+      // it is going: "4 of 10" is a thing to wait for, a spinner is not.
+      +(running&&total?'<div class="nt-commerce-pad nt-commerce-progress">'+progressBar(done/total*100,"Listings collected")+"</div>":"");
   }
 
   function renderAmazon(){
     var app=document.getElementById("app");
     if(!app||!amazonState)return;
     var body;
+    var n=(amazonState.products||[]).length;
     if(amazonState.tab==="insights")body=amazonInsightsPane();
     else if(amazonState.tab==="reviews")body=amazonAllReviews();
     else if(amazonState.tab==="aspects")body=amazonAspects();
     else{
+      // A listing opens as its own page within the card, with the way back
+      // at the top: the detail is long, and below the grid it was a scroll
+      // away from the tile that opened it.
       var open=amazonState.open?productOf(amazonState.open):null;
-      var tiles=(amazonState.products||[]).map(amazonTile).join("");
-      body=amazonRollupStrip()
-        +(tiles?'<div class="amz-grid">'+tiles+"</div>"
-          :'<div class="empty-state"><div class="icon">📦</div><div class="text">No listings collected</div></div>')
-        +(open?amazonDetail(open):"");
+      var running=amazonState.complete===false;
+      body=open?amazonDetail(open)
+        :'<div class="nt-commerce-fade">'+amazonRollupStrip()
+          +(n?'<div class="nt-commerce-grid amz-grid nt-commerce-pad nt-commerce-pad-b">'+(amazonState.products||[]).map(amazonTile).join("")+"</div>"
+            :'<div class="nt-commerce-pad nt-commerce-pad-b">'+emptyState("package",running?"Collecting the first listings":"No listings collected",
+              running?"The scan is still running; listings land here as they arrive.":"")+"</div>")
+          +"</div>";
     }
     var errs=(amazonState.errors||[]).length;
-    app.innerHTML='<div class="amz fade-in">'+amazonHeader()+amazonTabs()+body
-      +(errs?'<div class="ai-note">'+errs+" listing"+(errs===1?"":"s")
-        +" could not be collected on this run; a retired ASIN and a block look identical from outside, "
-        +"so the rest of the scan continued.</div>":"")
-      +"</div>";
+    app.innerHTML='<section class="nt-view nt-commerce-scan amz nt-in">'+amazonHeader()+amazonTabs()+body
+      +(errs?'<footer class="nt-view-foot nt-commerce-foot">'+ic("triangle-alert",13)+"<span>"+errs+" listing"+(errs===1?"":"s")
+        +" could not be collected on this run; a retired listing and a block look identical from outside, "
+        +"so the rest of the scan continued.</span></footer>":"")
+      +"</section>";
     setTimeout(reportSize,50);
   }
 
   document.addEventListener("click",function(e){
     if(!amazonState||!e.target.closest)return;
     var tab=e.target.closest("[data-amz-tab]");
-    if(tab){amazonState.tab=tab.getAttribute("data-amz-tab")||"listings";renderAmazon();return;}
+    if(tab){
+      amazonState.tab=tab.getAttribute("data-amz-tab")||"listings";
+      if(amazonState.tab!=="listings")amazonState.open="";
+      renderAmazon();return;}
     var tile=e.target.closest("[data-amz-open]");
     if(tile){
-      var asin=tile.getAttribute("data-amz-open")||"";
-      amazonState.open=amazonState.open===asin?"":asin;
+      amazonState.open=tile.getAttribute("data-amz-open")||"";
       renderAmazon();
+      var sc=document.querySelector(".nt-commerce-scan");
+      if(sc&&sc.scrollIntoView)sc.scrollIntoView({block:"start"});
       return;
     }
+    if(e.target.closest("[data-amz-back]")){amazonState.open="";renderAmazon();return;}
     var star=e.target.closest("[data-amz-star]");
     if(star){
       var v=star.getAttribute("data-amz-star")||"";
@@ -4443,7 +5137,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   function renderView(result){
     var app=document.getElementById("app");if(!app)return;
     var d=extractResult(result);
-    if(!d||typeof d!=="object"){app.innerHTML='<div class="json-block fade-in">'+esc(JSON.stringify(d,null,2))+"</div>";return;}
+    if(!d||typeof d!=="object"){app.innerHTML='<pre class="nt-json json-block nt-in">'+esc(JSON.stringify(d,null,2))+"</pre>";return;}
     // Raw HTML-only result — inject it directly.
     if(d._html){app.innerHTML=d._html;setTimeout(reportSize,50);return;}
 
@@ -4469,30 +5163,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(d.analysis&&(d.post||d.url)){app.innerHTML=analysisCard(d);return;}
     // Post comparison
     if(d.comparison!==undefined&&d.posts&&Array.isArray(d.posts)){
-      var c=d.comparison||{},win=Number(c.winner)||0;
-      var cards=d.posts.map(function(p,i){
-        var isw=win===i+1;
-        return '<div style="padding:10px 12px;border:1px solid '+(isw?"var(--green)":"var(--border)")+';border-radius:10px;margin-bottom:8px">'
-          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:11px;font-weight:700;color:var(--muted)">#'+(i+1)+"</span>"
-          +(isw?'<span style="font-size:10px;font-weight:700;color:var(--green);border:1px solid var(--green);border-radius:4px;padding:0 5px">BEST</span>':"")+"</div>"
-          +'<div style="font-size:13px;line-height:1.4">'+esc((p.title||p.caption||"").slice(0,140))+"</div>"
-          +'<div style="font-size:11.5px;color:var(--muted);margin-top:4px">'+mpIcon("eye",11)+" "+fmtNum(p.views||0)+" · "+mpIcon("heart",11)+" "+fmtNum(p.likes||0)+"</div></div>";
-      }).join("");
-      var diffs=(c.differences||[]).slice(0,5).map(function(x){
-        return '<div style="padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-size:12.5px;font-weight:600">'+esc(x.factor||"")+"</span>"
-          +'<div style="font-size:12.5px;color:var(--muted);margin-top:1px">'+esc(x.detail||"")+"</div></div>";
-      }).join("");
-      var lessons=(c.lessons||[]).length?'<div style="margin-top:14px"><div class="sec-label">Lessons</div><ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted)">'
-        +c.lessons.slice(0,4).map(function(l){return '<li style="margin:4px 0">'+esc(l)+"</li>";}).join("")+"</ul></div>":"";
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="font-size:16px;font-weight:700;margin-bottom:10px">⚖️ Comparing '+d.posts.length+" posts</div>"
-        +cards
-        +(c.winnerReason?'<div style="font-size:13px;margin-top:10px"><b>Why it won:</b> '+esc(c.winnerReason)+"</div>":"")
-        +(diffs?'<div style="margin-top:14px"><div class="sec-label">What differed</div>'+diffs+"</div>":"")
-        +lessons
-        +(c.nextTest?'<div style="margin-top:14px;padding:10px 12px;background:var(--tag);border-radius:10px;font-size:13px"><b>Next test:</b> '+esc(c.nextTest)+"</div>":"")
-        +"</div></div>";
-      return;}
+      app.innerHTML=renderComparison(d);return;}
 
     // Brand monitoring.
     //
@@ -4580,391 +5251,67 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
 
     // Posts gallery
     if(d.posts&&Array.isArray(d.posts)){
-      if(!d.posts.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🔍</div><div class="text">No posts found</div></div>';return;}
-      app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false,true);}).join(""),d.posts.length)+pickBarHtml();initPicks();return;}
-    // Standings: creators on one normalised axis. A table, because the question
-    // is comparative — and every row carries the window it was scored over. A
-    // hit rate whose denominator is invisible cannot be told apart from one
-    // that means something, which is why these numbers were computed per
-    // creator and never put side by side before (issue #30).
+      if(!d.posts.length){app.innerHTML=emptyState("search","No posts found","Try a broader query or another platform.");return;}
+      app.innerHTML=galleryWrap(d.posts.map(function(p){return postCard(p,false,true);}).join(""),d.posts.length,d.posts.length+" posts")+pickBarHtml();initPicks();return;}
+    // Standings: creators on one normalised axis (issue #30).
     if(Array.isArray(d.creators)&&(d.standings||d.tool==="compare_creators"||d.tool==="watchlist_standings")){
-      var thin=Array.isArray(d.tooThin)?d.tooThin:[];
-      var floor=typeof d.thinWindow==="number"?d.thinWindow:8;
-      var above=typeof d.aboveRatio==="number"?d.aboveRatio:1.25;
-      var met=esc(d.metric||"views");
-      var rows=d.creators.map(function(c){
-        var un=c.unavailable;
-        // A window shorter than the floor, or one the model flagged, is drawn
-        // unranked. Bottom of a table is a claim; unranked is the truth.
-        var short=!un&&(thin.indexOf(String(c.handle))>=0||(typeof c.window==="number"&&c.window<floor));
-        var med=c.baseline&&c.baseline.median!=null?fmtNum(c.baseline.median):"-";
-        var hit=c.hitRate!=null?Math.round(c.hitRate*100)+"%":"-";
-        var win=c.medianWinRatio!=null?(Math.round(c.medianWinRatio*100)/100)+"x":"-";
-        var best=c.best&&(c.best.title||c.best.caption)?String(c.best.title||c.best.caption):"";
-        return '<tr style="border-top:1px solid var(--border-soft)'+(un?";opacity:.6":"")+'">'
-          +'<td style="padding:9px 10px;font-weight:600;white-space:nowrap">@'+esc(c.handle)
-          +(c.platform?'<span style="font-weight:400;color:var(--muted)"> · '+esc(c.platform)+"</span>":"")
-          +(short?'<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--warn)">too thin to rank</span>':"")
-          +"</td>"
-          +(un
-            ?'<td colspan="4" style="padding:9px 10px;color:var(--muted);font-size:12.5px">'+esc(String(un))+"</td>"
-            :'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+fmtNum(c.window||0)+"</td>"
-              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+med+"</td>"
-              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+hit+"</td>"
-              +'<td style="padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums">'+win+"</td>")
-          +"</tr>"
-          +(best&&!un
-            ?'<tr><td colspan="5" style="padding:0 10px 9px 10px;color:var(--muted);font-size:12px">best: '+esc(best.slice(0,120))+"</td></tr>"
-            :"");
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="font-size:16px;font-weight:700">Standings</div>'
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">'
-        +d.creators.length+" creator"+(d.creators.length===1?"":"s")+" · each against their OWN median "+met
-        +(d.watching!=null?" · watchlist of "+fmtNum(d.watching):"")+"</div>"
-        +(d.ranking?'<div style="font-size:12.5px;margin:0 0 8px">Ordered on: '+esc(String(d.ranking))+"</div>":"")
-        +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
-        +'<thead><tr style="text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em">'
-        +'<th style="padding:0 10px 6px">Creator</th>'
-        +'<th style="padding:0 10px 6px;text-align:right">Window</th>'
-        +'<th style="padding:0 10px 6px;text-align:right">Their median</th>'
-        +'<th style="padding:0 10px 6px;text-align:right">Beat it</th>'
-        +'<th style="padding:0 10px 6px;text-align:right">By</th>'
-        +"</tr></thead><tbody>"+rows+"</tbody></table></div>"
-        +(d.verdict?'<div style="font-size:13.5px;line-height:1.6;margin-top:12px">'+esc(String(d.verdict))+"</div>":"")
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">'
-        +'"Beat it" is the share of the window at or above '+above+"x that creator's own median. "
-        +"A raw view count mostly measures follower count, so nothing here compares raw numbers. "
-        +"A window under "+floor+" posts is one post either way, and no ratio here says whether a "
-        +"baseline is itself moving — that needs a second point in time."
-        +"</div></div></div>";
-      return;}
+      app.innerHTML=renderStandings(d);return;}
 
     // Creators
     if(Array.isArray(d.suggestions)&&d.seed){app.innerHTML=renderIdentity(d);setTimeout(reportSize,50);return;}
     if(d.creators&&Array.isArray(d.creators)){
-      if(!d.creators.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👤</div><div class="text">No creators found</div></div>';return;}
-      app.innerHTML=galleryWrap(d.creators.map(function(c){return creatorCard(c);}).join(""),d.creators.length);return;}
-    // Transcript
+      if(!d.creators.length){app.innerHTML=emptyState("users","No creators found","Try another niche, platform or follower range.");return;}
+      app.innerHTML=galleryWrap(d.creators.map(function(c){return creatorCard(c);}).join(""),d.creators.length,d.creators.length+" creators");return;}
+    // Transcript. A real transcript string is itself evidence of availability —
+    // generate_captions returns {transcript, cues, ...} with no available flag
+    // at all, and used to render "No transcript available." over real
+    // captions because of it.
     if(d.transcript!==undefined||d.available!==undefined&&d.wordCount!==undefined){
-      // A real transcript string is itself evidence of availability —
-      // generate_captions returns {transcript, cues, ...} with no
-      // available flag at all, and used to render "No transcript
-      // available." over real captions because of it.
-      if(!d.available&&!d.transcript){
-        app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-          +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:6px">'+mpIcon("note",16)+"<span>Transcript</span></div>"
-          +'<div class="muted" style="font-size:13px;color:var(--muted)">'+esc(d.reason||"No transcript available.")+"</div></div></div>";
-        return;}
-      // No regex escape here: this file is one template literal (and the
-      // page is backslash-free by test), so the old whitespace class reached
-      // the browser as the letter s ("I switched to Acme grinders" counted 3
-      // words). Whitespace is spelled out by char code instead.
-      var WS=new RegExp("["+String.fromCharCode(32,9,10,13)+"]+");
-      var wc=d.wordCount||(d.transcript?String(d.transcript).trim().split(WS).filter(Boolean).length:0);
-      var meta=[wc+" words"];
-      if(d.language)meta.push(esc(d.language));
-      if(d.autoGenerated)meta.push("auto-generated");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">'+mpIcon("note",16)+"<span>Transcript</span></div>"
-        +'<button class="btn btn-sm copyable" style="background:var(--tag);color:var(--fg)" data-copy="'+esc(d.transcript||"")+'">Copy</button></div>'
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:3px 0 12px">'+meta.join(" · ")+"</div>"
-        +'<div style="font-size:13.5px;line-height:1.65;white-space:pre-wrap">'+esc(d.transcript||"")+"</div>"
-        +"</div></div>";
-      return;}
+      transcriptState={d:d,view:""};renderTranscript();return;}
 
-    // A run series. Drawn as bars rather than a line: the points are sweeps on
-    // a cadence, not a continuous signal, and a line between two sweeps
-    // asserts the shape of something nobody measured. Both caveats the tool
-    // computes are drawn — a chart that hides "too few points" or "this is
-    // where the record starts, not where the conversation did" is the view
-    // making a claim the tool refused to (issue #28).
-    if(Array.isArray(d.points)&&(d.trend||d.tool==="mention_trend")){
-      var metric=String(d.metric||"found");
-      var pts=d.points.slice().sort(function(a,b){return String(a.ranAt||"")<String(b.ranAt||"")?-1:1;});
-      var vals=pts.map(function(p){var v=p[metric];return typeof v==="number"?v:0;});
-      var top=Math.max.apply(null,vals.concat([1]));
-      var bars=pts.map(function(p,i){
-        var v=vals[i];
-        var h=Math.max(2,Math.round((v/top)*90));
-        var when=String(p.ranAt||"").slice(0,10);
-        var label=when+" — "+fmtNum(v)+" "+metric+(p.reported!=null?" ("+fmtNum(p.reported)+" new)":"");
-        return '<div style="flex:1;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px" title="'+esc(label)+'">'
-          +'<div style="width:100%;max-width:26px;height:'+h+'px;background:var(--brand);border-radius:3px 3px 0 0;opacity:'+(i===pts.length-1?"1":".62")+'"></div>'
-          +"</div>";
-      }).join("");
-      var first=pts.length?String(pts[0].ranAt||"").slice(0,10):"";
-      var last=pts.length?String(pts[pts.length-1].ranAt||"").slice(0,10):"";
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="font-size:16px;font-weight:700">'+(d.term?esc(String(d.term)):"Trend")+"</div>"
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 12px">'
-        +pts.length+" run"+(pts.length===1?"":"s")+" · "+esc(metric)+" per sweep</div>"
-        +(d.tooShort
-          ?'<div style="font-size:12.5px;color:var(--warn);font-weight:600;margin-bottom:8px">Too few points to call a direction</div>'
-          :"")
-        +'<div style="display:flex;align-items:flex-end;gap:2px;height:100px;border-bottom:1px solid var(--border)">'+bars+"</div>"
-        +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px">'
-        +"<span>"+esc(first)+(d.edgeIsRecordStart?" · record starts here":"")+"</span><span>"+esc(last)+"</span></div>"
-        +(d.verdict?'<div style="font-size:13.5px;line-height:1.6;margin-top:12px">'+esc(String(d.verdict))+"</div>":"")
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">'
-        +"Each bar is one sweep, not a day"
-        +(d.edgeIsRecordStart?" — and the earliest bar is where the kept record begins, not where the conversation did":"")
-        +". A flat run of bars is a conversation that has stopped moving, which is not the same as one that has stopped."
-        +"</div></div></div>";
-      return;}
+    // A run series (issue #28).
+    if(Array.isArray(d.points)&&(d.trend||d.tool==="mention_trend")){app.innerHTML=renderTrend(d);return;}
 
-    // Trending hashtags. Two sources with different evidence behind them: the
-    // TikTok trend board, which measures direction over time, and a count
-    // across one niche sweep, which cannot. The header names which, and a
-    // counted row draws no trend arrow — an arrow for a direction nobody
-    // measured is the view asserting something the tool did not.
-    if(d.hashtags&&Array.isArray(d.hashtags)){
-      var derived=d.source==="derived-from-sweep";
-      var where=derived
-        ?esc(String(d.platform||"")||"this network")+" · counted across "+fmtNum(d.sweptPosts||0)+" post"+((d.sweptPosts===1)?"":"s")+(d.niche?' matching "'+esc(d.niche)+'"':"")
-        :"TikTok trend board · "+esc(d.country||"US")+" · last "+(d.days||7)+" days";
-      if(!d.hashtags.length){
-        app.innerHTML='<div class="empty-state fade-in"><div class="icon">#</div><div class="text">'
-          +esc(d.reason||(derived?"No tag was used by more than one post in that sweep":"No trending hashtags found"))
-          +'</div><div class="sub" style="font-size:11.5px;color:var(--muted);margin-top:6px">'+where+"</div></div>";
-        return;}
-      var hr=d.hashtags.slice(0,30).map(function(t){
-        var dir=t.trend==="rising"?["▲","var(--green)"]:t.trend==="cooling"?["▼","var(--red)"]:["▬","var(--muted)"];
-        var stat=fmtNum(t.posts||0)+" post"+((t.posts===1)?"":"s");
-        // A counted sample reports the middle post, because one outlier in a
-        // 30-post sweep moves a total and not a median.
-        if(derived){if(t.medianViews!=null)stat+=" · median "+fmtNum(t.medianViews)+" views";}
-        else if(t.views!=null)stat+=" · "+fmtNum(t.views)+" views";
-        var href=t.url||t.example||"";
-        var open=href?'<a href="'+esc(href)+'" target="_blank" rel="noopener" class="comment-row" style="text-decoration:none">':'<div class="comment-row">';
-        return open
-          +'<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">#'+esc(t.hashtag)+"</div>"
-          +'<div style="font-size:11.5px;color:var(--muted)">'+stat+"</div></div>"
-          +(t.trend?'<span style="font-size:11px;font-weight:700;color:'+dir[1]+';white-space:nowrap">'+dir[0]+" "+esc(t.trend)+"</span>":"")
-          +(href?"</a>":"</div>");
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">#<span>'+(derived?"Tags in this niche":"Trending hashtags")+"</span></div>"
-        +'<div class="faint" style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">'+where+"</div>"
-        +hr
-        // The caveat goes in front of the person too, not only into the
-        // context handed to the model: a ranked list reads as a trend whatever
-        // the payload says, so the sentence saying it is not sits under it.
-        +(derived&&d.note?'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">'+esc(d.note)+"</div>":"")
-        +"</div></div>";
-      return;}
+    // Trending hashtags.
+    if(d.hashtags&&Array.isArray(d.hashtags)){app.innerHTML=renderHashtags(d);return;}
 
     // Comment analysis
-    if(d.report&&(d.commentsAnalyzed!==undefined)){
-      var r=d.report;
-      var col=r.sentiment==="positive"?"var(--green)":r.sentiment==="negative"?"var(--red)":"var(--amber)";
-      var list=function(arr,label){
-        if(!arr||!arr.length)return "";
-        return '<div style="margin-top:14px"><div class="sec-label">'+esc(label)+'</div><ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted)">'
-          +arr.slice(0,6).map(function(x){return '<li style="margin:4px 0">'+esc(x)+"</li>";}).join("")+"</ul></div>";
-      };
-      var th=(r.topThemes||[]).slice(0,5).map(function(t){
-        return '<div style="padding:8px 0;border-bottom:1px solid var(--border-soft,var(--border))">'
-          +'<div style="font-size:13px;font-weight:600">'+esc(t.theme||"")+"</div>"
-          +'<div style="font-size:12.5px;color:var(--muted);margin-top:2px">'+esc(t.summary||"")+"</div></div>";
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:8px">'+mpIcon("comment",16)+"<span>Comment analysis</span></div>"
-        +'<span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:'+col+';border:1px solid '+col+';border-radius:999px;padding:2px 10px">'+esc(r.sentiment||"")+"</span>"
-        +'<div style="font-size:13px;margin-top:8px">'+esc(r.sentimentNote||"")+"</div>"
-        +(th?'<div style="margin-top:14px"><div class="sec-label">Themes</div>'+th+"</div>":"")
-        +list(r.questions,"Questions asked")
-        +list(r.objections,"Objections")
-        +list(r.contentRequests,"Content requests")
-        +list(r.nextVideoIdeas,"Next video ideas")
-        +'<div class="faint" style="font-size:11px;color:var(--muted);margin-top:14px">Based on '+(d.commentsAnalyzed||0)+" comments</div>"
-        +"</div></div>";
-      return;}
+    if(d.report&&(d.commentsAnalyzed!==undefined)){app.innerHTML=renderCommentReport(d);return;}
 
     // Comments
-    if(d.comments&&Array.isArray(d.comments)){
-      // Themes first: on a post with thousands of comments, "what do people
-      // keep saying" is the answer someone actually wants. The raw list is
-      // the evidence underneath it.
-      var themes="";
-      if(d.themes&&d.themes.length){
-        themes='<div style="margin-bottom:14px"><div class="sec-label">What people keep mentioning</div><div>'
-          +d.themes.slice(0,12).map(function(t){
-            return '<span class="theme-chip">'+esc(t.keyword||t)
-              +(t.count?"<b>"+t.count+"</b>":"")+"</span>";
-          }).join("")+"</div></div>";
-      }
-      var ch=d.comments.slice(0,25).map(function(c,i){
-        var user=c.username||c.user||"";
-        var text=c.text||c.comment||"";
-        var likes=c.likes||c.likeCount||0, replies=c.replies||0;
-        var badges="";
-        if(c.pinned)badges+='<span class="cbadge pin">PINNED</span>';
-        if(c.creatorLiked)badges+='<span class="cbadge liked">CREATOR LIKED</span>';
-        var meta=[];
-        if(likes>0)meta.push(mpIcon("heart",11)+" "+fmtNum(likes));
-        if(replies>0)meta.push(mpIcon("comment",11)+" "+fmtNum(replies));
-        if(c.postedAt)meta.push(esc(relTime(c.postedAt)));
-        // Long comments clamp to three lines with an expander rather than
-        // being cut mid-sentence — in a chat there is nowhere else to read it.
-        var longish=text.length>180;
-        return '<div class="comment-row" style="flex-direction:column;align-items:stretch">'
-          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
-          +'<span style="font-size:12px;font-weight:600">@'+esc(user)+"</span>"+badges+"</div>"
-          +'<div class="ctext'+(longish?" clamp":"")+'" data-c="'+i+'">'+esc(text)+"</div>"
-          +(longish?'<button class="cmore" data-more="'+i+'">Show more</button>':"")
-          +(meta.length?'<div class="cmeta">'+meta.join('<span style="opacity:.5">·</span>')+"</div>":"")
-          +"</div>";
-      }).join("");
-      var extra=d.comments.length>25?'<div class="faint" style="text-align:center;font-size:12px;padding-top:10px;color:var(--muted)">Showing 25 of '+d.comments.length+"</div>":"";
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700">'+mpIcon("comment",17)+"<span>Comments ("+d.comments.length+")</span></div>"
-        +(d.summary?'<div class="muted" style="font-size:12.5px;margin:5px 0 14px;color:var(--muted)">'+esc(d.summary)+"</div>":'<div style="height:12px"></div>')
-        +themes+ch+extra+"</div></div>";
-      return;}
+    if(d.comments&&Array.isArray(d.comments)){commentsState={d:d,shown:COMMENTS_PAGE};renderComments();return;}
     // Sounds
-    if(d.sounds&&Array.isArray(d.sounds)){
-      app.innerHTML=galleryWrap(d.sounds.map(function(s,i){
-        var color=pColor(s.platform||"tiktok");
-        var coverSrc=s.coverUrl||s.coverProxyUrl||"";
-        var cover=coverSrc?'<img class="sound-cover" src="'+esc(coverSrc)+'" alt="cover" loading="lazy"/>'
-          :'<div class="sound-cover" style="background:'+color+'15;display:flex;align-items:center;justify-content:center;font-size:26px">🎵</div>';
-        // The raw CDN URL is signed and cross-origin — only the proxied one
-        // actually plays in this sandboxed frame. A bare link never played
-        // anything in-place, which is why sound cards were silent.
-        var play=s.playUrl||s.playProxyUrl||s.url||"";
-        var secs=Number(s.duration)||0;
-        var meta=[s.artist||s.author||"",secs>0?fmtTime(secs):""].filter(Boolean).join(" • ");
-        var player=play
-          ? '<div class="au" data-au="au'+i+'">'
-            +'<button class="au-play" style="background:'+color+'" aria-label="Play sound">'+mpIcon("play",14)+"</button>"
-            +'<div class="au-body"><div class="au-seek"><i></i></div>'
-            +'<div class="au-time"><span class="au-cur">0:00</span><span class="au-dur">'
-            +(secs>0?fmtTime(secs):"--:--")+"</span></div></div>"
-            +'<audio preload="metadata" src="'+esc(play)+'"></audio></div>'
-          : '<div class="au-missing">'+mpIcon("warn",13)+"<span>No preview for this track</span></div>";
-        return '<div class="sound-card"><div style="display:flex;gap:12px;align-items:center">'
-          +cover+'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.title||"")+"</div>"
-          +'<div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(meta)+"</div>"
-          +(s.videoCount?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+fmtNum(s.videoCount)+" videos</div>":"")
-          +"</div></div>"+player+"</div>";
-      }).join(""),d.sounds.length);return;}
+    if(d.sounds&&Array.isArray(d.sounds)){app.innerHTML=renderSounds(d);return;}
     // Run history (list_tool_runs / get_tool_run): where the credits went.
-    // One row per call, the credits it actually took on the right, so the
-    // expensive calls are the ones the eye lands on.
-    if(Array.isArray(d.runs)||(d.run&&d.run.tool)){
-      var runs=Array.isArray(d.runs)?d.runs:[d.run];
-      if(!runs.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🧾</div><div class="text">No runs in this window</div></div>';return;}
-      var runRows=runs.map(function(r){
-        var when=r.startedAt?String(r.startedAt).slice(0,16).split("T").join(" ")+" UTC":"";
-        var secs=Number(r.durationMs)>0?(Number(r.durationMs)/1000).toFixed(1)+"s":"";
-        var meta=[when,secs,r.userId?"user "+String(r.userId).slice(0,8):""].filter(Boolean).join(" • ");
-        var cr=Number(r.credits)||0;
-        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
-          +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:13.5px;font-weight:600">'+(r.ok===false?"⚠️ ":"")+esc(r.tool||"")+"</div>"
-          +'<div style="font-size:11.5px;color:var(--muted)">'+esc(meta)+"</div>"
-          +(r.error?'<div style="font-size:12px;color:var(--muted);margin-top:3px;word-break:break-word">'+esc(String(r.error))+"</div>":"")
-          +"</div>"
-          +'<div style="font-size:14px;font-weight:700;white-space:nowrap">'+(cr?cr+" cr":"free")+"</div></div>";
-      }).join("");
-      var total=d.creditsOnThisPage!=null?'<div class="section-label" style="margin-bottom:6px">'+esc(String(d.creditsOnThisPage))+" credits across "+runs.length+" call"+(runs.length===1?"":"s")+(d.scope==="workspace"?" in the workspace":"")+"</div>":"";
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">🧾 '+(d.run?"Tool run":"Where your credits went")+"</div>"
-        +total+runRows
-        +(d.nextBefore!=null?'<div style="font-size:11.5px;color:var(--muted);margin-top:8px">More runs are older than these.</div>':"")
-        +"</div></div>";return;}
+    if(Array.isArray(d.runs)||(d.run&&d.run.tool)){app.innerHTML=renderRuns(d);return;}
     // Watchlist (list_watchlist): who is being watched, and since when.
-    if(Array.isArray(d.entries)&&d.watching!=null&&!d.posts&&!d.results){
-      if(!d.entries.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">👀</div><div class="text">You are not watching anyone yet</div></div>';return;}
-      var wlRows=d.entries.map(function(e){
-        if(!e)return"";
-        var since=e.lastCaughtUpAt?"caught up "+String(e.lastCaughtUpAt).slice(0,10):"never caught up";
-        var added=e.addedAt?"added "+String(e.addedAt).slice(0,10):"";
-        return '<div style="padding:9px 0;border-bottom:1px solid var(--border)">'
-          +'<div style="font-size:13.5px;font-weight:600">@'+esc(e.handle||"")+' <span style="font-weight:400;color:var(--muted)">'+esc(e.platform||"")+"</span></div>"
-          +'<div style="font-size:11.5px;color:var(--muted)">'+esc([added,since].filter(Boolean).join(" • "))+"</div>"
-          +(e.note?'<div style="font-size:12px;margin-top:3px">'+esc(String(e.note))+"</div>":"")
-          +"</div>";
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">👀 Watching '+esc(String(d.watching))+"</div>"
-        +wlRows+"</div></div>";return;}
+    if(Array.isArray(d.entries)&&d.watching!=null&&!d.posts&&!d.results){app.innerHTML=renderWatchlist(d);return;}
     // Credits
     if(d.gettingStarted===true){app.innerHTML=renderGettingStarted(d);setTimeout(reportSize,50);return;}
     if(d.connector==="google_analytics"||d.connector==="search_console"||d.connector==="posthog"){app.innerHTML=renderConnector(d);setTimeout(reportSize,50);return;}
     if(d.report===true&&d.totals){app.innerHTML=renderUsageReport(d);setTimeout(reportSize,50);return;}
-    if(d.balance!=null||d.tier){
-      var bal=Number(d.balance)||0,tier=d.tier||"",ff=d.firstFreeTools||[];
-      var freeHtml="";
-      if(ff.length){var tags=ff.map(function(t){return'<span class="free-tag">✨ '+esc(t)+" free</span>";}).join("");
-        freeHtml='<div style="margin-top:12px"><div class="section-label" style="margin-bottom:6px">Free first uses remaining</div><div style="display:flex;flex-wrap:wrap;gap:4px">'+tags+"</div></div>";}
-      app.innerHTML='<div class="credits-card fade-in">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
-        +'<div style="font-size:16px;font-weight:700">💰 Your Credits</div>'
-        +(tier?'<span class="tier-badge">'+esc(tier)+"</span>":"")+"</div>"
-        +'<div style="font-size:36px;font-weight:800;margin:10px 0;letter-spacing:-1px">'+bal+"</div>"
-        +'<div style="font-size:13px;color:var(--muted)">credits remaining</div>'+freeHtml+"</div>";return;}
-    // Hooks (show_hooks) — quote() gives each one its own Copy button.
-    if(d.hooks&&Array.isArray(d.hooks)){
-      if(!d.hooks.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">💬</div><div class="text">No hooks yet</div></div>';return;}
-      var hooksHtml=d.hooks.map(function(h){
-        var meta=(h.mechanism?chip(h.mechanism,"note"):"")+(h.why?'<div class="section-text" style="margin-top:2px">'+esc(h.why)+"</div>":"");
-        return quote(h.hook||"")+(meta?'<div style="margin:-4px 0 10px">'+meta+"</div>":"");
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:4px">'+mpIcon("note",16)+"<span>Hooks</span></div>"
-        +(d.topic?'<div class="faint" style="font-size:11.5px;color:var(--muted);margin-bottom:10px">'+esc(d.topic)+"</div>":"")
-        +hooksHtml+"</div></div>";return;}
-
+    if(d.balance!=null||d.tier){app.innerHTML=renderCredits(d);return;}
+    // Hooks (show_hooks) — each one its own quote with its own Copy.
+    if(d.hooks&&Array.isArray(d.hooks)){app.innerHTML=renderHooks(d);return;}
     // Variants (show_variants)
-    if(d.variants&&Array.isArray(d.variants)){
-      if(!d.variants.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">🎬</div><div class="text">No variants yet</div></div>';return;}
-      var srcCard=(d.post&&(d.post.externalUrl||d.post.platform))?postCard(d.post,true,false,true)+'<div style="height:10px"></div>':"";
-      var variantsHtml=d.variants.map(function(v,i){
-        var beats=(v.beats&&v.beats.length)?bullets(v.beats,8):"";
-        var body=(v.hook?quote(v.hook):"")
-          +(v.angle?'<div class="section-text"><b>Angle:</b> '+esc(v.angle)+"</div>":"")
-          +beats
-          +(v.cta?'<div class="section-text"><b>CTA:</b> '+esc(v.cta)+"</div>":"")
-          +(v.whyItCouldWork?'<div class="section-text" style="color:var(--muted)">'+esc(v.whyItCouldWork)+"</div>":"");
-        return section((i+1)+". "+esc(v.title||"Variant"),body,i===0);
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:10px">'+mpIcon("share",16)+"<span>Variants</span></div>"
-        +srcCard+variantsHtml+"</div></div>";return;}
-
-    // Repurposed copy (show_repurposed_post) — expandable() clamps long
-    // rewrites instead of dumping a whole thread/description onto the
-    // screen at once; the copyable button matches analysisCard's own
-    // "Copy transcript" pattern above rather than inventing a third one.
-    if(d.versions&&Array.isArray(d.versions)){
-      if(!d.versions.length){app.innerHTML='<div class="empty-state fade-in"><div class="icon">✍️</div><div class="text">Nothing repurposed yet</div></div>';return;}
-      var versionsHtml=d.versions.map(function(v,i){
-        return section(esc(v.surface||"Version "+(i+1)),
-          expandable(v.content||"")+'<button class="tag copyable" style="margin-top:8px" data-copy="'+esc(v.content||"")+'">Copy</button>',
-          i===0);
-      }).join("");
-      app.innerHTML='<div class="card card-wide fade-in"><div class="card-body">'
-        +'<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;margin-bottom:10px">'+mpIcon("share",16)+"<span>Repurposed</span></div>"
-        +versionsHtml+"</div></div>";return;}
+    if(d.variants&&Array.isArray(d.variants)){app.innerHTML=renderVariants(d);return;}
+    // Repurposed copy (show_repurposed_post)
+    if(d.versions&&Array.isArray(d.versions)){app.innerHTML=renderVersions(d);return;}
 
     // Single post
-    if(d.post||d.platform){app.innerHTML=postCard(d.post||d,true);return;}
+    if(d.post||d.platform){app.innerHTML='<div class="nt-feeds-gallery nt-in"><div class="nt-feeds-single">'+postCard(d.post||d,true)+"</div></div>";return;}
     // Fallback. The guidance field is prose written for the model, not data —
     // dumped into the JSON block it reads as a wall of escaped text, and it is
     // the longest string in most payloads. Drawn above the block and dropped
-    // from it. This is also what finally gives score_draft a view worth
-    // looking at: its rubric IS its answer, and the card used to show the
-    // echoed draft and a credit cost with the rubric nowhere on screen.
+    // from it. This is also what gives score_draft a view worth looking at:
+    // its rubric IS its answer.
     var rest=d,lead="";
     if(d&&typeof d==="object"&&typeof d.guidance==="string"){
-      lead='<div class="fade-in" style="white-space:pre-wrap;line-height:1.5;margin-bottom:12px">'+esc(d.guidance)+"</div>";
+      lead='<p class="nt-feeds-prose nt-view-guidance">'+esc(d.guidance)+"</p>";
       rest={};for(var gk in d){if(gk!=="guidance")rest[gk]=d[gk];}
     }
-    app.innerHTML=lead+'<div class="json-block fade-in">'+esc(JSON.stringify(rest,null,2))+"</div>";
+    app.innerHTML=viewShell({icon:"file-text",title:"Result",cls:"nt-view-json",
+      body:lead+'<pre class="nt-json json-block">'+esc(JSON.stringify(rest,null,2))+"</pre>"});
     setTimeout(reportSize,50);
   }
 
@@ -4978,28 +5325,63 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // Global helpers
   window.copyText=copyText;
   document.addEventListener('click',function(e){
-    var btn=e.target.closest('.copy-btn[data-copy]');
-    if(btn)copyText(btn.getAttribute('data-copy'));
+    var b=e.target.closest&&e.target.closest('.copy-btn[data-copy]');
+    if(!b)return;
+    copyText(b.getAttribute('data-copy'));
+    // An icon-only copy turns its icon to a tick; a worded one says so.
+    var svg=b.querySelector("svg");
+    if(svg){
+      svg.outerHTML=ic("check",14);
+      b.setAttribute("aria-label","Copied");
+      setTimeout(function(){var now=b.querySelector("svg");if(now)now.outerHTML=ic("copy",14);b.setAttribute("aria-label","Copy quote");},1400);
+    }else{
+      b.textContent="Copied";
+      setTimeout(function(){b.textContent="Copy";},1400);
+    }
   });
   // Analysis prose expanders and copy chips.
   document.addEventListener("click",function(e){
     if(!e.target.closest)return;
     var x=e.target.closest(".cmore[data-xmore]");
     if(x){
-      var t=document.querySelector('.section-text[data-x="'+x.getAttribute("data-xmore")+'"]');
+      var t=document.querySelector('[data-x="'+x.getAttribute("data-xmore")+'"]');
       if(t){
         var clamped=t.classList.toggle("clamp6");
+        t.classList.toggle("is-clamp6",clamped);
         x.textContent=clamped?"Show more":"Show less";
+        x.setAttribute("aria-expanded",clamped?"false":"true");
         setTimeout(reportSize,60);
       }
       return;
     }
+    // The label stays; the icon turns to a tick for a moment, which is the
+    // design system's copy feedback and says "copied" without moving the row.
     var c=e.target.closest(".copyable[data-copy]");
     if(c){
       copyText(c.getAttribute("data-copy"));
-      var label=c.textContent;
-      c.textContent="Copied";
-      setTimeout(function(){c.textContent=label;},1200);
+      var svg=c.querySelector("svg");
+      var was=svg?svg.outerHTML:"";
+      if(svg)svg.outerHTML=ic("check",12);
+      else c.insertAdjacentHTML("afterbegin",ic("check",12));
+      c.classList.add("is-copied");
+      setTimeout(function(){
+        var now=c.querySelector("svg");
+        if(now){if(was)now.outerHTML=was;else now.remove();}
+        c.classList.remove("is-copied");
+      },1200);
+      return;
+    }
+    // Accordion rows.
+    var h=e.target.closest(".nt-section-header");
+    if(h){
+      var open=h.getAttribute("aria-expanded")!=="true";
+      h.setAttribute("aria-expanded",open?"true":"false");
+      h.classList.toggle("open",open);
+      var chev=h.querySelector(".nt-chevron");
+      if(chev)chev.classList.toggle("is-open",open);
+      var content=h.nextElementSibling;
+      if(content){content.hidden=!open;content.classList.toggle("open",open);}
+      setTimeout(reportSize,60);
     }
   });
 
@@ -5007,17 +5389,14 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   document.addEventListener("click",function(e){
     var b=e.target.closest&&e.target.closest(".cmore[data-more]");
     if(!b)return;
-    var t=document.querySelector('.ctext[data-c="'+b.getAttribute("data-more")+'"]');
+    var t=document.querySelector('[data-c="'+b.getAttribute("data-more")+'"]');
     if(!t)return;
     var open=t.classList.toggle("clamp");
+    t.classList.toggle("is-clamp3",open);
     b.textContent=open?"Show more":"Show less";
+    b.setAttribute("aria-expanded",open?"false":"true");
     setTimeout(reportSize,60);
   });
-  window.toggleSection=function(header){
-    header.classList.toggle("open");
-    var content=header.nextElementSibling;
-    if(content)content.classList.toggle("open");
-  };
 })();
 </script>
 </body>

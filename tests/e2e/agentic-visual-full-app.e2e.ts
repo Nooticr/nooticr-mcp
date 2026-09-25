@@ -241,7 +241,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     await page.waitForTimeout(200);
     const sent = await sentMessages(page);
     expect(sent.find((m) => m.method === "tools/call"), "should not send analyze_comments a call it will reject").toBeUndefined();
-    await expect(page.locator("#pickgo")).toContainText(/one post/i);
+    await expect(page.locator("#pickhint")).toContainText(/one post/i);
   });
 
   test("show_comment_review renders the free, no-fetch review variant of the Monitor view", async ({
@@ -322,10 +322,9 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     await page.screenshot({ path: "test-results/visual-e2e/full-app-07-transcript.png" });
     await expect(page.getByText(structured.transcript!)).toBeVisible();
 
-    // FIXED (was a bug): this button carried class="btn btn-sm" with a
-    // data-copy attribute, but neither of the file's two copy-click
-    // handlers (.copy-btn[data-copy], .copyable[data-copy]) matched it, so
-    // clicking did nothing at all. It now also carries .copyable.
+    // FIXED (was a bug): this button once carried a data-copy attribute no
+    // copy handler matched, so clicking did nothing at all. It now carries
+    // data-tcopy — what is on screen, timed or plain — and its own handler.
     await page.evaluate(() => {
       (window as unknown as { __copied: string[] }).__copied = [];
       Object.defineProperty(navigator, "clipboard", {
@@ -333,14 +332,14 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
         configurable: true,
       });
     });
-    await page.locator("button[data-copy]").click();
+    await page.locator("button[data-tcopy]").click();
     const copied = await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied);
     expect(copied).toEqual([structured.transcript]);
-    await expect(page.locator("button[data-copy]")).toHaveText("Copied");
+    await expect(page.locator("button[data-tcopy]")).toHaveText("Copied");
 
     // Copying is purely local — it should never also post a message to the host.
     await clearSentMessages(page);
-    await page.locator("button[data-copy]").click();
+    await page.locator("button[data-tcopy]").click();
     await page.waitForTimeout(200);
     const sent = await sentMessages(page);
     expect(sent.length, `Copy button unexpectedly sent a message: ${JSON.stringify(sent)}`).toBe(0);
@@ -439,7 +438,8 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     expect(result.isError).not.toBe(true);
     await renderRealResult(page, result.structuredContent);
     await page.screenshot({ path: "test-results/visual-e2e/full-app-15-show-comparison.png" });
-    await expect(page.getByText("BEST")).toBeVisible();
+    // The winner row carries the badge; the card's description says which.
+    await expect(page.locator(".nt-feeds-cmp-row.is-win").getByText("Best", { exact: true })).toBeVisible();
     await expect(page.getByText("Name the audience early.")).toBeVisible();
     await expect(page.getByText(/Try naming the audience/)).toBeVisible();
   });

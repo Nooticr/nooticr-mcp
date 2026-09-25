@@ -363,7 +363,7 @@ for (const scheme of ["dark", "light"] as const) {
     // dark card the badge was effectively invisible.
     await renderTemplate(page, { posts: THUMB_POSTS });
     const badge = await page.evaluate(() => {
-      const el = document.querySelector(".badge") as HTMLElement | null;
+      const el = document.querySelector(".nt-feeds-plat") as HTMLElement | null;
       if (!el) return null;
       let bg = "rgba(0, 0, 0, 0)";
       let n: HTMLElement | null = el;
@@ -1152,18 +1152,16 @@ test.describe("brand monitoring", () => {
 
   test("a row reads as a person saying something", async ({ page }) => {
     await renderTemplate(page, MENTIONS);
-    // Who, then what they said, then what it earned — the order a feed of
-    // strangers has to be read in.
-    const order = await page.locator(".mention-body").first()
-      .evaluate((el) => [...el.children].map((c) => c.className));
-    expect(order).toEqual(["mention-head", "mention-text", "mention-meta"]);
-    const [head, comment, meta] = await page.locator(".mention").first().evaluate((el) => [
-      el.querySelector(".mention-head")!.getBoundingClientRect().top,
+    // What they said first, then who said it and what it earned under it —
+    // the comment is what is being read; the handle matters once it has
+    // caught the eye.
+    const [comment, meta, whoInMeta] = await page.locator(".mention").first().evaluate((el) => [
       el.querySelector(".mention-text")!.getBoundingClientRect().top,
       el.querySelector(".mention-meta")!.getBoundingClientRect().top,
+      !!el.querySelector(".mention-meta .mention-who"),
     ]);
-    expect(head).toBeLessThan(comment);
-    expect(comment).toBeLessThan(meta);
+    expect(comment).toBeLessThan(meta as number);
+    expect(whoInMeta).toBe(true);
     // The handle appears once. It used to print on both lines, because these
     // platforms hand back one identity string and the layout asked for two.
     const row = await page.locator(".mention").first().innerText();
@@ -1244,7 +1242,7 @@ test.describe("brand monitoring", () => {
     // Without this, a comment under a 25K thread and one under a dead post are
     // indistinguishable, which is the judgement the screen exists to support.
     expect(await text(page, ".mgroup-reach")).toEqual([
-      "25.0K likes · 1.9K comments",
+      "25k likes · 1.9k comments",
       "530 likes · 186 comments",
       "1.2M views · 40 likes",
     ]);
@@ -1297,13 +1295,14 @@ test.describe("brand monitoring", () => {
     await renderTemplate(page, MENTIONS);
     await page.locator("[data-group-all]").first().click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
-    await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    await expect(page.locator("#pickn")).toHaveText("2");
+    await expect(page.locator("#pickhint")).toHaveText("from 1 post");
     // Narrowing the view is not unpicking: reddit still holds both.
     await page.locator('.mchip[data-filter="reddit"]').click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
     await page.locator('.mchip[data-filter="tiktok"]').click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(0);
-    await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    await expect(page.locator("#pickn")).toHaveText("2");
     await page.locator('.mchip[data-filter=""]').click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
   });
@@ -1365,7 +1364,10 @@ test.describe("brand monitoring", () => {
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
     expect(called, "should not have sent analyze_comments a call it will reject").toHaveLength(0);
-    await expect(page.locator("#pickgo")).toContainText(/one post/i);
+    // The bar says why in its hint, where the eye already is; the button keeps
+    // its label, because one that renames itself reads as a different action.
+    await expect(page.locator("#pickhint")).toContainText(/one post/i);
+    await expect(page.locator("#pickgo")).toContainText("Analyse these");
   });
 
   test("pages from the offset the tool handed back, and only unfiltered", async ({ page }) => {
@@ -1450,7 +1452,8 @@ test.describe("brand monitoring", () => {
     // "All" means all seven, not the four that happen to be rendered — the
     // whole point of collapsing is that it changes the view, not the data.
     await page.locator("[data-group-all]").click();
-    await expect(page.locator("#pickhint")).toHaveText("7 comments selected");
+    await expect(page.locator("#pickn")).toHaveText("7");
+    await expect(page.locator("#pickhint")).toHaveText("from 1 post");
     await expect(page.locator("[data-group-all]")).toHaveText("Clear these");
     await page.locator("#pickgo").click();
     await page.waitForTimeout(400);
@@ -1537,8 +1540,8 @@ test.describe("brand monitoring", () => {
       await renderTemplate(page, REVIEW);
       await expect(page.locator(".mention")).toHaveCount(4);
       const chips = await page.locator(".mention").first().locator(".chip").allInnerTexts();
-      // CSS capitalises them, which is what a reader sees.
-      expect(chips).toEqual(["Negative", "Bug Report"]);
+      // Sentence case, as the model wrote them, with the underscore dropped.
+      expect(chips).toEqual(["negative", "bug report"]);
       // Sentiment earns colour because a model read the words; category is a
       // bucket, not a judgement, so it stays neutral.
       await expect(page.locator(".chip-negative").first()).toBeVisible();
@@ -1586,7 +1589,8 @@ test.describe("brand monitoring", () => {
       // have to be selectable as a set.
       await page.locator('.mchip[data-filter="bug_report"]').click();
       await page.locator("[data-group-all]").click();
-      await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+      await expect(page.locator("#pickn")).toHaveText("2");
+      await expect(page.locator("#pickhint")).toHaveText("from 1 post");
     });
   });
 });
@@ -1654,7 +1658,7 @@ test.describe("collab shortlist", () => {
     expect(body).toContain("84");
     // The attribution has to travel with the number, everywhere it appears.
     expect(body).toContain("Scored by the assistant");
-    expect(body).toContain("approach");
+    expect(body).toContain("Approach");
   });
 
   test("marks a score reached without opening anything", async ({ page }) => {
@@ -1808,11 +1812,11 @@ test.describe("brand sweep shows the post, not just its comments", () => {
     await expect(poster).toHaveCount(1);
     await expect(poster).toHaveClass(/is-playable/);
     await expect(page.locator(".mgroup-media-img")).toHaveCount(1);
-    // Full-bleed band rather than a collapsed inline button — the bug the
-    // first attempt shipped, because the rule lived in the generated CSS
-    // blob that `npm run build` regenerates rather than in input.css.
+    // A 56×72 poster beside the post's title, as the design draws it — not
+    // a collapsed zero-height button, the bug the first attempt shipped.
     const box = await poster.boundingBox();
-    expect(box!.height).toBeGreaterThan(100);
+    expect(Math.round(box!.width)).toBe(56);
+    expect(Math.round(box!.height)).toBe(72);
   });
 
   test("clicking the poster swaps in the real player", async ({ page }) => {
@@ -1895,10 +1899,10 @@ test.describe("standings", () => {
 
   test("draws each creator's own median, not a shared scale", async ({ page }) => {
     await renderTemplate(page, ROWS);
-    const body = page.locator(".card-body");
-    await expect(body).toContainText("each against their OWN median views");
-    await expect(body).toContainText("41.0K");
-    await expect(body).toContainText("380.0K");
+    const body = page.locator(".nt-view");
+    await expect(body).toContainText("each against their own median views");
+    await expect(body).toContainText("41k");
+    await expect(body).toContainText("380k");
   });
 
   test("every row carries the window it was scored over", async ({ page }) => {
@@ -1912,14 +1916,14 @@ test.describe("standings", () => {
   test("a window too short to rank is badged, not placed", async ({ page }) => {
     await renderTemplate(page, ROWS);
     const brief = page.locator("tbody tr", { hasText: "@brief" }).first();
-    await expect(brief).toContainText("too thin to rank");
+    await expect(brief).toContainText("Too thin to rank");
     // ...and a long enough one is not badged.
-    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).not.toContainText("too thin");
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).not.toContainText("Too thin");
   });
 
   test("the model's own tooThin list badges a row the window alone would not", async ({ page }) => {
     await renderTemplate(page, { ...ROWS, tooThin: ["large"] });
-    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).toContainText("too thin to rank");
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).toContainText("Too thin to rank");
   });
 
   test("a creator who could not be fetched shows the reason, not a zero", async ({ page }) => {
@@ -1932,12 +1936,12 @@ test.describe("standings", () => {
 
   test("it says which axis the order is on, since the two disagree", async ({ page }) => {
     await renderTemplate(page, ROWS);
-    await expect(page.locator(".card-body")).toContainText("Ordered on: how hard they beat");
+    await expect(page.locator(".nt-view")).toContainText("Ordered on: how hard they beat");
   });
 
   test("the caveats reach the person, not only the model", async ({ page }) => {
     await renderTemplate(page, ROWS);
-    const body = page.locator(".card-body");
+    const body = page.locator(".nt-view");
     await expect(body).toContainText("mostly measures follower count");
     await expect(body).toContainText("A window under 8 posts is one post either way");
     await expect(body).toContainText("second point in time");
@@ -1950,13 +1954,13 @@ test.describe("standings", () => {
       standings: true, metric: "likes",
       creators: [{ handle: "solo", platform: "tiktok", window: 10, baseline: { median: 5 }, hitRate: 0.1, medianWinRatio: 2 }],
     });
-    await expect(page.locator(".card-body")).toContainText("Standings");
-    await expect(page.locator(".card-body")).toContainText("median likes");
+    await expect(page.locator(".nt-view")).toContainText("Standings");
+    await expect(page.locator(".nt-view")).toContainText("median likes");
   });
 
   test("a watchlist run says how many it is watching", async ({ page }) => {
     await renderTemplate(page, { ...ROWS, tool: "watchlist_standings", watching: 4 });
-    await expect(page.locator(".card-body")).toContainText("watchlist of 4");
+    await expect(page.locator(".nt-view")).toContainText("watchlist of 4");
   });
 });
 
@@ -1977,7 +1981,9 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
     source: "derived-from-sweep", platform: "reddit", niche: "skincare", sweptPosts: 24,
     note: "Counted across 24 recent reddit posts. This is a sample of one search, not a trend board.",
     hashtags: [
-      { hashtag: "skincare", posts: 9, views: 41000, medianViews: 3800, example: "https://r.test/1" },
+      // A trend field on a counted row is not a measurement; the view must
+      // not turn it into an arrow.
+      { hashtag: "skincare", posts: 9, views: 41000, medianViews: 3800, example: "https://r.test/1", trend: "rising" },
       { hashtag: "护肤", posts: 4, views: 12000, medianViews: 2900, example: "https://r.test/2" },
       { hashtag: "retinol", posts: 2, views: null, medianViews: null, example: null },
     ],
@@ -1985,31 +1991,34 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
 
   test("the trend board keeps its arrows and says which board it is", async ({ page }) => {
     await renderTemplate(page, BOARD);
-    await expect(page.locator(".card-body")).toContainText("TikTok trend board · GB · last 30 days");
-    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
-    expect(chips).toEqual(["▲ rising", "▬ steady"]);
+    await expect(page.locator(".nt-view")).toContainText("TikTok trend board · GB · last 30 days");
+    // A measured direction, as a word with its icon and tone — never colour
+    // or an arrow alone.
+    const chips = await page.$$eval(".nt-signals-trendtag", (n) =>
+      n.map((x) => [x.textContent ?? "", x.className.includes("is-success") ? "up" : x.className.includes("is-destructive") ? "down" : "flat", !!x.querySelector("svg")]));
+    expect(chips).toEqual([["rising", "up", true], ["steady", "flat", true]]);
   });
 
   test("a counted sweep names its own network, never TikTok", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    const body = page.locator(".card-body");
-    await expect(body).toContainText("reddit · counted across 24 posts");
-    await expect(body).toContainText('matching "skincare"');
+    const body = page.locator(".nt-view");
+    await expect(body).toContainText("Reddit · counted across 24 posts");
+    await expect(body).toContainText("matching “skincare”");
     await expect(body).not.toContainText("TikTok");
   });
 
   test("a counted sweep draws no trend arrow, because nothing measured one", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
-    expect(chips, "a steady chip asserts a direction the tool did not measure").toEqual([]);
+    // DERIVED carries a trend field on one row; a counted row still draws none.
+    await expect(page.locator(".nt-signals-trendtag"), "a direction chip asserts a direction the tool did not measure").toHaveCount(0);
   });
 
   test("it draws the median the tool computed, and the caveat under it", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    const body = page.locator(".card-body");
+    const body = page.locator(".nt-view");
     // The median, not the total: one outlier in a 30-post sweep moves a total.
-    await expect(body).toContainText("median 3.8K views");
-    await expect(body).not.toContainText("41.0K views");
+    await expect(body).toContainText("median 3.8k views");
+    await expect(body).not.toContainText("41k views");
     // A row the network reports no views for still renders, with just a count.
     await expect(body).toContainText("2 posts");
     // The caveat reaches the person, not only the model's context.
@@ -2018,7 +2027,7 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
 
   test("a non-Latin tag survives to the screen", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    await expect(page.locator(".card-body")).toContainText("#护肤");
+    await expect(page.locator(".nt-view")).toContainText("#护肤");
   });
 
   test("a row links the example post the tool supplied", async ({ page }) => {
@@ -2461,7 +2470,7 @@ test("identity suggestions draw as suggestions, with their evidence and no /100"
   await expect(card).toContainText("lena.example");
   await expect(card).toContainText("on this account alone");
   await expect(page.locator("body")).not.toContainText("/100");
-  await expect(page.locator("body")).toContainText("xiaohongshu could not be searched");
+  await expect(page.locator("body")).toContainText("Xiaohongshu could not be searched");
 });
 
 // nooticr_getting_started (#96). It carries a balance, so it must not fall
@@ -2482,7 +2491,7 @@ test("getting started draws its own view, with unknowns as unknown", async ({ pa
   await expect(page.locator("body")).toContainText("Where your nooticr account stands");
   await expect(page.locator("body")).toContainText("could not read");
   await expect(page.locator("[data-next-step]").first()).toContainText("1 cr");
-  await expect(page.locator("[data-next-step]").nth(1)).toContainText("free");
+  await expect(page.locator("[data-next-step]").nth(1)).toContainText("Free");
 });
 
 // #104: a connector read leads with when it was synced, and a never-synced
