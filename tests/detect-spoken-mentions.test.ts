@@ -110,3 +110,23 @@ describe("the transcript view's word count", () => {
     expect("I switched to Acme\tgrinders\nlast year".split(WS)).toHaveLength(7);
   });
 });
+
+describe("get_post_transcript names the post its words came from", () => {
+  // The transcript view deep-links a YouTube timecode to that moment, which
+  // needs the post's URL; the backend's result carries the words, not it.
+  it("echoes the url it was asked about", async () => {
+    const { client } = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "hello", cues: [{ startMs: 0, offset: 0 }] }),
+    });
+    const res = await client.callTool({ name: "get_post_transcript", arguments: { url: URL } });
+    expect((res.structuredContent as Row).url).toBe(URL);
+  });
+
+  it("leaves a url the backend already sent alone", async () => {
+    const { client } = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "hello", url: "https://canonical.example/1" }),
+    });
+    const res = await client.callTool({ name: "get_post_transcript", arguments: { url: URL } });
+    expect((res.structuredContent as Row).url).toBe("https://canonical.example/1");
+  });
+});
