@@ -1,21 +1,20 @@
 #!/usr/bin/env node
 /**
- * Build the MCP Apps UI stylesheet with Tailwind, and inline both it and the
- * marketplace brand marks, into src/shared/ui-template.ts.
+ * Build the MCP Apps UI stylesheet with Tailwind, and inline it, the Geist
+ * font and the marketplace brand marks into src/shared/ui-template.ts.
  *
  * The served view must stay a single self-contained file (no external
  * requests — the Claude/ChatGPT iframes are sandboxed), and
  * tests/ui-resource.test.ts pins "no backslashes at all" in the resolved
  * template (dual-host TS/Rust safety). So this script FAILS the build if the
- * compiled CSS contains a backslash (escaped selectors from responsive /
- * arbitrary-value utilities) or a remote URL.
+ * compiled CSS contains a backslash or a remote URL.
  *
- * Only simple integer-scale utilities (no `:` variants, no `/` opacity
- * modifiers, no arbitrary values, no dotted fractional spacing) may be used
- * in scanned markup — all of those emit backslash-escaped selectors. Dark mode is
- * handled by flipping :root vars in a prefers-color-scheme block, never by
- * dark:. Arbitrary values and dotted utilities are fine inside @apply in
- * input.css — they inline declarations without emitting selectors.
+ * The stylesheet is the Nooticr design system's (src/shared/ui/design.css and
+ * friends, see input.css): plain classes, with Tailwind contributing only its
+ * preflight. No utilities are generated, so nothing in the template's markup
+ * is scanned into CSS — which is also what keeps stray words in comments from
+ * turning into backslash-escaped selectors. A selector the minifier has to
+ * escape (an attribute value with a space in it, say) still fails the build.
  *
  * The marketplace marks are inlined from assets/brand/marketplaces/*.svg for
  * the same reason the CSS is: the view is one self-contained file and a remote
@@ -36,6 +35,7 @@ const root = join(here, "..");
 const INPUT = join(root, "src", "shared", "ui", "input.css");
 const TARGET = join(root, "src", "shared", "ui-template.ts");
 const LOGOS = join(root, "assets", "brand", "marketplaces");
+const FONT = join(root, "assets", "fonts", "Geist-Variable.woff2");
 
 const tmp = mkdtempSync(join(tmpdir(), "nooticr-ui-"));
 const out = join(tmp, "compiled.css");
@@ -65,6 +65,19 @@ if (remote) {
   console.error("build-ui: compiled CSS references a remote URL — the view must be self-contained.");
   process.exit(1);
 }
+
+// ── Geist ──────────────────────────────────────────────────────────────────
+//
+// The design system sets every view in Geist, and a sandboxed view cannot
+// fetch a font any more than it can fetch a logo, so the variable file goes in
+// as a data URI. Added after Tailwind has run, because there is nothing in it
+// for Tailwind to do and a hundred kilobytes of base64 is not worth parsing.
+// A host whose CSP refuses data: fonts falls back to the system stack in
+// --font-sans, which is the same view in a different face, not a broken one.
+const geist = readFileSync(FONT).toString("base64");
+css =
+  '@font-face{font-family:"Geist";src:url(data:font/woff2;base64,' + geist +
+  ') format("woff2");font-weight:100 900;font-style:normal;font-display:swap}' + css;
 
 const src = readFileSync(TARGET, "utf8");
 const open = "<style>";
@@ -138,6 +151,6 @@ next =
 
 writeFileSync(TARGET, next);
 console.log(
-  `build-ui: inlined ${css.length} bytes of Tailwind CSS and ${marks.length} ` +
+  `build-ui: inlined ${css.length} bytes of CSS (Geist included) and ${marks.length} ` +
     "marketplace marks into src/shared/ui-template.ts",
 );

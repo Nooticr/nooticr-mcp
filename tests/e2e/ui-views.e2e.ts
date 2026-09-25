@@ -160,7 +160,9 @@ test("spoken-only empty result still draws the funnel", async ({ page }) => {
   await page.locator('[data-source="spoken"]').click();
   await page.waitForTimeout(250);
   expect(await page.locator(".empty-state .text").textContent()).toBe("Nobody said it out loud");
-  expect(await page.locator(".card-body .section-text").textContent()).toContain("14 transcribed");
+  // The funnel is the empty state's own sentence, so "nothing was said" and
+  // "nothing happened" stay told apart.
+  expect(await page.locator(".empty-state").textContent()).toContain("14 transcribed");
   expect(errs).toEqual([]);
 });
 
@@ -236,7 +238,7 @@ test("5b create_product: the row that was written", async ({ page }) => {
   expect(await page.locator(".own-head").textContent()).toContain("Studio Frame");
   expect(await page.locator(".own-sub").textContent()).toContain("appId 41");
   expect(await page.locator(".lede-box").textContent()).toContain("no brand playbook");
-  expect(await page.locator(".tag").first().textContent()).toBe("playbook: none");
+  expect(await page.locator(".tag").first().textContent()).toBe("Playbook: none");
   expect(await page.locator(".own-tick").count()).toBe(1);
   expect(errs).toEqual([]);
 });
@@ -313,7 +315,7 @@ test("an untimed spoken row says nothing rather than guessing", async ({ page })
   // No timings, so no ?t= promising a jump that would not happen.
   expect(await page.locator(".mgroup").first().locator(".mgroup-link").getAttribute("href"))
     .toBe("https://youtube.com/watch?v=a");
-  expect(await page.locator(".mgroup-link").first().textContent()).toContain("Open ↗");
+  expect((await page.locator(".mgroup-link").first().textContent())?.trim()).toBe("Open");
   expect(errs).toEqual([]);
 });
 
@@ -341,7 +343,8 @@ test("3b: the spoken hit opens the video at the line", async ({ page }) => {
   await result(page, MENTIONS);
   await result(page, SPOKEN);
   // The quote is an assertion; the video is the evidence for it, so the top
-  // spoken hit carries a real player rather than a still.
+  // spoken hit's poster plays in place — at the line, not at 0:00.
+  await page.locator(".mgroup").first().locator(".mgroup-media.is-playable").click();
   const stage = page.locator(".mgroup").first().locator(".mgroup-stage");
   await expect(stage).toBeVisible();
   // 4:12 = 252s, and the player is told to open there rather than at 0:00.
@@ -505,5 +508,163 @@ test("no ledger row claims to be finished", async ({ page }) => {
   // assert a completion the server never reported. The rows are queued rings.
   expect(await page.locator(".led-dot, .led-mark").count()).toBe(9);
   expect(await page.locator(".led-row.done, .led-row [data-done]").count()).toBe(0);
+  expect(errs).toEqual([]);
+});
+
+// ─── What the design system's views added ───
+// Each of these is a behaviour the Nooticr design system's MCP views draw and
+// the template did not, until the port. Pinned so a later restyle keeps them.
+
+test("a cancelled call says what was not charged, from the plan the wait quoted", async ({ page }) => {
+  const errs = await boot(page);
+  await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-input", params: {
+    name: "search_mentions", arguments: { term: "nooticr", platforms: ["tiktok", "instagram", "youtube", "reddit"] } } }, "*"));
+  await page.waitForTimeout(300);
+  const quoted = await page.locator(".load-sub").textContent();
+  await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-cancelled", params: { reason: "stopped by user" } }, "*"));
+  await page.waitForTimeout(300);
+  await expect(page.locator(".nt-commerce-cancel-text")).toHaveText("Cancelled: stopped by user");
+  const credits = (quoted ?? "").match(/(\d+) credits/)![1];
+  await expect(page.locator(".nt-commerce-cancel-note"))
+    .toHaveText(`Nothing was charged — the ${credits} credits quoted were a ceiling, not a charge.`);
+  expect(errs).toEqual([]);
+});
+
+test("a cancel with no wait before it stays exactly the server's message", async ({ page }) => {
+  const errs = await boot(page);
+  await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-cancelled", params: {} }, "*"));
+  await page.waitForTimeout(300);
+  await expect(page.locator(".nt-commerce-cancel-text")).toHaveText("The tool call was cancelled");
+  await expect(page.locator(".nt-commerce-cancel-note")).toHaveCount(0);
+  expect(errs).toEqual([]);
+});
+
+test("comments page through the whole payload, 25 at a time", async ({ page }) => {
+  const errs = await boot(page);
+  const comments = Array.from({ length: 60 }, (_, i) => ({ username: `u${i}`, text: `comment ${i}`, likes: 60 - i }));
+  await result(page, { comments, themes: [{ keyword: "price", count: 12 }] });
+  await expect(page.locator(".nt-feeds-comment")).toHaveCount(25);
+  await expect(page.locator(".nt-view-foot")).toContainText("Showing 25 of 60");
+  await page.locator("[data-comments-more]").click();
+  await expect(page.locator(".nt-feeds-comment")).toHaveCount(50);
+  await expect(page.locator("[data-comments-more]")).toHaveText("Show 10 more");
+  await page.locator("[data-comments-more]").click();
+  await expect(page.locator(".nt-feeds-comment")).toHaveCount(60);
+  await expect(page.locator("[data-comments-more]")).toHaveCount(0);
+  expect(errs).toEqual([]);
+});
+
+test("the trend reads out whichever sweep is under the pointer or the focus", async ({ page }) => {
+  const errs = await boot(page);
+  const points = [4, 9, 6].map((found, i) => ({ ranAt: `2026-08-0${i + 1}T08:00:00Z`, found, reported: i }));
+  await result(page, { term: "nooticr", tool: "mention_trend", points, metric: "found", edgeIsRecordStart: true });
+  // The latest sweep by default.
+  await expect(page.locator(".nt-signals-readout-v")).toHaveText("6");
+  await page.locator('.nt-signals-bar[data-bar="1"]').hover();
+  await expect(page.locator(".nt-signals-readout-v")).toHaveText("9");
+  await expect(page.locator(".nt-signals-readout")).toContainText("2026-08-02 · 1 new");
+  await page.locator('.nt-signals-bar[data-bar="0"]').focus();
+  await expect(page.locator(".nt-signals-readout")).toContainText("record starts here");
+  await expect(page.locator(".nt-signals-edge")).toHaveCount(1);
+  expect(errs).toEqual([]);
+});
+
+test("a transcript with cue timings reads timed, and copies what is on screen", async ({ page }) => {
+  const errs = await boot(page, "get_post_transcript");
+  const transcript = "Hello there. This is nooticr. Goodbye.";
+  // get_post_transcript's cues carry no words: only where theirs begin.
+  await result(page, { available: true, url: "https://www.youtube.com/watch?v=q1", transcript, language: "en",
+    cues: [{ startMs: 0, offset: 0 }, { startMs: 4200, offset: 13 }, { startMs: 65000, offset: 30 }] });
+  await expect(page.locator(".nt-signals-cue")).toHaveCount(3);
+  expect(await page.locator(".nt-signals-cue-text").allInnerTexts()).toEqual(["Hello there.", "This is nooticr.", "Goodbye."]);
+  expect(await page.locator(".nt-signals-cue-at").allInnerTexts()).toEqual(["0:00", "0:04", "1:05"]);
+  // YouTube reads a moment off its URL, so each timecode opens the video there.
+  expect(await page.locator(".nt-signals-cue-at").nth(2).getAttribute("href")).toBe("https://www.youtube.com/watch?v=q1&t=65s");
+  const NL = String.fromCharCode(10);
+  expect(await page.locator("[data-tcopy]").getAttribute("data-tcopy"))
+    .toBe(["[0:00] Hello there.", "[0:04] This is nooticr.", "[1:05] Goodbye."].join(NL));
+  await page.locator('[data-tview="plain"]').click();
+  await expect(page.locator(".nt-signals-transcript")).toHaveText(transcript);
+  expect(await page.locator("[data-tcopy]").getAttribute("data-tcopy")).toBe(transcript);
+  expect(errs).toEqual([]);
+});
+
+test("a transcript off YouTube shows its timecodes without promising a jump", async ({ page }) => {
+  const errs = await boot(page, "generate_captions");
+  await result(page, { transcript: "One. Two.", cues: [{ text: "One.", start_sec: 0, end_sec: 1 }, { text: "Two.", start_sec: 2.5, end_sec: 3 }] });
+  expect(await page.locator(".nt-signals-cue-at").allInnerTexts()).toEqual(["0:00", "0:02"]);
+  await expect(page.locator("a.nt-signals-cue-at")).toHaveCount(0);
+  expect(errs).toEqual([]);
+});
+
+test("every compared post keeps its own way back to the post", async ({ page }) => {
+  const errs = await boot(page);
+  const posts = [1, 2].map((i) => ({ platform: "tiktok", caption: `p${i}`, externalUrl: `https://www.tiktok.com/@a/video/${i}`, views: i * 10, comments: i }));
+  await result(page, { posts, comparison: { winner: 2, winnerReason: "It asks.", nextTest: "Ask sooner." } });
+  await expect(page.locator(".nt-view-desc")).toHaveText("Post #2 performed best");
+  expect(await page.locator(".nt-feeds-cmp-row a").evaluateAll((a) => a.map((x) => x.getAttribute("href"))))
+    .toEqual(["https://www.tiktok.com/@a/video/1", "https://www.tiktok.com/@a/video/2"]);
+  await expect(page.locator(".nt-feeds-cmp-row.is-win")).toContainText("Best");
+  await expect(page.locator(".nt-feeds-callout")).toContainText("Ask sooner.");
+  expect(errs).toEqual([]);
+});
+
+test("a listing opens as its own page within the card, with the way back", async ({ page }) => {
+  const errs = await boot(page, "scan_amazon_category");
+  await result(page, {
+    marketplace: "amazon", domain: "www.amazon.fr", query: "skillets", complete: false, progress: { done: 3, total: 10 },
+    products: [
+      { asin: "A1", brand: "Lodge", title: "Lodge skillet", rating: 4.6, ratingCount: 900, price: "€34.90", ratingHistogram: { 5: 70, 1: 5 } },
+      { asin: "A2", brand: "Staub", title: "Staub pan", rating: 4.7, ratingCount: 100, price: "€119.00" },
+    ],
+  });
+  // A running scan says how far it has got.
+  await expect(page.locator(".nt-commerce-running")).toHaveText("Collecting 3/10");
+  expect(await page.locator(".nt-progress").getAttribute("aria-valuenow")).toBe("30");
+  await page.locator('[data-amz-open="A1"]').click();
+  await expect(page.locator(".amz-detail")).toContainText("Lodge skillet");
+  await expect(page.locator(".amz-tile")).toHaveCount(0);
+  await page.locator("[data-amz-back]").click();
+  await expect(page.locator(".amz-tile")).toHaveCount(2);
+  expect(errs).toEqual([]);
+});
+
+test("a claim's evidence id lands on its review, badged as the one cited", async ({ page }) => {
+  const errs = await boot(page, "show_amazon_category_insights");
+  await result(page, {
+    view: "insights", marketplace: "amazon", category: "Skillets",
+    products: [{ asin: "A1", brand: "Lodge", title: "Lodge", reviews: [
+      { id: "R1", rating: 5, title: "Great", body: "Great pan" }, { id: "R2", rating: 1, title: "Rust", body: "Rusted" }] }],
+    barriers: [{ label: "Rust", strength: "strong", evidence: ["R2"] }],
+  });
+  await page.locator('[data-amz-ev="R2"]').click();
+  await expect(page.locator(".amz-rev").first()).toContainText("Rusted");
+  await expect(page.locator(".amz-rev").first().locator(".nt-commerce-rev-pin")).toHaveText("Cited");
+  await expect(page.locator('[data-amz-star=""] b')).toHaveText("2");
+  expect(errs).toEqual([]);
+});
+
+test("Compare carries its price on its face", async ({ page }) => {
+  const errs = await boot(page);
+  const posts = [1, 2].map((i) => ({ platform: "tiktok", caption: `p${i}`, externalUrl: `https://www.tiktok.com/@a/video/${i}`,
+    videoUrl: "https://mcp.nooticr.com/media/x.mp4", contentType: "video" }));
+  await result(page, { posts });
+  await page.locator(".mp-pick").nth(0).click();
+  await page.locator(".mp-pick").nth(1).click();
+  await expect(page.locator("#pickgo")).toContainText("Compare");
+  await expect(page.locator("#pickgo .nt-feeds-cr")).toHaveText("1 cr");
+  await expect(page.locator("#pickgo")).toBeEnabled();
+  expect(errs).toEqual([]);
+});
+
+test("the view takes the host's theme over the OS's", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  const errs = await boot(page);
+  expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("light");
+  await page.evaluate(() => window.postMessage({ method: "ui/notifications/host-context-changed", params: { theme: "dark" } }, "*"));
+  await page.waitForTimeout(100);
+  expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("dark");
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("dark");
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--background").trim())).toBe("#0a0a0a");
   expect(errs).toEqual([]);
 });

@@ -965,6 +965,7 @@ export const OUTPUT_SCHEMAS = {
   }),
 
   get_post_transcript: open({
+    url: scalar().describe("The post the transcript came from, as asked for."),
     available: scalar().describe("false when the post carries no caption track."),
     // Deliberately no text: it is already in `transcript`, and a caption
     // track is long enough that sending it twice would be a real cost in a

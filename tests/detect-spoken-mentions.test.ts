@@ -101,12 +101,37 @@ describe("detect_spoken_mentions", () => {
 });
 
 describe("the transcript view's word count", () => {
-  it("splits on whitespace in the page, not on the letter s", async () => {
+  it("counts words split on whitespace in the page, not on the letter s", async () => {
     const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
     expect(NOOTICR_UI_TEMPLATE).not.toContain(".split(/s+/)");
-    const m = NOOTICR_UI_TEMPLATE.match(/var WS=(new RegExp\([^;]+\));/);
+    // The counter walks char codes rather than using a regex: this template
+    // is also a Rust raw string, and a whitespace escape survives one host
+    // and not the other. Run the page's own function, not a copy of it.
+    const m = NOOTICR_UI_TEMPLATE.match(/function wordsIn\(text\)\{[\s\S]*?\n  \}/);
     expect(m).not.toBeNull();
-    const WS = new Function(`return ${m![1]}`)() as RegExp;
-    expect("I switched to Acme\tgrinders\nlast year".split(WS)).toHaveLength(7);
+    const wordsIn = new Function(`${m![0]}; return wordsIn;`)() as (t: string) => number;
+    expect(wordsIn("I switched to Acme\tgrinders\nlast year")).toBe(7);
+    expect(wordsIn("  sass  ")).toBe(1);
+    expect(wordsIn("")).toBe(0);
+  });
+});
+
+describe("get_post_transcript names the post its words came from", () => {
+  // The transcript view deep-links a YouTube timecode to that moment, which
+  // needs the post's URL; the backend's result carries the words, not it.
+  it("echoes the url it was asked about", async () => {
+    const { client } = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "hello", cues: [{ startMs: 0, offset: 0 }] }),
+    });
+    const res = await client.callTool({ name: "get_post_transcript", arguments: { url: URL } });
+    expect((res.structuredContent as Row).url).toBe(URL);
+  });
+
+  it("leaves a url the backend already sent alone", async () => {
+    const { client } = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "hello", url: "https://canonical.example/1" }),
+    });
+    const res = await client.callTool({ name: "get_post_transcript", arguments: { url: URL } });
+    expect((res.structuredContent as Row).url).toBe("https://canonical.example/1");
   });
 });

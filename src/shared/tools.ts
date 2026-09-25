@@ -1535,7 +1535,14 @@ const TOOL_NAMES = [
   async (args: { url: string; language?: string; format?: "text" | "srt" | "vtt" }, extra) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("get_post_transcript", { ...args }));
+    const res = await client.callTool("get_post_transcript", { ...args });
+    // The post the words came from, echoed so the view can open a video at
+    // the moment a cue was said — the backend's result names the words, not
+    // the post, and a timestamp you cannot follow is only a number.
+    if (res.structured && typeof res.structured === "object" && !("url" in res.structured)) {
+     res.structured = { ...(res.structured as Record<string, unknown>), url: args.url };
+    }
+    return await toToolResult(res);
    } catch (err) {
     return toolError("get_post_transcript failed", err);
    }
