@@ -44,6 +44,16 @@ CI's `The version is the same in every file that carries it` step gates on
 `package.json`, `.claude-plugin/plugin.json`, and `MCP_SERVER_VERSION` all
 matching; a hand-edit that bumps one and not the others fails immediately.
 
+## The views are the design system's
+
+Every view is the Nooticr design system's MCP view of the same name, drawn with
+its class names (`nt-*`): `src/shared/ui/tokens.css` is generated from its
+`tokens.json`, `design.css` carries its view rules, and `views.css` the base
+layer plus the few views it has no card for. A change to how a view looks
+starts in the design system; a view here that drifts from its card there is the
+bug. Older class names stay on elements beside the design's as test and handler
+hooks — keep them when you move markup.
+
 ## The dual-mime UI contract
 
 Every tool's view is served twice: `text/html;profile=mcp-app` for Claude
@@ -105,8 +115,8 @@ the model that just got handed this tool's result.
 ### Reproducing it
 
 1. Build once: `npm run build:ui && tsc` (or plain `npm run build`) —
-   regenerates `src/shared/ui-template.ts`'s inlined Tailwind CSS as a side
-   effect; see the git-checkout warning below before touching that file.
+   regenerates `src/shared/ui-template.ts`'s inlined CSS as a side effect;
+   see the git-checkout warning below before touching that file.
 2. Start the fixture backend on a scratch port and log in:
    ```bash
    node scripts/fixture-server.mjs 8091 &
@@ -180,7 +190,7 @@ the model that just got handed this tool's result.
    (`playwright.config.ts` needs no reverting — see step 5.)
 
 **Never `git checkout -- src/shared/ui-template.ts`** to discard the
-Tailwind-CSS-regeneration diff `npm run build` leaves behind. It's a
+CSS-regeneration diff `npm run build` leaves behind. It's a
 whole-file revert and will just as happily discard real, uncommitted logic
 changes in the same file — this has happened, more than once, to whoever
 wrote this section. If you need to drop only the regenerated CSS line, do
