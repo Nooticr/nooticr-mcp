@@ -99,6 +99,8 @@ ol.nt-feeds-list { list-style: decimal; }
 .nt-usage-table { padding: 0 24px 8px; }
 .nt-commerce-note.is-error { color: var(--destructive); border-color: color-mix(in srgb, var(--destructive) 30%, transparent); }
 .nt-view-guidance { margin: 0; padding: 0 24px 12px; white-space: pre-wrap; }
+/* Why a card's own button failed, under the row that pressed it. */
+.nt-call-error { margin: 6px 0 0; font: 400 12px/17px var(--font-sans); color: var(--destructive); overflow-wrap: anywhere; }
 .nt-json { margin: 0 24px 20px; padding: 12px 14px; max-height: 420px; overflow: auto; border-radius: var(--radius-md); background: var(--muted); font: 400 12px/1.55 var(--font-mono); white-space: pre-wrap; word-break: break-word; }
 
 /* The row's checkbox is a real input — it carries the change event the

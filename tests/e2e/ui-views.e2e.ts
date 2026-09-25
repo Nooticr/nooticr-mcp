@@ -668,3 +668,101 @@ test("the view takes the host's theme over the OS's", async ({ page }) => {
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--background").trim())).toBe("#0a0a0a");
   expect(errs).toEqual([]);
 });
+
+// ─── A card's own buttons, answered by a host that runs them in-band ───
+//
+// A host hands a view's tools/call result back to the view and nowhere else,
+// and most report a tool's refusal as a result with isError rather than as a
+// rejection. So what the button does with the answer is the whole feature.
+
+/** A host that runs every call the card makes and answers with `reply`. */
+async function inBandHost(page: Page, reply: unknown) {
+  await page.evaluate((r) => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__called = [];
+    w.openai = {
+      callTool: (name: string, args: unknown) => {
+        (w.__called as unknown[]).push({ name, args });
+        return Promise.resolve(r);
+      },
+    };
+  }, reply);
+}
+const calledTools = (page: Page) => page.evaluate(() => (window as unknown as { __called: unknown }).__called);
+const refusal = (text: string) => ({ isError: true, content: [{ type: "text", text }] });
+const TWO_POSTS = [1, 2].map((i) => ({ platform: "tiktok", caption: `p${i}`, externalUrl: `https://www.tiktok.com/@a/video/${i}`,
+  videoUrl: "https://mcp.nooticr.com/media/x.mp4", contentType: "video" }));
+
+test("a Compare the tool refused says why, rather than Sent", async ({ page }) => {
+  const errs = await boot(page);
+  await inBandHost(page, refusal("compare_posts failed: Not enough nooticr credits — 1 needed, 0 left."));
+  await result(page, { posts: TWO_POSTS });
+  await page.locator(".mp-pick").nth(0).click();
+  await page.locator(".mp-pick").nth(1).click();
+  await page.locator("#pickgo").click();
+  await expect(page.locator("#pickhint")).toHaveText("compare_posts failed: Not enough nooticr credits — 1 needed, 0 left.");
+  await expect(page.locator("#pickgo")).toContainText("Compare");
+  await expect(page.locator("#pickgo")).not.toContainText(/Sent|Copied/);
+  expect(await calledTools(page)).toEqual([{ name: "compare_posts", args: { urls: TWO_POSTS.map((p) => p.externalUrl) } }]);
+  expect(errs).toEqual([]);
+});
+
+test("an action under a post the tool refused says why under its row", async ({ page }) => {
+  const errs = await boot(page);
+  await inBandHost(page, refusal("write_hooks failed: that post is private"));
+  await result(page, { analysis: { summary: "A hook-led demo." }, post: TWO_POSTS[0] });
+  await page.locator('.ai-btn[data-ai="write_hooks"]').click();
+  await expect(page.locator(".nt-call-error")).toHaveText("write_hooks failed: that post is private");
+  await expect(page.locator('.ai-btn[data-ai="write_hooks"]')).toContainText("Failed");
+  // A check beside "Failed" would say both things at once: the alert glyph.
+  expect(await page.locator('.ai-btn[data-ai="write_hooks"] .nt-ai-ico').innerHTML()).toContain("m21.73 18-8-14");
+  expect(errs).toEqual([]);
+});
+
+test("Load more appends the next page to the list it was pressed under", async ({ page }) => {
+  const errs = await boot(page);
+  const next = {
+    term: "nooticr", totalMentions: 341, byPlatform: MENTIONS.byPlatform, hasMore: false, nextOffset: null,
+    threads: [{ post: { platform: "tiktok", title: "A third post", externalUrl: "https://tiktok.com/@x/video/3", views: 5000 },
+      mentionCount: 1, mentions: [{ id: "c3", username: "zed", text: "nooticr found this one on page two", likes: 3 }] }],
+  };
+  await inBandHost(page, { structuredContent: next });
+  await result(page, { ...MENTIONS, hasMore: true, nextOffset: 2 });
+  await expect(page.locator(".mgroup")).toHaveCount(2);
+  await page.locator(".mention-more").click();
+  await expect(page.locator(".mgroup")).toHaveCount(3);
+  await expect(page.locator(".mentions")).toContainText(["we switched to nooticr last month"]);
+  await expect(page.locator(".mgroups")).toContainText("nooticr found this one on page two");
+  await expect(page.locator(".mention-more")).toHaveCount(0);
+  expect(await calledTools(page)).toEqual([{ name: "search_mentions", args: { term: "nooticr", offset: 2 } }]);
+  expect(errs).toEqual([]);
+});
+
+test("Analyse these draws what analyze_comments read", async ({ page }) => {
+  const errs = await boot(page);
+  await inBandHost(page, { structuredContent: {
+    url: "https://reddit.com/r/x/1", platform: "reddit", commentCount: 2,
+    comments: [{ username: "dw_makes", text: "we switched to nooticr last month", likes: 412 }, { username: "b", text: "same here", likes: 3 }],
+    themes: [{ keyword: "switch", count: 2 }],
+  } });
+  await result(page, MENTIONS);
+  await page.locator(".mention-pick").first().click();
+  await page.locator("#pickgo").click();
+  await expect(page.locator(".nt-feeds-comment")).toHaveCount(2);
+  await expect(page.locator(".mgroups")).toHaveCount(0);
+  expect(await calledTools(page)).toEqual([{ name: "analyze_comments", args: { url: "https://reddit.com/r/x/1", limit: 20 } }]);
+  expect(errs).toEqual([]);
+});
+
+test("Analyse the product names its own row and keeps the card while the job runs", async ({ page }) => {
+  const errs = await boot(page, "create_product");
+  await inBandHost(page, { structuredContent: { jobId: "job-1", state: "pending" } });
+  await result(page, CREATED);
+  await page.locator("[data-analyze-product]").click();
+  await expect(page.locator("[data-analyze-product]")).toContainText("Analysis started");
+  await expect(page.locator("[data-analyze-product]")).toBeDisabled();
+  await expect(page.locator(".own-head")).toContainText("Studio Frame");
+  await expect(page.locator(".nt-view-json")).toHaveCount(0);
+  expect(await calledTools(page)).toEqual([{ name: "analyze_product", args: { appId: 41 } }]);
+  expect(errs).toEqual([]);
+});
