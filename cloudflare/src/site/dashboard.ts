@@ -276,12 +276,33 @@ export function dashboardSignedOut(publicUrl: string, error?: string): string {
  * against a backend older than `/auth/api-keys`); that says so rather than
  * drawing an empty table, which would read as "you have none".
  */
-function apiKeysCard(keys: ApiKeySummary[] | null): string {
+function apiKeysCard(
+  keys: ApiKeySummary[] | null,
+  account?: string,
+  apiBase?: string,
+  error?: string
+): string {
+  // Which account, and against which server. A key minted by the CLI and
+  // missing from this list almost always means one of the two differs — the
+  // credentials file holds whoever last ran `login` on that machine, and
+  // NOOTICR_BASE_URL defaults to production wherever it is unset. Neither
+  // fact was on this page, so the mismatch was invisible from both ends.
+  const scope =
+    `<p class="muted" style="font-size:12.5px;margin:0 0 12px">Keys for ` +
+    `<strong>${esc(account || "this account")}</strong>` +
+    (apiBase ? ` on <code>${esc(apiBase)}</code>` : "") +
+    `. A key belongs to one account on one server: <code>npx -y @nooticr/mcp api-key create</code> ` +
+    `mints it for whoever <code>login</code> signed in as, against <code>NOOTICR_BASE_URL</code>, ` +
+    `and both are printed when it does.</p>`;
+
   if (keys === null) {
     return (
       `<div class="card" id="keys"><div class="card-h"><h2>API keys</h2></div>` +
-      `<div class="card-b"><div class="empty">Keys are unavailable right now. ` +
-      `You can still mint one with <code>npx -y @nooticr/mcp api-key create</code>.</div></div></div>`
+      `<div class="card-b">${scope}` +
+      `<div class="err">${esc(error || "Your keys could not be read just now.")}</div>` +
+      `<p class="faint" style="font-size:12.5px;margin:12px 0 0">You can still mint and list keys with ` +
+      `<code>npx -y @nooticr/mcp api-key create</code> and <code>api-key list</code>.</p>` +
+      `</div></div>`
     );
   }
 
@@ -316,12 +337,14 @@ function apiKeysCard(keys: ApiKeySummary[] | null): string {
           );
         })
         .join("")
-    : `<tr><td colspan="3"><div class="empty">No keys yet. Create one to connect a server that cannot open a browser.</div></td></tr>`;
+    : `<tr><td colspan="3"><div class="empty">No keys yet for this account. Create one above to connect a server that cannot open a browser \u2014 ` +
+      `or, if you already made one from the CLI and expected it here, check it was the same account and the same <code>NOOTICR_BASE_URL</code>.</div></td></tr>`;
 
   return (
     `<div class="card" id="keys"><div class="card-h"><h2>API keys</h2>` +
     `<span class="faint" style="font-size:12px">for servers, no browser</span></div>` +
     `<div class="card-b">` +
+    scope +
     `<p class="muted" style="font-size:13px;margin:0 0 12px">A key does not expire and needs no sign-in. ` +
     `Set it as <code>NOOTICR_API_KEY</code>, or send it to <code>/mcp</code> as <code>Authorization: Bearer</code>. ` +
     `<a href="/documentation#connect-server" style="color:var(--brand)">How to use one</a></p>` +
@@ -343,7 +366,9 @@ export function dashboardPage(
   user: DashboardUser,
   usage: UsageData,
   token: string,
-  keys: ApiKeySummary[] | null = null
+  keys: ApiKeySummary[] | null = null,
+  keysError?: string,
+  apiBase?: string
 ): string {
   const maxCalls = Math.max(1, ...usage.byTool.map((t) => t.calls));
 
@@ -426,7 +451,7 @@ export function dashboardPage(
     `<th style="text-align:right">Credits</th><th style="text-align:right">When (UTC)</th></tr></thead>` +
     `<tbody>${recentRows}</tbody></table></div></div>` +
 
-    apiKeysCard(keys) +
+    apiKeysCard(keys, user.email, apiBase, keysError) +
     `</div>` +
 
     // right column
