@@ -5105,7 +5105,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var n=(s.products||[]).length;
     var reviews=0;
     (s.products||[]).forEach(function(p){reviews+=(p.reviews||[]).length;});
-    var running=s.complete===false;
+    // stopped: the chat stopped watching a scan it had not finished (it stalled,
+    // or the run was cancelled). Without it a kept snapshot reopens days later
+    // still spinning "Collecting 4/10" over work nobody is doing.
+    var running=s.complete===false&&!s.stopped;
+    var stopped=s.complete===false&&!!s.stopped;
     var prog=s.progress||{},done=Number(prog.done)||0,total=Number(prog.total)||0;
     var sub=[marketDomain(s.domain)||marketLabel(s.marketplace),plural(n,"listing"),reviews+" review"+(reviews===1?"":"s")+" read"].join(" · ");
     return '<header class="nt-commerce-head amz-head">'
@@ -5114,7 +5118,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +'<h3 class="nt-commerce-head-title amz-head-title">'+esc(s.title||"Category scan")+"</h3>"
       +'<p class="nt-commerce-head-sub amz-head-sub">'+esc(sub)+"</p>"
       +"</div>"
-      +(running?badge("outline",ic("loader-circle",12,"nt-spin")+"Collecting "+done+"/"+total,"nt-commerce-running amz-running"):"")
+      +(running?badge("outline",ic("loader-circle",12,"nt-spin")+"Collecting "+done+"/"+total,"nt-commerce-running amz-running")
+        :stopped?badge("outline",ic("clock",12)+"Stopped at "+done+"/"+total,"nt-commerce-stopped amz-stopped"):"")
       +"</header>"
       // A scan that is still running says how far it has got, not only that
       // it is going: "4 of 10" is a thing to wait for, a spinner is not.
@@ -5134,7 +5139,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       // at the top: the detail is long, and below the grid it was a scroll
       // away from the tile that opened it.
       var open=amazonState.open?productOf(amazonState.open):null;
-      var running=amazonState.complete===false;
+      var running=amazonState.complete===false&&!amazonState.stopped;
       body=open?amazonDetail(open)
         :'<div class="nt-commerce-fade">'+amazonRollupStrip()
           +(n?'<div class="nt-commerce-grid amz-grid nt-commerce-pad nt-commerce-pad-b">'+(amazonState.products||[]).map(amazonTile).join("")+"</div>"
@@ -5217,6 +5222,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       errors:Array.isArray(d.errors)?d.errors:[],
       progress:d.progress||{},
       complete:d.complete,
+      stopped:d.stopped,
       insights:insights,
       tab:insights?"insights":"listings",
       open:"",

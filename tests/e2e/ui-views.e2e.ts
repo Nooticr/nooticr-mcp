@@ -629,6 +629,18 @@ test("a listing opens as its own page within the card, with the way back", async
   expect(errs).toEqual([]);
 });
 
+test("a scan the host stopped polling says where it stopped, not that it is still collecting", async ({ page }) => {
+  const errs = await boot(page, "scan_amazon_category");
+  await result(page, {
+    marketplace: "amazon", domain: "www.amazon.de", query: "nike", complete: false, stopped: true, progress: { done: 4, total: 10 },
+    products: [{ asin: "A1", brand: "Nike", title: "Air Force 1", rating: 4.6, ratingCount: 900, price: "€119.00" }],
+  });
+  await expect(page.locator(".nt-commerce-stopped")).toHaveText("Stopped at 4/10");
+  await expect(page.locator(".nt-commerce-running")).toHaveCount(0);
+  await expect(page.locator(".nt-progress")).toHaveCount(0);
+  expect(errs).toEqual([]);
+});
+
 test("a claim's evidence id lands on its review, badged as the one cited", async ({ page }) => {
   const errs = await boot(page, "show_amazon_category_insights");
   await result(page, {
