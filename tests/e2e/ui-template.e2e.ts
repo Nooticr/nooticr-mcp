@@ -2191,6 +2191,48 @@ test.describe("the marketplace view", () => {
     await expect(page.locator(".amz-tile").first()).toContainText("10% at 1-2");
   });
 
+  /**
+   * A listing photo is the product in whatever shape the seller shot it, and
+   * the thumb is a square. `object-fit: cover` filled the square by cutting
+   * the photo: insoles lost their heel, a sneaker its toe, in every store
+   * view, since they all draw their tiles through `productThumb`. The photo
+   * here is three times taller than it is wide, the shape that lost the most.
+   */
+  test("a listing photo is fitted into its thumb, not cropped to fill it", async ({ page }) => {
+    const TALL = "https://images.e2e.test/tall.png";
+    await page.route(TALL, (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: "image/png",
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAABQAAAA8CAIAAADpFA0BAAAAKUlEQVR4nO3LMQ0AAAgDsElBCtKQjgdemvRtqucssizLsizLsizL8se84AsaPdFK5HYAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      }),
+    );
+    await renderTemplate(page, {
+      ...AMZ_SCAN,
+      products: AMZ_PRODUCTS.map((p) => ({ ...p, image: TALL })),
+    });
+    const fitted = async () =>
+      page.$$eval(".nt-commerce-thumb img", (imgs) =>
+        imgs.map((img) => ({
+          fit: getComputedStyle(img).objectFit,
+          loaded: (img as HTMLImageElement).naturalHeight === 60,
+          backdrop: getComputedStyle(img.parentElement as Element).backgroundColor,
+        })),
+      );
+    await expect.poll(async () => (await fitted()).every((t) => t.loaded)).toBe(true);
+    // The grid's tiles, then the detail header, which draws the same photo larger.
+    for (const t of await fitted()) {
+      expect(t.fit).toBe("contain");
+      expect(t.backdrop).toBe("rgb(255, 255, 255)");
+    }
+    await page.click('[data-amz-open="B0C4KNW2T1"]');
+    const detail = await page.$eval(".amz-detail .nt-commerce-thumb img", (img) => getComputedStyle(img).objectFit);
+    expect(detail).toBe("contain");
+  });
+
   test("opening a listing shows its histogram and its review bodies", async ({ page }) => {
     await renderTemplate(page, AMZ_SCAN);
     await page.click('[data-amz-open="B0C4KNW2T1"]');
