@@ -82,8 +82,8 @@ jobs:
           if-no-files-found: ignore
           path: |
             .verify/report.json
-            test-results/verify-design/
+            verify-design/
             quests/report/surface-probe.json
             quests/report/surface-screens/
-            _siblings/*/test-results/verify-design/
+            _siblings/*/verify-design/
             _siblings/*/quests/report/surface-screens/

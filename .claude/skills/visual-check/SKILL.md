@@ -18,7 +18,7 @@ how you make it true.
      dialog, the palette and the mobile layout, in light and dark, and checks
      computed colours, type, radii, weights, contrast, uppercase, overflow and
      console errors against `nooticr-server/verify/vendor/design-system/tokens.json`.
-     Screenshots: `nooticr-dashboard/test-results/verify-design/screens/`.
+     Screenshots: `nooticr-dashboard/verify-design/screens/`.
    - `A.surface-probe` / `D.mcp-view-conformance` call every nooticr-mcp tool
      against the fixture backend and draw each result in the real view
      template. Screenshots: `nooticr-mcp/quests/report/surface-screens/`.
