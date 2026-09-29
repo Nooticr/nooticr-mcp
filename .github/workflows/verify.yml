@@ -63,6 +63,13 @@ jobs:
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
       - name: Keep the sibling checkouts out of this repo's diff
         run: echo '_siblings/' >> .git/info/exclude
+      - name: Say which siblings are missing, and why
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          why="NOOTICR_VERIFY_TOKEN is set but cannot read it"; [ "$HAS_TOKEN" = true ] || why="NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)"
+          [ -d _siblings/nooticr-server/.git ] || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
+          [ -d _siblings/nooticr-dashboard/.git ] || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
       - name: Permissions a human granted (PR labels)
         if: github.event_name == 'pull_request'
         env:

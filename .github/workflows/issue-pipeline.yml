@@ -70,6 +70,13 @@ jobs:
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
       - name: Keep the sibling checkouts out of this repo's diff
         run: echo '_siblings/' >> .git/info/exclude
+      - name: Say which siblings are missing, and why
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          why="NOOTICR_VERIFY_TOKEN is set but cannot read it"; [ "$HAS_TOKEN" = true ] || why="NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)"
+          [ -d _siblings/nooticr-server/.git ] || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
+          [ -d _siblings/nooticr-dashboard/.git ] || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -77,6 +84,7 @@ jobs:
           claude_args: >-
             --allowedTools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh issue edit:*),Bash(gh label list:*)"
       - name: Check out the pipeline's own code (nooticr-server main)
+        id: pipeline-code
         uses: actions/checkout@v4
         with:
           repository: Nooticr/nooticr-server
@@ -84,6 +92,13 @@ jobs:
           path: _pipeline
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
           sparse-checkout: ops/pipeline
+      - name: Say why the pipeline's code is missing
+        if: failure() && steps.pipeline-code.outcome == 'failure'
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then echo "::error::nooticr-server could not be checked out: NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)."; else echo "::error::nooticr-server main could not be checked out with NOOTICR_VERIFY_TOKEN, or has no ops/pipeline yet (it arrives with the PR that adds it)."; fi
+          exit 1
       - name: Tell #product
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -144,6 +159,13 @@ jobs:
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
       - name: Keep the sibling checkouts out of this repo's diff
         run: echo '_siblings/' >> .git/info/exclude
+      - name: Say which siblings are missing, and why
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          why="NOOTICR_VERIFY_TOKEN is set but cannot read it"; [ "$HAS_TOKEN" = true ] || why="NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)"
+          [ -d _siblings/nooticr-server/.git ] || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
+          [ -d _siblings/nooticr-dashboard/.git ] || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -153,6 +175,7 @@ jobs:
           prompt: "/implement ${{ github.event.issue.number || inputs.issue }}"
           claude_args: --max-turns 150
       - name: Check out the pipeline's own code (nooticr-server main)
+        id: pipeline-code
         uses: actions/checkout@v4
         with:
           repository: Nooticr/nooticr-server
@@ -160,6 +183,13 @@ jobs:
           path: _pipeline
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
           sparse-checkout: ops/pipeline
+      - name: Say why the pipeline's code is missing
+        if: failure() && steps.pipeline-code.outcome == 'failure'
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then echo "::error::nooticr-server could not be checked out: NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)."; else echo "::error::nooticr-server main could not be checked out with NOOTICR_VERIFY_TOKEN, or has no ops/pipeline yet (it arrives with the PR that adds it)."; fi
+          exit 1
       - name: Tell #eng
         if: always()
         env:
