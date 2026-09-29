@@ -26,11 +26,21 @@
 //
 // Usage: node scripts/fixture-server.mjs [port]  (default 8080)
 
+import fs from "node:fs";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import zlib from "node:zlib";
 
 const PORT = Number(process.argv[2] || 8080);
+
+// FIXTURE_TRACE=<file> appends one JSON line per backend tools/call, for
+// scripts/surface-probe.mjs. It is how the probe tells a tool this stand-in
+// models from one the generic `default:` answered (which proves nothing), and
+// whether an optional argument reached the backend at all. `session` is the
+// caller's fixture token, so a probe running several clients at once can
+// attribute each line. Unset, nothing is written and nothing else changes.
+const TRACE_FILE = process.env.FIXTURE_TRACE || "";
+const UNMODELED = Symbol("unmodeled");
 const STUB_URL = "https://e2e.nooticr.test/import/tiktok/e2e-stub";
 
 // One post's worth of plausible content, shared by every case that returns a
@@ -1491,6 +1501,7 @@ function handleMcpCall(name, args, workspaceId) {
       return {
         content: [{ type: "text", text: `fixture-server: ${name} is not modeled, returning an empty result.` }],
         structuredContent: {},
+        [UNMODELED]: true,
       };
   }
 }
@@ -1526,6 +1537,12 @@ const server = http.createServer(async (req, res) => {
       const session = token ? tokens.get(token) : undefined;
       const { name, arguments: args } = body.params ?? {};
       const result = handleMcpCall(name, args, session?.workspaceId);
+      if (TRACE_FILE) {
+        fs.appendFileSync(
+          TRACE_FILE,
+          JSON.stringify({ name, args: args ?? {}, handled: !result[UNMODELED], session: token ?? null }) + "\n",
+        );
+      }
       if (result.error) {
         return sendJson(res, 200, { jsonrpc: "2.0", id: body.id, error: result.error });
       }
