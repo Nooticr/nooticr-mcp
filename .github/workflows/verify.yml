@@ -38,19 +38,35 @@ jobs:
         with:
           # The whole history: rules measure the branch against its merge-base.
           fetch-depth: 0
+      - name: Pick the sibling branches
+        id: sibling-refs
+        # A change spread over the three repos lives on one branch name in each;
+        # checking this repo's branch against the siblings' main would test a
+        # combination that will never exist. Same name if the sibling has it,
+        # main otherwise.
+        env:
+          TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/Nooticr/nooticr-server" "$BRANCH" >/dev/null 2>&1; then echo "server=$BRANCH" >> "$GITHUB_OUTPUT"; else echo "server=main" >> "$GITHUB_OUTPUT"; fi
+          if git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/Nooticr/nooticr-dashboard" "$BRANCH" >/dev/null 2>&1; then echo "dashboard=$BRANCH" >> "$GITHUB_OUTPUT"; else echo "dashboard=main" >> "$GITHUB_OUTPUT"; fi
       - name: Check out nooticr-server
         uses: actions/checkout@v4
         continue-on-error: true
         with:
           repository: Nooticr/nooticr-server
+          ref: ${{ steps.sibling-refs.outputs.server }}
           path: _siblings/nooticr-server
+          fetch-depth: 0
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
       - name: Check out nooticr-dashboard
         uses: actions/checkout@v4
         continue-on-error: true
         with:
           repository: Nooticr/nooticr-dashboard
+          ref: ${{ steps.sibling-refs.outputs.dashboard }}
           path: _siblings/nooticr-dashboard
+          fetch-depth: 0
           token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
       - name: Keep the sibling checkouts out of this repo's diff
         run: echo '_siblings/' >> .git/info/exclude
