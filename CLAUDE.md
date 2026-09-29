@@ -346,3 +346,56 @@ its description.
 The proposing step is a seam, not a dependency: candidates are JSON, so any
 model or a human can write `invariants/candidates.json`. Only
 `invariants/earned.json` means anything, and only the verifier writes it.
+
+## Verification: what "done" is checked against
+
+Every session runs under nooticr-verify (`nooticr-server/verify/`, hooks in
+`.claude/settings.json`). Its Stop hook re-runs every rule your change
+triggers — across all three repos — and will not let the turn end while one
+fails. Your own account of what passed is not evidence; the gate's report
+(`.verify/report.json`) is. Three things follow:
+
+- **Do the work, don't stage it.** A deferral marker (`TODO`, `FIXME`,
+  `todo!()`, `not implemented`), `placeholder` copy, a silenced checker
+  (`@ts-ignore`, `eslint-disable`, `#[allow]`, `as any`), a skipped or hollowed
+  test, a swallowed error, a rewritten snapshot, a hand-bumped version or an
+  edited merged migration is refused as you write it. If the user explicitly
+  asks for one of those, their message records the permission.
+- **Say only what ran.** "Tests pass", "checked in the browser", "pushed" are
+  audited against this turn's transcript: the command must have succeeded after
+  your last edit. If something genuinely cannot run here, end your reply with
+  `UNVERIFIED: <rule-id> — <why>`.
+- **Use the skills.** `/verify` runs the gate now, `/visual-check` renders and
+  screenshots every surface against the design system, `/design-sync` refreshes
+  the pinned design system from its artifact.
+
+Sibling checkouts (`../nooticr-server`, `../nooticr-mcp`, `../nooticr-dashboard`)
+are what lets cross-repo rules run; without them those rules report NOT
+CHECKED rather than passing. The rule catalogue, and how to add a rule, is in
+`nooticr-server/verify/README.md`.
+
+## The PR pipeline: what it owns
+
+Every PR in the three repos goes through the pipeline in
+`nooticr-server/ops/` (design and setup: `ops/README.md`). Four things
+follow for anyone working here:
+
+- **The status comment and labels are the pipeline's.** The comment that
+  starts "### nooticr pipeline" and the `pipeline:*` / `risk:*` labels are
+  rewritten by `ops/pipeline/decide.py` on every event. Editing them changes
+  nothing; the checks they summarise are the facts.
+- **What blocks a merge is this repo's `REVIEW.md`,** alongside
+  nooticr-verify, `claude-security-review` and CI. Claude Code Review's
+  Important findings block, and `REVIEW.md` says what counts as Important
+  here. Changing it changes what can merge, which is why it is a high-risk
+  path in `ops/pipeline/risk.json`; only low-risk PRs (docs, tests, UI copy)
+  merge without a person.
+- **The workflows are generated.** `verify.yml`, `pr-pipeline.yml`,
+  `issue-pipeline.yml`, `ops-notify.yml` (and nooticr-server's
+  `release-notes.yml`) and `.github/CODEOWNERS` are written by
+  `nooticr-server/ops/gen_workflows.py`. Edit the generator and re-run it;
+  a hand edit fails `G.workflows-synced`.
+- **A session started by the pipeline follows its skill:** `/fix-pr`,
+  `/resolve-conflicts`, `/security-verdict`, `/release-notes`, `/triage`,
+  `/implement`. None of them approves or merges; code decides, and the
+  approver App or a person approves.

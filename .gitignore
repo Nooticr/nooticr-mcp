@@ -16,3 +16,6 @@ playwright-report/
 # (it carries a live dev-login token), and the report of the last run. The
 # corpus in quests/quests.json is the committed part; a run's output is not.
 quests/report/
+
+# PR pipeline scratch (the security verdict a CI session writes before it becomes a check)
+/.pipeline/
