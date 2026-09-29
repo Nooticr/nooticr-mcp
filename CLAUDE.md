@@ -373,3 +373,29 @@ Sibling checkouts (`../nooticr-server`, `../nooticr-mcp`, `../nooticr-dashboard`
 are what lets cross-repo rules run; without them those rules report NOT
 CHECKED rather than passing. The rule catalogue, and how to add a rule, is in
 `nooticr-server/verify/README.md`.
+
+## The PR pipeline: what it owns
+
+Every PR in the three repos goes through the pipeline in
+`nooticr-server/ops/` (design and setup: `ops/README.md`). Four things
+follow for anyone working here:
+
+- **The status comment and labels are the pipeline's.** The comment that
+  starts "### nooticr pipeline" and the `pipeline:*` / `risk:*` labels are
+  rewritten by `ops/pipeline/decide.py` on every event. Editing them changes
+  nothing; the checks they summarise are the facts.
+- **What blocks a merge is this repo's `REVIEW.md`,** alongside
+  nooticr-verify, `claude-security-review` and CI. Claude Code Review's
+  Important findings block, and `REVIEW.md` says what counts as Important
+  here. Changing it changes what can merge, which is why it is a high-risk
+  path in `ops/pipeline/risk.json`; only low-risk PRs (docs, tests, UI copy)
+  merge without a person.
+- **The workflows are generated.** `verify.yml`, `pr-pipeline.yml`,
+  `issue-pipeline.yml`, `ops-notify.yml` (and nooticr-server's
+  `release-notes.yml`) and `.github/CODEOWNERS` are written by
+  `nooticr-server/ops/gen_workflows.py`. Edit the generator and re-run it;
+  a hand edit fails `G.workflows-synced`.
+- **A session started by the pipeline follows its skill:** `/fix-pr`,
+  `/resolve-conflicts`, `/security-verdict`, `/release-notes`, `/triage`,
+  `/implement`. None of them approves or merges; code decides, and the
+  approver App or a person approves.

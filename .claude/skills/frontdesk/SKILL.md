@@ -41,8 +41,16 @@ the PR stands and link the approval page.
   pipeline triages them.
 - **eng**: "Build #n" means `issue-pipeline.yml mode=implement`, only for an
   issue labelled `ready`.
-- **ops**: Deploy and health questions: read the runs; incidents become
-  issues labelled `incident`.
+- **ops**: Deploy reports arrive as `kind=pipeline` posts from the ops feed,
+  one per deploy; a failed one has already opened (or added to) an
+  `incident` issue, so link it rather than opening another. Health questions:
+  read the runs.
+- **releases**: Merge announcements and release-notes PRs arrive as
+  `kind=pipeline` posts. "What shipped since …" is answered from
+  `docs/releases/` and merged PRs, never from memory. "Notes now" means
+  `gh workflow run release-notes.yml` (optionally `-f since=<UTC timestamp>`).
+  "Merge #n" is never yours to do: say what the PR's status comment shows is
+  still between it and the merge.
 
 Every answer says what you checked and how. If you did not check something,
 say so.

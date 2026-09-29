@@ -20,7 +20,7 @@ name: PR pipeline
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, closed]
   workflow_run:
     workflows: [CI, Verify]
     types: [completed]
@@ -36,7 +36,7 @@ on:
         required: true
       mode:
         type: choice
-        options: [decide, fix, merge, gate]
+        options: [decide, fix, resolve, sync, merge, gate]
         required: true
         default: decide
       sha:
@@ -48,7 +48,7 @@ permissions: {}
 jobs:
   security-review:
     name: "pipeline: security review"
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -175,6 +175,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_PRS_CHANNEL: ${{ vars.SLACK_PRS_CHANNEL }}
+          SLACK_RELEASES_CHANNEL: ${{ vars.SLACK_RELEASES_CHANNEL }}
+          PIPELINE_APPROVER_LOGIN: ${{ vars.NOOTICR_APPROVER_LOGIN }}
           PR: ${{ inputs.pr }}
         run: |
           if [ -n "$PR" ]; then python3 _pipeline/ops/pipeline/decide.py --pr "$PR"; else python3 _pipeline/ops/pipeline/decide.py --event "$GITHUB_EVENT_PATH"; fi
@@ -184,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     concurrency:
-      group: pipeline-fix-${{ inputs.pr }}
+      group: pipeline-session-${{ inputs.pr }}
     permissions:
       contents: write
       pull-requests: write
@@ -286,6 +288,118 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: "/fix-pr ${{ inputs.pr }}"
+          claude_args: --max-turns 80
+      - name: Hand the PR back to the pipeline
+        if: always() && steps.pr.outputs.skip != '1'
+        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label "pipeline:fixing"
+  resolve:
+    name: "pipeline: resolve"
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'resolve'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: pipeline-session-${{ inputs.pr }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ inputs.pr }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - name: The inputs are what they claim to be
+        env:
+          PR: ${{ inputs.pr }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          [[ "$PR" =~ ^[1-9][0-9]{0,6}$ ]] || { echo "::error::pr is not a PR number"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha is not a full commit sha"; exit 1; }
+      - name: Check out the pipeline's own code (nooticr-server main)
+        id: pipeline-code
+        uses: actions/checkout@v4
+        with:
+          repository: Nooticr/nooticr-server
+          ref: main
+          path: _pipeline
+          token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
+          sparse-checkout: ops/pipeline
+      - name: Say why the pipeline's code is missing
+        if: failure() && steps.pipeline-code.outcome == 'failure'
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then echo "::error::nooticr-server could not be checked out: NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)."; else echo "::error::nooticr-server main could not be checked out with NOOTICR_VERIFY_TOKEN, or has no ops/pipeline yet (it arrives with the PR that adds it)."; fi
+          exit 1
+      - name: Still the commit that was judged, still a resolve, and count the round
+        id: pr
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # The same judgement decide made, re-run here: a dispatch by hand gets no
+          # fixer the decision would not have sent (a fork, a PR out of rounds).
+          if ! python3 _pipeline/ops/pipeline/decide.py --pr "$PR" --check "$SHA" --mode resolve >/dev/null; then echo "::notice::Not a resolve at $SHA any more; nothing to do."; echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          head=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json headRefName,labels -q '.headRefName + " " + ([.labels[].name | select(startswith("pipeline:resolve-"))] | length | tostring)')
+          read -r ref rounds <<< "$head"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label "pipeline:fixing" --add-label "pipeline:resolve-$((rounds + 1))"
+      - uses: actions/checkout@v4
+        if: steps.pr.outputs.skip != '1'
+        with:
+          ref: ${{ steps.pr.outputs.ref }}
+          fetch-depth: 0
+      - name: Pick the sibling branches
+        id: sibling-refs
+        # A change spread over the three repos lives on one branch name in each;
+        # checking this repo's branch against the siblings' main would test a
+        # combination that will never exist. Same name if the sibling has it,
+        # main otherwise.
+        env:
+          TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
+          BRANCH: ${{ steps.pr.outputs.ref }}
+        run: |
+          if git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/Nooticr/nooticr-server" "$BRANCH" >/dev/null 2>&1; then echo "server=$BRANCH" >> "$GITHUB_OUTPUT"; else echo "server=main" >> "$GITHUB_OUTPUT"; fi
+          if git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/Nooticr/nooticr-dashboard" "$BRANCH" >/dev/null 2>&1; then echo "dashboard=$BRANCH" >> "$GITHUB_OUTPUT"; else echo "dashboard=main" >> "$GITHUB_OUTPUT"; fi
+      - name: Check out nooticr-server
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: Nooticr/nooticr-server
+          ref: ${{ steps.sibling-refs.outputs.server }}
+          path: _siblings/nooticr-server
+          fetch-depth: 0
+          token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
+      - name: Check out nooticr-dashboard
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: Nooticr/nooticr-dashboard
+          ref: ${{ steps.sibling-refs.outputs.dashboard }}
+          path: _siblings/nooticr-dashboard
+          fetch-depth: 0
+          token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
+      - name: Keep the sibling checkouts out of this repo's diff
+        run: echo '_siblings/' >> .git/info/exclude
+      - name: Say which siblings are missing, and why
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          why="NOOTICR_VERIFY_TOKEN is set but cannot read it"; [ "$HAS_TOKEN" = true ] || why="NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)"
+          git -C _siblings/nooticr-server rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
+          git -C _siblings/nooticr-dashboard rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
+      - uses: actions/setup-node@v4
+        if: steps.pr.outputs.skip != '1'
+        with:
+          node-version: "22"
+      - uses: anthropics/claude-code-action@v1
+        if: steps.pr.outputs.skip != '1'
+        # No github_token here: the action pushes as the Claude GitHub App, and
+        # only then do the pushes trigger the pipeline again (GITHUB_TOKEN's don't).
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: "/resolve-conflicts ${{ inputs.pr }}"
           claude_args: --max-turns 80
       - name: Hand the PR back to the pipeline
         if: always() && steps.pr.outputs.skip != '1'
@@ -400,3 +514,54 @@ jobs:
         run: |
           gh pr review "$PR" --repo "$GITHUB_REPOSITORY" --approve --body "Approved by the pipeline, after a human approved the merge-approval gate at $SHA."
           gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --auto --squash --match-head-commit "$SHA"
+  sync:
+    name: "pipeline: bring up to date"
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'sync'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: auto-merge
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    env:
+      PR: ${{ inputs.pr }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - name: The inputs are what they claim to be
+        env:
+          PR: ${{ inputs.pr }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          [[ "$PR" =~ ^[1-9][0-9]{0,6}$ ]] || { echo "::error::pr is not a PR number"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha is not a full commit sha"; exit 1; }
+      - name: Check out the pipeline's own code (nooticr-server main)
+        id: pipeline-code
+        uses: actions/checkout@v4
+        with:
+          repository: Nooticr/nooticr-server
+          ref: main
+          path: _pipeline
+          token: ${{ secrets.NOOTICR_VERIFY_TOKEN || github.token }}
+          sparse-checkout: ops/pipeline
+      - name: Say why the pipeline's code is missing
+        if: failure() && steps.pipeline-code.outcome == 'failure'
+        env:
+          HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then echo "::error::nooticr-server could not be checked out: NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)."; else echo "::error::nooticr-server main could not be checked out with NOOTICR_VERIFY_TOKEN, or has no ops/pipeline yet (it arrives with the PR that adds it)."; fi
+          exit 1
+      - name: Still green and behind, at the same commit
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 _pipeline/ops/pipeline/decide.py --pr "$PR" --check "$SHA" --mode sync
+      - name: The approver's token
+        id: approver
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.NOOTICR_APPROVER_APP_ID }}
+          private-key: ${{ secrets.NOOTICR_APPROVER_PRIVATE_KEY }}
+      - name: Merge the base in
+        env:
+          GH_TOKEN: ${{ steps.approver.outputs.token }}
+        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/pulls/$PR/update-branch" -f expected_head_sha="$SHA"

@@ -90,6 +90,14 @@ jobs:
           if [ -f _siblings/nooticr-dashboard/playwright.config.ts ]; then (cd _siblings/nooticr-dashboard && npx playwright install --with-deps chromium); fi
       - name: Run the gate
         run: python3 _siblings/nooticr-server/verify/verify.py --cwd "$GITHUB_WORKSPACE" run --tier ci
+      - name: Tell #design how the design-system rules went
+        # Silent unless a D.* rule ran, so #design hears about UI changes only.
+        if: always() && github.event_name == 'pull_request'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_DESIGN_CHANNEL: ${{ vars.SLACK_DESIGN_CHANNEL }}
+          LINK: ${{ github.event.pull_request.html_url }}
+        run: python3 _siblings/nooticr-server/ops/pipeline/digest.py design --report .verify/report.json --link "$LINK"
       - name: Keep the evidence
         if: always()
         uses: actions/upload-artifact@v4
