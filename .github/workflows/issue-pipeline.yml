@@ -75,8 +75,8 @@ jobs:
           HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
         run: |
           why="NOOTICR_VERIFY_TOKEN is set but cannot read it"; [ "$HAS_TOKEN" = true ] || why="NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)"
-          [ -d _siblings/nooticr-server/.git ] || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
-          [ -d _siblings/nooticr-dashboard/.git ] || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
+          git -C _siblings/nooticr-server rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
+          git -C _siblings/nooticr-dashboard rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -164,8 +164,8 @@ jobs:
           HAS_TOKEN: ${{ secrets.NOOTICR_VERIFY_TOKEN != '' }}
         run: |
           why="NOOTICR_VERIFY_TOKEN is set but cannot read it"; [ "$HAS_TOKEN" = true ] || why="NOOTICR_VERIFY_TOKEN is not set, and this job's own token cannot read another private repo (nooticr-server/ops/README.md, setup step 7)"
-          [ -d _siblings/nooticr-server/.git ] || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
-          [ -d _siblings/nooticr-dashboard/.git ] || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
+          git -C _siblings/nooticr-server rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "::error::nooticr-server could not be checked out, and the verify toolkit lives there: $why"; exit 1; }
+          git -C _siblings/nooticr-dashboard rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "::warning::nooticr-dashboard could not be checked out, and rules spanning it report NOT CHECKED: $why"; }
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
