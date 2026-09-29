@@ -346,3 +346,30 @@ its description.
 The proposing step is a seam, not a dependency: candidates are JSON, so any
 model or a human can write `invariants/candidates.json`. Only
 `invariants/earned.json` means anything, and only the verifier writes it.
+
+## Verification: what "done" is checked against
+
+Every session runs under nooticr-verify (`nooticr-server/verify/`, hooks in
+`.claude/settings.json`). Its Stop hook re-runs every rule your change
+triggers — across all three repos — and will not let the turn end while one
+fails. Your own account of what passed is not evidence; the gate's report
+(`.verify/report.json`) is. Three things follow:
+
+- **Do the work, don't stage it.** A deferral marker (`TODO`, `FIXME`,
+  `todo!()`, `not implemented`), `placeholder` copy, a silenced checker
+  (`@ts-ignore`, `eslint-disable`, `#[allow]`, `as any`), a skipped or hollowed
+  test, a swallowed error, a rewritten snapshot, a hand-bumped version or an
+  edited merged migration is refused as you write it. If the user explicitly
+  asks for one of those, their message records the permission.
+- **Say only what ran.** "Tests pass", "checked in the browser", "pushed" are
+  audited against this turn's transcript: the command must have succeeded after
+  your last edit. If something genuinely cannot run here, end your reply with
+  `UNVERIFIED: <rule-id> — <why>`.
+- **Use the skills.** `/verify` runs the gate now, `/visual-check` renders and
+  screenshots every surface against the design system, `/design-sync` refreshes
+  the pinned design system from its artifact.
+
+Sibling checkouts (`../nooticr-server`, `../nooticr-mcp`, `../nooticr-dashboard`)
+are what lets cross-repo rules run; without them those rules report NOT
+CHECKED rather than passing. The rule catalogue, and how to add a rule, is in
+`nooticr-server/verify/README.md`.

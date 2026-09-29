@@ -1,13 +1,92 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" SessionStart",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" UserPromptSubmit",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" PreToolUse",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" PostToolUse",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "out=$(npx tsc --noEmit 2>&1); if [ -n \"$out\" ]; then jq -n --arg r \"$out\" '{decision:\"block\", reason: (\"npx tsc --noEmit found type errors:\\n\\n\" + $r + \"\\n\\nFix them before finishing.\")}'; else echo '{}'; fi",
-            "timeout": 60,
-            "statusMessage": "Type-checking..."
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" Stop",
+            "timeout": 3600,
+            "statusMessage": "nooticr-verify: re-checking the work..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" SubagentStop",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" TaskCompleted",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/nooticr-verify.py\" PreCompact",
+            "timeout": 15
           }
         ]
       }
