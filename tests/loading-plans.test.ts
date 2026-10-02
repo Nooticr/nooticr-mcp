@@ -112,7 +112,7 @@ describe("loading plans", () => {
     expect(creditsFor("analyze_creator_profile")).toBe(2);
     expect(creditsFor("understand_social_post")).toBe(3);
     expect(creditsFor("analyze_post_fast")).toBe(2);
-    expect(creditsFor("compare_posts")).toBe(1);
+    expect(creditsFor("compare_social_posts")).toBe(1);
   });
 
   it("prices a sweep by the networks it will actually reach", () => {
@@ -178,7 +178,7 @@ describe("loading plans", () => {
     // A user with an empty balance needs to see which calls still work.
     expect(free).toContain("check_nooticr_credits");
     expect(free).toContain("list_social_connections");
-    expect(free).toContain("score_draft");
+    expect(free).toContain("evaluate_social_draft");
     for (const t of free) expect(creditsFor(t), `${t} is free`).toBe(0);
   });
 

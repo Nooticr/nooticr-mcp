@@ -20,7 +20,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "analyze_comments": {
+    "summarize_post_comments": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -152,7 +152,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "compare_posts": {
+    "compare_social_posts": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -200,7 +200,7 @@
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
       }
     },
-    "create_variants": {
+    "generate_post_variants": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -500,7 +500,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "get_google_analytics": {
+    "get_google_analytics_data": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false,
@@ -632,7 +632,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "repurpose_post": {
+    "adapt_post_for_platform": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -668,7 +668,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "score_draft": {
+    "evaluate_social_draft": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -992,7 +992,7 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
-    "write_hooks": {
+    "generate_hook_ideas": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1093,7 +1093,7 @@
     {
       "description": "Moving from why a post worked to what to film next. The tool hands over the source post and its transcript; the model writes the variants.",
       "user_prompt": "This post did well — give me four variants I could film next. https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
-      "tools_triggered": "create_variants, show_variants",
+      "tools_triggered": "generate_post_variants, show_variants",
       "expected_output": "Four variants, each with a hook, the one angle that changes, ordered shot beats and a CTA, keeping whatever made the original work — and saying what that was."
     }
   ],

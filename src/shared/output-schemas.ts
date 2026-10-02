@@ -525,7 +525,7 @@ export const OUTPUT_SCHEMAS = {
    * left optional because the schema is passthrough and a caller that stored
    * one should not find the key gone.
    */
-  analyze_comments: open({
+  summarize_post_comments: open({
     guidance,
     summary: scalar(),
     themes: anyList(),
@@ -635,7 +635,7 @@ export const OUTPUT_SCHEMAS = {
   // show_comment_review: they only draw what they're handed.
   show_compared_posts: open({
     verification: checkedAgainstSession,
-    posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_posts returned."),
+    posts: listOf(post).describe("The 2-5 posts being compared, same shape as compare_social_posts returned."),
     comparison: open({
       winner: scalar().describe("1-indexed position of the post that won, matching the posts array."),
       winnerReason: scalar(),
@@ -1025,7 +1025,7 @@ export const OUTPUT_SCHEMAS = {
     evidenceFrom: listOf(z.string()),
   }),
 
-  compare_posts: open({
+  compare_social_posts: open({
     ...evidence,
     posts: listOf(post),
     failed: anyList(),
@@ -1163,7 +1163,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  write_hooks: open({
+  generate_hook_ideas: open({
     ...evidence,
     hooks: listOf(open({
       hook: scalar(),
@@ -1174,7 +1174,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  create_variants: open({
+  generate_post_variants: open({
     ...evidence,
     variants: listOf(open({
       hook: scalar(),
@@ -1193,14 +1193,14 @@ export const OUTPUT_SCHEMAS = {
    * the rubric and the reading is the caller's. Same rule as `provider` above:
    * documenting a field that never arrives is worse than omitting it.
    */
-  score_draft: open({
+  evaluate_social_draft: open({
     guidance,
     draft: scalar(),
     platform: scalar(),
     mcpCredits,
   }),
 
-  repurpose_post: open({
+  adapt_post_for_platform: open({
     ...evidence,
     repurposed: open({}).nullish().describe("One entry per target surface."),
     post: post.nullish(),
@@ -1542,7 +1542,7 @@ export const OUTPUT_SCHEMAS = {
   // The connector reads (#104). Each is the backend's connector_sync_cache
   // row as stored, plus `synced_at`, the hoisted appId/appName, and the
   // `connector` this surface adds so the view knows which table to draw.
-  get_google_analytics: open({
+  get_google_analytics_data: open({
     connector: scalar(),
     propertyId: scalar(),
     rowsSynced: scalar(),

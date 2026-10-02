@@ -78,11 +78,11 @@ them caps that fan-out with an argument.
 | `analyze_post_fast` | 2 | The post's transcript, caption and stats — everything but the pictures, which is what makes it the cheap read. Two fetches: `get_social_media` (1) and `get_post_transcript` (1). The sensible default. |
 | `analyze_post` | 3 | Frames sampled across the video, as **images your model can actually look at**, plus the transcript. Two fetches: `get_post_frames` (2) and `get_post_transcript` (1). Use when the visuals are the point — framing, editing, on-screen text. |
 | `understand_social_post` | 3 | The same two fetches, asked for a description of what physically happens on screen rather than why it works. Use when you need the events, not the strategy. |
-| `analyze_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. Pass `verbatim: true` to have every item rendered whole for quoting rather than clipped to fit; same price. |
+| `summarize_post_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. Pass `verbatim: true` to have every item rendered whole for quoting rather than clipped to fit; same price. |
 | `show_comment_review` | free | Draws the classifications your model produced — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
 | `show_post_analysis` | free | Draws the analysis your model wrote from `analyze_post`/`analyze_post_fast`/`understand_social_post` — hook strength, script structure, quotable lines, suggested hashtags and more, whichever fields you produced. Makes no requests; it only renders what you pass it. |
-| `compare_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
-| `show_compared_posts` | free | Draws the comparison your model wrote from `compare_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
+| `compare_social_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
+| `show_compared_posts` | free | Draws the comparison your model wrote from `compare_social_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
 
 ### Research a niche or a creator
 
@@ -124,7 +124,7 @@ them caps that fan-out with an argument.
 | `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. Every candidate also carries the **links pulled out of their bio**, typed and sorted by how much opening one will tell you — a repository to read the code in, their own site, a link hub that holds the real links — so vetting is reading the work rather than re-reading the follower count. Those links are never fetched here: they came out of a field the person being evaluated controls, so the host opens them, and the result says so. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
 | `find_people_with_problem` | 6 per platform | Find people **describing a problem in their own words** — prospects, early users, anyone whose complaint your product answers. Say the problem the way a person would say it and it searches for posts shaped like that complaint rather than for the topic it is about: searching the topic finds marketing about it, which is what `discover_social_posts` is for. Widens the query into the forms a complaint takes — the plain phrasing, the does-anyone-else question, the is-there-a-tool ask — and marks which one surfaced each post. A wide cheap net and **not** a filter: the posts come back for you to judge, and plenty will be off-target. Defaults to reddit, where people describe workflow pain in sentences. Each platform is searched once per query shape — three by default, at 2 credits a search. Not searchable here: linkedin, which has no keyword post search upstream. Pass `verbatim: true` to have every item rendered whole for quoting rather than clipped to fit; same price. |
 | `show_collab_shortlist` | free | Draws the candidates you scored, ranked, and asks the user which to approach. The scores are attributed to your model, not presented as a nooticr rating, and a candidate scored without anything having been opened is marked unverified. Makes no requests. |
-| `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
+| `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_social_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
 | `detect_spoken_mentions` | 2 | **Every brand named out loud in one video.** The spoken transcript and the written caption, side by side, for your model to list each brand with its verbatim sentence, the creator's framing and whether it was said, written or both. Works where the creator never enabled captions, because the audio is transcribed. 1 credit for `get_post_transcript` plus 1 for `get_social_media`; nothing when no transcript can be made. |
 | `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok, YouTube and Douyin, and only where the creator actually enabled captions. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
@@ -159,13 +159,13 @@ a `scanId` for the rest.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `write_hooks` | 2, or free | The source post and its transcript, to write openings against. Give a topic instead of a url and it fetches nothing and costs nothing. |
-| `show_hooks` | free | Draws the hooks your model wrote from `write_hooks` — each one with the device it uses and who it stops. Makes no requests; it only renders what you pass it. |
-| `score_draft` | free | **Your** draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the three fixes worth making and a rewritten opening. Fetches nothing: the text is already yours. The only tool that runs before the content exists. |
-| `repurpose_post` | 2 | The source post and its transcript, to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
-| `show_repurposed_post` | free | Draws the rewritten copy your model produced from `repurpose_post` — one entry per surface. Makes no requests; it only renders what you pass it. |
-| `create_variants` | 2 | The post that worked, with its transcript, to build variants from: hook, the angle that changes, ordered shot beats and a CTA. |
-| `show_variants` | free | Draws the variants your model wrote from `create_variants` — each one's hook, angle, beats and CTA. Makes no requests; it only renders what you pass it. |
+| `generate_hook_ideas` | 2, or free | The source post and its transcript, to write openings against. Give a topic instead of a url and it fetches nothing and costs nothing. |
+| `show_hooks` | free | Draws the hooks your model wrote from `generate_hook_ideas` — each one with the device it uses and who it stops. Makes no requests; it only renders what you pass it. |
+| `evaluate_social_draft` | free | **Your** draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the three fixes worth making and a rewritten opening. Fetches nothing: the text is already yours. The only tool that runs before the content exists. |
+| `adapt_post_for_platform` | 2 | The source post and its transcript, to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
+| `show_repurposed_post` | free | Draws the rewritten copy your model produced from `adapt_post_for_platform` — one entry per surface. Makes no requests; it only renders what you pass it. |
+| `generate_post_variants` | 2 | The post that worked, with its transcript, to build variants from: hook, the angle that changes, ordered shot beats and a CTA. |
+| `show_variants` | free | Draws the variants your model wrote from `generate_post_variants` — each one's hook, angle, beats and CTA. Makes no requests; it only renders what you pass it. |
 
 ### Account
 
@@ -194,7 +194,7 @@ Everything above reads someone else's content. These read and generate for **you
 | `get_scheduled_posts` | free | Your own scheduled and draft posts in the content pipeline — title, status, scheduled time, approval status. What is queued to publish. |
 | `get_post_performance` | free | Your own already-published posts with their engagement counters — views, likes, comments, shares, platform, post date. The raw performance history, not an interpretation of it; pair with `growth_brief` for that. |
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
-| `get_google_analytics` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
+| `get_google_analytics_data` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
 | `get_search_console_data` | free | Search Console clicks, impressions and top queries, as of the last sync — whether people search for what your content is about. |
 | `get_posthog_analytics` | free | Your PostHog pageview trend, as of the last sync — line a post's date up against traffic to your site. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
@@ -280,13 +280,13 @@ Twenty frames is about 2.4% of a million-token context.
 | Tool | What comes back | Credits |
 |---|---|---|
 | `analyze_post` | frames as images, plus the transcript and stats | **3** (2 + 1) |
-| `analyze_comments` | the comments, each with an id, and the labels to use | **2** |
+| `summarize_post_comments` | the comments, each with an id, and the labels to use | **2** |
 | `analyze_creator_profile` | the creator's recent posts and their numbers | **2** |
-| `score_draft` | your own draft, and the rubric to score it against | **free** |
+| `evaluate_social_draft` | your own draft, and the rubric to score it against | **free** |
 
 The prices above are derived from the fetches each tool makes rather than
 written down twice — see `EVIDENCE_PLANS` and `planCost` in
-`src/shared/evidence.ts`. `score_draft` has no plan at all: it reviews text you
+`src/shared/evidence.ts`. `evaluate_social_draft` has no plan at all: it reviews text you
 already have, so there is nothing to fetch and nothing to charge for.
 
 `show_comment_review` closes the loop: hand back your classifications and it

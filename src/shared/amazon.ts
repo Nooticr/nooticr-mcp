@@ -158,7 +158,7 @@ export function normaliseProducts(raw: unknown): Array<Record<string, unknown>> 
         return {
           // Addressable, so the model's analysis can point back at the exact
           // review it read a driver or a barrier out of. Same shape
-          // analyze_comments mints for a comment.
+          // summarize_post_comments mints for a comment.
           id: String(row.id ?? `review:${id}:${i}`),
           asin: id,
           brand: String(p.brand ?? ""),

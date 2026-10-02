@@ -97,8 +97,8 @@ evals). This section is the manual discipline to follow on top of those
 whenever you touch a tool's guidance text, a `show_*` view, or anything in
 `ui-template.ts` — the method that found and fixed every bug in that doc's
 "Bugs this exercise surfaced" section, plus later passes that caught
-`understand_social_post`'s `focus` argument, `create_variants`' `count`/
-`angle`, and `write_hooks`' `topic`/`count`/`tone` all being accepted by
+`understand_social_post`'s `focus` argument, `generate_post_variants`' `count`/
+`angle`, and `generate_hook_ideas`' `topic`/`count`/`tone` all being accepted by
 the zod schema and silently dropped by the guidance builder, and
 `track_creator`/`why_did_this_underperform` computing a real
 ratio-to-baseline verdict per post that `postCard()` never rendered.
@@ -277,7 +277,7 @@ written up in `docs/testing/tool-chaining-quests.md`:
 - **What decides whether a chain holds is retrieval, not wording.** With this
   many tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
   in a `show_*` tool, it was called 0/18 times when ToolSearch never returned
-  it and 14/18 when it did. The 3/3 case (`repurpose_post ->
+  it and 14/18 when it did. The 3/3 case (`adapt_post_for_platform ->
   show_repurposed_post`) was decided by the model's FIRST query naming both —
   a shared name stem — before any description was in context. So a `show_X`
   nobody searches for steers nothing, however well its description reads.

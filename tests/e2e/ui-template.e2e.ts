@@ -416,7 +416,7 @@ test("selecting posts and pressing Compare calls the tool", async ({ page }) => 
   // answered by no host, which is what made the button appear to do nothing.
   expect(call, `expected a tools/call, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
   expect(call!.params).toEqual({
-    name: "compare_posts",
+    name: "compare_social_posts",
     arguments: { urls: [POSTS[0].externalUrl, POSTS[1].externalUrl] },
   });
 });
@@ -484,7 +484,7 @@ test("analysis actions are offered once each and call their tool", async ({ page
   // row, showing three of these twice.
   const tools = await page.evaluate(
     () => [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai")));
-  expect(tools).toEqual(["create_variants", "write_hooks", "repurpose_post", "analyze_comments"]);
+  expect(tools).toEqual(["generate_post_variants", "generate_hook_ideas", "adapt_post_for_platform", "summarize_post_comments"]);
 
   for (const tool of tools) {
     await page.evaluate(() => { (window as unknown as { __sent: unknown[] }).__sent = []; });
@@ -591,7 +591,7 @@ test.describe("chatgpt host actions", () => {
 
     const { called, bridge } = await readSpies(page);
     expect(called).toEqual([{
-      name: "compare_posts",
+      name: "compare_social_posts",
       args: { urls: [POSTS[0].externalUrl, POSTS[1].externalUrl] },
     }]);
     // The dead bridge must not be used when the host offers its own API.
@@ -603,7 +603,7 @@ test.describe("chatgpt host actions", () => {
     await asChatGpt(page, ANALYSIS);
     const tools = await page.evaluate(
       () => [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai")));
-    expect(tools).toEqual(["create_variants", "write_hooks", "repurpose_post", "analyze_comments"]);
+    expect(tools).toEqual(["generate_post_variants", "generate_hook_ideas", "adapt_post_for_platform", "summarize_post_comments"]);
 
     for (const tool of tools) {
       await page.locator(`.ai-btn[data-ai="${tool}"]`).click();
@@ -630,7 +630,7 @@ test.describe("chatgpt host actions", () => {
 // The bug as reported, and it was on Claude: pressing Compare said "Copy
 // failed" while the host was running the tool perfectly well. The fallback
 // fired at 1500ms — but a tool call is not a UI event. Measured against the
-// live server, discover_social_posts takes 10.3s and compare_posts 10.4s, so
+// live server, discover_social_posts takes 10.3s and compare_social_posts 10.4s, so
 // the deadline expired seven times over on the ordinary path, every time. The
 // user was told the call had failed, the clipboard fallback then failed too
 // (a sandboxed widget iframe has no clipboard-write grant), and the real
@@ -1307,12 +1307,12 @@ test.describe("brand monitoring", () => {
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
   });
 
-  // analyze_comments's real inputSchema is {url, limit?}.strict() — one
+  // summarize_post_comments's real inputSchema is {url, limit?}.strict() — one
   // post, not an arbitrary list of texts/ids — so "Analyse these" resolves
-  // which post(s) the picks belong to and calls analyze_comments on that
+  // which post(s) the picks belong to and calls summarize_post_comments on that
   // post's url when they all belong to one; a real host executing the old
   // {comments, ids} shape got a schema rejection every time.
-  test("picking comments from one post calls analyze_comments on that post's url", async ({ page }) => {
+  test("picking comments from one post calls summarize_post_comments on that post's url", async ({ page }) => {
     await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
@@ -1336,7 +1336,7 @@ test.describe("brand monitoring", () => {
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
     expect(called).toHaveLength(1);
-    expect(called[0].name).toBe("analyze_comments");
+    expect(called[0].name).toBe("summarize_post_comments");
     expect(called[0].args).toEqual({ url: "https://reddit.example/p/29", limit: 20 });
     await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
   });
@@ -1363,7 +1363,7 @@ test.describe("brand monitoring", () => {
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
-    expect(called, "should not have sent analyze_comments a call it will reject").toHaveLength(0);
+    expect(called, "should not have sent summarize_post_comments a call it will reject").toHaveLength(0);
     // The bar says why in its hint, where the eye already is; the button keeps
     // its label, because one that renames itself reads as a different action.
     await expect(page.locator("#pickhint")).toContainText(/one post/i);
@@ -1460,7 +1460,7 @@ test.describe("brand monitoring", () => {
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { args: Record<string, unknown> }[]);
     // All seven are one post's comments (BURST is a single thread), so the
-    // real analyze_comments({url, limit?}.strict()) call succeeds — even
+    // real summarize_post_comments({url, limit?}.strict()) call succeeds — even
     // though only 4 rows were ever rendered before "select all".
     expect(called[0].args).toEqual({ url: "https://weibo.example/p/1", limit: 20 });
     // Clicking again clears all seven.

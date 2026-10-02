@@ -68,13 +68,13 @@ const ARGS: Record<string, Record<string, unknown>> = {
   analyze_post: { url: "https://www.youtube.com/watch?v=abc" },
   understand_social_post: { url: "https://www.youtube.com/watch?v=abc" },
   analyze_post_fast: { url: "https://www.youtube.com/watch?v=abc" },
-  compare_posts: { urls: ["https://x/1", "https://x/2"] },
+  compare_social_posts: { urls: ["https://x/1", "https://x/2"] },
   analyze_creator_profile: { username: "nike" },
   find_hook_pattern: { username: "nike" },
   niche_report: { niche: "fitness" },
-  write_hooks: { url: "https://x/1" },
-  create_variants: { url: "https://x/1" },
-  repurpose_post: { url: "https://x/1", targets: ["linkedin"] },
+  generate_hook_ideas: { url: "https://x/1" },
+  generate_post_variants: { url: "https://x/1" },
+  adapt_post_for_platform: { url: "https://x/1", targets: ["linkedin"] },
 };
 
 const TOOLS = Object.keys(EVIDENCE_PLANS);
@@ -82,10 +82,10 @@ const TOOLS = Object.keys(EVIDENCE_PLANS);
 describe("every tool hands back its evidence", () => {
   it("covers the whole surface, minus the one with nothing to fetch", () => {
     expect(TOOLS.length).toBe(10);
-    // score_draft reviews text the caller already has: a plan there would be a
+    // evaluate_social_draft reviews text the caller already has: a plan there would be a
     // paid call returning the caller's own input, so it is free instead.
-    expect(FETCHES_NOTHING).toContain("score_draft");
-    expect(TOOLS).not.toContain("score_draft");
+    expect(FETCHES_NOTHING).toContain("evaluate_social_draft");
+    expect(TOOLS).not.toContain("evaluate_social_draft");
   });
 
   it.each(TOOLS)("%s makes the cheap call, not the AI one", async (tool) => {
@@ -283,8 +283,8 @@ describe("get_post_frames on its own", () => {
  * This is the one bug class in this file that no schema check can see: the zod
  * field is present, the handler types it, `tools/list` advertises it, and the
  * guidance comes back byte-identical whether it was passed or not. It has
- * happened five times — `understand_social_post`'s `focus`, `create_variants`'
- * `count` and `angle`, `write_hooks`' `topic`, `count` and `tone`, and then
+ * happened five times — `understand_social_post`'s `focus`, `generate_post_variants`'
+ * `count` and `angle`, `generate_hook_ideas`' `topic`, `count` and `tone`, and then
  * `analyze_creator_profile`'s `focus`, which was missed by the pass that fixed
  * the other four because that pass was a person calling tools by hand.
  *
@@ -296,10 +296,10 @@ describe("get_post_frames on its own", () => {
 const GUIDANCE_ARGS: Array<{ tool: string; arg: string; value: unknown }> = [
   { tool: "analyze_creator_profile", arg: "focus", value: "their pinned comments" },
   { tool: "understand_social_post", arg: "focus", value: "the on-screen text" },
-  { tool: "create_variants", arg: "angle", value: "a cheaper production" },
-  { tool: "create_variants", arg: "count", value: 5 },
-  { tool: "write_hooks", arg: "tone", value: "deadpan" },
-  { tool: "write_hooks", arg: "count", value: 4 },
+  { tool: "generate_post_variants", arg: "angle", value: "a cheaper production" },
+  { tool: "generate_post_variants", arg: "count", value: 5 },
+  { tool: "generate_hook_ideas", arg: "tone", value: "deadpan" },
+  { tool: "generate_hook_ideas", arg: "count", value: 4 },
 ];
 
 describe("an argument a tool documents is an argument it reads", () => {

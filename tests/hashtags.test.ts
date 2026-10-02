@@ -2,7 +2,7 @@
  * Hashtag discovery on the nine networks with no trend board (issue #32).
  *
  * "What should I tag this?" was answerable on TikTok and nowhere else, while
- * `repurpose_post` exists to move a post between networks and tagging is part
+ * `adapt_post_for_platform` exists to move a post between networks and tagging is part
  * of the conventions it could not inform. The fix counts tags across a niche
  * sweep, which is a weaker measurement than a trend board in one specific way:
  * a single sample has no rising/cooling signal. So most of what is tested here

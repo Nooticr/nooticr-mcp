@@ -35,7 +35,7 @@ export const SERVER_INSTRUCTIONS = [
     "confirmation flow before proceeding.",
   "Not sure where to start? Call nooticr_getting_started: it is free, reads this account's state, and names " +
     "the next calls worth making with their prices. Good first calls: get_social_media on a post URL " +
-    "(1 credit), discover_social_posts on a niche (2), analyze_comments on a post (2).",
+    "(1 credit), discover_social_posts on a niche (2), summarize_post_comments on a post (2).",
   "Marketplace scans run in the background and usually come back unfinished (e.g. 4 of 10). When a result " +
     "says NOT FINISHED or carries a nextCall, make that call (it is free) and keep polling until it is " +
     "complete before concluding anything or ending your turn.",
@@ -90,7 +90,7 @@ export function nextSteps(state: {
       example: { niche: "<your niche>", platform: "tiktok" },
     },
     {
-      tool: "analyze_comments",
+      tool: "summarize_post_comments",
       why: "Read what an audience actually says under a post, for you to synthesise.",
       credits: 2,
       example: { url: "<a post URL>" },

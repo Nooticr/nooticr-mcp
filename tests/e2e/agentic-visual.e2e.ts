@@ -175,7 +175,7 @@ test.describe.serial("real tool result rendered and clicked", () => {
     const call = sent.find((m) => m.method === "tools/call");
     expect(call, `expected a tools/call, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
     expect(call!.params).toEqual({
-      name: "compare_posts",
+      name: "compare_social_posts",
       arguments: { urls: [posts[0].externalUrl, posts[1].externalUrl] },
     });
   });

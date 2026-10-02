@@ -33,16 +33,16 @@ async function connect() {
 
 const text = (r: unknown) => String((r as { content: Array<{ text: string }> }).content[0].text);
 
-describe("analyze_comments verbatim", () => {
+describe("summarize_post_comments verbatim", () => {
   it("by default clips, and says to call again with verbatim: true", async () => {
     const { client } = await connect();
-    const out = text(await client.callTool({ name: "analyze_comments", arguments: { url: "https://reddit.com/r/x/comments/1" } }));
-    expect(out).toMatch(/call analyze_comments again with the same url and verbatim: true/);
+    const out = text(await client.callTool({ name: "summarize_post_comments", arguments: { url: "https://reddit.com/r/x/comments/1" } }));
+    expect(out).toMatch(/call summarize_post_comments again with the same url and verbatim: true/);
   });
 
   it("with verbatim renders all thirty whole, and does not send the flag upstream", async () => {
     const { client, calls } = await connect();
-    const out = text(await client.callTool({ name: "analyze_comments", arguments: { url: "https://reddit.com/r/x/comments/1", verbatim: true } }));
+    const out = text(await client.callTool({ name: "summarize_post_comments", arguments: { url: "https://reddit.com/r/x/comments/1", verbatim: true } }));
     expect(out.split(long).length - 1).toBe(30);
     expect(out).not.toMatch(/shortened/);
     expect(calls[0].args).not.toHaveProperty("verbatim");

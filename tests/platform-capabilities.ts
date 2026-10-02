@@ -86,11 +86,11 @@ export type Capability = {
 export const CAPABILITIES: Readonly<Record<string, Capability>> = {
   postDetail: {
     enumerating: ["get_social_media", "understand_social_post"],
-    quiet: ["analyze_post", "analyze_post_fast", "compare_posts", "get_post_frames"],
+    quiet: ["analyze_post", "analyze_post_fast", "compare_social_posts", "get_post_frames"],
   },
   comments: {
     enumerating: ["get_post_comments"],
-    quiet: ["analyze_comments"],
+    quiet: ["summarize_post_comments"],
   },
   userPosts: {
     enumerating: ["analyze_creator_profile"],
@@ -162,7 +162,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     ],
     listIsCeiling: true,
     enumerating: [],
-    quiet: ["score_draft", "repurpose_post", "write_hooks", "create_variants", "draft_post"],
+    quiet: ["evaluate_social_draft", "adapt_post_for_platform", "generate_hook_ideas", "generate_post_variants", "draft_post"],
   },
 
   /**

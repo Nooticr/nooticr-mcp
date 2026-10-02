@@ -133,18 +133,18 @@ describe("a tool spends exactly the calls its plan names", () => {
 
   it("charges nothing when there is nothing to fetch", async () => {
     const { client, calls } = await connect();
-    // write_hooks takes a topic instead of a url. Fetching with an empty url
+    // generate_hook_ideas takes a topic instead of a url. Fetching with an empty url
     // would bill a credit for a call that could only fail.
-    const res = await call(client, "write_hooks", { topic: "cold plunges" });
+    const res = await call(client, "generate_hook_ideas", { topic: "cold plunges" });
 
     expect(res.isError).toBeFalsy();
     expect(calls).toEqual([]);
     expect(text(res)).toMatch(/nothing was charged/i);
   });
 
-  it("analyze_comments reads the comments and classifies nothing itself", async () => {
+  it("summarize_post_comments reads the comments and classifies nothing itself", async () => {
     const { client, calls } = await connect();
-    const res = await call(client, "analyze_comments", { url: URL });
+    const res = await call(client, "summarize_post_comments", { url: URL });
 
     expect(calls.map((c) => c.name)).toEqual(["get_post_comments"]);
     const out = res.structuredContent as Record<string, unknown>;
@@ -230,10 +230,10 @@ describe("a failed fetch is reported as a failure", () => {
   });
 });
 
-describe("score_draft costs nothing because it fetches nothing", () => {
+describe("evaluate_social_draft costs nothing because it fetches nothing", () => {
   it("returns the draft with the rubric and makes no call", async () => {
     const { client, calls } = await connect();
-    const res = await call(client, "score_draft", { draft: "I bought a sauna so you don't have to" });
+    const res = await call(client, "evaluate_social_draft", { draft: "I bought a sauna so you don't have to" });
 
     expect(res.isError).toBeFalsy();
     expect(calls).toEqual([]);

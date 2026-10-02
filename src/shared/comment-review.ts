@@ -3,7 +3,7 @@
  *
  * ## Why
  *
- * `analyze_comments` used to fetch a comment section, send it to Gemini, and
+ * `summarize_post_comments` used to fetch a comment section, send it to Gemini, and
  * return Gemini's opinion. That cost 6 credits, took a round trip to a third
  * party, and died when that third party declined — measured: `Gemini text 403
  * Forbidden` while `get_post_comments` returned the same post's comments fine.
@@ -153,7 +153,7 @@ export function classificationBlock(): string[] {
  *
  * The view has drawn per-item category chips, a counted filter row and the
  * click-to-filter behind them for as long as they have existed — but only
- * `analyze_comments` ever handed a host the taxonomy, so on a brand sweep
+ * `summarize_post_comments` ever handed a host the taxonomy, so on a brand sweep
  * across nine networks, the most expensive call in the product, all three were
  * inert every time (#79). Nothing needed building; the host was simply never
  * asked.

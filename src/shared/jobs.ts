@@ -122,7 +122,7 @@ export function postIdOf(post: Row, index: number): string {
 /**
  * A comment's id, derived from the comment rather than from where it sat.
  *
- * The older schemes here are positional. `analyze_comments` mints
+ * The older schemes here are positional. `summarize_post_comments` mints
  * `comment:<postSlug>:<index>`, and `search_mentions` mints
  * `<platform>:<postId>:<index into the whole result>` — and an index moves.
  * Change `commentsPerPost`, page with a different `offset`, apply a `since`
@@ -1595,7 +1595,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // ───────────────────────────────────────────────────────────────────────────
   // 4. why_did_this_underperform
   //
-  // Not compare_posts. That answers "why did A beat B" from two URLs a person
+  // Not compare_social_posts. That answers "why did A beat B" from two URLs a person
   // already suspects; this answers "is this even bad, and against what", which
   // needs the creator's own distribution rather than a second post.
   // ───────────────────────────────────────────────────────────────────────────
@@ -1610,7 +1610,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "own baseline, and returns where it actually sits in the distribution — median, " +
         "quartiles, ratio and percentile — so the answer can be 'this is a normal result, not a " +
         "failure'. Consumes 3 nooticr credits (1 for the post, 2 for the window). Use when you " +
-        "have one post and no comparison; compare_posts is for two URLs you already picked.",
+        "have one post and no comparison; compare_social_posts is for two URLs you already picked.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.why_did_this_underperform,
       inputSchema: z
