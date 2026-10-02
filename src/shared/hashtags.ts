@@ -5,7 +5,7 @@
  * board: it knows post counts, view counts, and whether a tag is rising,
  * cooling or steady. Nothing equivalent exists upstream for the other nine
  * networks, so "what should I tag this?" was answerable on one network out of
- * ten — while `repurpose_post` exists precisely to move a post between
+ * ten — while `adapt_post_for_platform` exists precisely to move a post between
  * networks, and tagging is part of the conventions it cannot inform (issue #32).
  *
  * What is available is a niche sweep the caller is often paying for anyway.

@@ -695,27 +695,27 @@ const TWO_POSTS = [1, 2].map((i) => ({ platform: "tiktok", caption: `p${i}`, ext
 
 test("a Compare the tool refused says why, rather than Sent", async ({ page }) => {
   const errs = await boot(page);
-  await inBandHost(page, refusal("compare_posts failed: Not enough nooticr credits — 1 needed, 0 left."));
+  await inBandHost(page, refusal("compare_social_posts failed: Not enough nooticr credits — 1 needed, 0 left."));
   await result(page, { posts: TWO_POSTS });
   await page.locator(".mp-pick").nth(0).click();
   await page.locator(".mp-pick").nth(1).click();
   await page.locator("#pickgo").click();
-  await expect(page.locator("#pickhint")).toHaveText("compare_posts failed: Not enough nooticr credits — 1 needed, 0 left.");
+  await expect(page.locator("#pickhint")).toHaveText("compare_social_posts failed: Not enough nooticr credits — 1 needed, 0 left.");
   await expect(page.locator("#pickgo")).toContainText("Compare");
   await expect(page.locator("#pickgo")).not.toContainText(/Sent|Copied/);
-  expect(await calledTools(page)).toEqual([{ name: "compare_posts", args: { urls: TWO_POSTS.map((p) => p.externalUrl) } }]);
+  expect(await calledTools(page)).toEqual([{ name: "compare_social_posts", args: { urls: TWO_POSTS.map((p) => p.externalUrl) } }]);
   expect(errs).toEqual([]);
 });
 
 test("an action under a post the tool refused says why under its row", async ({ page }) => {
   const errs = await boot(page);
-  await inBandHost(page, refusal("write_hooks failed: that post is private"));
+  await inBandHost(page, refusal("generate_hook_ideas failed: that post is private"));
   await result(page, { analysis: { summary: "A hook-led demo." }, post: TWO_POSTS[0] });
-  await page.locator('.ai-btn[data-ai="write_hooks"]').click();
-  await expect(page.locator(".nt-call-error")).toHaveText("write_hooks failed: that post is private");
-  await expect(page.locator('.ai-btn[data-ai="write_hooks"]')).toContainText("Failed");
+  await page.locator('.ai-btn[data-ai="generate_hook_ideas"]').click();
+  await expect(page.locator(".nt-call-error")).toHaveText("generate_hook_ideas failed: that post is private");
+  await expect(page.locator('.ai-btn[data-ai="generate_hook_ideas"]')).toContainText("Failed");
   // A check beside "Failed" would say both things at once: the alert glyph.
-  expect(await page.locator('.ai-btn[data-ai="write_hooks"] .nt-ai-ico').innerHTML()).toContain("m21.73 18-8-14");
+  expect(await page.locator('.ai-btn[data-ai="generate_hook_ideas"] .nt-ai-ico').innerHTML()).toContain("m21.73 18-8-14");
   expect(errs).toEqual([]);
 });
 
@@ -738,7 +738,7 @@ test("Load more appends the next page to the list it was pressed under", async (
   expect(errs).toEqual([]);
 });
 
-test("Analyse these draws what analyze_comments read", async ({ page }) => {
+test("Analyse these draws what summarize_post_comments read", async ({ page }) => {
   const errs = await boot(page);
   await inBandHost(page, { structuredContent: {
     url: "https://reddit.com/r/x/1", platform: "reddit", commentCount: 2,
@@ -750,7 +750,7 @@ test("Analyse these draws what analyze_comments read", async ({ page }) => {
   await page.locator("#pickgo").click();
   await expect(page.locator(".nt-feeds-comment")).toHaveCount(2);
   await expect(page.locator(".mgroups")).toHaveCount(0);
-  expect(await calledTools(page)).toEqual([{ name: "analyze_comments", args: { url: "https://reddit.com/r/x/1", limit: 20 } }]);
+  expect(await calledTools(page)).toEqual([{ name: "summarize_post_comments", args: { url: "https://reddit.com/r/x/1", limit: 20 } }]);
   expect(errs).toEqual([]);
 });
 

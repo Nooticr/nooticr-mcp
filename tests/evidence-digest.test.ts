@@ -41,7 +41,7 @@ describe("the evidence a text-only host receives", () => {
         { id: "comment:123:0", author: "priya_makes", likes: 412, text: "this stopped working" },
       ],
     });
-    // analyze_comments asks for a classification per comment and
+    // summarize_post_comments asks for a classification per comment and
     // show_comment_review takes those ids back. Rendering the text and
     // dropping the id would break the chain while looking fine.
     expect(digest).toContain("comment:123:0");
@@ -181,10 +181,10 @@ describe("verbatim and recovery", () => {
   const comments = Array.from({ length: 40 }, (_, i) => ({ id: `c${i}`, author: `u${i}`, text: long }));
 
   it("names the way to recover what it clipped", () => {
-    const out = evidenceDigest({ comments }, { recover: "call analyze_comments again with verbatim: true" });
+    const out = evidenceDigest({ comments }, { recover: "call summarize_post_comments again with verbatim: true" });
     expect(out).toContain("…");
-    expect(out).toMatch(/to read them here, call analyze_comments again with verbatim: true/);
-    expect(out).toMatch(/Do not quote a shortened line as complete; to get every item whole, call analyze_comments/);
+    expect(out).toMatch(/to read them here, call summarize_post_comments again with verbatim: true/);
+    expect(out).toMatch(/Do not quote a shortened line as complete; to get every item whole, call summarize_post_comments/);
   });
 
   it("renders every comment whole when asked", () => {

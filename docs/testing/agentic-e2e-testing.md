@@ -269,10 +269,10 @@ after the product owner weighed in.
 **Fixed:**
 
 1. **The Monitor view's "Analyse these" button sent an argument shape
-   `analyze_comments` rejects** — `{comments, ids}` against a real
+   `summarize_post_comments` rejects** — `{comments, ids}` against a real
    `{url, limit?}.strict()` schema, a guaranteed rejection on any real host.
    Fixed in `ui-template.ts`: it now resolves which post the picks belong
-   to and calls `analyze_comments` on that post's url when they're all the
+   to and calls `summarize_post_comments` on that post's url when they're all the
    same one, or refuses to send anything (with a clear button message)
    when they span multiple posts — the tool has no way to act on an
    arbitrary cross-post selection, so sending nothing is correct, not a
@@ -302,7 +302,7 @@ after the product owner weighed in.
 
 **Left alone, on purpose — the product owner confirmed the design:**
 
-5. **`compare_posts` only ever fetches `urls[0]`**, never sets
+5. **`compare_social_posts` only ever fetches `urls[0]`**, never sets
    `.comparison`, never returns `.posts` — the dedicated comparison
    scoreboard view was unreachable by any real call.
 6. **`analyze_post`/`analyze_post_fast`/`understand_social_post` never
@@ -324,11 +324,11 @@ surface. Confirmed directly with the product owner: **the host LLM (the
 one the person is already talking to) should do all the writing/analysis,
 never a second model on the server.** What *was* genuinely missing wasn't
 server-side generation — it was somewhere for the host LLM's own writing
-to land. So instead of making `compare_posts`/`analyze_post_fast`/etc. call
+to land. So instead of making `compare_social_posts`/`analyze_post_fast`/etc. call
 real AI generation (which would reverse the documented design and its
 pricing model — these are priced at fetch-cost, not generation-cost), five
 new free, no-request tools close the loop the same way `show_comment_review`
-already did for `analyze_comments`:
+already did for `summarize_post_comments`:
 
 - **`show_compared_posts`** renders the (previously unreachable) comparison
   scoreboard — the model does the actual comparing across
@@ -338,8 +338,8 @@ already did for `analyze_comments`:
   same idea, for `analyze_post`/`analyze_post_fast`/`understand_social_post`.
 - **`show_hooks`**, **`show_variants`**, **`show_repurposed_post`** are new
   view code (this repo had no existing branch for a hooks list, a variants
-  list, or per-surface rewritten copy) for `write_hooks`, `create_variants`
-  and `repurpose_post` respectively.
+  list, or per-surface rewritten copy) for `generate_hook_ideas`, `generate_post_variants`
+  and `adapt_post_for_platform` respectively.
 
 Every evidence tool's guidance text (`evidence.ts`) now ends with an
 instruction to call the matching `show_*` tool when the model is done

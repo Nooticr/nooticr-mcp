@@ -82,7 +82,7 @@ export interface DigestOptions {
   /** Render every row whole, for quoting. Longer, and only when asked for. */
   verbatim?: boolean;
   /**
-   * How to get what the digest left out, e.g. `call analyze_comments again with
+   * How to get what the digest left out, e.g. `call summarize_post_comments again with
    * verbatim: true`. Named in every truncation note, because "(3 more)" that
    * points nowhere is a dead end for the model reading it.
    */
@@ -176,7 +176,7 @@ function postLine(row: Row, b: Budget): string {
 /**
  * One comment, with its id.
  *
- * The id is the load-bearing field: `analyze_comments` asks for a
+ * The id is the load-bearing field: `summarize_post_comments` asks for a
  * classification per comment and `show_comment_review` takes those ids back.
  * A digest that renders the text and drops the id breaks the next call.
  */

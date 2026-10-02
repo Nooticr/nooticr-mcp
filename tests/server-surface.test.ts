@@ -117,7 +117,7 @@ describe("tool annotations", () => {
       "generate_content_plan",
       "get_brand_playbook",
       "get_content_plan",
-      "get_google_analytics",
+      "get_google_analytics_data",
       "get_post_performance",
       "get_posthog_analytics",
       "get_scheduled_posts",
@@ -364,7 +364,7 @@ describe("output schemas", () => {
     const feed = JSON.stringify(byName.discover_social_posts.outputSchema);
     expect(feed).toContain("externalUrl");
     expect(JSON.stringify(byName.get_post_transcript.outputSchema)).toContain("transcript");
-    expect(JSON.stringify(byName.compare_posts.outputSchema)).toContain("winner");
+    expect(JSON.stringify(byName.compare_social_posts.outputSchema)).toContain("winner");
   });
 });
 

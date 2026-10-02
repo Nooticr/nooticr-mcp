@@ -113,8 +113,8 @@ Reproduced four ways, all run rather than reasoned about:
 This is the part that would be easy to get wrong, and the corpus settles it
 against the obvious guess.
 
-Chaining is not uniformly dead: `repurpose_post → show_repurposed_post` held
-3/3, `create_variants → show_variants` 2/3, `analyze_comments →
+Chaining is not uniformly dead: `adapt_post_for_platform → show_repurposed_post` held
+3/3, `generate_post_variants → show_variants` 2/3, `summarize_post_comments →
 show_comment_review` 2/3. The tempting conclusion is that their **descriptions**
 carried them. That does not survive contact with the descriptions themselves:
 `show_analysis` (1/12) says *"Display an analysis you wrote after analyze_post,
@@ -137,10 +137,10 @@ behind a `ToolSearch` and only enters context if a search returns it. Over the
 | it was not in the first query | 5 / 26 |
 
 And the passing case is decided before any description or result is in
-context: all three `repurpose_post` runs opened with
-`select:repurpose_post,show_repurposed_post` as their very first query. The
+context: all three `adapt_post_for_platform` runs opened with
+`select:adapt_post_for_platform,show_repurposed_post` as their very first query. The
 chain was committed from the **deferred tool-name list alone** —
-`repurpose_post` / `show_repurposed_post` share a distinctive stem, so the
+`adapt_post_for_platform` / `show_repurposed_post` share a distinctive stem, so the
 pair gets shortlisted together. `analyze_post` / `show_analysis`, sitting in a
 crowded `analyze_*` family, does not: `show_analysis` was retrieved in only
 4 of its 12 runs, so in the other 8 its description was never in context at
@@ -224,7 +224,7 @@ corpus says about each:
 - **Make the `show_*` tools retrievable.** The strongest single predictor in
   the corpus, and nothing else in this list matters if the tool is never
   searched for. That means naming (`show_repurposed_post` wins because it
-  shares a stem with `repurpose_post`) and it means the words a host would
+  shares a stem with `adapt_post_for_platform`) and it means the words a host would
   search — `show_analysis` competes with five `analyze_*` tools for the same
   query.
 - **Drop `structuredContent` on the tools whose value is the guidance.**
@@ -334,7 +334,7 @@ scaffolding and stopped — and the chaining report showed a broken chain that
 said nothing about the chain. Fixed: `FIXTURE_POST` in
 `scripts/fixture-server.mjs` is one post's worth of plausible content, the
 comment set contains a real-sounding bug report (so the
-`analyze_comments → prepare_handoff` chain has something to carry), and quests
+`summarize_post_comments → prepare_handoff` chain has something to carry), and quests
 use a post-shaped URL.
 
 **The rule: a fixture that announces itself changes the behaviour under test,
@@ -446,12 +446,12 @@ them makes the pattern sharper than "a distinctive stem":
 
 | predecessor | view | shared token | retrieved |
 |---|---|---|---|
-| `write_hooks` | `show_hooks` | `hooks` | 6/6 |
-| `create_variants` | `show_variants` | `variants` | 3/3 |
-| `repurpose_post` | `show_repurposed_post` | `post` | 3/3 |
-| `analyze_comments` | `show_comment_review` | `comment` | 3/3 |
+| `generate_hook_ideas` | `show_hooks` | `hooks` | 6/6 |
+| `generate_post_variants` | `show_variants` | `variants` | 3/3 |
+| `adapt_post_for_platform` | `show_repurposed_post` | `post` | 3/3 |
+| `summarize_post_comments` | `show_comment_review` | `comment` | 3/3 |
 | `analyze_post` | `show_analysis` | — (`analyze`/`analysis`) | 4/12 |
-| `compare_posts` | `show_comparison` | — (`compare`/`comparison`) | 0/3 |
+| `compare_social_posts` | `show_comparison` | — (`compare`/`comparison`) | 0/3 |
 | `who_should_i_work_with` | `show_collab_shortlist` | — (nothing) | 0/3 |
 
 `analyze`/`analysis` and `compare`/`comparison` are morphological relatives and
@@ -462,7 +462,7 @@ retrieved every time.
 
 `show_analysis` → **`show_post_analysis`** (shares `post` with all three of its
 predecessors) and `show_comparison` → **`show_compared_posts`** (shares `posts`
-with `compare_posts`, mirroring `show_repurposed_post`).
+with `compare_social_posts`, mirroring `show_repurposed_post`).
 
 | | before | after |
 |---|---|---|
@@ -480,7 +480,7 @@ it is well supported elsewhere and the old name violated it, not because this
 measurement defends it.
 
 The comparison quest also fails for a visibly different reason: all three runs
-walk `compare_posts -> get_social_media`, so the model is fetching the posts
+walk `compare_social_posts -> get_social_media`, so the model is fetching the posts
 rather than reaching a view at all. That is a guidance question, not a
 retrieval one, and it is not what a rename can fix.
 

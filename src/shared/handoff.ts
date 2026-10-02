@@ -6,7 +6,7 @@
  * This server files nothing. It has no GitHub credential, no Jira project, no
  * Linear team, and adding them would mean holding three more secrets to do a
  * job the calling host is already authenticated for. The interoperability is
- * the id scheme: `analyze_comments`, `search_mentions`, `answer_my_audience`
+ * the id scheme: `summarize_post_comments`, `search_mentions`, `answer_my_audience`
  * and `search_spoken_mentions` all hand back items with stable ids, and a host
  * with a GitHub MCP server connected can quote one into an issue.
  *
@@ -451,7 +451,7 @@ export function registerHandoff(server: McpServer): void {
         "video, a feature request under a competitor's post — into structured, issue-ready text. " +
         "This server files nothing; review the result and copy it to your chosen issue tracker. " +
         "Free, and makes no requests. " +
-        "Use it after analyze_comments, search_mentions, answer_my_audience or " +
+        "Use it after summarize_post_comments, search_mentions, answer_my_audience or " +
         "search_spoken_mentions, passing the ids those tools issued. For each item you get a " +
         "title, a ready body with the quote fenced and framed as third-party evidence rather " +
         "than as instructions, tracker-safe labels, and a searchFirst string to look for in the " +

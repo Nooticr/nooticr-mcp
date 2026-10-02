@@ -194,9 +194,9 @@ export function registerPrompts(server: McpServer): void {
       userMessage(
         `Review this draft before I film it${platform ? ` for ${platform}` : ""}:\n\n"""\n${draft}\n"""\n\n` +
           `Work in this order:\n` +
-          `1. score_draft on it — free, and it returns the draft with the rubric to score it against: ` +
+          `1. evaluate_social_draft on it — free, and it returns the draft with the rubric to score it against: ` +
           `hook, clarity, payoff, specificity and fit, plus the fixes worth making.\n` +
-          `2. write_hooks on the same topic for alternative openings to choose between.\n\n` +
+          `2. generate_hook_ideas on the same topic for alternative openings to choose between.\n\n` +
           `Then tell me plainly: is the hook doing work in the first two seconds, where does attention ` +
           `leak, and which of the alternative hooks you would actually use and why. If the draft is ` +
           `fine as it stands, say so rather than inventing changes.\n\n${COST_RULE}`,
@@ -229,7 +229,7 @@ export function registerPrompts(server: McpServer): void {
             ? `3. analyze_post — the visual pass, since the framing and editing are the point here.\n`
             : `3. Skip analyze_post unless the fast pass leaves the visuals genuinely unexplained. It ` +
               `fetches frames on top of the transcript, so it costs a credit more; say so before spending it.\n`) +
-          `4. analyze_comments — what the audience actually took away, which is often not what the ` +
+          `4. summarize_post_comments — what the audience actually took away, which is often not what the ` +
           `creator intended.\n\n` +
           `Then give me: the hook and why it stops someone, the structure beat by beat, the CTA, and the ` +
           `gap (if any) between what the post says and what the comments show people heard.\n\n${COST_RULE}`,
@@ -249,7 +249,7 @@ export function registerPrompts(server: McpServer): void {
     ({ urls }) =>
       userMessage(
         `Compare these posts and explain the performance gap:\n${urls}\n\n` +
-          `Start with compare_posts, then fetch the remaining URLs it names with get_social_media — it ` +
+          `Start with compare_social_posts, then fetch the remaining URLs it names with get_social_media — it ` +
           `pulls the first post and leaves the comparison, which is the part you should be doing.\n\n` +
           `Then tell me: which won, what actually differed (hook, format, length, caption, tags), what ` +
           `they share that I should keep, and one concrete experiment that would test your explanation. ` +
@@ -274,9 +274,9 @@ export function registerPrompts(server: McpServer): void {
       userMessage(
         `This post worked: ${url}. Tell me what to film next.\n\n` +
           `Work in this order:\n` +
-          `1. analyze_comments — the audience already said what they want more of, and the questions they ` +
+          `1. summarize_post_comments — the audience already said what they want more of, and the questions they ` +
           `asked are the cheapest content ideas available.\n` +
-          `2. create_variants${angle ? ` with the angle "${angle}"` : ""} — same mechanism, different ` +
+          `2. generate_post_variants${angle ? ` with the angle "${angle}"` : ""} — same mechanism, different ` +
           `execution, with hooks and shot beats.\n\n` +
           `Then give me a shortlist I could film this week, each with its hook, what changes versus the ` +
           `original, and which comment or pattern it is answering. Order them by how much evidence there ` +
@@ -303,7 +303,7 @@ export function registerPrompts(server: McpServer): void {
       userMessage(
         `Repurpose this post for other surfaces: ${url}\n` +
           (targets ? `Targets: ${targets}\n` : "") +
-          `\nUse repurpose_post. If the post's argument depends on the exact wording, pull ` +
+          `\nUse adapt_post_for_platform. If the post's argument depends on the exact wording, pull ` +
           `get_post_transcript first so the rewrite carries the real lines rather than a summary of them.\n\n` +
           `Then give me each version ready to paste, and note for each one what you changed about the ` +
           `shape and why that surface rewards it.\n\n${COST_RULE}`,

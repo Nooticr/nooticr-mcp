@@ -45,7 +45,7 @@ const DATA_PRICING: Record<string, number> = {
   discover_sounds: 2,
   // The one comment tool with no entry in EVIDENCE_PLANS: it makes the same
   // single get_post_comments call, and its guidance lives in comment-review.ts.
-  analyze_comments: 2,
+  summarize_post_comments: 2,
   // Per creator checked, not per call — the unit price is what the pages show.
   catch_up_watchlist: 2,
 };
@@ -57,7 +57,7 @@ const SERVER_PRICING: Record<string, number> = {
 
 /** Tools that fetch nothing at all, so they cost nothing and show no price. */
 const FREE_TOOLS = [
-  "score_draft",
+  "evaluate_social_draft",
   "show_comment_review",
   "show_compared_posts",
   "show_post_analysis",
@@ -534,7 +534,7 @@ describe("tool surface", () => {
     "get_scheduled_posts",
     "get_post_performance",
     "get_video_stats",
-    "get_google_analytics",
+    "get_google_analytics_data",
     "get_search_console_data",
     "get_posthog_analytics",
     "get_content_plan",
@@ -553,7 +553,7 @@ describe("tool surface", () => {
     "discover_social_posts",
     "get_user_posts",
     "get_post_comments",
-    "analyze_comments",
+    "summarize_post_comments",
     "search_creators",
     "get_similar_creators",
     "suggest_creator_identity",
@@ -562,12 +562,12 @@ describe("tool surface", () => {
     "analyze_post",
     "understand_social_post",
     "analyze_creator_profile",
-    "compare_posts",
+    "compare_social_posts",
     "analyze_post_fast",
-    "write_hooks",
-    "create_variants",
-    "score_draft",
-    "repurpose_post",
+    "generate_hook_ideas",
+    "generate_post_variants",
+    "evaluate_social_draft",
+    "adapt_post_for_platform",
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
@@ -698,7 +698,7 @@ describe("tool surface", () => {
       "get_scheduled_posts",
       "get_post_performance",
       "get_video_stats",
-      "get_google_analytics",
+      "get_google_analytics_data",
       "get_search_console_data",
       "get_posthog_analytics",
       "get_content_plan",

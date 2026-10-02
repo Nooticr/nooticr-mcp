@@ -34,7 +34,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "get_post_comments",
  title: "Get Post Comments",
- description: "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X, Weibo, Bilibili or LinkedIn (plus keyword clusters from TikTok Analytics when available) — audience sentiment/audience-signal analysis. (20 free credits for new users). Use when you want to read what people actually wrote; use analyze_comments when you want it synthesised into what to do next. Consumes 2 nooticr credits.",
+ description: "Fetch top comments for a post URL on TikTok, Instagram, YouTube, Reddit, Douyin, X, Weibo, Bilibili or LinkedIn (plus keyword clusters from TikTok Analytics when available) — audience sentiment/audience-signal analysis. (20 free credits for new users). Use when you want to read what people actually wrote; use summarize_post_comments when you want it synthesised into what to do next. Consumes 2 nooticr credits.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Weibo/Bilibili/LinkedIn). Not searchable here: xiaohongshu — it publishes no comment endpoint."), limit: z.number().int().optional().describe("Max comments (default 20).") }).strict(),
  },
  {
@@ -80,13 +80,13 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("Post URL (TikTok or YouTube)."), language: z.string().optional().describe("Preferred language code, e.g. 'en'."), format: z.enum(["text", "srt", "vtt"]).optional().describe("Also return a caption file ('srt' or 'vtt'). Default 'text'.") }).strict(),
  },
  {
- name: "analyze_comments",
+ name: "summarize_post_comments",
  title: "Summarize Post Comments",
  description: "A post's comment section, fetched and laid out for you to classify: every comment with a stable id, plus whatever themes the platform clustered them into. Label each one's sentiment and what it is doing — praise, complaint, bug report, question, request, comparison, spam — then summarise the themes, the questions worth answering, the objections, and what to make next. The result names the exact labels, and show_comment_review draws them for free afterwards. Use when the goal is 'what should I make next' rather than 'what did people write'. Costs 2 nooticr credits, for the one get_post_comments call it makes.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL."), limit: z.number().int().optional().describe("Comments to read (default 50, max 100)."), verbatim: z.boolean().optional().describe("Render every comment whole in the text you read (default false).") }).strict(),
  },
  {
- name: "compare_posts",
+ name: "compare_social_posts",
  title: "Compare Social Post Performance",
  description: "The first of 2-5 posts you want compared, fetched with its stats — and the comparison left to you. Call get_social_media on each remaining URL yourself (1 credit each), and get_post_transcript where the wording matters, then say which won, what actually differed (hook, format, length, caption, hashtags), what they share worth keeping, and the one experiment that would test your explanation. Use for 'why did this one work and that one not'. Costs 1 nooticr credit for this call, plus 1 per further post you fetch.",
  inputSchema: z.object({ urls: z.array(z.string()).describe("2-5 post URLs to compare.") }).strict(),
@@ -104,25 +104,25 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ url: z.string().describe("Full public post URL.") }).strict(),
  },
  {
- name: "write_hooks",
+ name: "generate_hook_ideas",
  title: "Generate Hooks from a Post",
  description: "The source post, its transcript and its stats, so you can write the opening lines yourself — the first line said or shown on screen. Name the device each hook uses and who it stops; one that could open any video in the niche is not grounded in this one. Use when you know the subject and need openings to choose between. With a url it fetches get_social_media and get_post_transcript for 2 nooticr credits; with only a topic there is nothing to fetch and it costs nothing.",
  inputSchema: z.object({ url: z.string().optional().describe("Post to riff on (optional if topic given)."), topic: z.string().optional().describe("Subject to write hooks about (optional if url given)."), count: z.number().int().optional().describe("How many hooks (default 10, max 20)."), tone: z.string().optional().describe("Optional tone, e.g. 'blunt', 'contrarian'.") }).strict(),
  },
  {
- name: "create_variants",
+ name: "generate_post_variants",
  title: "Generate Post Variants",
  description: "The post that worked, with its transcript and stats, so you can propose what to film next — same underlying mechanism, different execution. For each variant give the hook, the one angle that changes, the shot beats in order and the CTA, and say what made the original work. Use after reading a post to move from 'why it worked' to 'what to make'. Fans out to get_social_media and get_post_transcript: 2 nooticr credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("The post to make variants of."), count: z.number().int().optional().describe("How many variants (default 3, max 6)."), angle: z.string().optional().describe("Optional steer, e.g. 'for a beginner audience'.") }).strict(),
  },
  {
- name: "score_draft",
+ name: "evaluate_social_draft",
  title: "Score a Social Media Draft",
  description: "Score your own draft BEFORE you film or post it. Returns the draft with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10 — and asks you for the three fixes that would move it most, one rewritten opening line and a tightened version. The only tool that runs before the content exists. Use before filming, while changing it is still cheap. Free: it fetches nothing, so it costs no credits.",
  inputSchema: z.object({ draft: z.string().describe("Your script, caption or hook."), platform: z.string().optional().describe("Target platform (default tiktok).") }).strict(),
  },
  {
- name: "repurpose_post",
+ name: "adapt_post_for_platform",
  title: "Adapt a Post for Another Platform",
  description: "The source post, its transcript and its stats, for you to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube title/description, newsletter — keeping the argument and changing the shape to suit how each is read. The same paragraph with different line breaks is not a repurposing. Use when a post already worked and you want it on other surfaces. Fans out to get_social_media and get_post_transcript: 2 nooticr credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("The post to repurpose."), targets: z.array(z.string()).optional().describe("Which formats to produce (default all).") }).strict(),
@@ -166,13 +166,13 @@ export const TOOL_DEFINITIONS = [
  {
  name: "show_comment_review",
  title: "Show Comment Review",
- description: "Display comment classifications you produced from analyze_comments. Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",
+ description: "Display comment classifications you produced from summarize_post_comments. Free, and makes no requests — it only draws what you pass it. Renders each comment with its sentiment and category so a person can sort and act on them. Call this after you have classified the comments, not instead of classifying them.",
  inputSchema: z.object({ url: z.string().describe("The post the comments came from."), summary: z.string().optional(), title: z.string().optional(), comments: z.array(z.object({ id: z.string(), text: z.string(), author: z.string().optional(), likes: z.number().optional(), sentiment: z.string().optional(), category: z.string().optional(), note: z.string().optional() })), themes: z.array(z.string()).optional(), nextSteps: z.array(z.string()).optional() }).strict(),
  },
  {
  name: "show_compared_posts",
  title: "Show Comparison",
- description: "Display a comparison you wrote after compare_posts fetched the first post and you fetched the rest yourself. Free, and makes no requests — it only draws what you pass it: each post with a BEST badge on the winner, what differed, shared strengths and the next experiment worth running. Call this after you have done the comparing, not instead of it.",
+ description: "Display a comparison you wrote after compare_social_posts fetched the first post and you fetched the rest yourself. Free, and makes no requests — it only draws what you pass it: each post with a BEST badge on the winner, what differed, shared strengths and the next experiment worth running. Call this after you have done the comparing, not instead of it.",
  inputSchema: z.object({ posts: z.array(z.object({}).passthrough()).min(2).max(5), winner: z.number().int(), winnerReason: z.string().optional(), differences: z.array(z.object({ factor: z.string(), detail: z.string() })).optional(), lessons: z.array(z.string()).optional(), nextTest: z.string().optional() }).strict(),
  },
  {
@@ -184,19 +184,19 @@ export const TOOL_DEFINITIONS = [
  {
  name: "show_hooks",
  title: "Show Hooks",
- description: "Display the alternative opening hooks you wrote after write_hooks handed you a post's material (or just a topic). Free, and makes no requests — it only draws what you pass it: each hook with the device it uses and who it stops. Call this after you have written the hooks, not instead of writing them.",
+ description: "Display the alternative opening hooks you wrote after generate_hook_ideas handed you a post's material (or just a topic). Free, and makes no requests — it only draws what you pass it: each hook with the device it uses and who it stops. Call this after you have written the hooks, not instead of writing them.",
  inputSchema: z.object({ url: z.string().optional(), topic: z.string().optional(), hooks: z.array(z.object({ hook: z.string(), mechanism: z.string().optional(), why: z.string().optional() })).min(1) }).strict(),
  },
  {
  name: "show_variants",
  title: "Show Variants",
- description: "Display the post variants you wrote after create_variants handed you the original post's material. Free, and makes no requests — it only draws what you pass it: each variant's hook, the angle that changes, its shot beats and its call to action. Call this after you have written the variants, not instead of writing them.",
+ description: "Display the post variants you wrote after generate_post_variants handed you the original post's material. Free, and makes no requests — it only draws what you pass it: each variant's hook, the angle that changes, its shot beats and its call to action. Call this after you have written the variants, not instead of writing them.",
  inputSchema: z.object({ sourceUrl: z.string(), post: z.object({}).passthrough().optional(), variants: z.array(z.object({ title: z.string(), hook: z.string(), angle: z.string().optional(), beats: z.array(z.string()).optional(), cta: z.string().optional(), whyItCouldWork: z.string().optional() })).min(1) }).strict(),
  },
  {
  name: "show_repurposed_post",
  title: "Show Repurposed Post",
- description: "Display the rewritten copy you produced after repurpose_post handed you the source post's material. Free, and makes no requests — it only draws what you pass it: one entry per surface you rewrote it for. Call this after you have done the rewriting, not instead of it.",
+ description: "Display the rewritten copy you produced after adapt_post_for_platform handed you the source post's material. Free, and makes no requests — it only draws what you pass it: one entry per surface you rewrote it for. Call this after you have done the rewriting, not instead of it.",
  inputSchema: z.object({ sourceUrl: z.string(), versions: z.array(z.object({ surface: z.string(), content: z.string() })).min(1) }).strict(),
  },
  {
@@ -338,7 +338,7 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace."), limit: z.number().int().optional().describe("Max videos (default 20, capped at 50).") }).strict(),
  },
  {
- name: "get_google_analytics",
+ name: "get_google_analytics_data",
  title: "Read Google Analytics Data",
  description: "Your own product's Google Analytics (GA4) sync, as of its last sync into nooticr — not a live GA4 call: the property, the date range synced and how many daily rows came in. Connect GA4 in API Connections first. No cost to call.",
  inputSchema: z.object({ appId: z.number().int().optional().describe("Your product's id. Omit only with a single-app workspace.") }).strict(),
@@ -448,7 +448,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "why_did_this_underperform",
  title: "Why Did This Underperform",
- description: "One post measured against the creator's own recent median rather than against another post. Fetches the post and that creator's recent window, takes the post back out of its own baseline, and returns where it actually sits in the distribution \u2014 median, quartiles, ratio and percentile \u2014 so the answer can be 'this is an ordinary result, not a failure'. Use when you have one post and nothing to compare it with; compare_posts is for two URLs you already picked. Consumes 3 nooticr credits.",
+ description: "One post measured against the creator's own recent median rather than against another post. Fetches the post and that creator's recent window, takes the post back out of its own baseline, and returns where it actually sits in the distribution \u2014 median, quartiles, ratio and percentile \u2014 so the answer can be 'this is an ordinary result, not a failure'. Use when you have one post and nothing to compare it with; compare_social_posts is for two URLs you already picked. Consumes 3 nooticr credits.",
  inputSchema: z.object({ url: z.string().describe("The post to explain."), username: z.string().optional().describe("Whose baseline to use, when the post does not name its creator."), platform: z.string().optional().describe("Platform of the creator's feed."), window: z.number().int().optional().describe("Posts in the comparison window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to compare (default views).") }).strict(),
  },
  {

@@ -196,18 +196,18 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     n: 1,
     steps: evidenceSteps("analyze_post_fast"),
   },
-  analyze_comments: {
+  summarize_post_comments: {
     label: "Reading the comment section",
     kind: "text",
     n: 1,
     // Not an evidence plan: it proxies one get_post_comments and synthesises.
     steps: [step("get_post_comments")],
   },
-  compare_posts: {
+  compare_social_posts: {
     label: "Fetching the first post",
     kind: "strip",
     n: 2,
-    steps: evidenceSteps("compare_posts"),
+    steps: evidenceSteps("compare_social_posts"),
     note: "1 credit more for every further post you fetch yourself.",
   },
 
@@ -254,21 +254,21 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   niche_report: { label: "Reading the niche", kind: "text", n: 1, steps: evidenceSteps("niche_report") },
 
   // ─── Make something ───
-  write_hooks: { label: "Reading the source post", kind: "text", n: 1, steps: evidenceSteps("write_hooks") },
-  create_variants: {
+  generate_hook_ideas: { label: "Reading the source post", kind: "text", n: 1, steps: evidenceSteps("generate_hook_ideas") },
+  generate_post_variants: {
     label: "Reading the post that worked",
     kind: "text",
     n: 1,
-    steps: evidenceSteps("create_variants"),
+    steps: evidenceSteps("generate_post_variants"),
   },
-  repurpose_post: {
+  adapt_post_for_platform: {
     label: "Reading the source post",
     kind: "text",
     n: 1,
-    steps: evidenceSteps("repurpose_post"),
+    steps: evidenceSteps("adapt_post_for_platform"),
   },
   // Fetches nothing: the draft is already the caller's.
-  score_draft: { label: "Scoring the draft", kind: "text", n: 1, steps: [], free: true },
+  evaluate_social_draft: { label: "Scoring the draft", kind: "text", n: 1, steps: [], free: true },
 
   // ─── Brand monitoring ───
   search_mentions: {
@@ -559,7 +559,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   get_scheduled_posts: { label: "Reading your pipeline", kind: "list", n: 5, steps: [], free: true },
   get_post_performance: { label: "Reading your numbers", kind: "list", n: 5, steps: [], free: true },
   get_video_stats: { label: "Reading the last sync", kind: "strip", n: 3, steps: [], free: true },
-  get_google_analytics: { label: "Reading your last GA4 sync", kind: "text", n: 1, steps: [], free: true },
+  get_google_analytics_data: { label: "Reading your last GA4 sync", kind: "text", n: 1, steps: [], free: true },
   get_search_console_data: { label: "Reading your last Search Console sync", kind: "text", n: 1, steps: [], free: true },
   get_posthog_analytics: { label: "Reading your last PostHog sync", kind: "text", n: 1, steps: [], free: true },
   get_brand_playbook: { label: "Reading the playbook", kind: "text", n: 1, steps: [], free: true },

@@ -5,7 +5,7 @@
  * chosen — including the ones that watch a video. POLL_TIMEOUT_MS is five
  * minutes, so analyze_post could hold a synchronous tools/call open for that
  * long and a host had no way to put it in the background. Measured against the
- * live server, discover_social_posts takes 10.3s and compare_posts 10.4s; the
+ * live server, discover_social_posts takes 10.3s and compare_social_posts 10.4s; the
  * multimodal tools wrapped here are the slow ones above them.
  *
  * The three tools that run longest now accept a task. What they do is

@@ -104,7 +104,7 @@ export const TOOLS: Tool[] = [
     name: "get_post_comments", cost: 2, group: "read",
     args: "url, limit?",
     desc: "Top comments, the themes the platform clusters them into, and which the creator pinned or liked.",
-    when: "You want to read what people wrote. Use analyze_comments to have it synthesised instead.",
+    when: "You want to read what people wrote. Use summarize_post_comments to have it synthesised instead.",
   },
 
   // ── understand ──
@@ -127,13 +127,13 @@ export const TOOLS: Tool[] = [
     when: "You need the events, not the strategy.",
   },
   {
-    name: "analyze_comments", cost: 2, group: "understand",
+    name: "summarize_post_comments", cost: 2, group: "understand",
     args: "url, limit?",
     desc: "The comment section, every comment with an id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam.",
     when: "The goal is what to make next, not what people wrote. show_comment_review then draws your labels for free.",
   },
   {
-    name: "compare_posts", cost: 1, group: "understand",
+    name: "compare_social_posts", cost: 1, group: "understand",
     args: "urls[] (2–5)",
     desc: "The first post with its stats, and the comparison left to you — fetch the rest with get_social_media at 1 credit each.",
     when: "Performance differs and you need to know why.",
@@ -203,25 +203,25 @@ export const TOOLS: Tool[] = [
 
   // ── create ──
   {
-    name: "write_hooks", cost: 2, group: "create",
+    name: "generate_hook_ideas", cost: 2, group: "create",
     args: "url? or topic, count?, tone?",
     desc: "The source post and its transcript, to write openings against. With a topic and no url it fetches nothing and costs nothing.",
     when: "You know the subject and need openings to choose between.",
   },
   {
-    name: "score_draft", cost: 0, group: "create",
+    name: "evaluate_social_draft", cost: 0, group: "create",
     args: "draft, platform?",
     desc: "Your draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the fixes worth making. Free: the text is already yours, so there is nothing to fetch.",
     when: "Before filming, while changing it is still cheap. The only tool that runs before the content exists.",
   },
   {
-    name: "repurpose_post", cost: 2, group: "create",
+    name: "adapt_post_for_platform", cost: 2, group: "create",
     args: "url, targets?",
     desc: "The source post and its transcript, to rewrite as an X thread, LinkedIn post, carousel, YouTube metadata or newsletter.",
     when: "A post worked and you want it on other surfaces.",
   },
   {
-    name: "create_variants", cost: 2, group: "create",
+    name: "generate_post_variants", cost: 2, group: "create",
     args: "url, count?, angle?",
     desc: "The post that worked, with its transcript, to build variants from — hook, the angle that changes, ordered shot beats, CTA.",
     when: "Moving from why it worked to what to make.",
@@ -277,7 +277,7 @@ export const TOOLS: Tool[] = [
     name: "why_did_this_underperform", cost: 3, group: "understand",
     args: "url",
     desc: "One post read against the creator's own recent median, so the answer can be \u201cthis is an ordinary result, not a failure\u201d.",
-    when: "You have one post and nothing to compare it with; compare_posts is for two URLs you already picked.",
+    when: "You have one post and nothing to compare it with; compare_social_posts is for two URLs you already picked.",
   },
   {
     name: "show_post_analysis", cost: 0, group: "understand",
@@ -288,14 +288,14 @@ export const TOOLS: Tool[] = [
   {
     name: "show_comment_review", cost: 0, group: "understand",
     args: "your labelled comments",
-    desc: "Draws the comment classifications you produced from analyze_comments, each with its sentiment and category, sortable.",
+    desc: "Draws the comment classifications you produced from summarize_post_comments, each with its sentiment and category, sortable.",
     when: "After you have classified the comments.",
   },
   {
     name: "show_compared_posts", cost: 0, group: "understand",
     args: "your comparison",
     desc: "Draws the comparison you wrote, with a badge on the winner, what differed and the next experiment.",
-    when: "After compare_posts and the fetches you made yourself.",
+    when: "After compare_social_posts and the fetches you made yourself.",
   },
 
   // ── research ──
@@ -471,19 +471,19 @@ export const TOOLS: Tool[] = [
     name: "show_hooks", cost: 0, group: "create",
     args: "the hooks you wrote",
     desc: "Draws the openings you wrote, each with the device it uses and who it stops.",
-    when: "After write_hooks.",
+    when: "After generate_hook_ideas.",
   },
   {
     name: "show_variants", cost: 0, group: "create",
     args: "the variants you wrote",
     desc: "Draws each variant's hook, the angle that changes, its shot beats and its call to action.",
-    when: "After create_variants.",
+    when: "After generate_post_variants.",
   },
   {
     name: "show_repurposed_post", cost: 0, group: "create",
     args: "the copy you wrote",
     desc: "Draws the rewritten copy, one entry per surface you rewrote it for.",
-    when: "After repurpose_post.",
+    when: "After adapt_post_for_platform.",
   },
   {
     name: "review_post", cost: 0, group: "create",
@@ -578,7 +578,7 @@ export const TOOLS: Tool[] = [
     when: "A quick total without spending anything.",
   },
   {
-    name: "get_google_analytics", cost: 0, group: "own",
+    name: "get_google_analytics_data", cost: 0, group: "own",
     args: "appId?",
     desc: "Your GA4 sync as of its last sync: property, date range, rows synced.",
     when: "Checking your GA4 data is flowing into nooticr.",

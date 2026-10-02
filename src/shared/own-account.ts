@@ -448,7 +448,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
     );
 
   connectorRead(
-    "get_google_analytics",
+    "get_google_analytics_data",
     "google_analytics",
     "Read Google Analytics Data",
     "Your own product's Google Analytics (GA4) sync, as of its last sync into nooticr — not a live " +

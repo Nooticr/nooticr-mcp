@@ -996,7 +996,7 @@ function handleMcpCall(name, args, workspaceId) {
     }
     // The connector reads (#104), in the shapes nooticr-server's
     // connector_sync_cache stores, with own_account_read's appId/appName.
-    case "get_google_analytics":
+    case "get_google_analytics_data":
       return {
         content: [{ type: "text", text: "GA4 sync." }],
         structuredContent: {
@@ -1082,7 +1082,7 @@ function handleMcpCall(name, args, workspaceId) {
             // show-more/show-less toggle. It also has to read like a comment
             // somebody actually left, for the reason FIXTURE_POST states.
             { text: "ok the night-before coffee thing genuinely changed my mornings and I want to be annoyed about how simple it is, I have bought three alarm clocks and a sunrise lamp this year and the thing that worked was moving one jar six feet", author: "priya_makes", likes: 412 },
-            // A bug report, so the analyze_comments -> prepare_handoff chain
+            // A bug report, so the summarize_post_comments -> prepare_handoff chain
             // has something real to carry (docs/tool-call-strategies.md's
             // worked example). Kept in the taxonomy's own words.
             { text: "this stopped working for me after the last update, the timer just never fires now", author: "d_almeida", likes: 88 },
@@ -1150,7 +1150,7 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
-    case "analyze_comments": {
+    case "summarize_post_comments": {
       // Real inputSchema is {url, limit?}.strict() (tools.ts) — this fixture
       // case is what a *correctly* wired caller (postAiActions' "Read
       // comments" button, ui-template.ts:614) reaches. Contrast with the

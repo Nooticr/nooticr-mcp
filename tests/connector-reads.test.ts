@@ -10,7 +10,7 @@ import { MemoryWatchStore } from "../src/shared/watchlist.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
 
 type Row = Record<string, unknown>;
-const TOOLS = ["get_google_analytics", "get_search_console_data", "get_posthog_analytics"];
+const TOOLS = ["get_google_analytics_data", "get_search_console_data", "get_posthog_analytics"];
 
 async function connect(reply: Row) {
   const calls: Array<{ name: string; args: Row }> = [];
@@ -51,6 +51,12 @@ describe("connector reads", () => {
     expect(res.content[0].text).toMatch(/as of its last sync at 2026-09-22T06:00:00Z — not live/);
     expect(res.content[0].text).toContain("412");
     expect(res.structuredContent.connector).toBe("search_console");
+  });
+
+  it("keeps the existing backend route behind the clearer Google Analytics name", async () => {
+    const { client, calls } = await connect({ sessions: 1 });
+    await client.callTool({ name: "get_google_analytics_data", arguments: { appId: 7 } });
+    expect(calls).toEqual([{ name: "get_google_analytics", args: { appId: 7 } }]);
   });
 
   it("relay the nothing-synced message as a result, not an error", async () => {

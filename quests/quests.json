@@ -54,12 +54,12 @@
     {
       "id": "hooks-end-in-show-hooks",
       "title": "Written hooks end up drawn",
-      "why": "chain-map edge write_hooks -> show_hooks. show_hooks is new view code with no other way to be reached.",
+      "why": "chain-map edge generate_hook_ideas -> show_hooks. show_hooks is new view code with no other way to be reached.",
       "prompt": "Write me five alternative opening hooks for this post: {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "write_hooks",
+          "generate_hook_ideas",
           "show_hooks"
         ]
       }
@@ -67,12 +67,12 @@
     {
       "id": "variants-end-in-show-variants",
       "title": "Written variants end up drawn",
-      "why": "chain-map edge create_variants -> show_variants.",
+      "why": "chain-map edge generate_post_variants -> show_variants.",
       "prompt": "Make me three variants of this post, each with a different angle: {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "create_variants",
+          "generate_post_variants",
           "show_variants"
         ]
       }
@@ -80,12 +80,12 @@
     {
       "id": "repurpose-ends-in-show-repurposed-post",
       "title": "Repurposed copy ends up drawn",
-      "why": "chain-map edge repurpose_post -> show_repurposed_post.",
+      "why": "chain-map edge adapt_post_for_platform -> show_repurposed_post.",
       "prompt": "Turn this TikTok into a LinkedIn post and an X post: {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "repurpose_post",
+          "adapt_post_for_platform",
           "show_repurposed_post"
         ]
       }
@@ -93,7 +93,7 @@
     {
       "id": "comparison-ends-in-show-comparison",
       "title": "A comparison ends up drawn",
-      "why": "chain-map edge compare_posts -> show_compared_posts. The comparison scoreboard view was unreachable by any real call until show_compared_posts existed; if the chain does not hold it is unreachable again.",
+      "why": "chain-map edge compare_social_posts -> show_compared_posts. The comparison scoreboard view was unreachable by any real call until show_compared_posts existed; if the chain does not hold it is unreachable again.",
       "prompt": "Compare this post with https://www.tiktok.com/@fixture_creator_2/video/2 — which one won, and why? {STUB}",
       "runs": 3,
       "expect": {
@@ -105,12 +105,12 @@
     {
       "id": "comments-end-in-show-comment-review",
       "title": "A comment triage ends up drawn",
-      "why": "chain-map edge analyze_comments -> show_comment_review — the oldest of these loops and the pattern the other five were modelled on.",
+      "why": "chain-map edge summarize_post_comments -> show_comment_review — the oldest of these loops and the pattern the other five were modelled on.",
       "prompt": "Go through the comments on this post and tell me which ones actually need a reply: {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "analyze_comments",
+          "summarize_post_comments",
           "show_comment_review"
         ]
       }
@@ -144,12 +144,12 @@
     {
       "id": "bug-reports-reach-prepare-handoff",
       "title": "A bug report found in comments gets prepared for filing",
-      "why": "docs/tool-call-strategies.md's worked example: analyze_comments surfaces a bug report with a stable id, prepare_handoff turns it into the exact title/body/labels to file. The fixture's comment set contains 'this stopped working for me after a week' precisely so this chain has something real to carry.",
+      "why": "docs/tool-call-strategies.md's worked example: summarize_post_comments surfaces a bug report with a stable id, prepare_handoff turns it into the exact title/body/labels to file. The fixture's comment set contains 'this stopped working for me after a week' precisely so this chain has something real to carry.",
       "prompt": "Are there any bug reports in the comments on this post? If so, get them ready for me to file as issues: {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "analyze_comments",
+          "summarize_post_comments",
           "prepare_handoff"
         ]
       }
@@ -281,7 +281,7 @@
       "runs": 3,
       "expect": {
         "chain": [
-          "write_hooks",
+          "generate_hook_ideas",
           "show_hooks"
         ]
       }
@@ -308,7 +308,7 @@
     {
       "id": "a-brand-sweep-ends-in-show-comment-review",
       "title": "A nine-network sweep ends up classified and drawn",
-      "why": "chain-map edge search_mentions -> show_comment_review, added with #79. The view has always drawn a category chip per row and a counted filter across the top, and only analyze_comments ever handed a host the taxonomy \u2014 so the most expensive call in the product rendered all three inert every time. This is the quest half of that fix, and the one measurement worth watching: the two names share no exact token, which docs/testing/tool-chaining-quests.md measured as what decides whether a show_* gets retrieved at all. If this sits at 0/3 while the chain-map edge is green, the edge is real and the retrieval is not \u2014 and the answer is a name, not more wording.",
+      "why": "chain-map edge search_mentions -> show_comment_review, added with #79. The view has always drawn a category chip per row and a counted filter across the top, and only summarize_post_comments ever handed a host the taxonomy \u2014 so the most expensive call in the product rendered all three inert every time. This is the quest half of that fix, and the one measurement worth watching: the two names share no exact token, which docs/testing/tool-chaining-quests.md measured as what decides whether a show_* gets retrieved at all. If this sits at 0/3 while the chain-map edge is green, the edge is real and the retrieval is not \u2014 and the answer is a name, not more wording.",
       "prompt": "What are people saying about {STUB} across social right now, and which of it needs answering?",
       "runs": 3,
       "expect": {

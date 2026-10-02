@@ -50,7 +50,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     list_watchlist:"Watchlist",
     detect_spoken_mentions:"Spoken Mentions",
     nooticr_getting_started:"Getting Started",
-    get_google_analytics:"Google Analytics",
+    get_google_analytics_data:"Google Analytics",
     get_search_console_data:"Search Console",
     get_posthog_analytics:"PostHog",
     compose_sequence:"Compose Sequence",
@@ -90,7 +90,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     list_watchlist:"The creators you are watching, and when you last caught up on each.",
     detect_spoken_mentions:"Brands named out loud in a video, beside what its caption says.",
     nooticr_getting_started:"Where your account stands and what to try first.",
-    get_google_analytics:"Your GA4 sync, as of its last sync.",
+    get_google_analytics_data:"Your GA4 sync, as of its last sync.",
     get_search_console_data:"Search clicks, impressions and top queries, as of the last sync.",
     get_posthog_analytics:"Your PostHog pageview trend, as of the last sync.",
     compose_sequence:"AI-powered content composition for social posts.",
@@ -1121,11 +1121,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // These are the fetch prices, which is all any of these tools cost now. The
   // two that fan out to a second call are the two that are dearer than their
   // headline fetch: analyze_post and understand_social_post pay 2 for the
-  // frames and 1 more for the transcript. score_draft fetches nothing, so it
+  // frames and 1 more for the transcript. evaluate_social_draft fetches nothing, so it
   // has no badge — the || 0 below already hides it.
-  var AI_PRICE={analyze_post_fast:2,write_hooks:2,create_variants:2,
-    repurpose_post:2,niche_report:2,find_hook_pattern:2,analyze_post:3,
-    analyze_comments:2,compare_posts:1,understand_social_post:3,analyze_creator_profile:2};
+  var AI_PRICE={analyze_post_fast:2,generate_hook_ideas:2,generate_post_variants:2,
+    adapt_post_for_platform:2,niche_report:2,find_hook_pattern:2,analyze_post:3,
+    summarize_post_comments:2,compare_social_posts:1,understand_social_post:3,analyze_creator_profile:2};
 
   // ChatGPT's Apps SDK does not answer the MCP Apps postMessage bridge. A
   // widget there reaches its server through window.openai.callTool, and opens
@@ -1238,10 +1238,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(!url)return "";
     var a=JSON.stringify({url:url});
     return '<div class="nt-feeds-ai is-under ai-actions"><div class="nt-feeds-ai-row">'
-      +aiBtn("create_variants","Create variants",a)
-      +aiBtn("write_hooks","Write hooks",a)
-      +aiBtn("repurpose_post","Repurpose",a)
-      +aiBtn("analyze_comments","Read comments",a)
+      +aiBtn("generate_post_variants","Create variants",a)
+      +aiBtn("generate_hook_ideas","Write hooks",a)
+      +aiBtn("adapt_post_for_platform","Repurpose",a)
+      +aiBtn("summarize_post_comments","Read comments",a)
       +"</div></div>";
   }
 
@@ -1328,7 +1328,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +btn("default","sm",
         (mentions?ic("sparkles",14):ic("scales",14))
         +'<span class="nt-lbl">'+(mentions?"Analyse these":"Compare")+"</span>"
-        +(mentions?"":badge("secondary",AI_PRICE.compare_posts+" cr","nt-feeds-cr")),
+        +(mentions?"":badge("secondary",AI_PRICE.compare_social_posts+" cr","nt-feeds-cr")),
         ' id="pickgo"'+(mentions?"":" disabled"),"primary")
       +"</div>";
   }
@@ -1404,7 +1404,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     return out;
   }
 
-  /** Ask the host to run compare_posts; fall back to copying the URLs.
+  /** Ask the host to run compare_social_posts; fall back to copying the URLs.
    *  The method is "tools/call" - MCP Apps reuses the core MCP method for
    *  tool invocation rather than defining a prefixed one of its own. This
    *  used to send a ui-prefixed name that no host answers, so every in-view
@@ -1437,7 +1437,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           .catch(function(){done("Copy failed");});
       } else done("Copy failed");
     };
-    invokeTool("compare_posts",{urls:urls},function(r){
+    invokeTool("compare_social_posts",{urls:urls},function(r){
       settled=true;
       done("Sent");
       renderToolResult(r);
@@ -2793,7 +2793,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         pickedMentions.forEach(function(id){if(id.indexOf("spoken:")===0)spoken++;});
         var typed=pickedMentions.length-spoken;
         // Which posts the picks came from is the thing that decides whether
-        // "Analyse these" can run (analyze_comments reads one post), so the
+        // "Analyse these" can run (summarize_post_comments reads one post), so the
         // hint says it before the button has to refuse.
         var posts={};
         (monitorState?monitorState.threads:[]).forEach(function(t){
@@ -2814,14 +2814,14 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     setTimeout(reportSize,60);
   }
 
-  // Selected comments go to the host as a tool call. analyze_comments's own
+  // Selected comments go to the host as a tool call. summarize_post_comments's own
   // inputSchema is {url, limit?}.strict() — one post, not an arbitrary
   // hand-picked set of texts/ids — so this used to post {comments, ids}
   // regardless of how many posts the selection spanned, and a real host
   // executing that call got a schema rejection every time; the "Try in
   // chat"/timeout fallback was the only thing anyone ever saw work. Now:
   // find which post(s) the picks belong to, and if they are all the same
-  // one, ask analyze_comments to re-read that post's comments (the nearest
+  // one, ask summarize_post_comments to re-read that post's comments (the nearest
   // thing to "analyse these" the tool can actually do); otherwise say why
   // not, rather than sending a call the schema will refuse.
   document.addEventListener("click",function(e){
@@ -2838,7 +2838,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       });
     });
     // A spoken pick is a line from a transcript, not a comment with an id
-    // analyze_comments could re-read. Re-reading its post's comments would
+    // summarize_post_comments could re-read. Re-reading its post's comments would
     // answer a different question from the one that was asked, so say so
     // rather than quietly analysing something else.
     var spokenPicks=0;
@@ -2858,7 +2858,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // The answer is drawn here, as Read comments draws it: a host that runs
     // a view's call hands the result back to the view and nowhere else, so a
     // "Sent" that dropped it left a paid read with nothing on screen.
-    invokeTool("analyze_comments",{url:distinct[0],limit:Math.max(pickedMentions.length,20)},function(r){
+    invokeTool("summarize_post_comments",{url:distinct[0],limit:Math.max(pickedMentions.length,20)},function(r){
       if(renderToolResult(r))return;
       setGoLabel(go,"Sent");
       setTimeout(function(){go.disabled=false;setGoLabel(go,"Analyse these");},1800);
@@ -2938,7 +2938,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   var mpId=0;
 
   /**
-   * compare_posts: the posts as numbered rows, the one that won marked, and
+   * compare_social_posts: the posts as numbered rows, the one that won marked, and
    * the model's reasons under them. Every row keeps its own way back to the
    * post, because a comparison you cannot check is an assertion.
    */
@@ -3453,7 +3453,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       body:stats+(steps?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Try next</div><div class="nt-rows">'+steps+"</div>":"")});
   }
 
-  // ─── Connector reads (get_google_analytics, get_search_console_data,
+  // ─── Connector reads (get_google_analytics_data, get_search_console_data,
   // get_posthog_analytics) ───
   //
   // Every one is a stored sync, so "as of" leads the card: a number drawn
@@ -3692,10 +3692,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var srcUrl=src&&(src.externalUrl||src.url);
     var args=JSON.stringify({url:srcUrl});
     var follow=srcUrl?'<div class="nt-feeds-ai is-foot"><div class="nt-feeds-ai-row ai-actions">'
-      +aiBtn("create_variants","Create variants",args)
-      +aiBtn("write_hooks","More hooks",args)
-      +aiBtn("repurpose_post","Repurpose",args)
-      +aiBtn("analyze_comments","Read comments",args)
+      +aiBtn("generate_post_variants","Create variants",args)
+      +aiBtn("generate_hook_ideas","More hooks",args)
+      +aiBtn("adapt_post_for_platform","Repurpose",args)
+      +aiBtn("summarize_post_comments","Read comments",args)
       +'</div><p class="nt-feeds-ai-note ai-note">Each action runs a tool and spends the credits shown.</p></div>':"";
 
     if(!meters&&!chips.length&&!a.summary&&!parts)return postHtml;
@@ -4122,7 +4122,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       footer:derived&&d.note?'<span class="nt-signals-caveat">'+ic("info",14)+"<span>"+esc(String(d.note))+"</span></span>":""});
   }
 
-  // ─── Comment analysis (analyze_comments) ───
+  // ─── Comment analysis (summarize_post_comments) ───
   // The report's own verdict, and the sample it rests on, always: a verdict
   // drawn from 12 comments must not read like one drawn from 500.
   function renderCommentReport(d){
@@ -5395,7 +5395,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // Fallback. The guidance field is prose written for the model, not data —
     // dumped into the JSON block it reads as a wall of escaped text, and it is
     // the longest string in most payloads. Drawn above the block and dropped
-    // from it. This is also what gives score_draft a view worth looking at:
+    // from it. This is also what gives evaluate_social_draft a view worth looking at:
     // its rubric IS its answer.
     var rest=d,lead="";
     if(d&&typeof d==="object"&&typeof d.guidance==="string"){

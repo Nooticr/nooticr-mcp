@@ -12,7 +12,7 @@
  * views. Several tests here fixed real product bugs this exercise
  * surfaced — no existing test (hand-crafted-fixture or real-call-but-never-
  * rendered) had caught them, since they only show up when a real tool
- * call's actual shape meets the widget. Two (compare_posts/analyze_post_fast
+ * call's actual shape meets the widget. Two (compare_social_posts/analyze_post_fast
  * never producing the shapes their dead comparison/analysis views need)
  * were left as documented, deliberate non-fixes: see this repo's
  * docs/testing/agentic-e2e-testing.md for why. Each test's comment says
@@ -72,7 +72,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     // execute that call for real through the same client. This is the
     // "does clicking really drive the right next thing" check: not just
     // that the message looks right, but that following through on it works.
-    const expectedTools = ["create_variants", "write_hooks", "repurpose_post", "analyze_comments"];
+    const expectedTools = ["generate_post_variants", "generate_hook_ideas", "adapt_post_for_platform", "summarize_post_comments"];
     const seenTools = await page.evaluate(() =>
       [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai"))
     );
@@ -96,32 +96,32 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     }
   });
 
-  // BUG (product, not test): compare_posts's real evidence plan
-  // (src/shared/evidence.ts's compare_posts entry) only ever fetches
+  // BUG (product, not test): compare_social_posts's real evidence plan
+  // (src/shared/evidence.ts's compare_social_posts entry) only ever fetches
   // urls[0] via get_social_media — it never sets `.comparison` and never
   // returns a `posts` array. The dedicated comparison scoreboard
   // (ui-template.ts:2375, `d.comparison!==undefined && Array.isArray(d.posts)`)
-  // is therefore unreachable: a real compare_posts call, including one
+  // is therefore unreachable: a real compare_social_posts call, including one
   // triggered by clicking "Compare" after picking two gallery posts, always
   // renders as an ordinary single-post card for the first URL only, silently
   // discarding the second. tests/e2e/ui-template.e2e.ts's own comparison-view
   // tests only exist by injecting synthetic `comparison`-shaped data no real
   // call produces.
-  test("compare_posts never actually produces a comparison (documents a real bug)", async ({
+  test("compare_social_posts never actually produces a comparison (documents a real bug)", async ({
     page,
   }: {
     page: Page;
   }) => {
     const secondUrl = "https://www.tiktok.com/@fixture-other/video/999";
     const result = await session.client.callTool({
-      name: "compare_posts",
+      name: "compare_social_posts",
       arguments: { urls: [STUB_URL, secondUrl] },
     });
     expect(result.isError).not.toBe(true);
     const structured = result.structuredContent as Record<string, unknown>;
 
-    expect(structured.comparison, "compare_posts should not (yet) set .comparison — see comment above").toBeUndefined();
-    expect(Array.isArray(structured.posts), "compare_posts should not (yet) return a posts array — see comment above").toBe(
+    expect(structured.comparison, "compare_social_posts should not (yet) set .comparison — see comment above").toBeUndefined();
+    expect(Array.isArray(structured.posts), "compare_social_posts should not (yet) return a posts array — see comment above").toBe(
       false
     );
 
@@ -136,7 +136,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     expect((open!.params as { url: string }).url).toBe(STUB_URL);
   });
 
-  // BUG (product, not test), same family as the compare_posts one above:
+  // BUG (product, not test), same family as the compare_social_posts one above:
   // analyze_post_fast (and analyze_post, understand_social_post) all run
   // through runEvidence() (tools.ts:362-427), which builds
   // {mode:"evidence", tool, evidenceFrom, ...} from a cheap "via" fetch and
@@ -166,15 +166,15 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
   });
 
   // FIXED (was a bug): the mention-picker's "Analyse these" button
-  // (ui-template.ts) used to post analyze_comments with
+  // (ui-template.ts) used to post summarize_post_comments with
   // {comments:[...], ids:[...]} — a shape its own {url, limit?}.strict()
   // inputSchema rejects every time. It now resolves which post(s) the
-  // picks belong to and calls analyze_comments on that post's url when
+  // picks belong to and calls summarize_post_comments on that post's url when
   // they're all the same one (closing the loop for real below), or refuses
   // to send anything when they span multiple posts (the second case here).
   // Same Monitor view, same fix, also reachable from answer_my_audience,
   // show_comment_review and show_audience_replies.
-  test("search_mentions Monitor view: filters/sort/select-all work, and 'Analyse these' calls analyze_comments correctly", async ({
+  test("search_mentions Monitor view: filters/sort/select-all work, and 'Analyse these' calls summarize_post_comments correctly", async ({
     page,
   }: {
     page: Page;
@@ -211,13 +211,13 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     const call = sent.find((m) => m.method === "tools/call");
     expect(call, `expected a tools/call, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
     const params = call!.params as { name: string; arguments: Record<string, unknown> };
-    expect(params.name).toBe("analyze_comments");
+    expect(params.name).toBe("summarize_post_comments");
     expect(params.arguments).toEqual({ url: firstThreadUrl, limit: 20 });
 
     // Close the loop: actually make this call and confirm it succeeds —
     // the real point of the fix, not just that the shape looks right.
     const followUp = await session.client.callTool({ name: params.name, arguments: params.arguments });
-    expect(followUp.isError, `analyze_comments follow-up failed: ${JSON.stringify(followUp.content)}`).not.toBe(true);
+    expect(followUp.isError, `summarize_post_comments follow-up failed: ${JSON.stringify(followUp.content)}`).not.toBe(true);
   });
 
   test("search_mentions Monitor view: picking comments across two different posts refuses to send a broken call", async ({
@@ -240,7 +240,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     await page.locator("#pickgo").click();
     await page.waitForTimeout(200);
     const sent = await sentMessages(page);
-    expect(sent.find((m) => m.method === "tools/call"), "should not send analyze_comments a call it will reject").toBeUndefined();
+    expect(sent.find((m) => m.method === "tools/call"), "should not send summarize_post_comments a call it will reject").toBeUndefined();
     await expect(page.locator("#pickhint")).toContainText(/one post/i);
   });
 
@@ -471,13 +471,13 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
     await expect(page.getByText("AI analysis")).toBeVisible();
 
     const tools = await page.evaluate(() => [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai")));
-    expect(tools).toEqual(["create_variants", "write_hooks", "repurpose_post", "analyze_comments"]);
+    expect(tools).toEqual(["generate_post_variants", "generate_hook_ideas", "adapt_post_for_platform", "summarize_post_comments"]);
     await clearSentMessages(page);
-    await page.locator('.ai-btn[data-ai="write_hooks"]').click();
+    await page.locator('.ai-btn[data-ai="generate_hook_ideas"]').click();
     await page.waitForTimeout(200);
     const sent = await sentMessages(page);
     const call = sent.find((m) => m.method === "tools/call");
-    expect(call?.params).toEqual({ name: "write_hooks", arguments: { url: STUB_URL } });
+    expect(call?.params).toEqual({ name: "generate_hook_ideas", arguments: { url: STUB_URL } });
   });
 
   test("show_hooks renders each hook with its device, and Copy works", async ({ page }: { page: Page }) => {
