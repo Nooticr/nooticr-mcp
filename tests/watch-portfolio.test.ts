@@ -58,13 +58,13 @@ describe("update_watch_portfolio", () => {
     expect(text(result)).toContain("tiktok");
   });
 
-  it("is marked as a closed-world write that destroys nothing", async () => {
+  it("is marked as a closed-world write that replaces the saved portfolio", async () => {
     const client = await connect({});
     const { tools } = await client.listTools();
     const tool = tools.find((t) => t.name === "update_watch_portfolio");
     expect(tool?.annotations).toMatchObject({
       readOnlyHint: false,
-      destructiveHint: false,
+      destructiveHint: true,
       openWorldHint: false,
     });
   });
