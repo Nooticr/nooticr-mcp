@@ -645,6 +645,18 @@ export const TOOLS: Tool[] = [
     desc: "Re-link the account.",
     when: "A call fails with an authentication error.",
   },
+  {
+    name: "nooticr_settings_read", cost: 0, group: "account",
+    args: "—",
+    desc: "Read your default social platform and result count.",
+    when: "Check the research defaults used when you omit those arguments.",
+  },
+  {
+    name: "nooticr_settings_update", cost: 0, group: "account",
+    args: "set",
+    desc: "Save your default social platform and result count for research tools.",
+    when: "Choose the defaults for future calls that omit those arguments.",
+  },
 ];
 
 export const PACKS = [

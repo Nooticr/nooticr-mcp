@@ -617,6 +617,8 @@ describe("tool surface", () => {
     "scan_marketplace_category",
     "marketplace_scan_status",
     "get_marketplace_product",
+    "nooticr_settings_read",
+    "nooticr_settings_update",
     "show_marketplace_category_insights",
   ];
 
@@ -730,6 +732,8 @@ describe("tool surface", () => {
       "amazon_scan_status",
       // The same poll, for the other ten sites.
       "marketplace_scan_status",
+      "nooticr_settings_read",
+      "nooticr_settings_update",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

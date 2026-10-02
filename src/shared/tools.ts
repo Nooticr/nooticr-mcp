@@ -61,6 +61,16 @@ import { registerHandoff } from "./handoff.js";
 import { registerCollabTools } from "./collab.js";
 import { registerAmazonTools } from "./amazon.js";
 import { registerMarketplaceTools } from "./marketplace.js";
+import {
+ DEFAULT_NOOTICR_SETTINGS,
+ DEFAULT_SOCIAL_PLATFORMS,
+ MemorySettingsStore,
+ SETTINGS_READ_TOOL,
+ SETTINGS_UPDATE_TOOL,
+ settingsOwnerFromAuth,
+ type NooticrSettings,
+ type SettingsStore,
+} from "./settings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.54";
@@ -607,6 +617,10 @@ export function createMcpServer(
    * the store that outlives it: a file for stdio, KV for the Worker.
    */
   localWatchStore?: WatchStore;
+  /** Durable account-scoped settings storage; the Worker supplies KV. */
+  settingsStore?: SettingsStore;
+  /** Resolve an authenticated MCP credential to its Nooticr account ID. */
+  resolveSettingsOwner?: (authInfo: AuthInfo | undefined) => Promise<string>;
   /**
    * Where in-flight task handles live. Memory is right for stdio and wrong
    * for a Durable Object that restarts on every deploy — see tasks.ts.
@@ -683,6 +697,10 @@ export function createMcpServer(
     prompts: {},
     extensions: {
      [UI_EXTENSION]: { mimeTypes: [RESOURCE_MIME_TYPE] },
+     "openai/settings": {
+      readTool: SETTINGS_READ_TOOL,
+      updateTool: SETTINGS_UPDATE_TOOL,
+     },
     },
    },
   }
@@ -693,14 +711,138 @@ export function createMcpServer(
  // model's copy of it (#107). Wrapped once here rather than in eighty
  // handlers; registerSlowTool records the task path the same way.
  const ledger = ledgerFor(server);
+ const settingsStore = opts?.settingsStore ?? new MemorySettingsStore();
+ const settingsForCall = async (extra: { authInfo?: AuthInfo } | undefined) => {
+  const owner = opts?.resolveSettingsOwner
+   ? await opts.resolveSettingsOwner(extra?.authInfo)
+   : await settingsOwnerFromAuth(extra?.authInfo);
+  return { owner, settings: (await settingsStore.get(owner)) ?? DEFAULT_NOOTICR_SETTINGS };
+ };
+
+ // Only apply defaults to search/research tools where these settings describe
+ // the omitted arguments. Explicit values always win; cost-bearing deeper
+ // reads such as comment counts and monitor sweeps are deliberately excluded.
+ const platformDefaults: Record<string, readonly string[]> = {
+  discover_social_posts: DEFAULT_SOCIAL_PLATFORMS,
+  get_user_posts: DEFAULT_SOCIAL_PLATFORMS,
+  analyze_creator_profile: DEFAULT_SOCIAL_PLATFORMS,
+  search_creators: ["tiktok", "instagram", "xiaohongshu"],
+  get_similar_creators: ["tiktok", "instagram"],
+  discover_sounds: ["tiktok", "instagram"],
+  niche_report: DEFAULT_SOCIAL_PLATFORMS,
+  find_hook_pattern: DEFAULT_SOCIAL_PLATFORMS,
+ };
+ const resultCountFields: Record<string, "limit" | "count"> = {
+  discover_social_posts: "limit",
+  get_user_posts: "limit",
+  analyze_creator_profile: "limit",
+  search_creators: "count",
+  discover_sounds: "count",
+  niche_report: "count",
+  find_hook_pattern: "limit",
+ };
  const registerTool = server.registerTool.bind(server) as (...a: unknown[]) => unknown;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  (server as any).registerTool = (name: string, config: unknown, handler: (...a: unknown[]) => unknown) =>
   registerTool(name, config, async (...a: unknown[]) => {
-   const result = (await handler(...a)) as { structuredContent?: unknown } | undefined;
+   const [rawArgs, rawExtra, ...rest] = a;
+   let callArgs = a;
+   if (
+    rawArgs &&
+    typeof rawArgs === "object" &&
+    !Array.isArray(rawArgs) &&
+    (platformDefaults[name] || resultCountFields[name])
+   ) {
+    const args = { ...(rawArgs as Record<string, unknown>) };
+    const extra = rawExtra as { authInfo?: AuthInfo } | undefined;
+    try {
+     const { settings } = await settingsForCall(extra);
+     const allowed = platformDefaults[name];
+     if (allowed && args.platform === undefined && allowed.includes(settings.defaultSocialPlatform)) {
+      args.platform = settings.defaultSocialPlatform;
+     }
+     const resultField = resultCountFields[name];
+     if (resultField && args[resultField] === undefined) args[resultField] = settings.defaultResultCount;
+     callArgs = [args, rawExtra, ...rest];
+    } catch (err) {
+     if (name === SETTINGS_READ_TOOL || name === SETTINGS_UPDATE_TOOL) throw err;
+     // A preferences-store outage must not take down ordinary MCP tools.
+    }
+   }
+   const result = (await handler(...callArgs)) as { structuredContent?: unknown } | undefined;
    ledger.record(name, result?.structuredContent);
    return result;
   });
+
+ const settingsSchema = {
+  type: "object" as const,
+  properties: {
+   defaultSocialPlatform: {
+    type: "string" as const,
+    title: "Default social platform",
+    description: "Used when a supported social search omits its platform. Explicit tool arguments take precedence.",
+    enum: [...DEFAULT_SOCIAL_PLATFORMS],
+   },
+   defaultResultCount: {
+    type: "integer" as const,
+    title: "Default result count",
+    description: "Used when supported search tools omit their result limit. Choose 3–12 results.",
+    minimum: 3,
+    maximum: 12,
+   },
+  },
+  required: ["defaultSocialPlatform", "defaultResultCount"],
+ };
+ const settingsOutput = z.object({
+  schema: z.object({ type: z.literal("object"), properties: z.record(z.unknown()), required: z.array(z.string()).optional() }),
+  values: z.object({ defaultSocialPlatform: z.string(), defaultResultCount: z.number().int() }),
+  layout: z.array(z.unknown()).optional(),
+ });
+ server.registerTool(
+  SETTINGS_READ_TOOL,
+  {
+   title: "Read Nooticr Settings",
+   description: "Read the current default social platform and result count for this Nooticr account. Free; no credits are used.",
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   inputSchema: z.object({}).strict(),
+   outputSchema: settingsOutput,
+  },
+  async (_args, extra) => {
+   const { settings } = await settingsForCall(extra);
+   return {
+    content: [],
+    structuredContent: {
+     schema: settingsSchema,
+     values: settings,
+     layout: [{ kind: "group", title: "Research defaults", items: [
+      { kind: "property", property: "defaultSocialPlatform" },
+      { kind: "property", property: "defaultResultCount" },
+     ] }],
+    },
+   };
+  }
+ );
+ server.registerTool(
+  SETTINGS_UPDATE_TOOL,
+  {
+   title: "Update Nooticr Settings",
+   description: "Save changed Nooticr research defaults for this account. Free; no credits are used.",
+   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   inputSchema: z.object({
+    set: z.object({
+     defaultSocialPlatform: z.enum(DEFAULT_SOCIAL_PLATFORMS).optional(),
+     defaultResultCount: z.number().int().min(3).max(12).optional(),
+    }).strict().refine((set) => Object.keys(set).length > 0, "At least one setting must change."),
+   }).strict(),
+   outputSchema: z.object({ values: settingsOutput.shape.values }),
+  },
+  async ({ set }: { set: Partial<NooticrSettings> }, extra) => {
+   const { owner, settings } = await settingsForCall(extra);
+   const updated = { ...settings, ...set };
+   await settingsStore.put(owner, updated);
+   return { content: [], structuredContent: { values: updated } };
+  }
+ );
 
  // Register one UI app resource per tool/view. Claude/ChatGPT render a
  // separate sandboxed app per resourceUri and key app state by it, so a
@@ -1150,12 +1292,12 @@ const TOOL_NAMES = [
     .object({
      niche: z.string().describe("Niche/topic, e.g. 'fitness'."),
      keywords: z.string().optional().describe("Optional extra keywords."),
-     limit: z.number().int().optional().describe("Max results (default 6)."),
+     limit: z.number().int().optional().describe("Max results (default 6, or your Settings result count when omitted)."),
      offset: z.number().int().optional().describe("Skip first N results — for 'next' pagination."),
      platform: z
       .enum(["youtube", "tiktok", "instagram", "douyin", "xiaohongshu", "twitter", "bilibili", "reddit", "weibo", "any"])
       .optional()
-      .describe("Platform to search (default youtube)."),
+      .describe("Platform to search (your Settings default when omitted; otherwise youtube)."),
     })
     .strict(),
   },
@@ -1198,8 +1340,8 @@ const TOOL_NAMES = [
      platform: z
       .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin", "reddit", "weibo"])
       .optional()
-      .describe("Which platform (default tiktok)."),
-     limit: z.number().int().optional().describe("Max posts (default 6)."),
+      .describe("Which platform (your Settings default when supported, otherwise tiktok)."),
+     limit: z.number().int().optional().describe("Max posts (default 6, or your Settings result count when omitted)."),
     })
     .strict(),
   },
@@ -1247,7 +1389,7 @@ const TOOL_NAMES = [
      platform: z
       .enum(["tiktok", "instagram", "youtube", "douyin", "xiaohongshu", "twitter", "bilibili", "linkedin", "reddit", "weibo"])
       .optional()
-      .describe("Which platform (default tiktok)."),
+      .describe("Which platform (your Settings default when supported, otherwise tiktok)."),
      limit: z.number().int().optional().describe("Posts to fetch (default 12, max 30)."),
      focus: z.string().optional().describe("Extra instruction for the profile synthesis."),
     })
@@ -1338,8 +1480,8 @@ const TOOL_NAMES = [
       // fields at all, so advertising them only spends a paid call to fail.
       .enum(["tiktok", "instagram", "xiaohongshu"])
       .optional()
-      .describe("Which platform (default tiktok)."),
-     count: z.number().int().optional().describe("Max creators (default 8)."),
+      .describe("Which platform (your Settings default when supported, otherwise tiktok)."),
+     count: z.number().int().optional().describe("Max creators (default 8, or your Settings result count when omitted)."),
     })
     .strict(),
   },
@@ -1467,8 +1609,8 @@ const TOOL_NAMES = [
    inputSchema: z
     .object({
      keyword: z.string().describe("Niche/keyword, e.g. 'gym'."),
-     platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (default tiktok)."),
-     count: z.number().int().optional().describe("Max sounds (default 6)."),
+     platform: z.enum(["tiktok", "instagram"]).optional().describe("Which platform (your Settings default when supported, otherwise tiktok)."),
+     count: z.number().int().optional().describe("Max sounds (default 6, or your Settings result count when omitted)."),
     })
     .strict(),
   },
@@ -2793,7 +2935,7 @@ const TOOL_NAMES = [
     .object({
      niche: z.string().describe("Niche or topic, e.g. 'home fitness'."),
      platform: z.string().optional().describe("Platform to survey (default tiktok)."),
-     count: z.number().int().optional().describe("Posts to survey (default 12, max 40)."),
+     count: z.number().int().optional().describe("Posts to survey (default 12, or your Settings result count when omitted; max 40)."),
     })
     .strict(),
   },
@@ -2830,7 +2972,7 @@ const TOOL_NAMES = [
     .object({
      username: z.string().describe("Creator handle, with or without @."),
      platform: z.string().optional().describe("Platform (default tiktok)."),
-     limit: z.number().int().optional().describe("Posts to read (default 12, max 40)."),
+     limit: z.number().int().optional().describe("Posts to read (default 12, or your Settings result count when omitted; max 40)."),
     })
     .strict(),
   },
