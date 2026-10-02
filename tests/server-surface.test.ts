@@ -62,6 +62,9 @@ const NOT_READ_ONLY = [
   "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
+  // Both spend credits to start public marketplace collection jobs.
+  "scan_amazon_category",
+  "scan_marketplace_category",
 ];
 
 describe("tool annotations", () => {
@@ -108,7 +111,6 @@ describe("tool annotations", () => {
       "analyze_product_status",
       "check_nooticr_credits",
       "connect_social_account",
-      "create_brand_watch",
       "create_product",
       "draft_post",
       "generate_captions",

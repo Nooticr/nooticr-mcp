@@ -72,12 +72,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": true,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Not read-only: it starts a background job that overwrites the product's brand playbook, and it spends plan AI credits.",
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
-        "destructive_justification": "Not destructive of the caller's content, but it does overwrite the product's existing brand playbook with the new analysis. Nothing else of the caller's is touched."
+        "destructive_justification": "Destructive: the completed background analysis overwrites the product's existing brand playbook."
       }
     },
     "analyze_product_status": {
@@ -108,12 +108,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": true,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Not read-only. Besides fetching, it moves each watched creator's snapshot forward, so a second call answers 'what is new' rather than repeating the first answer.",
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
-        "destructive_justification": "Not destructive of any content, though it does advance the caller's own snapshot, so the previous 'what is new' boundary is not recoverable."
+        "destructive_justification": "Destructive: it replaces each watched creator's previous snapshot, so the former 'what is new' boundary cannot be restored."
       }
     },
     "check_nooticr_credits": {
@@ -179,12 +179,12 @@
     "create_brand_watch": {
       "annotations": {
         "readOnlyHint": false,
-        "openWorldHint": false,
+        "openWorldHint": true,
         "destructiveHint": false
       },
       "justifications": {
         "read_only_justification": "Not read-only: on confirmation it creates a scheduled watch that will keep spending the caller's credits and emailing a digest until stopped.",
-        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
+        "open_world_justification": "Reaches public third-party networks on a recurring schedule to collect live mentions or creator posts; results depend on independently controlled services.",
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
       }
     },
@@ -300,12 +300,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Not read-only: it saves the generated plan on the caller's product and spends plan AI credits. It schedules and publishes nothing.",
         "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
-        "destructive_justification": "Not destructive of posts, but it replaces the product's saved weekly plan. No post is scheduled, changed or published."
+        "destructive_justification": "Destructive: it replaces the product's saved weekly content plan; the prior plan is not retained by this tool."
       }
     },
     "get_amazon_product": {
@@ -322,12 +322,12 @@
     },
     "scan_marketplace_category": {
       "annotations": {
-        "readOnlyHint": true,
+        "readOnlyHint": false,
         "openWorldHint": true,
         "destructiveHint": false
       },
       "justifications": {
-        "read_only_justification": "Read-only: it collects public product listings and their reviews from one of eleven marketplaces. Nothing is written.",
+        "read_only_justification": "Not read-only: it starts a paid background collection and spends credits while fetching public marketplace listings and reviews.",
         "open_world_justification": "Reaches the public internet: the listings, their prices and their reviews are live third-party data outside this server.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
@@ -658,12 +658,12 @@
     },
     "scan_amazon_category": {
       "annotations": {
-        "readOnlyHint": true,
+        "readOnlyHint": false,
         "openWorldHint": true,
         "destructiveHint": false
       },
       "justifications": {
-        "read_only_justification": "Read-only: it collects public Amazon listings and their reviews for the caller to read. Nothing is written, on Amazon or here.",
+        "read_only_justification": "Not read-only: it starts a paid background collection and spends credits while fetching public Amazon listings and reviews.",
         "open_world_justification": "Reaches the public internet: it collects live Amazon listings and review text through nooticr's scraper service, so the result depends on data outside this server and cannot be predicted from the arguments alone.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
@@ -876,24 +876,24 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Not read-only: it rewrites the list of terms a portfolio watch sweeps on its schedule, so every later run searches for a different set.",
         "open_world_justification": "Closed domain. It edits one row of the caller's own nooticr workspace over nooticr's API — nothing is searched and no third-party network is contacted when it runs.",
-        "destructive_justification": "Not destructive: removing a term only stops future sweeps for it. The watch, its budget, its cadence and its recorded history all stay, and a removed term can be added back."
+        "destructive_justification": "Destructive: updating the portfolio overwrites the prior set of tracked terms and platform selections."
       }
     },
     "track_creator": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": true,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Not read-only. For a creator already on the watchlist it advances that creator's tracking marker, so consecutive calls do not answer the same question.",
         "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
-        "destructive_justification": "Not destructive of any content, though it advances the caller's tracking marker for that creator, so the previous boundary is not recoverable."
+        "destructive_justification": "Destructive: for a watched creator it replaces the prior tracking marker, so the earlier 'since last check' boundary cannot be restored."
       }
     },
     "understand_social_post": {
@@ -924,12 +924,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Not read-only: it patches columns on the caller's own product. Omitted arguments are left unchanged, so it cannot blank a field by not mentioning it.",
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
-        "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
+        "destructive_justification": "Destructive: supplied fields overwrite the product's existing values; the previous values are not preserved by this tool."
       }
     },
     "watch_creator": {

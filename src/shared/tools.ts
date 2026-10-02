@@ -147,7 +147,9 @@ function appsSdkContents(uri: string, media: string[], links: string[], tool = "
   _meta: {
    "openai/widgetPrefersBorder": false,
    "openai/widgetCSP": {
-    connect_domains: media,
+    // The widget communicates through the host bridge and needs no direct
+    // network connections. Remote origins are limited to rendered resources.
+    connect_domains: [],
     resource_domains: media,
     redirect_domains: links,
    },
@@ -995,7 +997,7 @@ const TOOL_NAMES = [
        // Thumbnails and video come from our own origin and the platform CDNs.
        // Without these the widget loads and then paints nothing at all.
        "openai/widgetCSP": {
-        connect_domains: domains,
+        connect_domains: [],
         resource_domains: domains,
         redirect_domains: PLATFORM_LINK_DOMAINS,
        },

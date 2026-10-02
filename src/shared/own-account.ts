@@ -182,7 +182,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "appId (optional when your workspace has only one product); every other field is " +
         "snake_case, the same names create_product takes and for the same reason — the backend " +
         "reads them by exact key. Free — no AI call, just a row.",
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
@@ -499,7 +499,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       // jobId and state: "pending", nothing to draw yet. analyze_product_status,
       // which returns the finished playbook, is where the view belongs — see
       // scripts/host-contract.py's NO_APP entry for this tool.
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({
           appId: z
@@ -679,7 +679,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "get_content_plan) but does not schedule or publish any post. Billed like the dashboard's " +
         "own Content Plan button: your workspace's plan AI credits, not your personal MCP credits.",
       _meta: viewMeta("generate_content_plan"),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z

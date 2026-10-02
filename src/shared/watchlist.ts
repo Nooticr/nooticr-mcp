@@ -667,7 +667,7 @@ export function registerWatchlist(
         "snapshot forward — so this answers 'what is new' rather than 'what exists'. The first run " +
         "for a creator has nothing to compare against and just records the baseline. " +
         "Consumes 2 nooticr credits per creator checked.",
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({
           limit: z.number().int().optional().describe("Posts to check per creator (default 6)."),

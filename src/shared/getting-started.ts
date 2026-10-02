@@ -31,6 +31,8 @@ export const SERVER_INSTRUCTIONS = [
   "Prices are nooticr credits per fetch and every paid tool states its price in its description. Free: " +
     "nooticr_getting_started, check_nooticr_credits, list_social_connections, watch_creator, unwatch_creator " +
     "and every show_* view, which only draws what you pass it.",
+  "Before a paid call, explain its stated cost and get the user's consent; follow any tool's built-in " +
+    "confirmation flow before proceeding.",
   "Not sure where to start? Call nooticr_getting_started: it is free, reads this account's state, and names " +
     "the next calls worth making with their prices. Good first calls: get_social_media on a post URL " +
     "(1 credit), discover_social_posts on a niche (2), analyze_comments on a post (2).",
