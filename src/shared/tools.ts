@@ -816,14 +816,6 @@ export function createMcpServer(
    required: z.array(z.string()),
   }).strict(),
   values: z.object({ defaultSocialPlatform: z.string(), defaultResultCount: z.number().int() }),
-  layout: z.array(z.object({
-   kind: z.literal("group"),
-   title: z.string(),
-   items: z.array(z.object({
-    kind: z.literal("property"),
-    property: z.enum(["defaultSocialPlatform", "defaultResultCount"]),
-   }).strict()),
-  }).strict()),
  });
  // Register one UI app resource per tool/view. Claude/ChatGPT render a
  // separate sandboxed app per resourceUri and key app state by it, so a
@@ -3421,10 +3413,6 @@ const TOOL_NAMES = [
     structuredContent: {
      schema: settingsSchema,
      values: settings,
-     layout: [{ kind: "group", title: "Research defaults", items: [
-      { kind: "property", property: "defaultSocialPlatform" },
-      { kind: "property", property: "defaultResultCount" },
-     ] }],
     },
    };
   }
