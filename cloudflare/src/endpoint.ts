@@ -13,6 +13,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { forwardedHeaders, forwardedSession, looksLikeApiKey } from "../../src/shared/api-key.js";
 import { NooticrClient, jwtExpiry, type TokenProvider } from "../../src/shared/nooticr.js";
 import { argumentsDigest, createMcpServer, MCP_SERVER_VERSION } from "../../src/shared/tools.js";
+import { KvSettingsStore, settingsOwnerFromAuth } from "../../src/shared/settings.js";
 import { KvWatchStore } from "../../src/shared/watchlist.js";
 import {
   verifyToken,
@@ -263,6 +264,11 @@ export class McpEndpoint {
       // KV rather than this Durable Object's SQLite: the watchlist belongs to
       // the account and has to outlive any one session, and a DO is per-session.
       localWatchStore: new KvWatchStore(this.env.STORE),
+      // Plugin settings follow the Nooticr account across OAuth token refreshes
+      // and reconnects; API-key-only connections are isolated by a token hash.
+      settingsStore: new KvSettingsStore(this.env.STORE),
+      resolveSettingsOwner: async (authInfo) =>
+        settingsOwnerFromAuth(authInfo, async (token) => (await verifyToken(this.env, token))?.nooticrUser?.id),
       // SQLite rather than KV: a task *is* per-session, and a poll must never
       // read back a status older than the one just written. The default
       // in-memory store was rebuilt on every DO restart, so a task created

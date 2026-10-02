@@ -65,6 +65,8 @@ const NOT_READ_ONLY = [
   // Both spend credits to start public marketplace collection jobs.
   "scan_amazon_category",
   "scan_marketplace_category",
+  // Settings change reversible per-account search preferences.
+  "nooticr_settings_update",
 ];
 
 describe("tool annotations", () => {
@@ -85,7 +87,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(88);
+    expect(tools).toHaveLength(90);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -135,6 +137,8 @@ describe("tool annotations", () => {
       // Reads the caller's own balance, connections and watchlist; suggests.
       "nooticr_getting_started",
       "nooticr_login",
+      "nooticr_settings_read",
+      "nooticr_settings_update",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
       // the filing happens on whichever server the host also has connected.

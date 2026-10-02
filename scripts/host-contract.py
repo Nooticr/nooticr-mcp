@@ -51,8 +51,13 @@ import sys
 # TOOL_NAMES in tools.ts): its reply, once state is "done", carries the
 # generated playbook prose, the same kind of content get_content_plan already
 # established the generic fallback view is an acceptable way to show.
+# The ChatGPT settings tools render through the host's native settings page,
+# declared by the openai/settings MCP extension, so they intentionally have
+# no MCP Apps widget or outputTemplate.
 NO_APP = {
     "nooticr_login",
+    "nooticr_settings_read",
+    "nooticr_settings_update",
     "watch_creator",
     "unwatch_creator",
     "create_brand_watch",

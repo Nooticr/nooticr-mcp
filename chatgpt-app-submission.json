@@ -1063,6 +1063,30 @@
         "open_world_justification": "Closed domain. It reads nooticr's own run ledger over nooticr's API; no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Not destructive: it summarises past calls, so there is nothing for it to destroy."
       }
+    },
+    "nooticr_settings_read": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the caller's saved social research preferences. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only settings stored for the caller's Nooticr account; no network is contacted.",
+        "destructive_justification": "Not destructive: it only reads preferences, so there is nothing for it to destroy."
+      }
+    },
+    "nooticr_settings_update": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it saves the caller's default social platform or result count for future searches.",
+        "open_world_justification": "Closed domain. It changes only preferences stored for the caller's Nooticr account; no network is contacted.",
+        "destructive_justification": "Not destructive: it changes reversible search defaults and deletes no account data or content."
+      }
     }
   },
   "test_cases": [

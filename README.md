@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-88 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+90 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -173,6 +173,8 @@ a `scanId` for the rest.
 |------|---------|----------------|
 | `nooticr_getting_started` | free | **Start here.** Where this account stands — balance, connected accounts, watchlist — and the next calls worth making, each with its price and an example. The server's `instructions` point every host at it. |
 | `check_nooticr_credits` | free | Balance and billing URL. |
+| `nooticr_settings_read` | free | Read your default social platform and result count. |
+| `nooticr_settings_update` | free | Save the default platform and result count used by supported searches when arguments are omitted. |
 | `list_tool_runs` | free | Your tool-call history: what ran, whether it worked, and the credits each call actually took (0 for a free, refunded, cached or replayed call). `scope: "workspace"` shows every member's runs to owners and admins. |
 | `get_tool_run` | free | One run from that history by id, with its full error. |
 | `get_usage_report` | free | The run ledger added up over a window: total calls, failures and credits actually taken, per tool, per day and the most recent failures. `scope: "workspace"` adds one row per seat, for the workspace's owners and admins. |
