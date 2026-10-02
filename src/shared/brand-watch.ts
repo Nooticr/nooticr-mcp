@@ -537,7 +537,7 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "never widened. A run that turns up nothing new — or, for a competitor watch, nothing above " +
         "median — sends no mail. cadence is hourly, every_6_hours, every_12_hours, daily or weekly, " +
         "and defaults to daily. No cost to call.",
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({
           kind: z
@@ -793,7 +793,7 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "names any in platformsSkipped, tell the user those networks are no longer searched and " +
         "offer to remove a term or recreate the watch with a larger budget. A change the budget " +
         "cannot cover at all is refused and nothing changes. No cost to call: no credits are spent.",
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
           watchId: z.string().describe("The portfolio watch's id, from list_brand_watches."),

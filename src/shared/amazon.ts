@@ -507,7 +507,7 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "the category is wrong. " +
         "Use for a category or a competitive set; for one listing, get_amazon_product is cheaper.",
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: false,
         openWorldHint: true,

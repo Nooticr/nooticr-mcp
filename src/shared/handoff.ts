@@ -432,37 +432,13 @@ export function prepareItem(
 }
 
 /** How to actually file it, named per destination so the model does not guess. */
-function nextStepFor(destination: HandoffDestination, count: number): string {
+function nextStepFor(_destination: HandoffDestination, count: number): string {
   const n = `${count} item${count === 1 ? "" : "s"}`;
-  switch (destination) {
-    case "github":
-      return (
-        `Search the repository's issues for each \`searchFirst\` string first — an exact match ` +
-        `means it is already filed and you should comment on that issue instead of opening a ` +
-        `second one. For the rest, call the GitHub server's issue-creation tool with \`title\`, ` +
-        `\`body\` and \`labels\` exactly as given. Do not rewrite the body: the quote is fenced ` +
-        `and framed deliberately. ${n} prepared.`
-      );
-    case "jira":
-      return (
-        `Search the project for each \`searchFirst\` string first, then create an issue per item ` +
-        `with \`title\` as the summary and \`body\` as the description. Jira renders its own ` +
-        `markup — if the project is not markdown-enabled the fence may show literally, which is ` +
-        `acceptable and better than an unfenced quote. Map \`labels\` to Jira labels. ${n} prepared.`
-      );
-    case "linear":
-      return (
-        `Search the team's issues for each \`searchFirst\` string first, then create an issue per ` +
-        `item with \`title\` and \`body\` as given, and \`labels\` as Linear labels (create any ` +
-        `that do not exist rather than dropping them). ${n} prepared.`
-      );
-    default:
-      return (
-        `Each item carries the exact \`title\`, \`body\` and \`labels\` to file, and a ` +
-        `\`searchFirst\` string to look for first so the same report does not land twice. Pass ` +
-        `them to whichever tracker tool this host has connected, unmodified. ${n} prepared.`
-      );
-  }
+  return (
+    `Each item includes a title, body, labels and a search phrase for duplicate checking. ` +
+    `Review the prepared text, then copy it into your chosen issue tracker. No issue is created ` +
+    `by this tool. ${n} prepared.`
+  );
 }
 
 export function registerHandoff(server: McpServer): void {
@@ -472,10 +448,9 @@ export function registerHandoff(server: McpServer): void {
       title: "Prepare Handoff",
       description:
         "Turn items you classified — a bug report in a comment, a complaint said out loud in a " +
-        "video, a feature request under a competitor's post — into the exact text to file in " +
-        "GitHub, Jira or Linear through whichever tracker server this host also has connected. " +
-        "This server files nothing itself and holds no tracker credential; it returns the " +
-        "strings and you make the call. Free, and makes no requests. " +
+        "video, a feature request under a competitor's post — into structured, issue-ready text. " +
+        "This server files nothing; review the result and copy it to your chosen issue tracker. " +
+        "Free, and makes no requests. " +
         "Use it after analyze_comments, search_mentions, answer_my_audience or " +
         "search_spoken_mentions, passing the ids those tools issued. For each item you get a " +
         "title, a ready body with the quote fenced and framed as third-party evidence rather " +

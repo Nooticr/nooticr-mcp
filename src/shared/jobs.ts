@@ -1037,7 +1037,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "you follow; analyze_creator_profile is the full teardown of one you do not.",
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         // Moves the "last checked" marker for a watched creator, so the second
         // call in a row does not answer the same question as the first.
         idempotentHint: false,

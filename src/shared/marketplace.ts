@@ -363,7 +363,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "For Amazon specifically, scan_amazon_category returns the same shape plus Amazon's own " +
         "review-aspect counts.",
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: false,
         openWorldHint: true,
