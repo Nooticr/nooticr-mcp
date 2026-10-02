@@ -164,6 +164,8 @@ const CREATOR_UNIT: LoadingPerUnit = {
  * generic grey box that said "Working".
  */
 export const LOADING_PLANS: Record<string, LoadingPlan> = {
+  nooticr_settings_read: { label: "Reading your research defaults", kind: "text", n: 0, steps: [], free: true },
+  nooticr_settings_update: { label: "Saving your research defaults", kind: "text", n: 0, steps: [], free: true },
   // ─── Read a post ───
   get_social_media: { label: "Fetching the post", kind: "post", n: 1, steps: [step("get_social_media")] },
   get_post_transcript: {

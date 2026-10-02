@@ -769,7 +769,12 @@ export function createMcpServer(
      // A preferences-store outage must not take down ordinary MCP tools.
     }
    }
-   const result = (await handler(...callArgs)) as { structuredContent?: unknown } | undefined;
+   const result = (await handler(...callArgs)) as { structuredContent?: unknown; isError?: boolean } | undefined;
+   // Login recovery promises to retry what the caller originally supplied.
+   // The settings layer's effective defaults belong to this attempt only.
+   if (result?.isError && pendingAfterLogin?.name === name && rawArgs && typeof rawArgs === "object") {
+    pendingAfterLogin = { name, args: rawArgs as Record<string, unknown> };
+   }
    ledger.record(name, result?.structuredContent);
    return result;
   });
@@ -793,57 +798,33 @@ export function createMcpServer(
   },
   required: ["defaultSocialPlatform", "defaultResultCount"],
  };
+ const settingPropertySchema = z.object({
+  type: z.enum(["string", "integer"]),
+  title: z.string(),
+  description: z.string(),
+  enum: z.array(z.string()).optional(),
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+ }).strict();
  const settingsOutput = z.object({
-  schema: z.object({ type: z.literal("object"), properties: z.record(z.unknown()), required: z.array(z.string()).optional() }),
-  values: z.object({ defaultSocialPlatform: z.string(), defaultResultCount: z.number().int() }),
-  layout: z.array(z.unknown()).optional(),
- });
- server.registerTool(
-  SETTINGS_READ_TOOL,
-  {
-   title: "Read Nooticr Settings",
-   description: "Read the current default social platform and result count for this Nooticr account. Free; no credits are used.",
-   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-   inputSchema: z.object({}).strict(),
-   outputSchema: settingsOutput,
-  },
-  async (_args, extra) => {
-   const { settings } = await settingsForCall(extra);
-   return {
-    content: [],
-    structuredContent: {
-     schema: settingsSchema,
-     values: settings,
-     layout: [{ kind: "group", title: "Research defaults", items: [
-      { kind: "property", property: "defaultSocialPlatform" },
-      { kind: "property", property: "defaultResultCount" },
-     ] }],
-    },
-   };
-  }
- );
- server.registerTool(
-  SETTINGS_UPDATE_TOOL,
-  {
-   title: "Update Nooticr Settings",
-   description: "Save changed Nooticr research defaults for this account. Free; no credits are used.",
-   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-   inputSchema: z.object({
-    set: z.object({
-     defaultSocialPlatform: z.enum(DEFAULT_SOCIAL_PLATFORMS).optional(),
-     defaultResultCount: z.number().int().min(3).max(12).optional(),
-    }).strict().refine((set) => Object.keys(set).length > 0, "At least one setting must change."),
+  schema: z.object({
+   type: z.literal("object"),
+   properties: z.object({
+    defaultSocialPlatform: settingPropertySchema,
+    defaultResultCount: settingPropertySchema,
    }).strict(),
-   outputSchema: z.object({ values: settingsOutput.shape.values }),
-  },
-  async ({ set }: { set: Partial<NooticrSettings> }, extra) => {
-   const { owner, settings } = await settingsForCall(extra);
-   const updated = { ...settings, ...set };
-   await settingsStore.put(owner, updated);
-   return { content: [], structuredContent: { values: updated } };
-  }
- );
-
+   required: z.array(z.string()),
+  }).strict(),
+  values: z.object({ defaultSocialPlatform: z.string(), defaultResultCount: z.number().int() }),
+  layout: z.array(z.object({
+   kind: z.literal("group"),
+   title: z.string(),
+   items: z.array(z.object({
+    kind: z.literal("property"),
+    property: z.enum(["defaultSocialPlatform", "defaultResultCount"]),
+   }).strict()),
+  }).strict()),
+ });
  // Register one UI app resource per tool/view. Claude/ChatGPT render a
  // separate sandboxed app per resourceUri and key app state by it, so a
  // distinct URI per tool avoids a shared app instance/session colliding
@@ -3420,6 +3401,55 @@ const TOOL_NAMES = [
  // and the generic one cannot, so the two descriptions are not the same
  // promise — not because the question differs.
  registerMarketplaceTools(server, makeClient);
+
+ // Register the settings controls after the existing tool surface so adding
+ // them does not reorder tools that hosts already know about. These settings
+ // tools have no app view; the host renders them in its native settings UI.
+ server.registerTool(
+  SETTINGS_READ_TOOL,
+  {
+   title: "Read Nooticr Settings",
+   description: "Read the current default social platform and result count for this Nooticr account. Free; no credits are used.",
+   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   inputSchema: z.object({}).strict(),
+   outputSchema: settingsOutput,
+  },
+  async (_args, extra) => {
+   const { settings } = await settingsForCall(extra);
+   return {
+    content: [],
+    structuredContent: {
+     schema: settingsSchema,
+     values: settings,
+     layout: [{ kind: "group", title: "Research defaults", items: [
+      { kind: "property", property: "defaultSocialPlatform" },
+      { kind: "property", property: "defaultResultCount" },
+     ] }],
+    },
+   };
+  }
+ );
+ server.registerTool(
+  SETTINGS_UPDATE_TOOL,
+  {
+   title: "Update Nooticr Settings",
+   description: "Save changed Nooticr research defaults for this account. Free; no credits are used.",
+   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+   inputSchema: z.object({
+    set: z.object({
+     defaultSocialPlatform: z.enum(DEFAULT_SOCIAL_PLATFORMS).optional(),
+     defaultResultCount: z.number().int().min(3).max(12).optional(),
+    }).strict().refine((set) => Object.keys(set).length > 0, "At least one setting must change."),
+   }).strict(),
+   outputSchema: z.object({ values: settingsOutput.shape.values }),
+  },
+  async ({ set }: { set: Partial<NooticrSettings> }, extra) => {
+   const { owner, settings } = await settingsForCall(extra);
+   const updated = { ...settings, ...set };
+   await settingsStore.put(owner, updated);
+   return { content: [], structuredContent: { values: updated } };
+  }
+ );
 
  return server;
 }

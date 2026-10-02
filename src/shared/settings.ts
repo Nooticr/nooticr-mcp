@@ -23,7 +23,8 @@ export interface NooticrSettings {
 
 export const DEFAULT_NOOTICR_SETTINGS: NooticrSettings = {
   defaultSocialPlatform: "tiktok",
-  defaultResultCount: 6,
+  // Keep existing tool behaviour until the user chooses another count.
+  defaultResultCount: 12,
 };
 
 export interface SettingsStore {

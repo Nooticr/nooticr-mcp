@@ -41,7 +41,7 @@ describe("ChatGPT structured plugin settings", () => {
 
     const result = await client.callTool({ name: "nooticr_settings_read", arguments: {} });
     expect(result.structuredContent).toMatchObject({
-      values: { defaultSocialPlatform: "tiktok", defaultResultCount: 6 },
+      values: { defaultSocialPlatform: "tiktok", defaultResultCount: 12 },
       schema: { properties: { defaultSocialPlatform: { type: "string" }, defaultResultCount: { type: "integer" } } },
     });
   });
