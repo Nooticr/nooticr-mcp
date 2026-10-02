@@ -1045,7 +1045,7 @@ const TOOL_NAMES = [
   server,
   "analyze_post",
   {
-   title: "Analyze Post",
+   title: "Inspect Social Media Post",
    description:
     "Frames sampled evenly across a social post (video, image, carousel/slideshow), returned as " +
     "real images you can look at, together with the post's transcript, caption and stats. " +
@@ -1216,7 +1216,7 @@ const TOOL_NAMES = [
   server,
   "analyze_creator_profile",
   {
-   title: "Analyze Creator Profile",
+   title: "Research Creator Profile",
    description:
     "A creator's recent posts with their stats, on TikTok, Instagram, YouTube, Reddit, Douyin, " +
     "Xiaohongshu, X, Weibo, Bilibili or LinkedIn — the raw material of a profile teardown. " +
@@ -1682,7 +1682,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "analyze_comments",
   {
-   title: "Analyze Comments",
+   title: "Summarize Post Comments",
    description:
     "A post's comment section, fetched and laid out for you to classify: every comment with a " +
     "stable id, plus whatever themes the platform clustered them into. Label each one's sentiment " +
@@ -2428,7 +2428,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "compare_posts",
   {
-   title: "Compare Posts",
+   title: "Compare Social Post Performance",
    description:
     "The first of 2-5 posts you want compared, fetched with its stats — and the comparison left " +
     "to you. Call get_social_media on each remaining URL yourself (1 credit each), plus " +
@@ -2572,7 +2572,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "analyze_post_fast",
   {
-   title: "Analyze Post (Fast)",
+   title: "Quick Social Post Analysis",
    description:
     "A post's transcript, caption and stats, with no frames — which is what makes it the cheap " +
     "read. Work out the hook, the script structure, the CTA and the audience from the words and " +
@@ -2607,7 +2607,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "write_hooks",
   {
-   title: "Write Hooks",
+   title: "Generate Hooks from a Post",
    description:
     "The source post, its transcript and its stats, so you can write the opening lines yourself — " +
     "the first line said or shown on screen. For each hook you write, name the device it uses and " +
@@ -2646,7 +2646,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "create_variants",
   {
-   title: "Create Variants",
+   title: "Generate Post Variants",
    description:
     "The post that worked, with its transcript and stats, so you can propose what to film next: " +
     "for each variant, the hook, the one angle that changes, the shot beats in order and the CTA. " +
@@ -2683,7 +2683,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "score_draft",
   {
-   title: "Score Draft",
+   title: "Score a Social Media Draft",
    description:
     "Score your own draft BEFORE you film or post it. Returns the draft alongside the rubric to " +
     "hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10 — and asks you for " +
@@ -2733,7 +2733,7 @@ const TOOL_NAMES = [
  server.registerTool(
   "repurpose_post",
   {
-   title: "Repurpose Post",
+   title: "Adapt a Post for Another Platform",
    description:
     "The source post, its transcript and its stats, for you to rewrite for other surfaces — X " +
     "thread, LinkedIn post, carousel slides, YouTube title/description, newsletter. Each surface " +
