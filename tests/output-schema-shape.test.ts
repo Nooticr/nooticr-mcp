@@ -136,7 +136,7 @@ describe("the JSON Schema a strict client reads", () => {
     // And the open inputs really are open, rather than having become strict.
     const tools = await listTools();
     const open = tools
-      .filter((t) => ["show_analysis", "show_variants", "show_comparison"].includes(t.name))
+      .filter((t) => ["show_post_analysis", "show_variants", "show_compared_posts"].includes(t.name))
       .flatMap((t) => [...schemasIn((t as unknown as Schema).inputSchema)].map(([p, sc]) => ({ tool: t.name, p, sc })))
       .filter(({ p }) => /\/properties\/(post|analysis)$|\/properties\/posts\/items$/.test(p));
     expect(open.length).toBe(4);

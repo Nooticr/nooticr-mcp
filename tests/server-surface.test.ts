@@ -40,6 +40,8 @@ const NOT_READ_ONLY = [
   // state. list_brand_watches only reads, so it stays out of this list.
   "create_brand_watch",
   "stop_brand_watch",
+  // Rewrites a portfolio watch's stored terms.
+  "update_watch_portfolio",
   // Own-account generation: each spends the workspace's plan AI credits.
   "draft_post",
   "generate_captions",
@@ -60,6 +62,11 @@ const NOT_READ_ONLY = [
   "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
+  // Both spend credits to start public marketplace collection jobs.
+  "scan_amazon_category",
+  "scan_marketplace_category",
+  // Settings change reversible per-account search preferences.
+  "nooticr_settings_update",
 ];
 
 describe("tool annotations", () => {
@@ -80,7 +87,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(69);
+    expect(tools).toHaveLength(90);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -106,32 +113,46 @@ describe("tool annotations", () => {
       "analyze_product_status",
       "check_nooticr_credits",
       "connect_social_account",
-      "create_brand_watch",
       "create_product",
       "draft_post",
       "generate_captions",
       "generate_content_plan",
       "get_brand_playbook",
       "get_content_plan",
+      "get_google_analytics_data",
       "get_post_performance",
+      "get_posthog_analytics",
       "get_scheduled_posts",
+      "get_search_console_data",
+      "get_tool_run",
+      "get_usage_report",
       "get_video_stats",
       "growth_brief",
       "list_brand_watches",
       "list_own_apps",
       "list_social_connections",
+      "list_tool_runs",
+      "list_watchlist",
       "mention_trend",
+      // Reads the caller's own balance, connections and watchlist; suggests.
+      "nooticr_getting_started",
       "nooticr_login",
+      "nooticr_settings_read",
+      "nooticr_settings_update",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
       // the filing happens on whichever server the host also has connected.
       "prepare_handoff",
       "review_post",
       // The show_* family: each draws what the caller already wrote/fetched
-      // and reaches nothing.
-      "show_analysis",
+      // and reaches nothing. Sorted, so the renames in #45 moved two of them.
+      //
+      // Draws the category read the caller wrote out of scan_amazon_category.
+      // The three collection tools are open-world and deliberately not here:
+      // every one of them reaches Amazon through the scraper service.
+      "show_amazon_category_insights",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
-      // send them either — no connection carries comment-write permission.
+      // send them either — nooticr has no send path for comments.
       "show_audience_replies",
       // Renders scores the caller reached by reading a candidate's links —
       // and it is the caller that opened them, not us. See collab.ts for why
@@ -139,8 +160,11 @@ describe("tool annotations", () => {
       "show_collab_shortlist",
       // Renders classifications the caller already made; fetches nothing.
       "show_comment_review",
-      "show_comparison",
+      "show_compared_posts",
       "show_hooks",
+      // Its eleven-marketplace twin (#95): the same re-read of a scan.
+      "show_marketplace_category_insights",
+      "show_post_analysis",
       "show_repurposed_post",
       // Draws the standings the caller read out of compare_creators. The two
       // tools that FETCH those standings are open-world and deliberately not
@@ -153,6 +177,7 @@ describe("tool annotations", () => {
       "stop_brand_watch",
       "unwatch_creator",
       "update_product",
+      "update_watch_portfolio",
       "watch_creator",
     ]);
   });
@@ -343,7 +368,7 @@ describe("output schemas", () => {
     const feed = JSON.stringify(byName.discover_social_posts.outputSchema);
     expect(feed).toContain("externalUrl");
     expect(JSON.stringify(byName.get_post_transcript.outputSchema)).toContain("transcript");
-    expect(JSON.stringify(byName.compare_posts.outputSchema)).toContain("winner");
+    expect(JSON.stringify(byName.compare_social_posts.outputSchema)).toContain("winner");
   });
 });
 

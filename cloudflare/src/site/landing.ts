@@ -10,6 +10,9 @@
 import { page, esc, logoMark } from "./layout.js";
 import { PLATFORMS, CLIENTS, platformIcon } from "./platforms.js";
 import { TOOLS } from "./catalogue.js";
+// The registry itself rather than a copy: the sites listed here are the sites
+// the tools accept, because they are the same array.
+import { MARKETS } from "../../../src/shared/marketplace.js";
 
 const CSS = `
 .hero{padding:78px 0 22px;text-align:center;position:relative}
@@ -28,6 +31,14 @@ section{padding:52px 0}
 .sec-head{text-align:center;max-width:40rem;margin:0 auto 34px}
 .sec-head h2{font-size:clamp(24px,3.6vw,34px);margin:12px 0 0}
 .sec-head p{color:var(--muted);margin:12px 0 0}
+
+/* marketplace pills — named, not drawn: five of the twelve have no mark in
+   assets/brand/marketplaces, and inventing path data draws the wrong logo. */
+.mkts{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+.mkt{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;font-size:14px;font-weight:600;
+  background:var(--panel);border:1px solid var(--border);border-radius:999px;transition:.16s}
+.mkt:hover{border-color:var(--brand)}
+.mkt span{font-weight:400;font-size:12.5px;color:var(--muted)}
 
 /* logo cloud */
 .cloud{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
@@ -129,6 +140,16 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
       `<b>${esc(p.name)}</b><span>${esc(p.supports)}</span></div>`
   ).join("");
 
+  // Names only. The registry's storefront hints are full sentences written for
+  // a model choosing an argument ("de or at. The two are not interchangeable:
+  // …"), and every attempt to slice one into a badge produced a ragged
+  // fragment. The reference table has a column for them; this is a coverage
+  // claim, not a reference.
+  const marketplaces = MARKETS.map((m) => `<div class="mkt">${esc(m.label)}</div>`).join("");
+  const multiStorefront = MARKETS.filter((m) => m.region).length;
+
+  const billable = TOOLS.filter((t) => t.cost > 0).length;
+
   const tools = TOOLS.filter((t) => t.cost > 0)
     .sort((a, b) => a.cost - b.cost)
     .map(
@@ -148,7 +169,7 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     `<div class="wrap"><section class="hero">` +
     `<span class="eyebrow">${logoMark(13)} Model Context Protocol server</span>` +
     `<h1>Give your AI <span class="hl">eyes on social</span></h1>` +
-    `<p class="lede">Nooticr MCP lets Claude, ChatGPT and Cursor pull real posts from ten networks — video, slideshows, comments, creators and sounds — and reason over what they actually contain.</p>` +
+    `<p class="lede">Nooticr MCP lets Claude, ChatGPT and Cursor pull real posts from ${PLATFORMS.length} networks — video, slideshows, comments, creators and sounds — and real listings from ${MARKETS.length} marketplaces, down to the review text, and reason over what they actually contain.</p>` +
     `<div class="hero-cta">` +
     `<a class="btn btn-primary" href="#install">Connect your assistant</a>` +
     `<a class="btn btn-ghost" href="#pricing">See pricing</a></div>` +
@@ -160,16 +181,23 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     // ── platforms ──
     `<div class="wrap"><section id="platforms">` +
     `<div class="sec-head"><span class="eyebrow">Coverage</span>` +
-    `<h2>Ten networks, one interface</h2>` +
+    `<h2>${PLATFORMS.length} networks, one interface</h2>` +
     `<p>Ask in plain language. Nooticr resolves the URL, fetches the media and hands your assistant structured data it can reason about.</p></div>` +
-    `<div class="cloud">${cloud}</div></section></div>` +
+    `<div class="cloud">${cloud}</div>` +
+    `<div class="sec-head" style="margin-top:44px"><h2 style="font-size:clamp(20px,2.8vw,26px)">…and ${MARKETS.length} marketplaces</h2>` +
+    `<p>The same treatment for what people buy: products, prices, the full star histogram and the review text itself — not a summary of it.</p></div>` +
+    `<div class="mkts">${marketplaces}</div>` +
+    `<p class="faint" style="text-align:center;margin-top:16px;font-size:13px">` +
+    `${multiStorefront} of them have country storefronts — Amazon's ${esc("co.uk")}, Trendyol's 47, Vinted's 27 — ` +
+    `and a product id belongs to exactly one. <a href="/documentation#marketplaces" style="color:var(--brand)">Which to pass</a>.</p>` +
+    `</section></div>` +
 
     // ── how ──
     `<div class="wrap"><section id="how">` +
     `<div class="sec-head"><span class="eyebrow">How it works</span>` +
     `<h2>Three steps to a connected assistant</h2></div>` +
     `<div class="steps">` +
-    `<div class="step"><h3>Connect</h3><p>Add the connector URL, or run the npm package. Sign in with Nooticr over OAuth 2.1 — no API keys to paste or rotate.</p></div>` +
+    `<div class="step"><h3>Connect</h3><p>Add the connector URL, or run the npm package. Sign in with Nooticr over OAuth 2.1 — or, on a server with no browser, send an API key you mint once and never rotate.</p></div>` +
     `<div class="step"><h3>Ask</h3><p>"What's the hook in this TikTok?" · "Find fitness creators under 50k" · "What audio is trending in beauty?"</p></div>` +
     `<div class="step"><h3>Get real answers</h3><p>Posts come back with playable media and inline cards, so the assistant reasons over the content itself — not a guess from the URL.</p></div>` +
     `</div></section></div>` +
@@ -177,8 +205,10 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     // ── tools ──
     `<div class="wrap"><section id="tools">` +
     `<div class="sec-head"><span class="eyebrow">Tools</span>` +
-    `<h2>Every tool your assistant can call</h2>` +
-    `<p>Priced in credits. You are only ever charged for a call that succeeds — failures are refunded automatically.</p></div>` +
+    `<h2>${billable} tools that cost a credit</h2>` +
+    `<p>Priced in credits, and you are only ever charged for a call that succeeds — failures are refunded automatically. ` +
+    `${TOOLS.length - billable} more are free: the views that draw what your assistant wrote, the polls, and everything that reads your own account. ` +
+    `<a href="/documentation#tools" style="color:var(--brand)">All ${TOOLS.length} in the reference</a>.</p></div>` +
     `<div class="grid g3">${tools}</div></section></div>` +
 
     // ── clients ──

@@ -9,6 +9,12 @@ startCommand:
           A nooticr access token (from `npx @nooticr/mcp login`, run once on
           your own machine). Optional — omit it and the server prompts for
           the same browser sign-in the first time a tool is called.
+      nooticrApiKey:
+        type: string
+        description: >-
+          A nooticr API key (from `npx @nooticr/mcp api-key create`). Use this
+          where nothing can open a browser: it does not expire and needs no
+          sign-in, unlike an access token.
       nooticrBaseUrl:
         type: string
         description: Override the nooticr API base URL. Leave unset for production.
@@ -19,6 +25,7 @@ startCommand:
       args: ['-y', '@nooticr/mcp'],
       env: {
         ...(config.nooticrAccessToken ? { NOOTICR_ACCESS_TOKEN: config.nooticrAccessToken } : {}),
+        ...(config.nooticrApiKey ? { NOOTICR_API_KEY: config.nooticrApiKey } : {}),
         ...(config.nooticrBaseUrl ? { NOOTICR_BASE_URL: config.nooticrBaseUrl } : {}),
       },
     })

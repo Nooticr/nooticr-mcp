@@ -92,6 +92,26 @@ export interface McpProxyResult {
   structured: unknown;
 }
 
+/** An API key as a listing shows it: everything except the secret. */
+export interface NooticrApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  workspaceId?: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
+}
+
+/**
+ * A freshly created key. `key` is the secret, and this is the only response
+ * that will ever carry it — the server keeps a hash and cannot show it again.
+ */
+export interface CreatedNooticrApiKey extends NooticrApiKey {
+  key: string;
+}
+
 /**
  * Supplies the access token for each request and (optionally) refreshes it
  * when the nooticr API rejects with 401. Implementations own token storage:
@@ -132,10 +152,19 @@ export class NooticrClient {
   /** Stable per-call key so a retried tool call is billed once. */
   private idempotencyKey?: string;
 
-  constructor(baseUrl: string, tokenProvider: TokenProvider, idempotencyKey?: string) {
+  /** Sent on every request — how a forwarded chat call is attributed. */
+  private extraHeaders: Record<string, string>;
+
+  constructor(
+    baseUrl: string,
+    tokenProvider: TokenProvider,
+    idempotencyKey?: string,
+    extraHeaders: Record<string, string> = {}
+  ) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.tokenProvider = tokenProvider;
     this.idempotencyKey = idempotencyKey;
+    this.extraHeaders = extraHeaders;
   }
 
   private async request<T>(
@@ -149,7 +178,7 @@ export class NooticrClient {
     } = {}
   ): Promise<T> {
     const doRequest = async (accessToken?: string): Promise<Response> => {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { ...this.extraHeaders };
       if (opts.body !== undefined) {
         headers["content-type"] = "application/json";
       }
@@ -197,12 +226,17 @@ export class NooticrClient {
       body = undefined;
     }
     const json = (body ?? {}) as Record<string, unknown>;
+    // Name the endpoint: a bare status code says nothing about which call
+    // failed, and these surface to the user as tool errors. Then add the
+    // body when it is plainly a sentence — dropping it leaves a headless
+    // caller with a number and no cause.
+    const detail = plainTextDetail(text);
     const errorMessage =
       typeof json.error === "string"
         ? json.error
-        : // Name the endpoint: a bare status code says nothing about which
-          // call failed, and these surface to the user as tool errors.
-          `nooticr API error (${res.status}) from ${path}`;
+        : detail
+          ? `nooticr API error (${res.status}) from ${path}: ${detail}`
+          : `nooticr API error (${res.status}) from ${path}`;
 
     if (res.status >= 200 && res.status < 300) {
       return body as T;
@@ -256,10 +290,9 @@ export class NooticrClient {
 
     if (rpc && typeof rpc === "object" && rpc.error !== undefined && rpc.error !== null) {
       const err = rpc.error as { code?: unknown; message?: unknown };
-      throw new NooticrError(
-        err.code === -32002 ? 402 : 400,
-        typeof err.message === "string" ? err.message : "nooticr MCP tool call failed"
-      );
+      const message = typeof err.message === "string" ? err.message : "nooticr MCP tool call failed";
+      if (err.code === -32002) throw new NooticrError(402, outOfCreditsMessage(message));
+      throw new NooticrError(400, message);
     }
 
     const result = (rpc.result ?? {}) as {
@@ -284,6 +317,33 @@ export class NooticrClient {
 
   async getJob(jobId: string): Promise<JobStatus> {
     return this.request<JobStatus>("GET", `/ai/analyze-post?jobId=${encodeURIComponent(jobId)}`, {
+      auth: true,
+    });
+  }
+
+  /**
+   * Mints a key for the signed-in user. Deliberately not callable *with* a
+   * key: the backend refuses key-management to key-authenticated callers so a
+   * leaked key cannot mint a sibling that survives its own revocation.
+   */
+  async createApiKey(
+    input: { name?: string; workspaceId?: string; expiresInDays?: number } = {}
+  ): Promise<CreatedNooticrApiKey> {
+    return this.request<CreatedNooticrApiKey>("POST", "/auth/api-keys", {
+      auth: true,
+      body: input,
+    });
+  }
+
+  async listApiKeys(): Promise<NooticrApiKey[]> {
+    const res = await this.request<{ keys?: NooticrApiKey[] }>("GET", "/auth/api-keys", {
+      auth: true,
+    });
+    return res?.keys ?? [];
+  }
+
+  async revokeApiKey(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/auth/api-keys/${encodeURIComponent(id)}`, {
       auth: true,
     });
   }
@@ -378,6 +438,20 @@ export class NooticrClient {
   }
 }
 
+/**
+ * The backend answers a good many routes with a bare string rather than JSON
+ * (axum's `(StatusCode, String)`), and "nooticr API error (403)" tells whoever
+ * reads it nothing — least of all a headless integration, where the message is
+ * the only thing anyone will see. Use the body when it is plainly a sentence:
+ * short, one line, and not the start of a document.
+ */
+function plainTextDetail(text: string): string | undefined {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 300 || trimmed.includes("\n")) return undefined;
+  if (/^[<{[]/.test(trimmed)) return undefined;
+  return trimmed;
+}
+
 async function parseJsonBody(res: Response): Promise<unknown> {
   const text = await res.text();
   try {
@@ -385,4 +459,33 @@ async function parseJsonBody(res: Response): Promise<unknown> {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * How this surface tells a model the balance is short.
+ *
+ * The backend's `-32002` message used to say "call buy_nooticr_credits — it
+ * returns a Stripe Checkout URL", a tool this server deliberately does not
+ * register (#100). The numbers are kept, and everything after them is this
+ * server's own sentence, so a backend that is behind - or that reintroduces
+ * the pitch - can never send the model after a tool that is not in its list.
+ */
+export const TOP_UP_INSTRUCTION =
+  "Credits are topped up on the nooticr website; once that is done, call this tool again. " +
+  "This server sells nothing and has no purchase tool, so do not offer a link or a price.";
+
+export function outOfCreditsMessage(backend: string): string {
+  const cost = /costs\s+(\d+)\s+credit/i.exec(backend)?.[1];
+  const balance = /balance is\s+(-?\d+)/i.exec(backend)?.[1];
+  const figures =
+    cost !== undefined && balance !== undefined
+      ? `this tool costs ${cost} credit(s) and your balance is ${balance}. `
+      : "the balance does not cover this tool. ";
+  return `Insufficient nooticr credits — ${figures}${TOP_UP_INSTRUCTION}`;
+}
+
+/** A backend `hint` that pitches a purchase, replaced; any other kept. */
+export function safeCreditsHint(hint: unknown): unknown {
+  if (typeof hint !== "string") return hint;
+  return /buy_nooticr_credits|stripe|checkout/i.test(hint) ? TOP_UP_INSTRUCTION : hint;
 }

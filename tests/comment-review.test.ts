@@ -1,7 +1,7 @@
 /**
  * Comment analysis moved to the model that called us.
  *
- * `analyze_comments` used to send a comment section to Gemini and return
+ * `summarize_post_comments` used to send a comment section to Gemini and return
  * Gemini's opinion for 6 credits. The reading is text over text — the model
  * already holding the conversation does it better and costs us nothing. What
  * is worth charging for is the fetch, so the fetch is all that is left.
@@ -59,11 +59,11 @@ async function connect() {
   return { client, calls };
 }
 
-describe("analyze_comments hands the comments over", () => {
+describe("summarize_post_comments hands the comments over", () => {
   it("makes the cheap call, not the expensive one", async () => {
     const { client, calls } = await connect();
     const res = await client.callTool({
-      name: "analyze_comments",
+      name: "summarize_post_comments",
       arguments: { url: URL_ },
     });
     // The whole economic point: same upstream fetch as get_post_comments, so
@@ -76,17 +76,17 @@ describe("analyze_comments hands the comments over", () => {
 
   it("never reaches its own AI endpoint, whatever it is asked", async () => {
     const { client, calls } = await connect();
-    await client.callTool({ name: "analyze_comments", arguments: { url: URL_, limit: 20 } });
+    await client.callTool({ name: "summarize_post_comments", arguments: { url: URL_, limit: 20 } });
     // There is no branch left that could reach it, and this is what would
-    // catch one growing back: `analyze_comments` on the backend is the 6-credit
+    // catch one growing back: `summarize_post_comments` on the backend is the 6-credit
     // call, and nothing here should ever name it.
-    expect(calls.map((c) => c.name)).not.toContain("analyze_comments");
+    expect(calls.map((c) => c.name)).not.toContain("summarize_post_comments");
   });
 
   it("hands back comments with addressable ids", async () => {
     const { client } = await connect();
     const res = await client.callTool({
-      name: "analyze_comments",
+      name: "summarize_post_comments",
       arguments: { url: URL_ },
     });
     const out = res.structuredContent as { comments: Array<{ id: string; text: string }> };
@@ -101,7 +101,7 @@ describe("analyze_comments hands the comments over", () => {
   it("tells the caller what to produce, in the text the model actually reads", async () => {
     const { client } = await connect();
     const res = await client.callTool({
-      name: "analyze_comments",
+      name: "summarize_post_comments",
       arguments: { url: URL_ },
     });
     const guidance = String((res.content as Array<{ text: string }>)[0].text);
@@ -118,7 +118,7 @@ describe("analyze_comments hands the comments over", () => {
   it("passes the platform's own clustering through rather than dropping it", async () => {
     const { client } = await connect();
     const res = await client.callTool({
-      name: "analyze_comments",
+      name: "summarize_post_comments",
       arguments: { url: URL_ },
     });
     // Already fetched and already paid for; it is evidence too.

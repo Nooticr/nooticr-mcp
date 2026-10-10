@@ -14,6 +14,8 @@ import { termsPage, privacyPage, LEGAL_EFFECTIVE } from "../cloudflare/src/site/
 import { supportPage } from "../cloudflare/src/site/support.js";
 import { dashboardPage, dashboardSignedOut } from "../cloudflare/src/site/dashboard.js";
 import { TOOLS } from "../cloudflare/src/site/catalogue.js";
+import { TOOL_DEFINITIONS } from "../src/shared/tools-def.js";
+import { MARKETS } from "../src/shared/marketplace.js";
 import { documentationPage } from "../cloudflare/src/site/documentation.js";
 import { PLATFORMS } from "../cloudflare/src/site/platforms.js";
 import { BRAND } from "../cloudflare/src/site/layout.js";
@@ -38,10 +40,12 @@ const DATA_PRICING: Record<string, number> = {
   get_post_comments: 2,
   search_creators: 2,
   get_similar_creators: 2,
+  // Per network searched, like catch_up_watchlist's per creator.
+  suggest_creator_identity: 2,
   discover_sounds: 2,
   // The one comment tool with no entry in EVIDENCE_PLANS: it makes the same
   // single get_post_comments call, and its guidance lives in comment-review.ts.
-  analyze_comments: 2,
+  summarize_post_comments: 2,
   // Per creator checked, not per call — the unit price is what the pages show.
   catch_up_watchlist: 2,
 };
@@ -53,10 +57,10 @@ const SERVER_PRICING: Record<string, number> = {
 
 /** Tools that fetch nothing at all, so they cost nothing and show no price. */
 const FREE_TOOLS = [
-  "score_draft",
+  "evaluate_social_draft",
   "show_comment_review",
-  "show_comparison",
-  "show_analysis",
+  "show_compared_posts",
+  "show_post_analysis",
   "show_hooks",
   "show_variants",
   "show_repurposed_post",
@@ -64,6 +68,102 @@ const FREE_TOOLS = [
   "watch_creator",
   "unwatch_creator",
 ];
+
+/**
+ * The check that was missing while the site drifted a year out of date.
+ *
+ * Everything else here reads a hand-maintained list — `SERVER_PRICING`,
+ * `EXPECTED`, `FREE_TOOLS` — so it only ever checked the tools somebody had
+ * already remembered to add. Forty-nine of seventy-six were absent from the
+ * public catalogue, including every marketplace tool, and nothing failed:
+ * each list was internally consistent and none of them spanned the gap
+ * between what the server ships and what the site says it ships.
+ *
+ * These three do span it. They are deliberately derived from
+ * `TOOL_DEFINITIONS` and `MARKETS` — the artifacts the server itself is
+ * checked against — rather than from anything written out by hand here.
+ */
+describe("the site describes the server that actually shipped", () => {
+  const catalogue = new Map(TOOLS.map((t) => [t.name, t]));
+
+  it("lists every tool the server registers, and invents none", () => {
+    const shipped = TOOL_DEFINITIONS.map((t) => t.name);
+    const missing = shipped.filter((n) => !catalogue.has(n));
+    const invented = [...catalogue.keys()].filter((n) => !shipped.includes(n));
+    expect(missing, "shipped but absent from the public catalogue").toEqual([]);
+    expect(invented, "advertised but not registered by the server").toEqual([]);
+  });
+
+  it("quotes a price the tool's own description agrees with", () => {
+    // The number on the page and the number the server tells a host have to
+    // be the same number. Advertising the wrong one is worse than saying
+    // nothing: a host budgets against it before it calls.
+    for (const t of TOOLS) {
+      if (t.cost === 0) continue;
+      const shipped = TOOL_DEFINITIONS.find((d) => d.name === t.name);
+      expect(
+        shipped!.description,
+        `the site prices ${t.name} at ${t.cost} credits and the tool does not say so`
+      ).toContain(`${t.cost} nooticr credit`);
+    }
+  });
+
+  it("never prints a plan-billed tool as free", () => {
+    // These spend the workspace's AI credits, not the MCP balance this server
+    // sells. "Free" would be wrong in the direction that costs someone money.
+    const planBilled = TOOLS.filter((t) => t.billing === "plan");
+    expect(planBilled.length).toBeGreaterThan(0);
+    const docs = documentationPage(URL, API);
+    for (const t of planBilled) {
+      expect(t.cost, `${t.name} draws no MCP credits`).toBe(0);
+      const at = docs.indexOf(`<code>${t.name}</code>`);
+      expect(at, `${t.name} missing from the reference`).toBeGreaterThan(-1);
+      expect(docs.slice(at, at + 200)).toContain("Plan AI credits");
+      // And it stays out of the landing page's priced grid, which is
+      // denominated in the credits it does not spend.
+      expect(landingPage(URL, API).indexOf(`>${t.name}</h3>`)).toBe(-1);
+    }
+  });
+});
+
+/**
+ * Twelve shopping sites reached the tools without reaching the site at all —
+ * the report that started this. The list is imported rather than copied, so
+ * the only thing left to get wrong is failing to render it.
+ */
+describe("marketplace coverage", () => {
+  const landing = landingPage(URL, API);
+  const docs = documentationPage(URL, API);
+
+  it("names every marketplace the server can read, on both pages", () => {
+    expect(MARKETS.length).toBeGreaterThanOrEqual(12);
+    for (const m of MARKETS) {
+      expect(landing, `${m.label} missing from the landing page`).toContain(m.label);
+      expect(docs, `${m.label} missing from the documentation`).toContain(m.label);
+      // The docs carry the argument a caller actually passes, not just a
+      // brand name they then have to guess the spelling of.
+      expect(docs, `${m.slug} not documented as a marketplace argument`).toContain(
+        `<code>${m.slug}</code>`
+      );
+    }
+  });
+
+  it("says which language a query has to be written in", () => {
+    // A query in the wrong language does not error, it quietly returns a thin
+    // category — the failure that is invisible unless the page warns about it.
+    expect(docs).toMatch(/language/i);
+    for (const m of MARKETS) expect(docs).toContain(m.searchLang);
+  });
+
+  it("promises no marketplace the tools would refuse", () => {
+    const slugs = new Set(MARKETS.map((m) => m.slug));
+    for (const claimed of ["shein", "walmart", "etsy", "wish", "alibaba"]) {
+      if (slugs.has(claimed)) continue;
+      expect(landing.toLowerCase(), `landing page claims ${claimed}`).not.toContain(claimed);
+      expect(docs.toLowerCase(), `documentation claims ${claimed}`).not.toContain(claimed);
+    }
+  });
+});
 
 describe("landing page", () => {
   const html = landingPage(URL, API);
@@ -427,12 +527,16 @@ describe("tool surface", () => {
     "create_brand_watch",
     "list_brand_watches",
     "stop_brand_watch",
+    "update_watch_portfolio",
     "list_own_apps",
     "create_product",
     "update_product",
     "get_scheduled_posts",
     "get_post_performance",
     "get_video_stats",
+    "get_google_analytics_data",
+    "get_search_console_data",
+    "get_posthog_analytics",
     "get_content_plan",
     "get_brand_playbook",
     "analyze_product",
@@ -449,27 +553,34 @@ describe("tool surface", () => {
     "discover_social_posts",
     "get_user_posts",
     "get_post_comments",
-    "analyze_comments",
+    "summarize_post_comments",
     "search_creators",
     "get_similar_creators",
+    "suggest_creator_identity",
     "discover_sounds",
     "discover_hashtags",
     "analyze_post",
     "understand_social_post",
     "analyze_creator_profile",
-    "compare_posts",
+    "compare_social_posts",
     "analyze_post_fast",
-    "write_hooks",
-    "create_variants",
-    "score_draft",
-    "repurpose_post",
+    "generate_hook_ideas",
+    "generate_post_variants",
+    "evaluate_social_draft",
+    "adapt_post_for_platform",
     "niche_report",
     "find_hook_pattern",
     "check_nooticr_credits",
+    "list_tool_runs",
+    "get_tool_run",
+    "get_usage_report",
+    "list_watchlist",
+    "detect_spoken_mentions",
+    "nooticr_getting_started",
     "nooticr_login",
     "show_comment_review",
-    "show_comparison",
-    "show_analysis",
+    "show_compared_posts",
+    "show_post_analysis",
     "show_hooks",
     "show_variants",
     "show_repurposed_post",
@@ -495,6 +606,20 @@ describe("tool surface", () => {
     // on another server, the other draws the shortlist it scored.
     "prepare_handoff",
     "show_collab_shortlist",
+    // Marketplace: collect an Amazon category, pick a running collection back
+    // up, read one listing, and draw the read.
+    "scan_amazon_category",
+    "amazon_scan_status",
+    "get_amazon_product",
+    "show_amazon_category_insights",
+    // The same three jobs on the other ten sites, through one tool with a
+    // `marketplace` argument rather than thirty near-identical registrations.
+    "scan_marketplace_category",
+    "marketplace_scan_status",
+    "get_marketplace_product",
+    "nooticr_settings_read",
+    "nooticr_settings_update",
+    "show_marketplace_category_insights",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -547,13 +672,18 @@ describe("tool surface", () => {
     // here — it fetches per creator, and says so.
     const free = [
       "check_nooticr_credits",
+      "list_tool_runs",
+      "get_tool_run",
+      "get_usage_report",
+      "list_watchlist",
+      "nooticr_getting_started",
       "nooticr_login",
       "watch_creator",
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
       "show_comment_review",
-      "show_comparison",
-      "show_analysis",
+      "show_compared_posts",
+      "show_post_analysis",
       "show_hooks",
       "show_variants",
       "show_repurposed_post",
@@ -570,6 +700,9 @@ describe("tool surface", () => {
       "get_scheduled_posts",
       "get_post_performance",
       "get_video_stats",
+      "get_google_analytics_data",
+      "get_search_console_data",
+      "get_posthog_analytics",
       "get_content_plan",
       "get_brand_playbook",
       // Plain rows, no AI call — same reasoning as the reads above.
@@ -590,6 +723,17 @@ describe("tool surface", () => {
       // Draws the shortlist the caller scored; the fetches that produced the
       // score were the host's own, not ours.
       "show_collab_shortlist",
+      // Draws the category read the caller wrote; the collection it reads was
+      // billed when scan_amazon_category ran.
+      "show_amazon_category_insights",
+      "show_marketplace_category_insights",
+      // Polls a collection already paid for — charging for the second half of
+      // one answer would bill a wait the server chose.
+      "amazon_scan_status",
+      // The same poll, for the other ten sites.
+      "marketplace_scan_status",
+      "nooticr_settings_read",
+      "nooticr_settings_update",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;
@@ -643,6 +787,25 @@ describe("README", () => {
     const documented = new Set([...doc.matchAll(/\| `([a-z_]+)`/g)].map((m) => m[1]));
     const missing = shipped.filter((t) => !documented.has(t));
     expect(missing, `undocumented tools: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  // The one sentence nothing else gated: it was bumped by hand, and drifted
+  // from 72 to four behind the tables right under it (#94).
+  it("states the tool count the server actually registers", async () => {
+    const doc = await readme();
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { createMcpServer } = await import("../src/shared/tools.js");
+    const client = new Client({ name: "test", version: "1.0.0" });
+    const server = createMcpServer(
+      async () => ({ callTool: async () => ({ contentBlocks: [], structured: {} }) }) as never,
+    );
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    const shipped = (await client.listTools()).tools.length;
+    const stated = doc.match(/^(\d+) tools, grouped by what you are trying to do/m);
+    expect(stated, "the Tools section no longer opens with its count").toBeTruthy();
+    expect(Number(stated![1]), "README states the wrong tool count").toBe(shipped);
   });
 
   it("quotes the prices the server actually charges", async () => {
@@ -703,6 +866,19 @@ describe("nothing on the tool surface sells anything", () => {
     await Promise.all([client.connect(a), server.connect(b)]);
     return (await client.listTools()).tools;
   }
+
+  // The documentation page's safety callout counts the surface, and went
+  // stale the same way the README's headline did (#94).
+  it("counts the read-only tools the server actually registers", async () => {
+    const tools = await shipped();
+    const readOnly = tools.filter((t) => t.annotations?.readOnlyHint === true).length;
+    const html = documentationPage(URL, API);
+    const m = html.match(/Of the (\d+) tools, (\d+) carry <code>readOnlyHint: true<\/code>\. The (\d+) that do not/);
+    expect(m, "the read-only callout changed shape").toBeTruthy();
+    expect(Number(m![1]), "wrong tool count").toBe(tools.length);
+    expect(Number(m![2]), "wrong read-only count").toBe(readOnly);
+    expect(Number(m![3]), "wrong writing count").toBe(tools.length - readOnly);
+  });
 
   it("registers no tool that transacts", async () => {
     const names = (await shipped()).map((t) => t.name);
@@ -944,6 +1120,23 @@ describe("documentation", () => {
     expect(html).toMatch(/not used to train/i);
     // The load-bearing negative: retrieved content is not stored.
     expect(html).toMatch(/Content of retrieved posts/);
+  });
+
+  /// The question the docs could not answer before: an integration that runs
+  /// server-side, with nothing that can open a consent screen. Leaving it out
+  /// sent partners to support to ask whether it was possible at all.
+  it("points at the dashboard card, which is the path that needs no terminal", () => {
+    expect(html).toContain('href="/dashboard#keys"');
+  });
+
+  it("tells a server-side integration how to connect without a browser", () => {
+    expect(html).toContain('id="connect-server"');
+    expect(html).toMatch(/api-key create/);
+    expect(html).toMatch(/Authorization: Bearer nk_/);
+    expect(html).toMatch(/api-key revoke/);
+    // And says the thing a reader has to know before they run it once and
+    // lose the output.
+    expect(html).toMatch(/printed once/);
   });
 
   it("explains access and revocation", () => {

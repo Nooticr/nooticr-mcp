@@ -26,7 +26,10 @@ will catch most of what you miss — but it's faster to get it right first:
 - `tests/server-surface.test.ts` — `NOT_READ_ONLY` if the tool writes state,
   and check whether it lands in the `closed` (`openWorldHint: false`) set.
 - `README.md` — a row in whichever table matches what the tool is for, with
-  its real credit cost.
+  its real credit cost, and the tool count that opens its **Tools** section.
+  `cloudflare/src/site/documentation.ts`'s read-only callout counts the
+  surface too (total, read-only, writing). `tests/site.test.ts` checks both
+  against the registered tools, so a tool added without bumping them fails.
 - `.github/workflows/ci.yml`'s `NO_APP` set (in the `Host contract` step) —
   every tool needs a UI view (`_meta`'s `ui/resourceUri`, matching
   `MCP_APPS_MIME`, with a `.html` ChatGPT twin) unless it genuinely has
@@ -41,6 +44,16 @@ CI's `The version is the same in every file that carries it` step gates on
 `package.json`, `.claude-plugin/plugin.json`, and `MCP_SERVER_VERSION` all
 matching; a hand-edit that bumps one and not the others fails immediately.
 
+## The views are the design system's
+
+Every view is the Nooticr design system's MCP view of the same name, drawn with
+its class names (`nt-*`): `src/shared/ui/tokens.css` is generated from its
+`tokens.json`, `design.css` carries its view rules, and `views.css` the base
+layer plus the few views it has no card for. A change to how a view looks
+starts in the design system; a view here that drifts from its card there is the
+bug. Older class names stay on elements beside the design's as test and handler
+hooks — keep them when you move markup.
+
 ## The dual-mime UI contract
 
 Every tool's view is served twice: `text/html;profile=mcp-app` for Claude
@@ -50,7 +63,11 @@ doesn't. This is a deliberate protocol mismatch, not a bug — CI's
 `MCP Apps conformance` step pins the two checks that object to it
 (`ui-listed-resources-valid`, `ui-resource-contents-valid`) and fails the
 build if conformance objects to anything *else*, or if those two start
-failing for a different reason than the dual-mime deviation. If you touch
+failing for a different reason than the dual-mime deviation — or start
+passing, which would mean the ChatGPT twins lost their mime. Every other
+check mcpjam runs, including ones a later release adds, is a gate:
+`scripts/mcpjam-conformance-check.py` is the one verdict, shared by CI and
+`npm run conformance:mcpjam`. If you touch
 `src/shared/ui-template.ts` or how a resource's mime type is chosen, expect
 that pin to need re-verifying, not just the obvious tests.
 
@@ -80,8 +97,8 @@ evals). This section is the manual discipline to follow on top of those
 whenever you touch a tool's guidance text, a `show_*` view, or anything in
 `ui-template.ts` — the method that found and fixed every bug in that doc's
 "Bugs this exercise surfaced" section, plus later passes that caught
-`understand_social_post`'s `focus` argument, `create_variants`' `count`/
-`angle`, and `write_hooks`' `topic`/`count`/`tone` all being accepted by
+`understand_social_post`'s `focus` argument, `generate_post_variants`' `count`/
+`angle`, and `generate_hook_ideas`' `topic`/`count`/`tone` all being accepted by
 the zod schema and silently dropped by the guidance builder, and
 `track_creator`/`why_did_this_underperform` computing a real
 ratio-to-baseline verdict per post that `postCard()` never rendered.
@@ -98,8 +115,8 @@ the model that just got handed this tool's result.
 ### Reproducing it
 
 1. Build once: `npm run build:ui && tsc` (or plain `npm run build`) —
-   regenerates `src/shared/ui-template.ts`'s inlined Tailwind CSS as a side
-   effect; see the git-checkout warning below before touching that file.
+   regenerates `src/shared/ui-template.ts`'s inlined CSS as a side effect;
+   see the git-checkout warning below before touching that file.
 2. Start the fixture backend on a scratch port and log in:
    ```bash
    node scripts/fixture-server.mjs 8091 &
@@ -173,7 +190,7 @@ the model that just got handed this tool's result.
    (`playwright.config.ts` needs no reverting — see step 5.)
 
 **Never `git checkout -- src/shared/ui-template.ts`** to discard the
-Tailwind-CSS-regeneration diff `npm run build` leaves behind. It's a
+CSS-regeneration diff `npm run build` leaves behind. It's a
 whole-file revert and will just as happily discard real, uncommitted logic
 changes in the same file — this has happened, more than once, to whoever
 wrote this section. If you need to drop only the regenerated CSS line, do
@@ -260,10 +277,18 @@ written up in `docs/testing/tool-chaining-quests.md`:
 - **What decides whether a chain holds is retrieval, not wording.** With this
   many tools every one sits behind a ToolSearch: over the 36 runs whose chain ends
   in a `show_*` tool, it was called 0/18 times when ToolSearch never returned
-  it and 14/18 when it did. The 3/3 case (`repurpose_post ->
+  it and 14/18 when it did. The 3/3 case (`adapt_post_for_platform ->
   show_repurposed_post`) was decided by the model's FIRST query naming both —
   a shared name stem — before any description was in context. So a `show_X`
   nobody searches for steers nothing, however well its description reads.
+
+  Re-measured after those fixes landed (#45): still 0/15 when never retrieved.
+  The rule turns out to be an **exact shared token**, not a stem — every view
+  sharing a whole word with its predecessor (`hooks`, `variants`, `post`,
+  `comment`) is retrieved every time, while `analyze`/`analysis` and
+  `compare`/`comparison` both fail. Renaming `show_analysis` to
+  `show_post_analysis` moved it from 1/12 called to 4/9. See
+  `docs/testing/tool-chaining-quests.md` for the table and the caveats.
 - **A fixture a model can tell is a fixture measures itself.** A caption
   saying "not real content" makes the model stop and say so, which reads in a
   chaining report as a broken chain. `FIXTURE_POST` in

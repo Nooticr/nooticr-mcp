@@ -9,7 +9,11 @@
  *
  *   npx playwright test tests/e2e/ui-template.e2e.ts
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+// `test` comes from guarded-test.ts, not @playwright/test: it aborts every
+// request to a real nooticr host before it leaves the browser (#66).
+import { test, expect } from "./guarded-test.js";
+import { normaliseProducts } from "../../src/shared/amazon.js";
 import { uiTemplateFor } from "../../src/shared/tools.js";
 
 // The substituted view, not the raw template: the raw one still carries its
@@ -359,7 +363,7 @@ for (const scheme of ["dark", "light"] as const) {
     // dark card the badge was effectively invisible.
     await renderTemplate(page, { posts: THUMB_POSTS });
     const badge = await page.evaluate(() => {
-      const el = document.querySelector(".badge") as HTMLElement | null;
+      const el = document.querySelector(".nt-feeds-plat") as HTMLElement | null;
       if (!el) return null;
       let bg = "rgba(0, 0, 0, 0)";
       let n: HTMLElement | null = el;
@@ -412,7 +416,7 @@ test("selecting posts and pressing Compare calls the tool", async ({ page }) => 
   // answered by no host, which is what made the button appear to do nothing.
   expect(call, `expected a tools/call, got: ${sent.map((m) => m.method).join(",")}`).toBeTruthy();
   expect(call!.params).toEqual({
-    name: "compare_posts",
+    name: "compare_social_posts",
     arguments: { urls: [POSTS[0].externalUrl, POSTS[1].externalUrl] },
   });
 });
@@ -480,7 +484,7 @@ test("analysis actions are offered once each and call their tool", async ({ page
   // row, showing three of these twice.
   const tools = await page.evaluate(
     () => [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai")));
-  expect(tools).toEqual(["create_variants", "write_hooks", "repurpose_post", "analyze_comments"]);
+  expect(tools).toEqual(["generate_post_variants", "generate_hook_ideas", "adapt_post_for_platform", "summarize_post_comments"]);
 
   for (const tool of tools) {
     await page.evaluate(() => { (window as unknown as { __sent: unknown[] }).__sent = []; });
@@ -587,7 +591,7 @@ test.describe("chatgpt host actions", () => {
 
     const { called, bridge } = await readSpies(page);
     expect(called).toEqual([{
-      name: "compare_posts",
+      name: "compare_social_posts",
       args: { urls: [POSTS[0].externalUrl, POSTS[1].externalUrl] },
     }]);
     // The dead bridge must not be used when the host offers its own API.
@@ -599,7 +603,7 @@ test.describe("chatgpt host actions", () => {
     await asChatGpt(page, ANALYSIS);
     const tools = await page.evaluate(
       () => [...document.querySelectorAll(".ai-btn")].map((b) => b.getAttribute("data-ai")));
-    expect(tools).toEqual(["create_variants", "write_hooks", "repurpose_post", "analyze_comments"]);
+    expect(tools).toEqual(["generate_post_variants", "generate_hook_ideas", "adapt_post_for_platform", "summarize_post_comments"]);
 
     for (const tool of tools) {
       await page.locator(`.ai-btn[data-ai="${tool}"]`).click();
@@ -626,7 +630,7 @@ test.describe("chatgpt host actions", () => {
 // The bug as reported, and it was on Claude: pressing Compare said "Copy
 // failed" while the host was running the tool perfectly well. The fallback
 // fired at 1500ms — but a tool call is not a UI event. Measured against the
-// live server, discover_social_posts takes 10.3s and compare_posts 10.4s, so
+// live server, discover_social_posts takes 10.3s and compare_social_posts 10.4s, so
 // the deadline expired seven times over on the ordinary path, every time. The
 // user was told the call had failed, the clipboard fallback then failed too
 // (a sandboxed widget iframe has no clipboard-write grant), and the real
@@ -1148,18 +1152,16 @@ test.describe("brand monitoring", () => {
 
   test("a row reads as a person saying something", async ({ page }) => {
     await renderTemplate(page, MENTIONS);
-    // Who, then what they said, then what it earned — the order a feed of
-    // strangers has to be read in.
-    const order = await page.locator(".mention-body").first()
-      .evaluate((el) => [...el.children].map((c) => c.className));
-    expect(order).toEqual(["mention-head", "mention-text", "mention-meta"]);
-    const [head, comment, meta] = await page.locator(".mention").first().evaluate((el) => [
-      el.querySelector(".mention-head")!.getBoundingClientRect().top,
+    // What they said first, then who said it and what it earned under it —
+    // the comment is what is being read; the handle matters once it has
+    // caught the eye.
+    const [comment, meta, whoInMeta] = await page.locator(".mention").first().evaluate((el) => [
       el.querySelector(".mention-text")!.getBoundingClientRect().top,
       el.querySelector(".mention-meta")!.getBoundingClientRect().top,
+      !!el.querySelector(".mention-meta .mention-who"),
     ]);
-    expect(head).toBeLessThan(comment);
-    expect(comment).toBeLessThan(meta);
+    expect(comment).toBeLessThan(meta as number);
+    expect(whoInMeta).toBe(true);
     // The handle appears once. It used to print on both lines, because these
     // platforms hand back one identity string and the layout asked for two.
     const row = await page.locator(".mention").first().innerText();
@@ -1240,7 +1242,7 @@ test.describe("brand monitoring", () => {
     // Without this, a comment under a 25K thread and one under a dead post are
     // indistinguishable, which is the judgement the screen exists to support.
     expect(await text(page, ".mgroup-reach")).toEqual([
-      "25.0K likes · 1.9K comments",
+      "25k likes · 1.9k comments",
       "530 likes · 186 comments",
       "1.2M views · 40 likes",
     ]);
@@ -1293,23 +1295,24 @@ test.describe("brand monitoring", () => {
     await renderTemplate(page, MENTIONS);
     await page.locator("[data-group-all]").first().click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
-    await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    await expect(page.locator("#pickn")).toHaveText("2");
+    await expect(page.locator("#pickhint")).toHaveText("from 1 post");
     // Narrowing the view is not unpicking: reddit still holds both.
     await page.locator('.mchip[data-filter="reddit"]').click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
     await page.locator('.mchip[data-filter="tiktok"]').click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(0);
-    await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+    await expect(page.locator("#pickn")).toHaveText("2");
     await page.locator('.mchip[data-filter=""]').click();
     await expect(page.locator(".mention-pick:checked")).toHaveCount(2);
   });
 
-  // analyze_comments's real inputSchema is {url, limit?}.strict() — one
+  // summarize_post_comments's real inputSchema is {url, limit?}.strict() — one
   // post, not an arbitrary list of texts/ids — so "Analyse these" resolves
-  // which post(s) the picks belong to and calls analyze_comments on that
+  // which post(s) the picks belong to and calls summarize_post_comments on that
   // post's url when they all belong to one; a real host executing the old
   // {comments, ids} shape got a schema rejection every time.
-  test("picking comments from one post calls analyze_comments on that post's url", async ({ page }) => {
+  test("picking comments from one post calls summarize_post_comments on that post's url", async ({ page }) => {
     await page.setContent(NOOTICR_UI_TEMPLATE);
     await page.evaluate((d) => {
       const w = window as unknown as Record<string, unknown>;
@@ -1333,7 +1336,7 @@ test.describe("brand monitoring", () => {
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
     expect(called).toHaveLength(1);
-    expect(called[0].name).toBe("analyze_comments");
+    expect(called[0].name).toBe("summarize_post_comments");
     expect(called[0].args).toEqual({ url: "https://reddit.example/p/29", limit: 20 });
     await expect(page.locator("#pickgo")).not.toContainText(/failed|Try in chat/i);
   });
@@ -1360,8 +1363,11 @@ test.describe("brand monitoring", () => {
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { name: string; args: Record<string, unknown> }[]);
-    expect(called, "should not have sent analyze_comments a call it will reject").toHaveLength(0);
-    await expect(page.locator("#pickgo")).toContainText(/one post/i);
+    expect(called, "should not have sent summarize_post_comments a call it will reject").toHaveLength(0);
+    // The bar says why in its hint, where the eye already is; the button keeps
+    // its label, because one that renames itself reads as a different action.
+    await expect(page.locator("#pickhint")).toContainText(/one post/i);
+    await expect(page.locator("#pickgo")).toContainText("Analyse these");
   });
 
   test("pages from the offset the tool handed back, and only unfiltered", async ({ page }) => {
@@ -1446,14 +1452,15 @@ test.describe("brand monitoring", () => {
     // "All" means all seven, not the four that happen to be rendered — the
     // whole point of collapsing is that it changes the view, not the data.
     await page.locator("[data-group-all]").click();
-    await expect(page.locator("#pickhint")).toHaveText("7 comments selected");
+    await expect(page.locator("#pickn")).toHaveText("7");
+    await expect(page.locator("#pickhint")).toHaveText("from 1 post");
     await expect(page.locator("[data-group-all]")).toHaveText("Clear these");
     await page.locator("#pickgo").click();
     await page.waitForTimeout(400);
     const called = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__called as { args: Record<string, unknown> }[]);
     // All seven are one post's comments (BURST is a single thread), so the
-    // real analyze_comments({url, limit?}.strict()) call succeeds — even
+    // real summarize_post_comments({url, limit?}.strict()) call succeeds — even
     // though only 4 rows were ever rendered before "select all".
     expect(called[0].args).toEqual({ url: "https://weibo.example/p/1", limit: 20 });
     // Clicking again clears all seven.
@@ -1533,8 +1540,8 @@ test.describe("brand monitoring", () => {
       await renderTemplate(page, REVIEW);
       await expect(page.locator(".mention")).toHaveCount(4);
       const chips = await page.locator(".mention").first().locator(".chip").allInnerTexts();
-      // CSS capitalises them, which is what a reader sees.
-      expect(chips).toEqual(["Negative", "Bug Report"]);
+      // Sentence case, as the model wrote them, with the underscore dropped.
+      expect(chips).toEqual(["negative", "bug report"]);
       // Sentiment earns colour because a model read the words; category is a
       // bucket, not a judgement, so it stays neutral.
       await expect(page.locator(".chip-negative").first()).toBeVisible();
@@ -1582,7 +1589,8 @@ test.describe("brand monitoring", () => {
       // have to be selectable as a set.
       await page.locator('.mchip[data-filter="bug_report"]').click();
       await page.locator("[data-group-all]").click();
-      await expect(page.locator("#pickhint")).toHaveText("2 comments selected");
+      await expect(page.locator("#pickn")).toHaveText("2");
+      await expect(page.locator("#pickhint")).toHaveText("from 1 post");
     });
   });
 });
@@ -1650,7 +1658,7 @@ test.describe("collab shortlist", () => {
     expect(body).toContain("84");
     // The attribution has to travel with the number, everywhere it appears.
     expect(body).toContain("Scored by the assistant");
-    expect(body).toContain("approach");
+    expect(body).toContain("Approach");
   });
 
   test("marks a score reached without opening anything", async ({ page }) => {
@@ -1804,11 +1812,11 @@ test.describe("brand sweep shows the post, not just its comments", () => {
     await expect(poster).toHaveCount(1);
     await expect(poster).toHaveClass(/is-playable/);
     await expect(page.locator(".mgroup-media-img")).toHaveCount(1);
-    // Full-bleed band rather than a collapsed inline button — the bug the
-    // first attempt shipped, because the rule lived in the generated CSS
-    // blob that `npm run build` regenerates rather than in input.css.
+    // A 56×72 poster beside the post's title, as the design draws it — not
+    // a collapsed zero-height button, the bug the first attempt shipped.
     const box = await poster.boundingBox();
-    expect(box!.height).toBeGreaterThan(100);
+    expect(Math.round(box!.width)).toBe(56);
+    expect(Math.round(box!.height)).toBe(72);
   });
 
   test("clicking the poster swaps in the real player", async ({ page }) => {
@@ -1891,10 +1899,10 @@ test.describe("standings", () => {
 
   test("draws each creator's own median, not a shared scale", async ({ page }) => {
     await renderTemplate(page, ROWS);
-    const body = page.locator(".card-body");
-    await expect(body).toContainText("each against their OWN median views");
-    await expect(body).toContainText("41.0K");
-    await expect(body).toContainText("380.0K");
+    const body = page.locator(".nt-view");
+    await expect(body).toContainText("each against their own median views");
+    await expect(body).toContainText("41k");
+    await expect(body).toContainText("380k");
   });
 
   test("every row carries the window it was scored over", async ({ page }) => {
@@ -1908,14 +1916,14 @@ test.describe("standings", () => {
   test("a window too short to rank is badged, not placed", async ({ page }) => {
     await renderTemplate(page, ROWS);
     const brief = page.locator("tbody tr", { hasText: "@brief" }).first();
-    await expect(brief).toContainText("too thin to rank");
+    await expect(brief).toContainText("Too thin to rank");
     // ...and a long enough one is not badged.
-    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).not.toContainText("too thin");
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).not.toContainText("Too thin");
   });
 
   test("the model's own tooThin list badges a row the window alone would not", async ({ page }) => {
     await renderTemplate(page, { ...ROWS, tooThin: ["large"] });
-    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).toContainText("too thin to rank");
+    await expect(page.locator("tbody tr", { hasText: "@large" }).first()).toContainText("Too thin to rank");
   });
 
   test("a creator who could not be fetched shows the reason, not a zero", async ({ page }) => {
@@ -1928,12 +1936,12 @@ test.describe("standings", () => {
 
   test("it says which axis the order is on, since the two disagree", async ({ page }) => {
     await renderTemplate(page, ROWS);
-    await expect(page.locator(".card-body")).toContainText("Ordered on: how hard they beat");
+    await expect(page.locator(".nt-view")).toContainText("Ordered on: how hard they beat");
   });
 
   test("the caveats reach the person, not only the model", async ({ page }) => {
     await renderTemplate(page, ROWS);
-    const body = page.locator(".card-body");
+    const body = page.locator(".nt-view");
     await expect(body).toContainText("mostly measures follower count");
     await expect(body).toContainText("A window under 8 posts is one post either way");
     await expect(body).toContainText("second point in time");
@@ -1946,13 +1954,13 @@ test.describe("standings", () => {
       standings: true, metric: "likes",
       creators: [{ handle: "solo", platform: "tiktok", window: 10, baseline: { median: 5 }, hitRate: 0.1, medianWinRatio: 2 }],
     });
-    await expect(page.locator(".card-body")).toContainText("Standings");
-    await expect(page.locator(".card-body")).toContainText("median likes");
+    await expect(page.locator(".nt-view")).toContainText("Standings");
+    await expect(page.locator(".nt-view")).toContainText("median likes");
   });
 
   test("a watchlist run says how many it is watching", async ({ page }) => {
     await renderTemplate(page, { ...ROWS, tool: "watchlist_standings", watching: 4 });
-    await expect(page.locator(".card-body")).toContainText("watchlist of 4");
+    await expect(page.locator(".nt-view")).toContainText("watchlist of 4");
   });
 });
 
@@ -1973,7 +1981,9 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
     source: "derived-from-sweep", platform: "reddit", niche: "skincare", sweptPosts: 24,
     note: "Counted across 24 recent reddit posts. This is a sample of one search, not a trend board.",
     hashtags: [
-      { hashtag: "skincare", posts: 9, views: 41000, medianViews: 3800, example: "https://r.test/1" },
+      // A trend field on a counted row is not a measurement; the view must
+      // not turn it into an arrow.
+      { hashtag: "skincare", posts: 9, views: 41000, medianViews: 3800, example: "https://r.test/1", trend: "rising" },
       { hashtag: "护肤", posts: 4, views: 12000, medianViews: 2900, example: "https://r.test/2" },
       { hashtag: "retinol", posts: 2, views: null, medianViews: null, example: null },
     ],
@@ -1981,31 +1991,34 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
 
   test("the trend board keeps its arrows and says which board it is", async ({ page }) => {
     await renderTemplate(page, BOARD);
-    await expect(page.locator(".card-body")).toContainText("TikTok trend board · GB · last 30 days");
-    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
-    expect(chips).toEqual(["▲ rising", "▬ steady"]);
+    await expect(page.locator(".nt-view")).toContainText("TikTok trend board · GB · last 30 days");
+    // A measured direction, as a word with its icon and tone — never colour
+    // or an arrow alone.
+    const chips = await page.$$eval(".nt-signals-trendtag", (n) =>
+      n.map((x) => [x.textContent ?? "", x.className.includes("is-success") ? "up" : x.className.includes("is-destructive") ? "down" : "flat", !!x.querySelector("svg")]));
+    expect(chips).toEqual([["rising", "up", true], ["steady", "flat", true]]);
   });
 
   test("a counted sweep names its own network, never TikTok", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    const body = page.locator(".card-body");
-    await expect(body).toContainText("reddit · counted across 24 posts");
-    await expect(body).toContainText('matching "skincare"');
+    const body = page.locator(".nt-view");
+    await expect(body).toContainText("Reddit · counted across 24 posts");
+    await expect(body).toContainText("matching “skincare”");
     await expect(body).not.toContainText("TikTok");
   });
 
   test("a counted sweep draws no trend arrow, because nothing measured one", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    const chips = await page.$$eval("span", (n) => n.map((x) => x.textContent ?? "").filter((t) => /▲|▼|▬/.test(t)));
-    expect(chips, "a steady chip asserts a direction the tool did not measure").toEqual([]);
+    // DERIVED carries a trend field on one row; a counted row still draws none.
+    await expect(page.locator(".nt-signals-trendtag"), "a direction chip asserts a direction the tool did not measure").toHaveCount(0);
   });
 
   test("it draws the median the tool computed, and the caveat under it", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    const body = page.locator(".card-body");
+    const body = page.locator(".nt-view");
     // The median, not the total: one outlier in a 30-post sweep moves a total.
-    await expect(body).toContainText("median 3.8K views");
-    await expect(body).not.toContainText("41.0K views");
+    await expect(body).toContainText("median 3.8k views");
+    await expect(body).not.toContainText("41k views");
     // A row the network reports no views for still renders, with just a count.
     await expect(body).toContainText("2 posts");
     // The caveat reaches the person, not only the model's context.
@@ -2014,7 +2027,7 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
 
   test("a non-Latin tag survives to the screen", async ({ page }) => {
     await renderTemplate(page, DERIVED);
-    await expect(page.locator(".card-body")).toContainText("#护肤");
+    await expect(page.locator(".nt-view")).toContainText("#护肤");
   });
 
   test("a row links the example post the tool supplied", async ({ page }) => {
@@ -2032,4 +2045,558 @@ test.describe("hashtags from a trend board and from a counted sweep", () => {
     await expect(page.locator(".empty-state")).toContainText("linkedin cannot be swept");
     await expect(page.locator(".empty-state")).not.toContainText("No trending hashtags found");
   });
+});
+
+/**
+ * The marketplace screen.
+ *
+ * Its whole reason for existing is that the model's read and the reviews it
+ * rests on are on one screen, so a person can click a claim and land on the
+ * text behind it. That is an interaction, not markup — a view that renders
+ * every driver beautifully and drops the jump is exactly as useless as one
+ * that renders nothing, and neither vitest nor the host contract can see the
+ * difference.
+ *
+ * The payloads below are the shape src/shared/amazon.ts emits after
+ * normalising (camelCase, ids per review), not the scraper's snake_case.
+ */
+const AMZ_PRODUCTS = [
+  {
+    asin: "B0C4KNW2T1",
+    url: "https://www.amazon.com/dp/B0C4KNW2T1",
+    title: "Goli Ashwagandha & Vitamin D Gummies — KSM-66, Mixed Berry, 60 Count",
+    brand: "Goli",
+    price: "$18.98",
+    priceValue: 18.98,
+    rating: 4.3,
+    ratingCount: 31544,
+    ratingHistogram: { "1": "6%", "2": "4%", "3": "9%", "4": "16%", "5": "65%" },
+    reviewSummary: "Customers like the taste and say gummies are easier to keep taking than capsules.",
+    aspects: [
+      { name: "Taste", mentions: 2210, sentiment: "positive" },
+      { name: "Dosage strength", mentions: 640, sentiment: "negative" },
+    ],
+    reviewsGated: false,
+    features: ["300mg KSM-66 per 2-gummy serving"],
+    reviews: [
+      {
+        id: "review:B0C4KNW2T1:1",
+        asin: "B0C4KNW2T1",
+        brand: "Goli",
+        author: "R. Okafor",
+        rating: 2,
+        title: "300mg is a third of what the studies used",
+        body: "The trials everyone cites use 600mg of KSM-66. Do the maths before you buy.",
+        date: "July 28, 2026",
+        verified: true,
+      },
+      {
+        id: "review:B0C4KNW2T1:0",
+        asin: "B0C4KNW2T1",
+        brand: "Goli",
+        author: "Sam",
+        rating: 5,
+        title: "The only supplement I have ever finished a bottle of",
+        body: "These taste like a berry chew so I actually take them.",
+        date: "August 9, 2026",
+        verified: true,
+      },
+    ],
+  },
+  {
+    asin: "B0BN4VQ7HG",
+    url: "https://www.amazon.com/dp/B0BN4VQ7HG",
+    title: "Double Wood Ashwagandha KSM-66 600mg, 150 Capsules",
+    brand: "Double Wood",
+    price: "$19.95",
+    priceValue: 19.95,
+    rating: 4.6,
+    ratingCount: 12750,
+    ratingHistogram: { "1": "3%", "2": "2%", "3": "6%", "4": "14%", "5": "75%" },
+    aspects: [{ name: "Value for money", mentions: 1340, sentiment: "positive" }],
+    reviewsGated: false,
+    reviews: [],
+  },
+];
+
+const AMZ_ROLLUP = {
+  products: 2,
+  brands: ["Double Wood", "Goli"],
+  reviewsCollected: 2,
+  ratingsRepresented: 44294,
+  price: { min: 18.98, max: 19.95, median: 19.46 },
+  rating: { min: 4.3, max: 4.6, mean: 4.45 },
+  negativeStarShareMean: 7.5,
+  aspects: [
+    { name: "Taste", mentions: 2210, brands: 1, positiveBrands: 1, negativeBrands: 0, mixedBrands: 0 },
+    { name: "Value for money", mentions: 1340, brands: 1, positiveBrands: 1, negativeBrands: 0, mixedBrands: 0 },
+    { name: "Dosage strength", mentions: 640, brands: 1, positiveBrands: 0, negativeBrands: 1, mixedBrands: 0 },
+  ],
+  perProduct: [
+    { asin: "B0C4KNW2T1", brand: "Goli", negativeStarShare: 10 },
+    { asin: "B0BN4VQ7HG", brand: "Double Wood", negativeStarShare: 5 },
+  ],
+};
+
+const AMZ_SCAN = {
+  marketplace: "amazon",
+  scanId: "scan_e2e",
+  status: "done",
+  complete: true,
+  query: "ashwagandha",
+  domain: "www.amazon.com",
+  progress: { done: 2, total: 2 },
+  rollup: AMZ_ROLLUP,
+  products: AMZ_PRODUCTS,
+  errors: [],
+};
+
+const AMZ_INSIGHTS = {
+  marketplace: "amazon",
+  view: "insights",
+  category: "Ashwagandha supplements (US)",
+  summary: "Two listings around $19, and the argument in the reviews is dose rather than efficacy.",
+  drivers: [
+    {
+      label: "The clinical dose, arithmetic done in public",
+      detail: "Buyers know the trials used 600mg and price the bottle per effective milligram.",
+      evidence: ["review:B0C4KNW2T1:0"],
+      strength: "strong",
+    },
+  ],
+  barriers: [
+    {
+      label: "Underdosing, once the buyer checks",
+      detail: "The gummy delivers 300mg against the 600mg the studies used.",
+      evidence: ["review:B0C4KNW2T1:1"],
+      strength: "strong",
+    },
+  ],
+  strengths: [{ brand: "Double Wood", detail: "Dose honesty as the whole proposition." }],
+  gaps: [{ label: "A high-dose format that is not a pill", detail: "Nobody serves both at once." }],
+  positioning: [{ angle: "The full study dose, in a chew.", who: "The label-reader who cannot swallow capsules." }],
+  products: AMZ_PRODUCTS,
+  rollup: AMZ_ROLLUP,
+  scanId: "scan_e2e",
+};
+
+test.describe("the marketplace view", () => {
+  test("draws the listings, the marketplace mark and the price spread", async ({ page }) => {
+    await renderTemplate(page, AMZ_SCAN);
+    await expect(page.locator(".amz-tile")).toHaveCount(2);
+    // The mark is inline SVG rather than an <img>: the view is sandboxed with
+    // no remote fetches, so a logo loaded over the network would never paint.
+    await expect(page.locator('.amz-mark svg[aria-label="Amazon"]')).toHaveCount(1);
+    await expect(page.locator(".amz-strip")).toContainText("median");
+    await expect(page.locator(".amz-tile").first()).toContainText("10% at 1-2");
+  });
+
+  /**
+   * A listing photo is the product in whatever shape the seller shot it, and
+   * the thumb is a square. `object-fit: cover` filled the square by cutting
+   * the photo: insoles lost their heel, a sneaker its toe, in every store
+   * view, since they all draw their tiles through `productThumb`. The photo
+   * here is three times taller than it is wide, the shape that lost the most.
+   */
+  test("a listing photo is fitted into its thumb, not cropped to fill it", async ({ page }) => {
+    const TALL = "https://images.e2e.test/tall.png";
+    await page.route(TALL, (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: "image/png",
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAABQAAAA8CAIAAADpFA0BAAAAKUlEQVR4nO3LMQ0AAAgDsElBCtKQjgdemvRtqucssizLsizLsizL8se84AsaPdFK5HYAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      }),
+    );
+    await renderTemplate(page, {
+      ...AMZ_SCAN,
+      products: AMZ_PRODUCTS.map((p) => ({ ...p, image: TALL })),
+    });
+    const fitted = async () =>
+      page.$$eval(".nt-commerce-thumb img", (imgs) =>
+        imgs.map((img) => ({
+          fit: getComputedStyle(img).objectFit,
+          loaded: (img as HTMLImageElement).naturalHeight === 60,
+          backdrop: getComputedStyle(img.parentElement as Element).backgroundColor,
+        })),
+      );
+    await expect.poll(async () => (await fitted()).every((t) => t.loaded)).toBe(true);
+    // The grid's tiles, then the detail header, which draws the same photo larger.
+    for (const t of await fitted()) {
+      expect(t.fit).toBe("contain");
+      expect(t.backdrop).toBe("rgb(255, 255, 255)");
+    }
+    await page.click('[data-amz-open="B0C4KNW2T1"]');
+    const detail = await page.$eval(".amz-detail .nt-commerce-thumb img", (img) => getComputedStyle(img).objectFit);
+    expect(detail).toBe("contain");
+  });
+
+  test("opening a listing shows its histogram and its review bodies", async ({ page }) => {
+    await renderTemplate(page, AMZ_SCAN);
+    await page.click('[data-amz-open="B0C4KNW2T1"]');
+    const detail = page.locator(".amz-detail");
+    await expect(detail).toContainText("300mg is a third of what the studies used");
+    // Five bars, not one average: a 4.3 with 6% at one star and a 4.3 with 1%
+    // are different products and the average hides which you are looking at.
+    await expect(detail.locator(".amz-hrow")).toHaveCount(5);
+    await expect(detail).toContainText("Customers like the taste");
+  });
+
+  test("the reviews tab filters by star and keeps the worst first", async ({ page }) => {
+    await renderTemplate(page, AMZ_SCAN);
+    await page.click('[data-amz-tab="reviews"]');
+    await expect(page.locator(".amz-rev").first()).toContainText("300mg is a third");
+    await page.click('[data-amz-star="5"]');
+    await expect(page.locator(".amz-rev")).toHaveCount(1);
+    await expect(page.locator(".amz-rev").first()).toContainText("finished a bottle");
+  });
+
+  test("a claim in the read jumps to the review it rests on", async ({ page }) => {
+    await renderTemplate(page, AMZ_INSIGHTS);
+    await expect(page.locator(".amz-find-barrier")).toContainText("Underdosing");
+    // The interaction the whole two-pane screen exists for. A driver nobody
+    // can check against the text is an assertion, not a finding.
+    await page.click('[data-amz-ev="review:B0C4KNW2T1:1"]');
+    const focused = page.locator(".amz-rev-focus");
+    await expect(focused).toHaveCount(1);
+    await expect(focused).toContainText("300mg is a third");
+  });
+
+  test("an evidence entry that is a quote rather than an id is not a dead button", async ({ page }) => {
+    await renderTemplate(page, {
+      ...AMZ_INSIGHTS,
+      drivers: [{ label: "Calm", evidence: ["it just takes the edge off"] }],
+    });
+    await expect(page.locator(".amz-ev-quote")).toContainText("takes the edge off");
+    await expect(page.locator('.amz-ev-quote[data-amz-ev]')).toHaveCount(0);
+  });
+
+  test("a read passed without its listings keeps the ones already on screen", async ({ page }) => {
+    // The model is allowed to call show_* with conclusions alone. Blanking the
+    // listings would leave every evidence link pointing at nothing.
+    //
+    // Both results are posted into ONE document, which is what a host does:
+    // re-running renderTemplate would reload the page and test a fresh view
+    // rather than the carry-forward this is about.
+    await renderTemplate(page, AMZ_SCAN);
+    await page.evaluate(
+      (d) => window.postMessage(
+        { method: "ui/notifications/tool-result", params: { structuredContent: d } }, "*"),
+      { ...AMZ_INSIGHTS, products: [], rollup: {} },
+    );
+    await page.waitForTimeout(400);
+    await expect(page.locator(".amz-find-barrier")).toContainText("Underdosing");
+    await page.click('[data-amz-tab="listings"]');
+    await expect(page.locator(".amz-tile")).toHaveCount(2);
+  });
+
+  /**
+   * Flipkart and Temu name their product id `pid` and `goods_id`, and neither
+   * was in `normaliseProducts`' list, so every product in a scan of either
+   * site came back with `asin: ""`. The tiles still drew — which is why this
+   * survived a green suite — but they all carried the same blank key, so
+   * `[data-amz-open=""]` matched every one of them and no click could reach
+   * the reviews of the product it was on.
+   *
+   * Driven through `normaliseProducts` rather than a hand-written payload:
+   * the resolver is the thing under test, and a fixture written in its output
+   * shape would assert nothing about it.
+   */
+  test("a scan of a site that does not call its id an asin opens its listings", async ({ page }) => {
+    const products = normaliseProducts([
+      {
+        pid: "SHOHGXZ4CNHPKMSK",
+        title: "Skechers Go Run Consistent 2.0",
+        brand: "Skechers",
+        price: "Rs. 2,799", price_value: 2799, currency: "INR",
+        rating: 4.2, rating_count: 18452,
+        rating_histogram: { "1": 900, "2": 700, "3": 1800, "4": 5000, "5": 10052 },
+        reviews: [{ rating: 2, title: "Sole wore through", body: "Outsole gave out inside three months of road running." }],
+      },
+      {
+        goods_id: "601099512345678",
+        title: "Running shoes, mesh upper",
+        price: "$21.98", price_value: 21.98, currency: "USD",
+        rating: 4.6, rating_count: 3120,
+      },
+    ]);
+    await renderTemplate(page, {
+      marketplace: "flipkart",
+      scanId: "scan_e2e_pid",
+      status: "done",
+      complete: true,
+      query: "running shoes",
+      market: "www.flipkart.com",
+      progress: { done: 2, total: 2 },
+      rollup: { products: 2, perProduct: products.map((p) => ({ id: p.asin, negativeStarShare: 8.6 })) },
+      products,
+      errors: [],
+    });
+    await expect(page.locator(".amz-tile")).toHaveCount(2);
+    // One key per product rather than one key for all of them.
+    await expect(page.locator('[data-amz-open="SHOHGXZ4CNHPKMSK"]')).toHaveCount(1);
+    await expect(page.locator('[data-amz-open="601099512345678"]')).toHaveCount(1);
+    await expect(page.locator('[data-amz-open=""]')).toHaveCount(0);
+    // And the click actually reaches that product's reviews.
+    await page.click('[data-amz-open="SHOHGXZ4CNHPKMSK"]');
+    await expect(page.locator(".amz-detail")).toContainText("Outsole gave out");
+  });
+
+  test("a scan still collecting says so instead of looking finished", async ({ page }) => {
+    await renderTemplate(page, { ...AMZ_SCAN, complete: false, progress: { done: 2, total: 10 } });
+    await expect(page.locator(".amz-running")).toContainText("2/10");
+  });
+
+  test("a listing whose reviews are gated says which half is missing", async ({ page }) => {
+    await renderTemplate(page, {
+      ...AMZ_SCAN,
+      products: [{ ...AMZ_PRODUCTS[0], reviews: [], reviewsGated: true }],
+    });
+    await expect(page.locator(".amz-tile").first()).toContainText("behind sign-in");
+    await page.click('[data-amz-open="B0C4KNW2T1"]');
+    await expect(page.locator(".amz-note")).toContainText("still public");
+  });
+});
+
+// ── Replies under a prospect post (#78) ────────────────────────────────────
+//
+// find_people_with_problem buys these at 2 credits a post, up to 10, and its
+// own guidance calls a reply the better find. They reached the text digest and
+// this view drew the post cards only, so a host rendering the widget dropped
+// exactly the half that cost the most. Asserting on the rendered text rather
+// than on the payload, because the payload was always right.
+test("replies bought under a prospect post are actually drawn", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        title: "Spending my whole morning checking competitor posts",
+        externalUrl: "https://reddit.com/r/marketing/comments/abc",
+        commentsRead: 2,
+        commentSample: [
+          { username: "same_boat", text: "same here, this is exactly my problem", likes: 12 },
+          { username: "tired_pm", text: "I built a spreadsheet for it and it still takes an hour" },
+        ],
+      },
+    ],
+  });
+  await expect(page.locator(".replies-strip")).toBeVisible();
+  await expect(page.locator(".reply-text").first()).toContainText("same here, this is exactly my problem");
+  await expect(page.locator(".reply-who").first()).toContainText("same_boat");
+  await expect(page.locator(".replies-head")).toContainText("2 replies");
+});
+
+// The card a real prospect search actually produces.
+//
+// postCard returns early for anything playable, and a Reddit/TikTok/X result
+// carries a videoUrl far more often than not — so the first version of the
+// strip rendered in the test above and in none of the three posts a real
+// find_people_with_problem call returned. Found by rendering the fixture
+// backend's own payload rather than a synthetic one, which is the whole reason
+// CLAUDE.md asks for that step. This pins the media path specifically.
+test("replies are drawn on a playable post, not only on a plain one", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        caption: "The waste-an-hour-a-day checking competitors habit",
+        externalUrl: "https://reddit.com/r/marketing/comments/vid",
+        videoUrl: "https://example.invalid/clip.mp4",
+        contentType: "video",
+        commentsRead: 1,
+        commentSample: [{ username: "same_boat", text: "this stopped working for me after the last update" }],
+      },
+    ],
+  });
+  await expect(page.locator(".replies-strip")).toBeVisible();
+  await expect(page.locator(".reply-text").first()).toContainText("stopped working for me");
+});
+
+// `commentsRead: 0` is a statement about the THREAD, not the audience. The
+// digest already words it that way; if the view said "no replies" the two
+// channels would tell a reader opposite things about the same prospect.
+test("a thread that would not open says so, rather than reading as no replies", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        title: "Anyone else drowning in competitor research",
+        externalUrl: "https://reddit.com/r/marketing/comments/def",
+        commentsRead: 0,
+      },
+    ],
+  });
+  await expect(page.locator(".replies-none")).toContainText("would not open");
+  await expect(page.locator(".replies-none")).not.toContainText("no replies");
+});
+
+// A post nothing tried to open draws no strip at all — silence about a thread
+// nobody looked at is correct, and an empty strip on every gallery card would
+// be noise on the tools that never fetch comments.
+test("a post nothing opened draws no replies strip", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [{ platform: "reddit", title: "A post", externalUrl: "https://reddit.com/r/x/comments/g" }],
+  });
+  await expect(page.locator(".replies-strip")).toHaveCount(0);
+});
+
+// The label a host adds under #79 has to land on the reply it belongs to —
+// the chip markup is shared with the sweep view, so this is the check that it
+// is actually reached from a prospect card.
+test("a classified reply carries its category chip", async ({ page }) => {
+  await renderTemplate(page, {
+    posts: [
+      {
+        platform: "reddit",
+        title: "Competitor tracking is eating my week",
+        externalUrl: "https://reddit.com/r/marketing/comments/hij",
+        commentsRead: 1,
+        commentSample: [
+          { username: "dev_anna", text: "the export silently drops rows", category: "bug_report", sentiment: "negative" },
+        ],
+      },
+    ],
+  });
+  await expect(page.locator(".reply-row .chip-cat")).toContainText("bug report");
+});
+
+// #107: the read says whether its listings are the scan's own, and flags an
+// ASIN it cites that the scan does not contain.
+test("a category read shows whether its listings were checked against the scan", async ({ page }) => {
+  const base = {
+    marketplace: "amazon", view: "insights", category: "Coffee grinders",
+    strengths: [{ brand: "Ghost", detail: "Made up", asin: "B0GHOST" }],
+    products: [{ asin: "B0ACME", title: "Acme Grinder", brand: "Acme", reviews: [] }],
+    rollup: {},
+  };
+  await renderTemplate(page, {
+    ...base,
+    verification: { status: "verified", note: "The 1 listing(s) drawn are the scan's own.", unknownAsins: ["B0GHOST"] },
+  });
+  await expect(page.locator('[data-verification="verified"]')).toContainText("re-read from the scan");
+  await expect(page.locator("[data-not-in-scan]")).toHaveCount(1);
+  await expect(page.locator("body")).toContainText("Every claim above can be checked");
+
+  await renderTemplate(page, {
+    ...base,
+    verification: { status: "unverified", note: "No scanId was passed." },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toContainText("not checked against a scan");
+  await expect(page.locator("body")).not.toContainText("Every claim above can be checked");
+});
+
+// suggest_creator_identity (#102). The candidate's points score (50 per shared
+// bio link) must not reach the creator card's vetting strip, where it would
+// read as a nooticr rating out of 100, and no card may add followers up.
+test("identity suggestions draw as suggestions, with their evidence and no /100", async ({ page }) => {
+  await renderTemplate(page, {
+    mode: "evidence",
+    seed: { platform: "tiktok", handle: "lena", bioRead: true },
+    searched: ["instagram"],
+    suggestions: [
+      {
+        platform: "instagram", username: "lena", nickname: "Lena", profileUrl: "https://instagram.com/lena",
+        followers: 1200, score: 75, confidence: "high",
+        evidence: [{ signal: "shared_bio_link", strength: "strong", detail: "both bios link lena.example" }],
+      },
+    ],
+    unavailable: [{ platform: "xiaohongshu", reason: "upstream timeout" }],
+    merged: false,
+  });
+  const card = page.locator("[data-identity-candidate]");
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText("suggestion");
+  await expect(card).toContainText("shared bio link");
+  await expect(card).toContainText("lena.example");
+  await expect(card).toContainText("on this account alone");
+  await expect(page.locator("body")).not.toContainText("/100");
+  await expect(page.locator("body")).toContainText("Xiaohongshu could not be searched");
+});
+
+// nooticr_getting_started (#96). It carries a balance, so it must not fall
+// into the credits card, and a read it could not make is not a zero.
+test("getting started draws its own view, with unknowns as unknown", async ({ page }) => {
+  await renderTemplate(page, {
+    gettingStarted: true,
+    signedIn: true,
+    balance: 20,
+    connectedCount: null,
+    watching: 0,
+    nextSteps: [
+      { tool: "get_social_media", why: "Read one post.", credits: 1, example: { url: "<a post URL>" } },
+      { tool: "watch_creator", why: "Keep a creator on a list.", credits: 0 },
+    ],
+  });
+  await expect(page.locator("[data-next-step]")).toHaveCount(2);
+  await expect(page.locator("body")).toContainText("Where your nooticr account stands");
+  await expect(page.locator("body")).toContainText("could not read");
+  await expect(page.locator("[data-next-step]").first()).toContainText("1 cr");
+  await expect(page.locator("[data-next-step]").nth(1)).toContainText("Free");
+});
+
+// #104: a connector read leads with when it was synced, and a never-synced
+// connector draws its message rather than empty tiles.
+test("connector reads show their sync time, and a never-synced one its message", async ({ page }) => {
+  await renderTemplate(page, {
+    connector: "search_console", clicks: 412, impressions: 18950,
+    topQueries: ["competitor tracking tool", "fixture app pricing"],
+    synced_at: "2026-09-22T06:00:00Z", appName: "Acme",
+  });
+  await expect(page.locator("[data-as-of]")).toContainText("2026-09-22 06:00 UTC · not live");
+  await expect(page.locator("[data-query]")).toHaveCount(2);
+  await expect(page.locator("body")).toContainText("2.2%");
+
+  await renderTemplate(page, { connector: "posthog", message: "No PostHog data synced yet. Connect PostHog in API Connections." });
+  await expect(page.locator("body")).toContainText("No PostHog data synced yet");
+  await expect(page.locator("[data-series]")).toHaveCount(0);
+});
+
+// #93: a workspace usage report draws its totals and a row per tool and seat.
+test("a usage report draws totals, tools and seats", async ({ page }) => {
+  await renderTemplate(page, {
+    report: true, scope: "workspace", from: "2026-08-24T00:00:00Z", to: "2026-09-23T00:00:00Z",
+    totals: { calls: 41, failures: 3, credits: 96, tools: 5, seats: 2 },
+    byTool: [{ tool: "search_mentions", calls: 6, failures: 0, credits: 54 }],
+    bySeat: [{ userId: "u1", name: "Owner", calls: 30, failures: 1, credits: 80 }, { userId: "u2", email: "sam@example.com", calls: 11, failures: 2, credits: 16 }],
+    byDay: [{ day: "2026-09-22", calls: 3, failures: 0, credits: 6 }],
+    recentFailures: [{ tool: "get_social_media", error: "upstream 404", startedAt: "2026-09-22T10:00:00Z" }],
+  });
+  await expect(page.locator("body")).toContainText("Workspace usage");
+  await expect(page.locator("[data-usage-row]")).toHaveCount(3);
+  await expect(page.locator("body")).toContainText("sam@example.com");
+  await expect(page.locator("body")).toContainText("upstream 404");
+});
+
+// #95: a non-Amazon read draws under its own site, not Amazon's.
+test("a marketplace category read is labelled with its own site", async ({ page }) => {
+  await renderTemplate(page, {
+    marketplace: "lazada", view: "insights", category: "Coffee grinders",
+    drivers: [{ label: "Consistent grind", strength: "moderate" }],
+    products: [{ asin: "LZ-1", title: "Kobo grinder", brand: "Kobo", reviews: [] }],
+    rollup: {},
+    verification: { status: "verified", note: "The 1 listing(s) drawn are the scan's own." },
+  });
+  await expect(page.locator(".amz-head-title")).toContainText("Coffee grinders");
+  await expect(page.locator('[data-verification="verified"]')).toBeVisible();
+  await expect(page.locator(".amz-head")).not.toContainText("amazon.com");
+});
+
+// #107: a show_* view whose rows were not all returned by nooticr this
+// session says so above the card; a fully matched one draws no banner.
+test("a view with unchecked rows says so, and a checked one stays quiet", async ({ page }) => {
+  const post = { platform: "tiktok", title: "A", externalUrl: "https://tiktok.com/@a/video/1", views: 10 };
+  await renderTemplate(page, {
+    posts: [post, { ...post, externalUrl: "https://tiktok.com/@b/video/2" }],
+    comparison: { winner: 1, differences: [], lessons: [] },
+    verification: { status: "unverified", note: "1 of 2 posts is not among what nooticr returned in this session.", unmatched: ["x"] },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toContainText("Not checked against nooticr");
+  await renderTemplate(page, {
+    posts: [post, post],
+    comparison: { winner: 1, differences: [], lessons: [] },
+    verification: { status: "verified", note: "All 2 posts drawn with the figures nooticr returned.", unmatched: [] },
+  });
+  await expect(page.locator('[data-verification="unverified"]')).toHaveCount(0);
 });

@@ -103,7 +103,7 @@ per half of the product, so the three do not demonstrate the same thing:
    is what separates an answer from an opinion, and it is what the tools return.
 
 3. **Break down [this post URL]: what's said, why it works, and four variants worth filming next.**
-   `analyze_post_fast` → `create_variants`. The listening-to-creating arc in one
+   `analyze_post_fast` → `generate_post_variants`. The listening-to-creating arc in one
    line, which is the subtitle the listing leads with.
 
 The bracketed placeholders are deliberate. A prompt that names a real brand or

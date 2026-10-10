@@ -139,6 +139,10 @@ export const BACKEND_CALL_CREDITS: Record<string, number> = {
   discover_social_posts: 2,
   search_creators: 2,
   get_similar_creators: 2,
+  // At its default: the seed lookup plus the two other searchable networks.
+  // The price moves with `platforms`, but it never exceeds this, which is why
+  // the tool needs no confirmation (it sits at CONFIRM_ABOVE_CREDITS).
+  suggest_creator_identity: 6,
   discover_sounds: 2,
   discover_hashtags: 2,
   get_post_frames: 2,

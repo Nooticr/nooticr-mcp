@@ -13,7 +13,7 @@ import { landingPage as sitelanding } from "./site/landing.js";
 import { termsPage, privacyPage } from "./site/legal.js";
 import { documentationPage } from "./site/documentation.js";
 import { supportPage } from "./site/support.js";
-import { dashboardPage, dashboardSignedOut } from "./site/dashboard.js";
+import { dashboardPage, dashboardSignedOut, type ApiKeySummary } from "./site/dashboard.js";
 import { NooticrClient } from "../../src/shared/nooticr.js";
 import { MCP_SERVER_VERSION } from "../../src/shared/tools.js";
 import {
@@ -29,6 +29,7 @@ import {
   deletePending,
   storePending,
   storeSession,
+  updateSessionTokens,
   verifyToken,
   validMcpToken,
   isRateLimited,
@@ -39,6 +40,7 @@ import {
   PENDING_TTL_SECONDS,
   SCOPES,
   unsupportedScopes,
+  type McpSession,
 } from "./oauth.js";
 
 export { McpEndpoint } from "./endpoint.js";
@@ -98,6 +100,52 @@ export default {
       const token = env.OPENAI_APPS_VERIFICATION_TOKEN?.trim();
       return token ? textResponse(200, token) : textResponse(404, "not configured");
     }
+    // Registry descriptors we are asked for on a schedule, and deliberately do
+    // not publish (#67).
+    //
+    // Four paths were 404ing by omission: `/.well-known/agent.json` and
+    // `/.well-known/agent-card.json` (92 probes each in five days, from
+    // GolemreachTrustBot), `/.well-known/mcp/server-card.json` (15, from
+    // mcp-verify) and `/.well-known/glama.json` (15). Nothing breaks for a
+    // user, but the product is distributed through exactly these directories,
+    // so "we publish X and Y and deliberately not Z" is worth writing down —
+    // the same reasoning that already sits on `openai-apps-challenge` above.
+    //
+    // The decisions:
+    //
+    //   agent.json / agent-card.json — an A2A agent card. We do not speak
+    //   A2A: there is no `/a2a` endpoint, no A2A JSON-RPC methods, and no
+    //   skills document anywhere in this worker. Publishing a card would
+    //   advertise a protocol nothing here implements, which is the same
+    //   mistake as advertising a platform that cannot work — it costs the
+    //   caller a request to find out.
+    //
+    //   mcp/server-card.json and glama.json — third-party directory formats.
+    //   Both are plausible things to want, and neither schema has been read
+    //   by anyone here. Serving a document shaped from a guess is how a
+    //   listing fails silently instead of loudly, so these stay 404 until
+    //   someone wants the listing enough to check the format.
+    //
+    // What changes is that the 404 now says which server this is and where the
+    // descriptors we DO publish live, so a crawler author debugging a missing
+    // listing gets an answer instead of a blank.
+    if (UNPUBLISHED_DESCRIPTORS.has(path) && (method === "GET" || method === "HEAD")) {
+      return jsonResponse(404, {
+        error: "not_published",
+        server: "nooticr-mcp",
+        protocol: "Model Context Protocol",
+        version: MCP_SERVER_VERSION,
+        detail:
+          "This server does not publish this descriptor. It speaks MCP over Streamable HTTP " +
+          "at /mcp and is not an A2A agent.",
+        published: [
+          "/.well-known/oauth-authorization-server",
+          "/.well-known/oauth-protected-resource",
+          "/.well-known/openid-configuration",
+        ],
+        documentation: `${env.PUBLIC_URL}/documentation`,
+      });
+    }
     if (path === "/register" && method === "POST") {
       return handleRegister(request, env);
     }
@@ -118,6 +166,12 @@ export default {
     }
     if (path === "/api/checkout" && method === "POST") {
       return handleCheckout(request, env);
+    }
+    if (path === "/api/keys" && method === "POST") {
+      return handleCreateApiKey(request, env);
+    }
+    if (path === "/api/keys/revoke" && method === "POST") {
+      return handleRevokeApiKey(request, env);
     }
     if (path === "/documentation" && method === "GET") {
       return htmlResponse(200, documentationPage(env.PUBLIC_URL, env.NOOTICR_BASE_URL), CACHEABLE);
@@ -237,6 +291,168 @@ function cookieToken(request: Request): string | undefined {
   return undefined;
 }
 
+/**
+ * Call the nooticr API as the signed-in dashboard user, refreshing once when
+ * the access token inside the session has aged out.
+ *
+ * The dashboard session lives 30 days; the nooticr JWT inside it lives 15
+ * minutes. Without this, every visit after the first quarter of an hour
+ * answered "usage lookup failed (401)" and offered a fresh sign-in — the
+ * session had not died, only the token in it. `makeClientForSession` has done
+ * this for the MCP endpoint since the worker started refreshing at all; the
+ * dashboard was the half that never learned.
+ */
+export async function callAsUser(
+  env: Env,
+  mcpToken: string,
+  session: McpSession,
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const send = (accessToken: string) =>
+    fetch(`${env.NOOTICR_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        ...((init.headers as Record<string, string> | undefined) ?? {}),
+        authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+  const res = await send(session.nooticrAccessToken);
+  if (res.status !== 401 || !session.nooticrRefreshToken) return res;
+
+  try {
+    const renewed = await NooticrClient.refreshSession(
+      env.NOOTICR_BASE_URL,
+      session.nooticrRefreshToken
+    );
+    await updateSessionTokens(
+      env,
+      mcpToken,
+      renewed.accessToken,
+      renewed.refreshToken,
+      renewed.user
+        ? { id: renewed.user.id, email: renewed.user.email, displayName: renewed.user.displayName }
+        : undefined
+    );
+    // Keep the in-memory copy in step so a second call in this same request
+    // does not spend another refresh.
+    session.nooticrAccessToken = renewed.accessToken;
+    if (renewed.refreshToken) session.nooticrRefreshToken = renewed.refreshToken;
+    return await send(renewed.accessToken);
+  } catch {
+    // The refresh token is dead too. Let the 401 stand so the caller is asked
+    // to sign in rather than being told something vaguer.
+    return res;
+  }
+}
+
+/**
+ * The signed-in caller behind a dashboard request, or a 401 to hand back.
+ *
+ * `SameSite=Lax` already keeps the session cookie off cross-site POSTs, and a
+ * JSON content type forces a preflight this worker never answers. The origin
+ * check is the third lock, and it is here rather than on `/api/checkout`
+ * because these endpoints mint and destroy a long-lived credential: the cost
+ * of one more comparison is nothing against a request that hands out a key.
+ */
+export async function dashboardCaller(
+  request: Request,
+  env: Env
+): Promise<{ token: string; session: McpSession } | Response> {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== env.PUBLIC_URL) {
+    return jsonResponse(403, { error: "Cross-origin requests are not accepted here." });
+  }
+  const token = cookieToken(request) || bearerToken(request) || "";
+  const session = token ? await verifyToken(env, token) : undefined;
+  if (!session) return jsonResponse(401, { error: "Please sign in first." });
+  return { token, session };
+}
+
+/**
+ * Mints an API key for the signed-in user.
+ *
+ * Server-side so the nooticr access token never reaches page scripts — same
+ * reason `/api/checkout` is. The secret comes back in this one response and
+ * nowhere else; the backend keeps only its hash, and deliberately never puts
+ * it in a URL where history or a referrer header would keep a copy.
+ */
+async function handleCreateApiKey(request: Request, env: Env): Promise<Response> {
+  const caller = await dashboardCaller(request, env);
+  if (caller instanceof Response) return caller;
+
+  let name = "";
+  let expiresInDays: number | undefined;
+  try {
+    const body = (await request.json()) as { name?: unknown; expiresInDays?: unknown };
+    if (typeof body.name === "string") name = body.name.trim().slice(0, 120);
+    if (typeof body.expiresInDays === "number" && Number.isInteger(body.expiresInDays)) {
+      expiresInDays = body.expiresInDays;
+    }
+  } catch {
+    return jsonResponse(400, { error: "Expected a JSON body." });
+  }
+
+  try {
+    const res = await callAsUser(env, caller.token, caller.session, "/auth/api-keys", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: name || "dashboard key", ...(expiresInDays ? { expiresInDays } : {}) }),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      return jsonResponse(res.status === 401 ? 401 : 502, {
+        error: text.trim() || `The key could not be created (${res.status}).`,
+      });
+    }
+    return jsonResponse(200, JSON.parse(text));
+  } catch (err) {
+    return jsonResponse(502, {
+      error: err instanceof Error ? err.message : "The key could not be created.",
+    });
+  }
+}
+
+async function handleRevokeApiKey(request: Request, env: Env): Promise<Response> {
+  const caller = await dashboardCaller(request, env);
+  if (caller instanceof Response) return caller;
+
+  let id = "";
+  try {
+    const body = (await request.json()) as { id?: unknown };
+    if (typeof body.id === "string") id = body.id;
+  } catch {
+    return jsonResponse(400, { error: "Expected a JSON body." });
+  }
+  // Path-segment, so anything but a plain id is rejected here rather than
+  // being pasted into a URL.
+  if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
+    return jsonResponse(400, { error: "That is not a key id." });
+  }
+
+  try {
+    const res = await callAsUser(
+      env,
+      caller.token,
+      caller.session,
+      `/auth/api-keys/${encodeURIComponent(id)}`,
+      { method: "DELETE" }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      return jsonResponse(res.status === 401 ? 401 : 502, {
+        error: text.trim() || `The key could not be revoked (${res.status}).`,
+      });
+    }
+    return jsonResponse(200, { revoked: true });
+  } catch (err) {
+    return jsonResponse(502, {
+      error: err instanceof Error ? err.message : "The key could not be revoked.",
+    });
+  }
+}
+
 /** Start a browser sign-in for the dashboard (separate from the MCP OAuth dance). */
 async function handleDashboardLogin(request: Request, env: Env): Promise<Response> {
   const state = randomToken(24);
@@ -307,18 +523,31 @@ async function handleDashboard(request: Request, env: Env): Promise<Response> {
   // The dashboard stores nothing itself — read it all from the nooticr API.
   let usage;
   try {
-    const res = await fetch(`${env.NOOTICR_BASE_URL}/mcp/usage`, {
-      headers: { authorization: `Bearer ${session.nooticrAccessToken}` },
-    });
+    const res = await callAsUser(env, token, session, "/mcp/usage");
     if (!res.ok) throw new Error(`usage lookup failed (${res.status})`);
     usage = await res.json();
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Could not load your usage.";
     return htmlResponse(200, dashboardSignedOut(env.PUBLIC_URL, msg));
   }
+
+  // Keys are a separate ask, and a failure here must not cost the user their
+  // whole dashboard: a worker deployed against a backend that predates
+  // `/auth/api-keys` would otherwise take balance and usage down with it.
+  let keys: ApiKeySummary[] | null = null;
+  try {
+    const res = await callAsUser(env, token, session, "/auth/api-keys");
+    if (res.ok) {
+      const body = (await res.json()) as { keys?: ApiKeySummary[] };
+      keys = Array.isArray(body.keys) ? body.keys : [];
+    }
+  } catch {
+    keys = null;
+  }
+
   return htmlResponse(
     200,
-    dashboardPage(env.PUBLIC_URL, session.nooticrUser ?? {}, usage as never, token)
+    dashboardPage(env.PUBLIC_URL, session.nooticrUser ?? {}, usage as never, token, keys)
   );
 }
 
@@ -336,12 +565,9 @@ async function handleCheckout(request: Request, env: Env): Promise<Response> {
     return jsonResponse(400, { error: "Unknown credit pack." });
   }
   try {
-    const res = await fetch(`${env.NOOTICR_BASE_URL}/billing/mcp-credits/checkout`, {
+    const res = await callAsUser(env, token, session, "/billing/mcp-credits/checkout", {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${session.nooticrAccessToken}`,
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ tier: pack }),
     });
     const data = (await res.json()) as { url?: string; checkoutUrl?: string; error?: string };
@@ -699,6 +925,21 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
 export function isWellKnown(path: string, base: string): boolean {
   return path === base || path.startsWith(`${base}/`);
 }
+
+/**
+ * Descriptors probed on a schedule that this server deliberately does not
+ * publish. See the handler for the decision behind each one (#67).
+ *
+ * A set rather than a chain of `||` because the point is that this is a list
+ * someone can add to or remove from as a decision changes, not four
+ * conditions that grew one at a time.
+ */
+const UNPUBLISHED_DESCRIPTORS = new Set([
+  "/.well-known/agent.json",
+  "/.well-known/agent-card.json",
+  "/.well-known/mcp/server-card.json",
+  "/.well-known/glama.json",
+]);
 
 export const MCP_EXPOSED_HEADERS = "mcp-session-id, mcp-protocol-version, www-authenticate";
 

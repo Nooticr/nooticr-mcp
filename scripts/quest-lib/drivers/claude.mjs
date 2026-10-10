@@ -104,6 +104,20 @@ export function parseTranscript(file, serverName) {
   let toolSearches = 0;
   let finalText = "";
   let apiError = null;
+  // What each ToolSearch asked for and what came back.
+  //
+  // The count alone cannot answer the question #45 is about. With this many
+  // tools every one sits behind a ToolSearch, so a `show_*` is callable only
+  // if a search RETURNED it — measured at 0/18 when none did and 14/18 when
+  // one did. "How many searches happened" does not distinguish those two, and
+  // that distinction is the whole finding.
+  //
+  // The queries come off the assistant's `tool_use` blocks; the names come off
+  // the matching `tool_result`, where the host lists the tools it loaded. Tied
+  // together by `tool_use_id` so a run with several searches attributes each
+  // result to the query that caused it.
+  const searches = [];
+  const byId = new Map();
   const prefix = `mcp__${serverName}__`;
   for (const line of fs.readFileSync(file, "utf8").split("\n")) {
     if (!line.trim()) continue;
@@ -112,8 +126,24 @@ export function parseTranscript(file, serverName) {
     if (ev.type === "assistant") {
       for (const block of ev.message?.content ?? []) {
         if (block.type !== "tool_use") continue;
-        if (block.name === "ToolSearch") toolSearches += 1;
-        else if (block.name.startsWith(prefix)) calls.push({ tool: block.name.slice(prefix.length), args: block.input ?? {} });
+        if (block.name === "ToolSearch") {
+          toolSearches += 1;
+          const search = { query: String(block.input?.query ?? ""), returned: [] };
+          searches.push(search);
+          byId.set(block.id, search);
+        } else if (block.name.startsWith(prefix)) {
+          calls.push({ tool: block.name.slice(prefix.length), args: block.input ?? {} });
+        }
+      }
+    }
+    // A tool_result arrives on a `user` event, which is why this is not nested
+    // in the branch above.
+    if (ev.type === "user") {
+      for (const block of ev.message?.content ?? []) {
+        if (block.type !== "tool_result") continue;
+        const search = byId.get(block.tool_use_id);
+        if (!search) continue;
+        search.returned.push(...toolNamesIn(block.content, prefix));
       }
     }
     if (ev.type === "result") {
@@ -121,5 +151,41 @@ export function parseTranscript(file, serverName) {
       if (ev.is_error || ev.subtype !== "success") apiError = ev.subtype ?? "error";
     }
   }
-  return { calls, toolSearches, finalText, apiError };
+  const retrieved = [...new Set(searches.flatMap((s) => s.returned))];
+  return { calls, toolSearches, searches, retrieved, finalText, apiError };
+}
+
+/**
+ * The server's tool names mentioned in a ToolSearch result.
+ *
+ * The result is the host's own rendering, and its shape is not ours to
+ * control — it has been a `<functions>` block of JSON definitions, and it may
+ * be prose tomorrow. So this scans for the one thing that is stable and
+ * unambiguous: the fully-qualified `mcp__<server>__<tool>` names, which appear
+ * in every rendering because that is what the model must type to call one.
+ *
+ * Scanning rather than parsing on purpose. A parser that assumes a shape
+ * silently returns nothing when the shape changes, and "no tool was ever
+ * retrieved" is exactly the finding this is measuring — so it would read as a
+ * dramatic result rather than as a broken parser.
+ */
+function toolNamesIn(content, prefix) {
+  const text = typeof content === "string"
+    ? content
+    : Array.isArray(content)
+      ? content
+          .map((c) => {
+            if (typeof c === "string") return c;
+            // The shape the CLI actually emits, confirmed against real
+            // transcripts: `{ type: "tool_reference", tool_name: "mcp__x__y" }`.
+            // Reading only `.text` here is what made a first version report
+            // "retrieved 0/12" for tools that had plainly been called — which
+            // is precisely the dramatic-looking result the scan below exists
+            // to avoid, arriving through the one field it did not read.
+            return c?.tool_name ?? c?.text ?? "";
+          })
+          .join("\n")
+      : "";
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return [...text.matchAll(new RegExp(`${escaped}([a-z0-9_]+)`, "g"))].map((m) => m[1]);
 }

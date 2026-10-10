@@ -58,9 +58,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
-import { platformFromUrl, postSlug } from "./comment-review.js";
+import { classifyGuidance, platformFromUrl, postSlug } from "./comment-review.js";
 import { clamp, complaintCore, handleMissGuidance, ownIt, PLATFORM_ARG } from "./evidence.js";
-import { withEvidence } from "./evidence-digest.js";
+import { withEvidence, type DigestOptions } from "./evidence-digest.js";
 import {
   confirmSpend,
   costOf,
@@ -122,7 +122,7 @@ export function postIdOf(post: Row, index: number): string {
 /**
  * A comment's id, derived from the comment rather than from where it sat.
  *
- * The older schemes here are positional. `analyze_comments` mints
+ * The older schemes here are positional. `summarize_post_comments` mints
  * `comment:<postSlug>:<index>`, and `search_mentions` mints
  * `<platform>:<postId>:<index into the whole result>` — and an index moves.
  * Change `commentsPerPost`, page with a different `offset`, apply a `since`
@@ -372,9 +372,9 @@ function audienceGuidance(a: {
       "ones asking the same thing: a single pinned reply beats twenty individual ones, and a " +
       "question that recurs across posts is a video rather than a reply.",
     "",
-    "You are drafting, not sending. Nothing in nooticr can post a comment on any network — the " +
-      "connections carry upload and read permission only — so these are for the creator to paste " +
-      "in themselves. Say that rather than implying the replies will go out.",
+    "You are drafting, not sending. nooticr does not post comments on any network — even a " +
+      "connection whose grant allows managing comments is never used to send one — so these are " +
+      "for the creator to paste in themselves. Say that rather than implying the replies will go out.",
     "",
     "Do not invent facts about the product, the price or the creator's plans to fill a gap. If a " +
       "comment cannot be answered from what is here, say what you would need.",
@@ -786,8 +786,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // deictic — it counts and describes material that used to be somewhere
   // else — so `withEvidence` puts a rendering of that material in the same
   // block as the sentence describing it.
-  const evidence = (guidance: string, payload: Row) => ({
-    content: [{ type: "text" as const, text: withEvidence(guidance, payload) }],
+  const evidence = (guidance: string, payload: Row, opts: DigestOptions = {}) => ({
+    content: [{ type: "text" as const, text: withEvidence(guidance, payload, opts) }],
     structuredContent: { guidance, ...payload },
   });
 
@@ -814,9 +814,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "reads the comments on each, and returns them grouped under the post they were left on — " +
         "every comment with a stable id, and the ones that look like questions or requests " +
         "flagged and sorted to the top. This FINDS and helps you DRAFT answers; it cannot post " +
-        "them. No nooticr connection carries comment-write permission on any network, so the " +
-        "replies are for a person to paste in themselves — never promise the user they will be " +
-        "sent. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
+        "them: nooticr does not post replies on any network, even where list_social_connections " +
+        "reports that a connection can manage comments, so the replies are for a person to paste " +
+        "in themselves — never promise the user they will be sent. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
         "posts are opened. Pair it with show_audience_replies to lay the drafts out for triage. " +
         "Costs 2 nooticr credits for the post list plus 2 per post opened — 14 credits at the " +
         "default of 6 posts. Use when the job is to answer people; search_mentions is for what " +
@@ -996,7 +996,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         postsChecked: threads.length,
         // Stated in the payload as well as the prose, because a model that
         // believes it can send will promise the user something that cannot
-        // happen. No connection carries comment-write permission anywhere.
+        // happen. Some grants do allow managing comments (#29); nooticr has no
+        // send path whatever the grant says.
         repliesCanBeSent: false,
         totalMentions: totalComments,
         totalThreads: threads.length,
@@ -1036,7 +1037,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "you follow; analyze_creator_profile is the full teardown of one you do not.",
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         // Moves the "last checked" marker for a watched creator, so the second
         // call in a row does not answer the same question as the first.
         idempotentHint: false,
@@ -1486,19 +1487,31 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           if (already && already !== source) existing.foundBy = "both";
           return;
         }
+        // null only when neither spelling arrived; "" when one did and was
+        // blank. `?? null` rather than `?? ""` is the whole distinction.
+        const rawBio = raw.signature ?? raw.bio;
+        const bio = typeof rawBio === "string" ? rawBio : null;
         bySource.set(key, {
           ...raw,
           id: `creator:${platform}:${key}`,
           username,
           followers: numberOf(raw.followers ?? raw.followerCount),
           foundBy: source,
+          // Three states, not two. The server distinguishes "this creator
+          // wrote no bio" (empty string) from "the endpoint did not send one"
+          // (null) — Nooticr/nooticr-server#82, where `signature` came back
+          // empty for 55 of 55 results across two platforms. Collapsing the
+          // null back to "" here would undo that fix at its most important
+          // consumer: `links` is this tool's headline differentiator, and an
+          // empty array reads as "this creator published nothing" whichever
+          // reason produced it.
+          bioRead: bio !== null,
           // What the host should go and read. Pulled out of the bio here
           // rather than left for the model to spot inside prose — see
           // collab.ts for why they are typed and why we do not open them.
-          links: extractLinks(
-            String(raw.signature ?? raw.bio ?? ""),
-            typeof raw.externalUrl === "string" ? raw.externalUrl : undefined,
-          ),
+          links: bio === null
+            ? []
+            : extractLinks(bio, typeof raw.externalUrl === "string" ? raw.externalUrl : undefined),
         });
       };
 
@@ -1538,18 +1551,23 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       const withLinks = creators.filter(
         (c) => Array.isArray(c.links) && (c.links as unknown[]).length > 0,
       ).length;
+      // Candidates whose bio never arrived. Counted rather than inferred from
+      // an empty `links`, because the two are different claims and this tool
+      // is built entirely on the one it cannot make when the bio is missing.
+      const bioUnread = creators.filter((c) => c.bioRead === false).length;
 
       return evidence(
         [
           collabGuidance({ niche: args.niche, found: creators.length, seed: args.seed, platform }),
           "",
-          vettingGuidance(creators.length, withLinks),
+          vettingGuidance(creators.length, withLinks, bioUnread),
         ].join("\n"),
         {
           mode: "evidence",
           tool: "who_should_i_work_with",
           rubric: COLLAB_RUBRIC,
           withLinks,
+          bioUnread,
           evidenceFrom: args.seed ? ["search_creators", "get_similar_creators"] : ["search_creators"],
           niche: args.niche,
           platform,
@@ -1577,7 +1595,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // ───────────────────────────────────────────────────────────────────────────
   // 4. why_did_this_underperform
   //
-  // Not compare_posts. That answers "why did A beat B" from two URLs a person
+  // Not compare_social_posts. That answers "why did A beat B" from two URLs a person
   // already suspects; this answers "is this even bad, and against what", which
   // needs the creator's own distribution rather than a second post.
   // ───────────────────────────────────────────────────────────────────────────
@@ -1592,7 +1610,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "own baseline, and returns where it actually sits in the distribution — median, " +
         "quartiles, ratio and percentile — so the answer can be 'this is a normal result, not a " +
         "failure'. Consumes 3 nooticr credits (1 for the post, 2 for the window). Use when you " +
-        "have one post and no comparison; compare_posts is for two URLs you already picked.",
+        "have one post and no comparison; compare_social_posts is for two URLs you already picked.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.why_did_this_underperform,
       inputSchema: z
@@ -1937,7 +1955,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       description:
         "Lay out the replies you drafted from answer_my_audience so a person can read them. " +
         "Free, and makes no requests — it only draws what you pass it. It does NOT send " +
-        "anything: no nooticr connection can post a comment, so each row is a draft for the " +
+        "anything: nooticr does not post comments, whatever a connection allows, so each row is a draft for the " +
         "creator to copy into the app themselves. Each comment shows with what you decided to do " +
         "about it and your draft underneath, grouped under its post, so they can work through " +
         "them one at a time and skip the rest. Call this after you have drafted the replies, not " +
@@ -2502,8 +2520,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Widens the query into the forms a complaint takes — the plain phrasing, the " +
         "does-anyone-else question, the is-there-a-tool ask — and merges what each returns. " +
         "It is a wide cheap net and NOT a filter: the posts come back for you to judge, and " +
-        "many will be off-target. Consumes 2 nooticr credits per platform searched. Defaults to " +
-        "reddit, where people describe workflow pain in sentences; add twitter for volume.",
+        "many will be off-target. Consumes 2 nooticr credits per search, and each platform is searched once per query shape — three by default, so 6 credits per platform. Defaults to " +
+        "reddit, where people describe workflow pain in sentences; add twitter for volume. Not searchable here: linkedin.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.find_people_with_problem,
       inputSchema: z
@@ -2516,9 +2534,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "marketing about competitor analysis.",
             ),
           platforms: z
-            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram", "linkedin"]))
+            .array(z.enum(["reddit", "twitter", "youtube", "tiktok", "instagram"]))
             .optional()
-            .describe("Where to look (default reddit). Each one is a separate paid search."),
+            .describe("Where to look (default reddit). Each one is a separate paid search per query shape. Not searchable here: linkedin — no keyword post search exists for it upstream, so asking for it could only ever return nothing, which is why it is absent from this list rather than merely untested."),
           limit: z.number().int().optional().describe("Posts per query shape (default 6, max 15)."),
           readComments: z
             .boolean()
@@ -2541,6 +2559,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 "an X post — and keep each one short, because this is a keyword search and a " +
                 "long sentence matches on its commonest words.",
             ),
+          verbatim: z
+            .boolean()
+            .optional()
+            .describe(
+              "Render every post and every reply whole in the text you read, rather than " +
+                "clipped to fit (default false). Use it when the user wants what people wrote " +
+                "quoted exactly; the result is longer, and the price is the same.",
+            ),
         })
         .strict(),
     },
@@ -2551,6 +2577,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         limit?: number;
         queries?: string[];
         readComments?: boolean;
+        verbatim?: boolean;
       },
       extra,
     ) => {
@@ -2617,7 +2644,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       // deduped list rather than per search.
       //
       // That distinction is the whole reason this lives here and not in the
-      // backend's own `include_comments`: three query shapes across two
+      // backend's own `includeComments`: three query shapes across two
       // platforms is six searches, and opening five posts under each would be
       // thirty paid calls for a tool whose description promises a wide CHEAP
       // net. On the merged list it is five, once.
@@ -2724,6 +2751,25 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             ? `Note that ${unavailable.length} searches errored — tell the user which networks ` +
               "could not be searched rather than presenting this as the whole picture.\n"
             : "",
+          // A prospect list is a judgement with nowhere to land unless the
+          // labels come back in a shape the view can draw. `bug_report` and
+          // `complaint` are exactly what makes this list actionable — one goes
+          // to engineering, one to positioning — and the chips, counts and
+          // filter that would show them have always been built and never been
+          // asked for on this path (#79).
+          ...(args.readComments && posts.some((p) => Array.isArray(p.commentSample))
+            ? [
+                "",
+                classifyGuidance(
+                  "The replies you were handed under these posts are unclassified, and labelling " +
+                    "them is what turns this list into something sortable.",
+                  posts.reduce(
+                    (n, p) => n + (Array.isArray(p.commentSample) ? p.commentSample.length : 0),
+                    0,
+                  ),
+                ),
+              ]
+            : []),
           ownIt,
         ]
           .filter((l, i, all) => !(l === "" && all[i - 1] === ""))
@@ -2741,6 +2787,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           unavailable,
           creditsCharged: spend.credits,
           mcpCredits: spend.payload,
+        },
+        {
+          verbatim: args.verbatim === true,
+          recover: "call find_people_with_problem again with the same arguments and verbatim: true",
         },
       );
     },

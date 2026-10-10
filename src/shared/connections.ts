@@ -59,8 +59,10 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "allowed to do — read the account, publish a post, manage comments. Each answer is yes, " +
         "no, or unknown; unknown means the grant predates scope recording, so treat it as \"try " +
         "it\", not as a refusal. Also returns which platforms can be connected at all, which is a " +
-        "smaller set than the networks nooticr can read. Call this before promising that " +
-        "something can be posted or replied to. No cost to call.",
+        "smaller set than the networks nooticr can read. \"Manage comments\" reports what the " +
+        "platform granted, not something nooticr does: no nooticr tool posts, replies to or " +
+        "moderates a comment, so a yes there never means a drafted reply will be sent. Call this " +
+        "before promising that something can be posted or replied to. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),
       outputSchema: OUTPUT_SCHEMAS.list_social_connections,

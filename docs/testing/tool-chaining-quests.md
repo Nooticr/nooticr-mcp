@@ -113,8 +113,8 @@ Reproduced four ways, all run rather than reasoned about:
 This is the part that would be easy to get wrong, and the corpus settles it
 against the obvious guess.
 
-Chaining is not uniformly dead: `repurpose_post → show_repurposed_post` held
-3/3, `create_variants → show_variants` 2/3, `analyze_comments →
+Chaining is not uniformly dead: `adapt_post_for_platform → show_repurposed_post` held
+3/3, `generate_post_variants → show_variants` 2/3, `summarize_post_comments →
 show_comment_review` 2/3. The tempting conclusion is that their **descriptions**
 carried them. That does not survive contact with the descriptions themselves:
 `show_analysis` (1/12) says *"Display an analysis you wrote after analyze_post,
@@ -137,10 +137,10 @@ behind a `ToolSearch` and only enters context if a search returns it. Over the
 | it was not in the first query | 5 / 26 |
 
 And the passing case is decided before any description or result is in
-context: all three `repurpose_post` runs opened with
-`select:repurpose_post,show_repurposed_post` as their very first query. The
+context: all three `adapt_post_for_platform` runs opened with
+`select:adapt_post_for_platform,show_repurposed_post` as their very first query. The
 chain was committed from the **deferred tool-name list alone** —
-`repurpose_post` / `show_repurposed_post` share a distinctive stem, so the
+`adapt_post_for_platform` / `show_repurposed_post` share a distinctive stem, so the
 pair gets shortlisted together. `analyze_post` / `show_analysis`, sitting in a
 crowded `analyze_*` family, does not: `show_analysis` was retrieved in only
 4 of its 12 runs, so in the other 8 its description was never in context at
@@ -224,7 +224,7 @@ corpus says about each:
 - **Make the `show_*` tools retrievable.** The strongest single predictor in
   the corpus, and nothing else in this list matters if the tool is never
   searched for. That means naming (`show_repurposed_post` wins because it
-  shares a stem with `repurpose_post`) and it means the words a host would
+  shares a stem with `adapt_post_for_platform`) and it means the words a host would
   search — `show_analysis` competes with five `analyze_*` tools for the same
   query.
 - **Drop `structuredContent` on the tools whose value is the guidance.**
@@ -334,7 +334,7 @@ scaffolding and stopped — and the chaining report showed a broken chain that
 said nothing about the chain. Fixed: `FIXTURE_POST` in
 `scripts/fixture-server.mjs` is one post's worth of plausible content, the
 comment set contains a real-sounding bug report (so the
-`analyze_comments → prepare_handoff` chain has something to carry), and quests
+`summarize_post_comments → prepare_handoff` chain has something to carry), and quests
 use a post-shaped URL.
 
 **The rule: a fixture that announces itself changes the behaviour under test,
@@ -423,3 +423,126 @@ suite file can only express `firstToolWas`, and ordered matching
 | `scripts/quest-lib/probe-args.mjs` | arguments that make every tool actually run, for the chain map |
 | `tests/quests.test.ts` | the harness's own tests — no model, runs on every push |
 | `quests/report/` | gitignored: transcripts, chain map, last run's report |
+
+
+## Retrieval, re-measured after the guidance and evidence fixes (#45)
+
+The original finding — retrieval is the gate, not wording — was measured
+before #44/#51 (guidance in both channels) and #59 (evidence in both). Both
+landed, so it was re-measured on the full corpus. It holds, and harder:
+
+| | baseline | after #44/#51/#59 |
+|---|---|---|
+| `ToolSearch` never returned it → called | 0/18 | **0/15** |
+| `ToolSearch` did return it → called | 14/18 | **16/21** |
+
+Never-retrieved is still an absolute zero. Nothing a description says can
+survive the tool not being in context.
+
+### The rule is an exact shared token, not a shared stem
+
+Lining the eight `show_*` tools up against the predecessor whose guidance names
+them makes the pattern sharper than "a distinctive stem":
+
+| predecessor | view | shared token | retrieved |
+|---|---|---|---|
+| `generate_hook_ideas` | `show_hooks` | `hooks` | 6/6 |
+| `generate_post_variants` | `show_variants` | `variants` | 3/3 |
+| `adapt_post_for_platform` | `show_repurposed_post` | `post` | 3/3 |
+| `summarize_post_comments` | `show_comment_review` | `comment` | 3/3 |
+| `analyze_post` | `show_analysis` | — (`analyze`/`analysis`) | 4/12 |
+| `compare_social_posts` | `show_comparison` | — (`compare`/`comparison`) | 0/3 |
+| `who_should_i_work_with` | `show_collab_shortlist` | — (nothing) | 0/3 |
+
+`analyze`/`analysis` and `compare`/`comparison` are morphological relatives and
+both fail. Every tool that shares a whole token with its predecessor is
+retrieved every time.
+
+### What was renamed, and what it moved
+
+`show_analysis` → **`show_post_analysis`** (shares `post` with all three of its
+predecessors) and `show_comparison` → **`show_compared_posts`** (shares `posts`
+with `compare_social_posts`, mirroring `show_repurposed_post`).
+
+| | before | after |
+|---|---|---|
+| `show_post_analysis` retrieved | 4/12 | **5/9** |
+| `show_post_analysis` called | 1/12 | **4/9** |
+| `analyse-post-…-chat-host` | 0/3 | **3/3** |
+| `show_compared_posts` retrieved | 0/3 | 1/3 |
+| `show_compared_posts` called | 0/3 | 0/3 |
+
+Two honest caveats. The before/after populations differ — 12 opportunities in
+the full corpus, 9 in the filtered re-run, because `--filter analysis` misses
+`quick-read-picks-fast-and-shows-it`. And **the comparison rename is unproven**:
+1/3 against 0/3 is not a result at n=3. It was kept because the rule predicting
+it is well supported elsewhere and the old name violated it, not because this
+measurement defends it.
+
+The comparison quest also fails for a visibly different reason: all three runs
+walk `compare_social_posts -> get_social_media`, so the model is fetching the posts
+rather than reaching a view at all. That is a guidance question, not a
+retrieval one, and it is not what a rename can fix.
+
+### Not renamed
+
+`show_collab_shortlist` (0/3 retrieved). Its predecessor is
+`who_should_i_work_with`, which has no distinctive token to share — renaming
+only the view cannot create one. Fixing it means renaming the pair, which is a
+bigger decision than this measurement supports.
+
+### Measuring it yourself
+
+`npm run test:quests` prints the cross-tab. The harness records what each
+`ToolSearch` returned, not just how many happened — the count alone cannot
+distinguish "retrieved and skipped" from "never retrieved", and that
+distinction is the whole finding.
+
+### Guidance cannot fix retrieval, and here is why
+
+The obvious next lever after renaming is to tell the model the view is
+deferred and it should search for it. That was tried, twice, and measured on
+the same nine opportunities:
+
+| | retrieved | called |
+|---|---|---|
+| rename only | 5/9 | 4/9 |
+| + "it is deferred, search for it by name, then call it" (long form) | 4/9 | 2/9 |
+| + the same instruction in one terse sentence | 5/9 | 2/9 |
+
+Retrieval does not move. It sits at 4–5 of 9 whatever the guidance says, and
+the mechanism explains why: **the instruction arrives too late.** A model must
+retrieve `show_X` before it can call it, and the guidance telling it to do so
+lives in the predecessor's result — which it only reads *after* its first tool
+search. Guidance can influence a second search. It cannot influence the first,
+and the first is the one that decides.
+
+So the only lever on retrieval is the **name**, because the name is the only
+thing about a deferred tool that is visible at first-search time.
+
+The three runs also show the limit of this corpus: called went 4, 2, 2 across
+runs that should be equivalent or better. At n=9 the standard error is about
+1.4 counts, so nothing under a swing of ~3 is distinguishable. Wording
+experiments are not measurable here without either far more runs or a change
+that removes the gamble instead of shortening the odds.
+
+### What a definite fix would have to look like
+
+Nothing in MCP lets a server put a tool into a host's context — there is no
+"always load this" flag, and `notifications/tools/list_changed` only makes the
+host re-list, still deferred. So a server has exactly two levers, and only one
+of them is deterministic:
+
+1. **Improve the odds per name.** Renaming does this, measurably (`show_analysis`
+   4/12 retrieved → `show_post_analysis` 5/9). It stays a gamble.
+2. **Reduce the number of gambles.** Eight views means eight independent
+   retrieval events, each with its own odds. One view tool named in every
+   guidance string is one retrieval per conversation, reused for every render
+   after it — and the corpus-wide repetition of a single name is worth more
+   than a good name used once.
+
+(2) is the only version that is definite, and it is a product decision rather
+than a testing one: it collapses eight typed schemas and eight views into one
+discriminated tool, changes the published surface, and is visible to every
+host. Recorded here rather than acted on, with the measurement that argues
+for it.

@@ -158,11 +158,10 @@ describe("answer_my_audience", () => {
   });
 
   /**
-   * The promise the tool is allowed to make. No nooticr connection carries
-   * comment-write permission on any network — TikTok's asks for upload and
-   * list, YouTube's for upload and readonly — and there is no send path in the
-   * server at all. A model that believes otherwise promises the user something
-   * that cannot happen.
+   * The promise the tool is allowed to make. There is no send path in the
+   * server at all, even for a connection whose grant allows managing comments
+   * (#29). A model that believes otherwise promises the user something that
+   * cannot happen.
    */
   it("never claims it can send a reply", async () => {
     const { client } = await connect(twoPostBackend());
@@ -1015,5 +1014,31 @@ describe("the arithmetic on its own", () => {
     // "cannot" is not "can", which is the kind of thing a word-boundary test
     // gets wrong when it is written without one.
     expect(replySignals("cannot believe this")).toEqual([]);
+  });
+});
+
+/**
+ * #29: list_social_connections reports a real "manage comments" grant, so no
+ * other tool may deny that the grant exists. The two have to agree: the
+ * grant can be yes, and nooticr still sends nothing.
+ */
+describe("the comment grant and the drafting tools agree", () => {
+  it("no tool denies a grant list_social_connections can report as yes", async () => {
+    const { client } = await connect(twoPostBackend());
+    const { tools } = await client.listTools();
+    for (const t of tools) {
+      expect(t.description ?? "", t.name).not.toMatch(/carries comment-write permission/i);
+      expect(t.description ?? "", t.name).not.toMatch(/no nooticr connection can post/i);
+    }
+    const res = await client.callTool({ name: "answer_my_audience", arguments: { username: "a" } });
+    const guidance = String((res.content as Array<{ text: string }>)[0].text);
+    expect(guidance).not.toMatch(/connections carry upload and read permission only/i);
+  });
+
+  it("list_social_connections says a manage-comments yes is not a send path", async () => {
+    const { client } = await connect(twoPostBackend());
+    const { tools } = await client.listTools();
+    const t = tools.find((x) => x.name === "list_social_connections")!;
+    expect(t.description).toMatch(/no nooticr tool posts, replies to or moderates a comment/);
   });
 });

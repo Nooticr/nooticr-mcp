@@ -5,7 +5,7 @@
  * chosen — including the ones that watch a video. POLL_TIMEOUT_MS is five
  * minutes, so analyze_post could hold a synchronous tools/call open for that
  * long and a host had no way to put it in the background. Measured against the
- * live server, discover_social_posts takes 10.3s and compare_posts 10.4s; the
+ * live server, discover_social_posts takes 10.3s and compare_social_posts 10.4s; the
  * multimodal tools wrapped here are the slow ones above them.
  *
  * The three tools that run longest now accept a task. What they do is
@@ -24,6 +24,7 @@
  * The task APIs are experimental in SDK 1.30 and may change under us. They are
  * contained here for that reason — one file to fix rather than three handlers.
  */
+import { ledgerFor } from "./fetch-ledger.js";
 import { InMemoryTaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/stores/in-memory.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
@@ -94,6 +95,7 @@ export function registerSlowTool<A>(
         void (async () => {
           try {
             const result = await run(args, extra);
+            ledgerFor(server).record(name, result?.structuredContent);
             await extra.taskStore.storeTaskResult(
               task.taskId,
               result?.isError ? "failed" : "completed",

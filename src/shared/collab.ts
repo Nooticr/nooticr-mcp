@@ -292,9 +292,21 @@ export const COLLAB_RUBRIC = [
 ] as const;
 
 /** What the caller is asked to do with a shortlist before scoring it. */
-export function vettingGuidance(count: number, withLinks: number): string {
+export function vettingGuidance(count: number, withLinks: number, bioUnread = 0): string {
   return [
     `${count} candidates, ${withLinks} of them carrying links out of their bio.`,
+    // Said out loud, because an empty `links` array is the same shape whether
+    // the creator published nothing or the search never sent us their bio —
+    // and for a while it was always the second one
+    // (Nooticr/nooticr-server#82). Without this line a shortlist with nothing
+    // to read reads as a finding about the creators.
+    ...(bioUnread
+      ? [
+          `${bioUnread} of them came back with no bio at all — not an empty bio, none sent. ` +
+            "There is nothing to extract links from for those, so say their bio could not be " +
+            "read rather than scoring them as having published nothing.",
+        ]
+      : []),
     "",
     "Vet them by reading the work, not by re-reading the follower count. Each candidate's",
     "`links` array is already sorted by how much a single fetch will tell you, and each entry",

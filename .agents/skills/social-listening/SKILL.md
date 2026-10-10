@@ -89,8 +89,10 @@ carry on with the user's actual question.
 
 ## What this cannot do
 
-- **It cannot post, reply, comment, DM, or schedule.** No connection here
-  carries write permission on any network. The reply and audience tools *draft*
+- **It cannot post, reply, comment, DM, or schedule.** There is no send path
+  on any network, even where `list_social_connections` reports that a
+  connection's grant allows managing comments (that reports the platform's
+  grant, not something nooticr does). The reply and audience tools *draft*
   text for a person to paste in. Never say or imply that something was sent.
 - **It reads public data only.** No private messages, no follower emails, no
   account analytics, no ad data.

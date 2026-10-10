@@ -50,6 +50,18 @@ export function getPort(): number {
   return port;
 }
 
+/**
+ * A nooticr API key from the environment, if one is set.
+ *
+ * This is the headless path: no browser, no credentials file, nothing to
+ * refresh. A server-side integration sets `NOOTICR_API_KEY` once and the key
+ * stays valid until someone revokes it.
+ */
+export function getApiKey(): string | undefined {
+  const raw = process.env.NOOTICR_API_KEY?.trim();
+  return raw ? raw : undefined;
+}
+
 export function getCredentialsFile(): string {
   if (process.env.NOOTICR_CREDENTIALS_FILE) {
     return process.env.NOOTICR_CREDENTIALS_FILE;

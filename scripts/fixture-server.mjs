@@ -67,6 +67,458 @@ const FIXTURE_POST = {
     "tonight and tell me how it goes.",
 };
 
+// The marketplace fixture: a real-shaped Amazon category, three listings deep.
+//
+// Same reasoning as FIXTURE_POST above — a model asked to read purchase
+// drivers out of reviews that say "review one, review two" reports that it is
+// looking at scaffolding, and the chaining measurement then says nothing about
+// the guidance. These are invented brands' worth of plausible review text, in
+// the exact shape `amazon_scrap_rs` returns (snake_case, `review_aspects`,
+// `rating_histogram`), so the normaliser in src/shared/amazon.ts is exercised
+// rather than bypassed.
+const FIXTURE_AMAZON_PRODUCTS = [
+  {
+    "asin": "B07VJ5KFXZ",
+    "url": "https://www.amazon.com/dp/B07VJ5KFXZ",
+    "domain": "www.amazon.com",
+    "title": "NutriRise Ashwagandha 1300mg with Black Pepper \u2014 Organic KSM-66 Root Extract, 120 Veggie Capsules",
+    "brand": "NutriRise",
+    "price": "$21.95",
+    "price_value": 21.95,
+    "currency": "$",
+    "list_price": "$29.95",
+    "availability": "In Stock",
+    "rating": 4.5,
+    "rating_count": 48213,
+    "image": null,
+    "images": [],
+    "features": [
+      "1300mg organic ashwagandha root per serving with 10mg organic black pepper for absorption",
+      "USDA Organic, non-GMO, vegan, gluten free \u2014 third-party tested"
+    ],
+    "categories": [
+      "Health & Household",
+      "Vitamins & Dietary Supplements",
+      "Herbal Supplements",
+      "Ashwagandha"
+    ],
+    "specs": {
+      "Brand": "NutriRise",
+      "Item Form": "Capsule",
+      "Unit Count": "120 Count",
+      "Primary Supplement Type": "Ashwagandha",
+      "Diet Type": "Vegan"
+    },
+    "rating_histogram": {
+      "1": "4%",
+      "2": "3%",
+      "3": "7%",
+      "4": "13%",
+      "5": "73%"
+    },
+    "reviews": [
+      {
+        "author": "Danielle R.",
+        "rating": 5.0,
+        "title": "The 3am wake-ups stopped",
+        "body": "I was waking up at 3am every night with my brain already running. Two weeks on this and that stopped. I am not claiming it is magic \u2014 I still get stressed \u2014 but I fall back asleep instead of lying there doing math about work. Started with one capsule at night because two made me groggy the first morning.",
+        "date": "August 2, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Marcus T.",
+        "rating": 5.0,
+        "title": "Cheaper than the one my naturopath sells and it is the same KSM-66",
+        "body": "Paid $60 for a bottle of 60 from a clinic. This is 120 for twenty-two dollars and the label says the same standardised extract. Been through three bottles.",
+        "date": "July 19, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "K. Whitfield",
+        "rating": 4.0,
+        "title": "Works, but these capsules are horse pills",
+        "body": "No complaints about the effect \u2014 steadier through the afternoon, less of the wired feeling after meetings. But the capsules are genuinely large and I have to take them one at a time with a full glass of water. My mother gave up on them for that reason alone.",
+        "date": "July 3, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Angela",
+        "rating": 2.0,
+        "title": "Upset stomach every time",
+        "body": "Wanted this to work. Every time I take it on an empty stomach I get about an hour of nausea. With food it is better but then I forget to take it. Returned the second bottle.",
+        "date": "June 22, 2026",
+        "verified": true,
+        "source": "pdp"
+      }
+    ],
+    "reviews_gated": false,
+    "review_summary": "Customers find this ashwagandha helps with stress and sleep, with many noticing a calmer baseline within two weeks. They appreciate the organic certification and the value at two capsules a day. Some mention the capsules are large and a few report stomach upset when taken without food.",
+    "review_aspects": [
+      {
+        "name": "Stress relief",
+        "mentions": 1840,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Sleep quality",
+        "mentions": 1122,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Value for money",
+        "mentions": 903,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Capsule size",
+        "mentions": 411,
+        "sentiment": "negative",
+        "summary": null
+      },
+      {
+        "name": "Stomach comfort",
+        "mentions": 288,
+        "sentiment": "mixed",
+        "summary": null
+      },
+      {
+        "name": "Taste",
+        "mentions": 176,
+        "sentiment": "mixed",
+        "summary": null
+      }
+    ],
+    "fetched_at": "2026-09-11T09:12:44Z",
+    "fetch_meta": {
+      "attempts": 1,
+      "profile": "Chrome144",
+      "url_form": "https://www.amazon.com/dp/B07VJ5KFXZ",
+      "status": 200,
+      "bytes": 1482003,
+      "elapsed_ms": 8140,
+      "attempt_log": []
+    }
+  },
+  {
+    "asin": "B0C4KNW2T1",
+    "url": "https://www.amazon.com/dp/B0C4KNW2T1",
+    "domain": "www.amazon.com",
+    "title": "Goli Ashwagandha & Vitamin D Gummies \u2014 KSM-66, Mixed Berry, 60 Count",
+    "brand": "Goli",
+    "price": "$18.98",
+    "price_value": 18.98,
+    "currency": "$",
+    "list_price": "$21.99",
+    "availability": "In Stock",
+    "rating": 4.3,
+    "rating_count": 31544,
+    "image": null,
+    "images": [],
+    "features": [
+      "300mg KSM-66 ashwagandha root extract plus vitamin D per 2-gummy serving",
+      "Vegan, gluten free, no gelatin \u2014 mixed berry flavour"
+    ],
+    "categories": [
+      "Health & Household",
+      "Vitamins & Dietary Supplements",
+      "Herbal Supplements",
+      "Ashwagandha"
+    ],
+    "specs": {
+      "Brand": "Goli",
+      "Item Form": "Gummy",
+      "Unit Count": "60 Count",
+      "Flavor": "Mixed Berry",
+      "Diet Type": "Vegan"
+    },
+    "rating_histogram": {
+      "1": "6%",
+      "2": "4%",
+      "3": "9%",
+      "4": "16%",
+      "5": "65%"
+    },
+    "reviews": [
+      {
+        "author": "Sam",
+        "rating": 5.0,
+        "title": "The only supplement I have ever finished a bottle of",
+        "body": "I have a graveyard of half-full capsule bottles. These taste like a berry chew so I actually take them. Six weeks in and the low-grade hum of anxiety I carry around is quieter. That is worth more to me than a higher dose I would not take.",
+        "date": "August 9, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "R. Okafor",
+        "rating": 2.0,
+        "title": "300mg is a third of what the studies used",
+        "body": "Taste is great, marketing is great, but the trials everyone cites use 600mg of KSM-66. You would need four gummies and then you are eating a lot of sugar and paying twice as much per month as capsules. Do the maths before you buy.",
+        "date": "July 28, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Jenna M.",
+        "rating": 5.0,
+        "title": "Husband actually takes these",
+        "body": "He will not swallow a pill. Will eat a gummy. That is the whole review. He says he is less snappy after work and I agree.",
+        "date": "July 14, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Curtis",
+        "rating": 1.0,
+        "title": "Arrived as one solid brick",
+        "body": "Shipped in July, sat in a hot truck, arrived fused into a single lump I had to cut with a knife. Second bottle same thing. Amazon refunded but I am not ordering gummies in summer again.",
+        "date": "July 6, 2026",
+        "verified": true,
+        "source": "pdp"
+      }
+    ],
+    "reviews_gated": false,
+    "review_summary": "Customers like the taste and say gummies are far easier to keep taking than capsules. Many report feeling calmer and sleeping better. Some find the dose low compared with capsules and several mention the gummies arriving melted together in warm weather.",
+    "review_aspects": [
+      {
+        "name": "Taste",
+        "mentions": 2210,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Ease of use",
+        "mentions": 1408,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Stress relief",
+        "mentions": 1190,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Dosage strength",
+        "mentions": 640,
+        "sentiment": "negative",
+        "summary": null
+      },
+      {
+        "name": "Packaging",
+        "mentions": 520,
+        "sentiment": "negative",
+        "summary": null
+      },
+      {
+        "name": "Value for money",
+        "mentions": 486,
+        "sentiment": "mixed",
+        "summary": null
+      }
+    ],
+    "fetched_at": "2026-09-11T09:12:44Z",
+    "fetch_meta": {
+      "attempts": 1,
+      "profile": "Chrome144",
+      "url_form": "https://www.amazon.com/dp/B0C4KNW2T1",
+      "status": 200,
+      "bytes": 1482003,
+      "elapsed_ms": 8140,
+      "attempt_log": []
+    }
+  },
+  {
+    "asin": "B0BN4VQ7HG",
+    "url": "https://www.amazon.com/dp/B0BN4VQ7HG",
+    "domain": "www.amazon.com",
+    "title": "Double Wood Supplements Ashwagandha KSM-66 600mg, 150 Capsules",
+    "brand": "Double Wood",
+    "price": "$19.95",
+    "price_value": 19.95,
+    "currency": "$",
+    "list_price": "$24.95",
+    "availability": "In Stock",
+    "rating": 4.6,
+    "rating_count": 12750,
+    "image": null,
+    "images": [],
+    "features": [
+      "600mg KSM-66 per capsule \u2014 the dose used in most published trials",
+      "150 capsules, a 5-month supply at one per day"
+    ],
+    "categories": [
+      "Health & Household",
+      "Vitamins & Dietary Supplements",
+      "Herbal Supplements",
+      "Ashwagandha"
+    ],
+    "specs": {
+      "Brand": "Double Wood",
+      "Item Form": "Capsule",
+      "Unit Count": "150 Count",
+      "Primary Supplement Type": "Ashwagandha"
+    },
+    "rating_histogram": {
+      "1": "3%",
+      "2": "2%",
+      "3": "6%",
+      "4": "14%",
+      "5": "75%"
+    },
+    "reviews": [
+      {
+        "author": "Owen H.",
+        "rating": 5.0,
+        "title": "600mg KSM-66, one capsule, 13 cents a day",
+        "body": "Every study I could find used 600mg of KSM-66. This gives exactly that in one capsule and the bottle lasts five months. The 1300mg 'proprietary blend' bottles are marketing at twice the price per effective milligram.",
+        "date": "August 7, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Carmen",
+        "rating": 4.0,
+        "title": "Extremely vivid dreams",
+        "body": "Not bad dreams, just extremely detailed ones, every night since I started. Sleep itself is deeper. Mentioning it because nothing on the label warns you.",
+        "date": "July 24, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Ty",
+        "rating": 5.0,
+        "title": "Replaced a $45 bottle with this",
+        "body": "Same active ingredient at the same dose. The expensive one had a nicer label.",
+        "date": "July 9, 2026",
+        "verified": true,
+        "source": "pdp"
+      },
+      {
+        "author": "Renee W.",
+        "rating": 3.0,
+        "title": "Worked for six weeks then plateaued",
+        "body": "Great first six weeks. Then it felt like nothing again. Took two weeks off and it came back. Wish the industry would just say whether you are supposed to cycle it.",
+        "date": "June 20, 2026",
+        "verified": true,
+        "source": "pdp"
+      }
+    ],
+    "reviews_gated": false,
+    "review_summary": "Customers highlight the dose matching clinical studies and the very low cost per day. Many mention it is a single capsule rather than two. Some report vivid dreams and a few say the effect faded after a couple of months.",
+    "review_aspects": [
+      {
+        "name": "Value for money",
+        "mentions": 1340,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Dosage strength",
+        "mentions": 1120,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Sleep quality",
+        "mentions": 690,
+        "sentiment": "positive",
+        "summary": null
+      },
+      {
+        "name": "Vivid dreams",
+        "mentions": 385,
+        "sentiment": "mixed",
+        "summary": null
+      },
+      {
+        "name": "Effect over time",
+        "mentions": 302,
+        "sentiment": "mixed",
+        "summary": null
+      }
+    ],
+    "fetched_at": "2026-09-11T09:12:44Z",
+    "fetch_meta": {
+      "attempts": 1,
+      "profile": "Chrome144",
+      "url_form": "https://www.amazon.com/dp/B0BN4VQ7HG",
+      "status": 200,
+      "bytes": 1482003,
+      "elapsed_ms": 8140,
+      "attempt_log": []
+    }
+  }
+];
+
+/** The scan envelope the backend wraps those listings in. */
+const fixtureSlowScans = new Map();
+
+function fixtureAmazonScan(args, scanId) {
+  const asked = Number(args?.limit) || FIXTURE_AMAZON_PRODUCTS.length;
+  const products = FIXTURE_AMAZON_PRODUCTS.slice(0, Math.max(1, Math.min(asked, FIXTURE_AMAZON_PRODUCTS.length)));
+  const reviews = products.reduce((n, p) => n + (p.reviews?.length ?? 0), 0);
+  const aspects = new Map();
+  for (const p of products) {
+    for (const a of p.review_aspects ?? []) {
+      const key = a.name.toLowerCase();
+      const row = aspects.get(key) ?? {
+        name: a.name, mentions: 0, brands: 0, brandNames: [],
+        positiveBrands: 0, negativeBrands: 0, mixedBrands: 0,
+      };
+      row.mentions += a.mentions ?? 0;
+      if (!row.brandNames.includes(p.brand)) { row.brandNames.push(p.brand); row.brands += 1; }
+      if (a.sentiment === "positive") row.positiveBrands += 1;
+      else if (a.sentiment === "negative") row.negativeBrands += 1;
+      else row.mixedBrands += 1;
+      aspects.set(key, row);
+    }
+  }
+  const prices = products.map((p) => p.price_value).sort((a, b) => a - b);
+  const ratings = products.map((p) => p.rating);
+  const lowShare = (p) =>
+    Math.round((parseFloat(p.rating_histogram["1"]) + parseFloat(p.rating_histogram["2"])) * 10) / 10;
+  return {
+    marketplace: "amazon",
+    scanId,
+    status: "done",
+    complete: true,
+    query: args?.query ?? null,
+    domain: args?.domain ?? "www.amazon.com",
+    progress: { done: products.length, total: products.length, message: `${products.length} listing(s)`, elapsedMs: 41230, fromCache: 0 },
+    rollup: {
+      products: products.length,
+      brands: products.map((p) => p.brand).sort(),
+      reviewsCollected: reviews,
+      ratingsRepresented: products.reduce((n, p) => n + p.rating_count, 0),
+      reviewsGatedProducts: 0,
+      price: { min: prices[0], max: prices[prices.length - 1], median: prices[Math.floor(prices.length / 2)] },
+      rating: {
+        min: Math.min(...ratings),
+        max: Math.max(...ratings),
+        mean: Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 100) / 100,
+      },
+      negativeStarShareMean:
+        Math.round((products.reduce((n, p) => n + lowShare(p), 0) / products.length) * 10) / 10,
+      aspects: [...aspects.values()].sort((a, b) => b.mentions - a.mentions),
+      perProduct: products.map((p) => ({
+        asin: p.asin, brand: p.brand, title: p.title, price: p.price, priceValue: p.price_value,
+        rating: p.rating, ratingCount: p.rating_count, reviewsCollected: p.reviews?.length ?? 0,
+        negativeStarShare: lowShare(p), reviewsGated: false,
+      })),
+      productsScanned: products.length,
+    },
+    products,
+    errors: [],
+    billable: true,
+  };
+}
+
 /** @type {Map<string, { workspaceId?: string }>} */
 const tokens = new Map();
 /** @type {Map<string, { apps: Array<{ id: string; name: string }> }>} */
@@ -188,8 +640,55 @@ function handleGraphql(body) {
   return { errors: [{ message: `fixture-server: unhandled GraphQL query: ${query.slice(0, 80)}` }] };
 }
 
+// The account watchlist the backend stores per workspace (list_watchlist /
+// watch_creator / unwatch_creator / advance_watchlist_baseline). Without these
+// the generic default answered every write with an empty payload, so a
+// real-client check of the watchlist tools against this fixture always read
+// back an empty list.
+const fixtureWatchlists = new Map();
+function watchlistOf(workspaceId) {
+  const key = workspaceId || "none";
+  if (!fixtureWatchlists.has(key)) fixtureWatchlists.set(key, new Map());
+  return fixtureWatchlists.get(key);
+}
+
 function handleMcpCall(name, args, workspaceId) {
   switch (name) {
+    case "list_watchlist": {
+      const entries = [...watchlistOf(workspaceId).values()];
+      return {
+        content: [{ type: "text", text: `Watching ${entries.length} (fixture).` }],
+        structuredContent: { watching: entries.length, entries, cost: 0 },
+      };
+    }
+    case "watch_creator": {
+      const list = watchlistOf(workspaceId);
+      const platform = String(args?.platform || "tiktok").toLowerCase();
+      const handle = String(args?.handle || args?.username || "").replace(/^@/, "").toLowerCase();
+      const id = `${platform}:${handle}`;
+      const prior = list.get(id);
+      list.set(id, { id, platform, handle, note: args?.note ?? prior?.note ?? null, addedAt: prior?.addedAt ?? new Date().toISOString(), baseline: prior?.baseline ?? null });
+      return { content: [{ type: "text", text: "Watching (fixture)." }], structuredContent: { added: id, watching: list.size, cost: 0 } };
+    }
+    case "unwatch_creator": {
+      const list = watchlistOf(workspaceId);
+      const platform = String(args?.platform || "tiktok").toLowerCase();
+      const handle = String(args?.handle || args?.username || "").replace(/^@/, "").toLowerCase();
+      const removed = list.delete(`${platform}:${handle}`);
+      return { content: [{ type: "text", text: "Unwatched (fixture)." }], structuredContent: { removed, watching: list.size, cost: 0 } };
+    }
+    case "advance_watchlist_baseline": {
+      const list = watchlistOf(workspaceId);
+      const platform = String(args?.platform || "tiktok").toLowerCase();
+      const id = `${platform}:${String(args?.handle || "").replace(/^@/, "").toLowerCase()}`;
+      const entry = list.get(id);
+      if (entry) {
+        const baseline = { capturedAt: new Date().toISOString(), postIds: args?.postIds ?? [] };
+        if (args?.kind === "competitor") entry.competitorBaseline = baseline;
+        else entry.baseline = baseline;
+      }
+      return { content: [{ type: "text", text: "Advanced (fixture)." }], structuredContent: { advanced: Boolean(entry), cost: 0 } };
+    }
     case "check_nooticr_credits":
       return {
         content: [{ type: "text", text: "You have 20 nooticr credits remaining (fixture)." }],
@@ -199,6 +698,60 @@ function handleMcpCall(name, args, workspaceId) {
           isAdmin: false,
           bypassCredits: true,
           firstFreeTools: [],
+        },
+      };
+    case "list_tool_runs": {
+      // Two recorded runs, one paid and one refunded, so the history view
+      // has both kinds of row to draw.
+      const runs = [
+        { id: 2, tool: "search_mentions", surface: "mcp", ok: true, error: null, durationMs: 4210, credits: 18, startedAt: "2026-09-21T11:37:55Z" },
+        { id: 1, tool: "discover_social_posts", surface: "mcp", ok: false, error: "upstream timed out", durationMs: 30000, credits: 0, startedAt: "2026-09-21T11:34:25Z" },
+      ].filter((r) => args?.tool === undefined || r.tool === args.tool);
+      return {
+        content: [{ type: "text", text: `${runs.length} run(s) (fixture).` }],
+        structuredContent: {
+          scope: args?.scope ?? "mine",
+          runs,
+          count: runs.length,
+          creditsOnThisPage: runs.reduce((n, r) => n + r.credits, 0),
+          nextBefore: null,
+        },
+      };
+    }
+    case "get_usage_report": {
+      // nooticr-server's run_history::get_usage_report shape.
+      const workspace = args?.scope === "workspace";
+      return {
+        content: [{ type: "text", text: "Usage report." }],
+        structuredContent: {
+          report: true,
+          scope: workspace ? "workspace" : "mine",
+          from: "2026-08-24T00:00:00Z",
+          to: "2026-09-23T00:00:00Z",
+          totals: { calls: 41, failures: 3, credits: 96, tools: 5, seats: workspace ? 2 : 1 },
+          byTool: [
+            { tool: "search_mentions", calls: 6, failures: 0, credits: 54, lastUsedAt: "2026-09-22T09:12:00Z" },
+            { tool: "scan_amazon_category", calls: 2, failures: 1, credits: 30, lastUsedAt: "2026-09-21T15:40:00Z" },
+            { tool: "get_social_media", calls: 33, failures: 2, credits: 12, lastUsedAt: "2026-09-22T11:02:00Z" },
+          ],
+          bySeat: workspace
+            ? [
+                { userId: "u1", email: "owner@example.com", name: "Owner", calls: 30, failures: 1, credits: 80 },
+                { userId: "u2", email: "sam@example.com", name: null, calls: 11, failures: 2, credits: 16 },
+              ]
+            : [],
+          byDay: Array.from({ length: 30 }, (_, i) => ({ day: `2026-08-${String(24 + i).padStart(2, "0")}`, calls: i % 5, failures: 0, credits: (i % 7) * 2 })),
+          recentFailures: [
+            { id: 88, tool: "get_social_media", surface: "mcp", ok: false, error: "upstream 404", durationMs: 800, credits: 0, startedAt: "2026-09-22T10:00:00Z" },
+          ],
+        },
+      };
+    }
+    case "get_tool_run":
+      return {
+        content: [{ type: "text", text: "One run (fixture)." }],
+        structuredContent: {
+          run: { id: Number(args?.id ?? 2), tool: "search_mentions", surface: "mcp", ok: true, error: null, durationMs: 4210, credits: 18, startedAt: "2026-09-21T11:37:55Z" },
         },
       };
     case "list_own_apps": {
@@ -301,9 +854,34 @@ function handleMcpCall(name, args, workspaceId) {
         username: `fixture_creator_${i}`,
         nickname: `Fixture Creator ${i}`,
         followers: 10000 * i,
-        signature: `Fixture bio ${i} — not a real creator.`,
+        signature: `Fixture bio ${i} — portfolio at studio${i}.example and github.com/fixture${i}.`,
         verified: i === 1,
       }));
+      // The two states a bio has besides "present", both of which the server
+      // now sends and neither of which this fixture could produce before.
+      //
+      // Worth having here rather than only in a unit test: a fixture that
+      // always sends a bio cannot tell a consumer that handles the absent case
+      // from one that collapses it, and collapsing it is exactly what
+      // who_should_i_work_with did (Nooticr/nooticr-server#82) — an empty
+      // `links` array for every candidate, reading as "published nothing".
+      creators.push({
+        platform: "tiktok",
+        username: "fixture_creator_3",
+        nickname: "Fixture Creator 3",
+        followers: 30000,
+        // No `signature` key at all: the endpoint did not send one.
+        verified: false,
+      });
+      creators.push({
+        platform: "tiktok",
+        username: "fixture_creator_4",
+        nickname: "Fixture Creator 4",
+        followers: 40000,
+        // Sent, and empty: this creator wrote no bio.
+        signature: "",
+        verified: false,
+      });
       return {
         content: [{ type: "text", text: `Found ${creators.length} fixture creators.` }],
         structuredContent: { platform: "tiktok", creators },
@@ -363,6 +941,88 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { platform: "tiktok", creators },
       };
     }
+    case "suggest_creator_identity": {
+      // The backend's real shape (crates/mcp/src/tools.rs), including its own
+      // guidance: evidence per candidate, never a merge.
+      const handle = String(args?.handle ?? "fixture_creator_1").replace(/^@/, "");
+      const seedPlatform = String(args?.platform ?? "tiktok");
+      const searched = (Array.isArray(args?.platforms) && args.platforms.length
+        ? args.platforms
+        : ["tiktok", "instagram", "xiaohongshu"]).filter((p) => p !== seedPlatform);
+      const suggestions = [
+        {
+          platform: searched[0] ?? "instagram",
+          username: handle,
+          nickname: "Lena Park",
+          profileUrl: `https://www.instagram.com/${handle}/`,
+          followers: 48200,
+          score: 75,
+          confidence: "high",
+          evidence: [
+            { signal: "shared_bio_link", strength: "strong", detail: "both bios link lenapark.studio" },
+            { signal: "same_handle", strength: "weak", detail: `@${handle} on both` },
+          ],
+        },
+        {
+          platform: searched[1] ?? searched[0] ?? "xiaohongshu",
+          username: `${handle}_official`,
+          nickname: "Lena P.",
+          profileUrl: null,
+          followers: 900,
+          score: 10,
+          confidence: "possible",
+          evidence: [{ signal: "similar_handle", strength: "weak", detail: `@${handle}_official is near-identical` }],
+        },
+      ];
+      return {
+        content: [{ type: "text", text: `${suggestions.length} possible matches for @${handle}.` }],
+        structuredContent: {
+          mode: "evidence",
+          tool: "suggest_creator_identity",
+          guidance:
+            `${suggestions.length} accounts on ${searched.join(", ")} may be the same person as @${handle} on ${seedPlatform}.\n\n` +
+            "These are SUGGESTIONS with their evidence attached. Nothing has been merged and nothing here is stored. " +
+            "Do not present a candidate as confirmed, and do not combine their follower counts into a total.",
+          seed: { platform: seedPlatform, handle, bioRead: true },
+          searched,
+          candidatesConsidered: 7,
+          suggestions,
+          unavailable: [],
+          merged: false,
+          note: "Suggestions only. Nothing was merged and nothing was stored; a human confirms.",
+          mcpCredits: { cost: 2 * (searched.length + 1) },
+        },
+      };
+    }
+    // The connector reads (#104), in the shapes nooticr-server's
+    // connector_sync_cache stores, with own_account_read's appId/appName.
+    case "get_google_analytics_data":
+      return {
+        content: [{ type: "text", text: "GA4 sync." }],
+        structuredContent: {
+          propertyId: "properties/123456", rowsSynced: 28,
+          dateRange: { from: "2026-08-25", to: "2026-09-21" },
+          lastSync: "2026-09-22T06:00:00Z", synced_at: "2026-09-22T06:00:00Z", appId: 1, appName: "Fixture App",
+        },
+      };
+    case "get_search_console_data":
+      return {
+        content: [{ type: "text", text: "Search Console sync." }],
+        structuredContent: {
+          clicks: 412, impressions: 18950,
+          topQueries: ["competitor tracking tool", "tiktok analytics for founders", "fixture app pricing"],
+          synced_at: "2026-09-22T06:00:00Z", appId: 1, appName: "Fixture App",
+        },
+      };
+    case "get_posthog_analytics":
+      return {
+        content: [{ type: "text", text: "PostHog sync." }],
+        structuredContent: {
+          projectId: "4242",
+          result: [{ label: "$pageview", data: [120, 132, 98, 240, 610, 380, 205], days: ["2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21"] }],
+          lastRefresh: "2026-09-22T06:00:00Z", synced_at: "2026-09-22T06:00:00Z", appId: 1, appName: "Fixture App",
+        },
+      };
     case "get_post_frames": {
       const count = Math.max(1, Math.min(Number(args?.count ?? 3), 8));
       const frames = Array.from({ length: count }, (_, i) => ({
@@ -422,7 +1082,7 @@ function handleMcpCall(name, args, workspaceId) {
             // show-more/show-less toggle. It also has to read like a comment
             // somebody actually left, for the reason FIXTURE_POST states.
             { text: "ok the night-before coffee thing genuinely changed my mornings and I want to be annoyed about how simple it is, I have bought three alarm clocks and a sunrise lamp this year and the thing that worked was moving one jar six feet", author: "priya_makes", likes: 412 },
-            // A bug report, so the analyze_comments -> prepare_handoff chain
+            // A bug report, so the summarize_post_comments -> prepare_handoff chain
             // has something real to carry (docs/tool-call-strategies.md's
             // worked example). Kept in the taxonomy's own words.
             { text: "this stopped working for me after the last update, the timer just never fires now", author: "d_almeida", likes: 88 },
@@ -490,7 +1150,7 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
-    case "analyze_comments": {
+    case "summarize_post_comments": {
       // Real inputSchema is {url, limit?}.strict() (tools.ts) — this fixture
       // case is what a *correctly* wired caller (postAiActions' "Read
       // comments" button, ui-template.ts:614) reaches. Contrast with the
@@ -591,7 +1251,32 @@ function handleMcpCall(name, args, workspaceId) {
       const platforms = args.platforms ?? ["tiktok", "reddit", "youtube"];
       const cadence = args.cadence ?? "daily";
       const runsPerDay = { hourly: 24, every_6_hours: 4, every_12_hours: 2, daily: 1, weekly: 1 / 7 }[cadence] ?? 1;
-      const costPerRun = platforms.reduce((sum, p) => sum + (p === "xiaohongshu" ? 5 : 2), 0);
+      // The two scheduled kinds from #97/#99, priced the way the backend
+      // prices them: a report at its job tool's cost, a portfolio at one
+      // mentions sweep per term.
+      const kind = args.kind ?? "mentions";
+      const terms = kind === "portfolio" ? [...new Set((args.terms ?? []).map((t) => String(t).trim()))] : [];
+      const job = kind === "report" ? { tool: args.job?.tool, args: args.job?.args ?? {} } : null;
+      const sweep = platforms.reduce((sum, p) => sum + (p === "xiaohongshu" ? 5 : 2), 0);
+      const costPerRun =
+        kind === "report"
+          ? job.tool === "niche_report"
+            ? 3
+            : 2 + (job.args.includeComments ? Math.min(10, Math.max(1, job.args.openPosts ?? 5)) : 0)
+          : kind === "portfolio"
+            ? sweep * Math.max(1, terms.length)
+            : sweep;
+      if (!args.term) {
+        args = {
+          ...args,
+          term:
+            kind === "portfolio"
+              ? terms.join(" vs ")
+              : kind === "report"
+                ? `${job.tool}: ${job.args.niche ?? ""}`
+                : args.handle,
+        };
+      }
       if (args.confirm === true) {
         if (args.confirmationToken !== "fixture-confirm-token") {
           return {
@@ -604,8 +1289,11 @@ function handleMcpCall(name, args, workspaceId) {
           structuredContent: {
             created: true,
             watchId: "watch-fixture-1",
+            kind,
             term: args.term,
-            platforms,
+            platforms: kind === "report" ? [] : platforms,
+            job,
+            terms: kind === "portfolio" ? terms : null,
             cadence,
             costPerRun,
             creditsPerDay: Math.round(costPerRun * runsPerDay * 100) / 100,
@@ -623,8 +1311,11 @@ function handleMcpCall(name, args, workspaceId) {
           confirmationToken: "fixture-confirm-token",
           expiresInSeconds: 300,
           quote: {
+            kind,
             term: args.term,
-            platforms,
+            platforms: kind === "report" ? [] : platforms,
+            job,
+            terms: kind === "portfolio" ? terms : null,
             cadence,
             cadenceMinutes: cadence === "hourly" ? 60 : cadence === "every_6_hours" ? 360 : cadence === "every_12_hours" ? 720 : cadence === "weekly" ? 10080 : 1440,
             costPerRun,
@@ -713,6 +1404,37 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    case "update_watch_portfolio": {
+      // A three-term portfolio on reddit+tiktok with an 8-credit budget, so an
+      // add that pushes it to four terms shows the split trimming a network.
+      const current = ["fixture-brand", "rival-one", "rival-two"];
+      const removed = (args.remove ?? []).map((t) => String(t).toLowerCase());
+      const terms = current.filter((t) => !removed.includes(t.toLowerCase()));
+      for (const t of args.add ?? []) {
+        if (!terms.some((x) => x.toLowerCase() === String(t).toLowerCase())) terms.push(String(t));
+      }
+      const perTerm = Math.floor(8 / Math.max(1, terms.length));
+      const platformsSearched = perTerm >= 4 ? ["reddit", "tiktok"] : ["reddit"];
+      const platformsSkipped = perTerm >= 4 ? [] : ["tiktok"];
+      return {
+        content: [{ type: "text", text: `The portfolio now watches ${terms.length} terms.` }],
+        structuredContent: {
+          updated: true,
+          watchId: args.watchId,
+          term: "fixture portfolio",
+          terms,
+          platformsSearched,
+          platformsSkipped,
+          costPerRun: platformsSearched.length * 2 * terms.length,
+          budgetPerRun: 8,
+          cadence: "daily",
+          cost: 0,
+          message: platformsSkipped.length
+            ? `The portfolio now watches ${terms.length} terms; the budget no longer reaches tiktok.`
+            : `The portfolio now watches ${terms.length} terms.`,
+        },
+      };
+    }
     case "stop_brand_watch": {
       return {
         content: [{ type: "text", text: `Stopped the brand watch for "${args.term ?? args.watchId}".` }],
@@ -725,6 +1447,40 @@ function handleMcpCall(name, args, workspaceId) {
           stoppedBecause: "user requested",
           message: `Stopped watching "${args.term ?? args.watchId}".`,
         },
+      };
+    }
+    case "scan_amazon_category":
+    case "amazon_scan_status":
+    case "get_amazon_product": {
+      // A query containing "slow" starts a scan that is still collecting: one
+      // listing now, one more per amazon_scan_status poll, the way a live
+      // ten-listing scan comes back at 4/10 and finishes minutes later. It is
+      // the only way to exercise a host polling a scan to its end.
+      let scanId = String(args?.scanId ?? "scan_fixture_1");
+      if (name === "scan_amazon_category" && /slow/i.test(String(args?.query ?? ""))) {
+        scanId = `scan_fixture_slow_${fixtureSlowScans.size + 1}`;
+        fixtureSlowScans.set(scanId, 1);
+      } else if (name === "amazon_scan_status" && fixtureSlowScans.has(scanId)) {
+        fixtureSlowScans.set(scanId, fixtureSlowScans.get(scanId) + 1);
+      }
+      const single = name === "get_amazon_product";
+      const slow = fixtureSlowScans.get(scanId);
+      const scan = fixtureAmazonScan(single ? { ...args, limit: 1 } : slow ? { ...args, limit: slow } : args, scanId);
+      if (slow && slow < FIXTURE_AMAZON_PRODUCTS.length) {
+        scan.status = "running";
+        scan.complete = false;
+        scan.progress = { ...scan.progress, done: slow, total: FIXTURE_AMAZON_PRODUCTS.length };
+      }
+      if (single) scan.product = scan.products[0] ?? null;
+      if (name === "amazon_scan_status") scan.billable = false;
+      return {
+        content: [
+          {
+            type: "text",
+            text: `${scan.products.length} Amazon listing(s) collected, ${scan.rollup.reviewsCollected} review(s) (fixture).`,
+          },
+        ],
+        structuredContent: scan,
       };
     }
     default:

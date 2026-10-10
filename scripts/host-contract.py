@@ -30,8 +30,8 @@ import sys
 # watch_creator and unwatch_creator change stored state and return a list; the
 # catch-up that reads that state does have a view, because it returns posts.
 #
-# create_brand_watch/stop_brand_watch return a quote or a confirmation, not a
-# list of anything; list_brand_watches and list_own_apps are metadata lists,
+# create_brand_watch/stop_brand_watch/update_watch_portfolio return a quote or
+# a confirmation, not a list of anything; list_brand_watches and list_own_apps are metadata lists,
 # the shape watch_creator's own `entries` list already sets precedent for.
 #
 # The line this set draws is "is there a table or a card in the reply", not
@@ -51,12 +51,18 @@ import sys
 # TOOL_NAMES in tools.ts): its reply, once state is "done", carries the
 # generated playbook prose, the same kind of content get_content_plan already
 # established the generic fallback view is an acceptable way to show.
+# The ChatGPT settings tools render through the host's native settings page,
+# declared by the openai/settings MCP extension, so they intentionally have
+# no MCP Apps widget or outputTemplate.
 NO_APP = {
     "nooticr_login",
+    "nooticr_settings_read",
+    "nooticr_settings_update",
     "watch_creator",
     "unwatch_creator",
     "create_brand_watch",
     "stop_brand_watch",
+    "update_watch_portfolio",
     "list_brand_watches",
     "list_own_apps",
     "analyze_product",

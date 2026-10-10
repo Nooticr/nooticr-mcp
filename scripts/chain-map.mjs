@@ -51,9 +51,9 @@ const gate = argv.includes("--gate");
 const say = (...a) => { if (!quiet) console.log(...a); };
 
 /**
- * A tool name inside prose, not inside a longer identifier. `show_analysis`
- * must not match inside `show_analysis_v2`, and a bare mention in a sentence
- * ("call show_analysis with the url") must match with or without backticks.
+ * A tool name inside prose, not inside a longer identifier. `show_post_analysis`
+ * must not match inside `show_post_analysis_v2`, and a bare mention in a sentence
+ * ("call show_post_analysis with the url") must match with or without backticks.
  */
 function mentions(text, names, self) {
   if (!text) return [];

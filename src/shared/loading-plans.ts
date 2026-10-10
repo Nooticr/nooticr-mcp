@@ -132,6 +132,7 @@ const CALL_LABELS: Record<string, { label: string; detail?: string }> = {
   discover_social_posts: { label: "Searching posts", detail: "recent, for the niche" },
   search_creators: { label: "Finding creators", detail: "by keyword" },
   get_similar_creators: { label: "Finding lookalikes", detail: "from the seed creator" },
+  suggest_creator_identity: { label: "Looking on the other networks", detail: "and weighing the evidence" },
   discover_sounds: { label: "Finding sounds", detail: "trending audio" },
   discover_hashtags: { label: "Reading the trend board", detail: "with volumes and direction" },
 };
@@ -163,6 +164,8 @@ const CREATOR_UNIT: LoadingPerUnit = {
  * generic grey box that said "Working".
  */
 export const LOADING_PLANS: Record<string, LoadingPlan> = {
+  nooticr_settings_read: { label: "Reading your research defaults", kind: "text", n: 0, steps: [], free: true },
+  nooticr_settings_update: { label: "Saving your research defaults", kind: "text", n: 0, steps: [], free: true },
   // ─── Read a post ───
   get_social_media: { label: "Fetching the post", kind: "post", n: 1, steps: [step("get_social_media")] },
   get_post_transcript: {
@@ -172,6 +175,13 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     steps: [step("get_post_transcript")],
   },
   get_post_frames: { label: "Sampling frames", kind: "post", n: 1, steps: [step("get_post_frames")] },
+  detect_spoken_mentions: {
+    label: "Listening for brands",
+    kind: "text",
+    n: 1,
+    // Transcript first; the caption is fetched only once there are words.
+    steps: [step("get_post_transcript"), step("get_social_media")],
+  },
   get_post_comments: { label: "Loading comments", kind: "list", n: 6, steps: [step("get_post_comments")] },
 
   // ─── Understand a post ───
@@ -188,18 +198,18 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     n: 1,
     steps: evidenceSteps("analyze_post_fast"),
   },
-  analyze_comments: {
+  summarize_post_comments: {
     label: "Reading the comment section",
     kind: "text",
     n: 1,
     // Not an evidence plan: it proxies one get_post_comments and synthesises.
     steps: [step("get_post_comments")],
   },
-  compare_posts: {
+  compare_social_posts: {
     label: "Fetching the first post",
     kind: "strip",
     n: 2,
-    steps: evidenceSteps("compare_posts"),
+    steps: evidenceSteps("compare_social_posts"),
     note: "1 credit more for every further post you fetch yourself.",
   },
 
@@ -217,6 +227,12 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     kind: "list",
     n: 5,
     steps: [step("get_similar_creators")],
+  },
+  suggest_creator_identity: {
+    label: "Looking for the same person elsewhere",
+    kind: "list",
+    n: 3,
+    steps: [step("suggest_creator_identity")],
   },
   discover_sounds: { label: "Finding trending sounds", kind: "list", n: 4, steps: [step("discover_sounds")] },
   discover_hashtags: {
@@ -240,21 +256,21 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   niche_report: { label: "Reading the niche", kind: "text", n: 1, steps: evidenceSteps("niche_report") },
 
   // ─── Make something ───
-  write_hooks: { label: "Reading the source post", kind: "text", n: 1, steps: evidenceSteps("write_hooks") },
-  create_variants: {
+  generate_hook_ideas: { label: "Reading the source post", kind: "text", n: 1, steps: evidenceSteps("generate_hook_ideas") },
+  generate_post_variants: {
     label: "Reading the post that worked",
     kind: "text",
     n: 1,
-    steps: evidenceSteps("create_variants"),
+    steps: evidenceSteps("generate_post_variants"),
   },
-  repurpose_post: {
+  adapt_post_for_platform: {
     label: "Reading the source post",
     kind: "text",
     n: 1,
-    steps: evidenceSteps("repurpose_post"),
+    steps: evidenceSteps("adapt_post_for_platform"),
   },
   // Fetches nothing: the draft is already the caller's.
-  score_draft: { label: "Scoring the draft", kind: "text", n: 1, steps: [], free: true },
+  evaluate_social_draft: { label: "Scoring the draft", kind: "text", n: 1, steps: [], free: true },
 
   // ─── Brand monitoring ───
   search_mentions: {
@@ -425,8 +441,8 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // The show_* family renders the model's own output. A wait here is brief
   // and free, but it still says which, because "nothing is happening" and
   // "this is free and instant" look identical on a blank screen.
-  show_analysis: { label: "Drawing the reading", kind: "text", n: 1, steps: [], free: true },
-  show_comparison: { label: "Drawing the comparison", kind: "strip", n: 2, steps: [], free: true },
+  show_post_analysis: { label: "Drawing the reading", kind: "text", n: 1, steps: [], free: true },
+  show_compared_posts: { label: "Drawing the comparison", kind: "strip", n: 2, steps: [], free: true },
   show_hooks: { label: "Laying out the hooks", kind: "list", n: 5, steps: [], free: true },
   show_variants: { label: "Laying out the variants", kind: "list", n: 4, steps: [], free: true },
   show_repurposed_post: { label: "Laying out the rewrites", kind: "text", n: 1, steps: [], free: true },
@@ -437,11 +453,117 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // upstream step to wait on — the wait is a database read.
   mention_trend: { label: "Reading the run history", kind: "text", n: 1, steps: [], free: true },
   prepare_handoff: { label: "Packaging the handoff", kind: "list", n: 4, steps: [], free: true },
+  show_amazon_category_insights: {
+    label: "Drawing the category read",
+    kind: "list",
+    n: 5,
+    steps: [],
+    free: true,
+  },
+  show_marketplace_category_insights: {
+    label: "Drawing the category read",
+    kind: "list",
+    n: 5,
+    steps: [],
+    free: true,
+  },
+
+  // ─── Marketplace ───
+  //
+  // The wait here is genuinely long and the reason is worth showing rather
+  // than hiding behind a spinner: each listing is a browser render behind
+  // Amazon's bot defences, and the politeness delay between them is set by
+  // what Amazon tolerates rather than by what the machine can do. A plan that
+  // said "Working" for four minutes would read as a hang.
+  scan_amazon_category: {
+    label: "Collecting the category",
+    kind: "list",
+    n: 6,
+    steps: [],
+    perUnit: [
+      {
+        via: "scan_amazon_category",
+        label: "Collecting a listing",
+        detail: "price, stars, aspects and its reviews",
+        credits: 3,
+        arg: "limit",
+        defaultCount: 10,
+      },
+    ],
+    note: "Amazon is collected politely, so this is minutes rather than seconds. Partial results come back either way.",
+  },
+  // Free: the poll of a collection already paid for.
+  amazon_scan_status: {
+    label: "Checking the collection",
+    kind: "list",
+    n: 6,
+    steps: [],
+    free: true,
+  },
+  get_amazon_product: {
+    label: "Reading the listing",
+    kind: "text",
+    n: 1,
+    steps: [
+      {
+        via: "get_amazon_product",
+        label: "Fetching the listing",
+        detail: "price, stars, aspects and its reviews",
+        credits: 3,
+      },
+    ],
+  },
+
+  // The same three jobs on the other ten sites. Priced identically because
+  // they are the same work — a real browser render behind the site's bot
+  // defences — and the note does not name Amazon, because ten of the eleven
+  // are not it.
+  scan_marketplace_category: {
+    label: "Collecting the category",
+    kind: "list",
+    n: 6,
+    steps: [],
+    perUnit: [
+      {
+        via: "scan_marketplace_category",
+        label: "Collecting a product",
+        detail: "price, stars and its reviews",
+        credits: 3,
+        arg: "limit",
+        defaultCount: 10,
+      },
+    ],
+    note: "Each site is collected politely, so this is minutes rather than seconds. Partial results come back either way.",
+  },
+  // Free: the poll of a collection already paid for.
+  marketplace_scan_status: {
+    label: "Checking the collection",
+    kind: "list",
+    n: 6,
+    steps: [],
+    free: true,
+  },
+  get_marketplace_product: {
+    label: "Reading the product",
+    kind: "text",
+    n: 1,
+    steps: [
+      {
+        via: "get_marketplace_product",
+        label: "Fetching the product",
+        detail: "price, stars and its reviews",
+        credits: 3,
+      },
+    ],
+  },
 
   // ─── Own-account reads: nooticr's own stored rows ───
   get_scheduled_posts: { label: "Reading your pipeline", kind: "list", n: 5, steps: [], free: true },
   get_post_performance: { label: "Reading your numbers", kind: "list", n: 5, steps: [], free: true },
   get_video_stats: { label: "Reading the last sync", kind: "strip", n: 3, steps: [], free: true },
+  get_google_analytics_data: { label: "Reading your last GA4 sync", kind: "text", n: 1, steps: [], free: true },
+  get_search_console_data: { label: "Reading your last Search Console sync", kind: "text", n: 1, steps: [], free: true },
+  get_posthog_analytics: { label: "Reading your last PostHog sync", kind: "text", n: 1, steps: [], free: true },
   get_brand_playbook: { label: "Reading the playbook", kind: "text", n: 1, steps: [], free: true },
 
   // ─── The product analysis: the one own-account tool that spends ───
@@ -464,6 +586,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   create_brand_watch: { label: "Setting up the watch", kind: "text", n: 1, steps: [], free: true },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
+  update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
 
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },
@@ -486,9 +609,14 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
 
   // ─── Account and own-account: free, and free at a zero balance ───
   check_nooticr_credits: { label: "Checking your balance", kind: "text", n: 1, steps: [], free: true },
+  list_tool_runs: { label: "Reading your run history", kind: "text", n: 1, steps: [], free: true },
+  get_tool_run: { label: "Reading the run", kind: "text", n: 1, steps: [], free: true },
+  get_usage_report: { label: "Adding up the run ledger", kind: "text", n: 1, steps: [], free: true },
+  nooticr_getting_started: { label: "Reading where your account stands", kind: "text", n: 1, steps: [], free: true },
   nooticr_login: { label: "Getting a sign-in link", kind: "text", n: 1, steps: [], free: true },
   watch_creator: { label: "Adding to your watchlist", kind: "text", n: 1, steps: [], free: true },
   unwatch_creator: { label: "Removing from your watchlist", kind: "text", n: 1, steps: [], free: true },
+  list_watchlist: { label: "Reading your watchlist", kind: "text", n: 1, steps: [], free: true },
   list_social_connections: { label: "Reading your connections", kind: "list", n: 3, steps: [], free: true },
   connect_social_account: { label: "Minting a fresh link", kind: "text", n: 1, steps: [], free: true },
   create_product: { label: "Writing the row", kind: "text", n: 1, steps: [], free: true },

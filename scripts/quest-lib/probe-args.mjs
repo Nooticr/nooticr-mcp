@@ -23,7 +23,7 @@ export const STUB_URL = "https://www.tiktok.com/@lena.mornings/video/7318842211"
 
 /** Hand-written arguments where a synthesised value would be rejected or meaningless. */
 export const ARG_OVERRIDES = {
-  show_analysis: {
+  show_post_analysis: {
     url: STUB_URL,
     analysis: {
       summary: "A close-up open, a product beat at 2s, and a caption-card CTA at the end.",
@@ -34,7 +34,7 @@ export const ARG_OVERRIDES = {
       targetAudience: "people testing MCP harnesses",
     },
   },
-  show_comparison: {
+  show_compared_posts: {
     posts: [
       { platform: "tiktok", caption: "Fixture post 1", externalUrl: STUB_URL, views: 1000 },
       { platform: "tiktok", caption: "Fixture post 2", externalUrl: STUB_URL, views: 2000 },
@@ -90,9 +90,9 @@ export const ARG_OVERRIDES = {
       { id: "comment:1:1", text: "this stopped working for me after a week", kind: "bug report", permalink: STUB_URL },
     ],
   },
-  compare_posts: { urls: [STUB_URL, STUB_URL] },
-  score_draft: { draft: "Three frames is all it takes. Link in bio." },
-  repurpose_post: { url: STUB_URL, targets: ["linkedin", "x"] },
+  compare_social_posts: { urls: [STUB_URL, STUB_URL] },
+  evaluate_social_draft: { draft: "Three frames is all it takes. Link in bio." },
+  adapt_post_for_platform: { url: STUB_URL, targets: ["linkedin", "x"] },
   create_product: { name: "Quest Fixture Product", slug: "quest-fixture-product" },
   connect_social_account: { platform: "tiktok" },
   analyze_product_status: { jobId: "00000000-0000-0000-0000-000000000000" },

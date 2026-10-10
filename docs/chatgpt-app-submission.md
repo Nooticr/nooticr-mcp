@@ -54,9 +54,9 @@ were cut to reach these counts are kept below rather than lost.
 
 Both were dropped for redundancy, not because they are wrong:
 
-- **`analyze_post` + `show_analysis`** — the visual read, where frames come
+- **`analyze_post` + `show_post_analysis`** — the visual read, where frames come
   back as real image content blocks. *"Look at the frames of this Reel and tell
-  me how the on-screen text is used."* It draws the same `show_analysis` widget
+  me how the on-screen text is used."* It draws the same `show_post_analysis` widget
   as the case that was kept, and repeats its intent.
 - **`answer_my_audience` + `show_audience_replies`** — triaging questions under
   the creator's own posts and drafting replies. Its distinctive point, that the
@@ -64,7 +64,7 @@ Both were dropped for redundancy, not because they are wrong:
 
 The five kept cases are one per distinct widget, and together they trace the
 subtitle: `analyze_post_fast` → `search_mentions` → `search_spoken_mentions` →
-`track_creator` → `create_variants`. Listening, then create.
+`track_creator` → `generate_post_variants`. Listening, then create.
 
 ### The two negative cases that were cut
 
@@ -257,10 +257,11 @@ Authorization codes and PKCE challenges are one-time use and short-lived.
   `src/shared/comment-review.ts`. `prepare_handoff` additionally redacts contact
   details and defangs `@handles` and `#numbers` before text reaches a tracker.
   Worth stating in the submission rather than leaving a reviewer to find it.
-- **Writes to social networks: none.** No nooticr connection carries
-  comment-write permission, so the audience-reply tools draft text for a person
-  to paste in. (See issue #29 for the one place that claim is in tension with
-  what `list_social_connections` reports.)
+- **Writes to social networks: none.** nooticr has no send path for comments:
+  the audience-reply tools draft text for a person to paste in, even where
+  `list_social_connections` reports that a connection's grant allows managing
+  comments (that column reports the platform's grant, not something nooticr
+  does).
 - **Billing, and no commerce in the plugin:** nooticr credits, 20 free on
   signup. Each tool states its cost; the six whose price is set by an argument
   confirm over MCP `elicitation` above 6 credits, a scheduled watch always

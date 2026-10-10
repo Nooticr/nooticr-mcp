@@ -48,9 +48,9 @@ what "hand data to the LLM to classify" sounds like it should mean:
 
 ### Worked example: a bug report becomes a fixed bug
 
-The concrete case this is built for: `analyze_comments` (and `search_mentions`,
+The concrete case this is built for: `summarize_post_comments` (and `search_mentions`,
 `answer_my_audience`, `what_should_i_make_next` the same way) hands the
-calling model a comment and its taxonomy — `analyze_comments`'s description
+calling model a comment and its taxonomy — `summarize_post_comments`'s description
 names the categories explicitly: *"praise, complaint, bug report, question,
 request, comparison, spam."* When the model labels one `bug report`, that
 label lives only in the model's own output — this server never sees or acts
@@ -61,7 +61,7 @@ conversation can see it.
 So the actual chain, on a host with both this server and a GitHub (or Jira,
 Linear, …) MCP server connected, is:
 
-1. Call `analyze_comments` (or let one of the audience/demand tools surface it
+1. Call `summarize_post_comments` (or let one of the audience/demand tools surface it
    as `wantsReply`/`asking`) → get comments back with stable ids.
 2. The model labels one `bug report` and quotes its id and text into a new
    GitHub issue via the *other* connected server — no code in this repo runs
@@ -135,7 +135,7 @@ doesn't exist for it.
 | `why_did_this_underperform` | `get_social_media` (the post) | `get_user_posts` (1 call, that creator's window, post excluded from its own baseline) | `distributionOf`: median/quartiles/ratio/percentile for the one post | `post:<platform>:<slug>` | Model states whether the result is a real underperformance or just noise against the creator's own variance |
 | `what_should_i_make_next` | `get_user_posts` (your feed) | `get_post_comments` × your posts opened, **plus** `discover_social_posts` (1 call, the niche sweep) | `replySignals()` flags `asking` comments (demand); niche sweep is supply, unscored | `post:<platform>:<slug>`, `comment:<postId>:<commentId>` | Model intersects demand (what's asked for) against supply (what's already made) — the gap is the idea |
 | `search_mentions` | *(fans out itself, across up to 9 networks)* | one `get_post_comments`-equivalent fetch per post opened, per platform | none — comments are returned as `mentions` with a raw `hits` count, no sentiment | `<platform>:<postId>:<index>` | Model classifies sentiment per mention (this is the tool the goal's "watching competitor → search terms → classify → video mentions" example matches almost exactly) |
-| `analyze_comments` | `get_post_comments` (1 call) | *(none)* | Platform-provided `themes` only, passed through unscored | `comment:<postSlug>:<index>` | Model labels sentiment + category (praise/complaint/bug/question/request/comparison/spam) per the taxonomy the description names; `show_comment_review` then renders the model's own labels for free |
+| `summarize_post_comments` | `get_post_comments` (1 call) | *(none)* | Platform-provided `themes` only, passed through unscored | `comment:<postSlug>:<index>` | Model labels sentiment + category (praise/complaint/bug/question/request/comparison/spam) per the taxonomy the description names; `show_comment_review` then renders the model's own labels for free |
 
 Every fetch above is billed as the sum of backend calls actually made — not a
 flat per-tool price — and every tool that can plausibly fan out past

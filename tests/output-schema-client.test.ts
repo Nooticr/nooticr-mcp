@@ -6,8 +6,8 @@
  * same thing. `z.unknown()` inside a union serialises to an empty schema that
  * the converter drops, so `z.array(z.union([z.unknown(), z.null()]))` reached
  * clients as `items: { anyOf: [{ type: "null" }] }` — an array that accepts
- * null elements and nothing else. get_post_comments, analyze_comments and
- * score_draft all failed on the client while passing every server-side test I
+ * null elements and nothing else. get_post_comments, summarize_post_comments and
+ * evaluate_social_draft all failed on the client while passing every server-side test I
  * had written, because every one of those tests called safeParse.
  *
  * So these go through a real Client over a real transport: the payload takes
@@ -53,7 +53,7 @@ const CASES: Array<[string, Record<string, unknown>, unknown]> = [
     },
   ],
   [
-    "analyze_comments",
+    "summarize_post_comments",
     { url: "https://www.tiktok.com/@a/video/1" },
     {
       themes: [{ keyword: "form", count: 9 }],
@@ -66,7 +66,7 @@ const CASES: Array<[string, Record<string, unknown>, unknown]> = [
   // was handed, and the payload below is ignored. Kept as a case because the
   // declared schema still has to accept what the handler builds.
   [
-    "score_draft",
+    "evaluate_social_draft",
     { draft: "x" },
     { draft: "x", platform: "tiktok" },
   ],
@@ -84,7 +84,7 @@ const CASES: Array<[string, Record<string, unknown>, unknown]> = [
     },
   ],
   [
-    "compare_posts",
+    "compare_social_posts",
     { urls: ["https://x/1", "https://x/2"] },
     {
       posts: [{ id: "1" }, { id: "2" }],
@@ -110,7 +110,7 @@ const CASES: Array<[string, Record<string, unknown>, unknown]> = [
     { username: "a", platform: "tiktok", postsAnalyzed: 5, report: { hooks: [{ type: "question" }] } },
   ],
   [
-    "repurpose_post",
+    "adapt_post_for_platform",
     { url: "https://x/1" },
     { sourceUrl: "https://x/1", post: { id: "1" }, repurposed: { linkedin: "…" } },
   ],

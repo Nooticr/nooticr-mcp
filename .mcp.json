@@ -2,7 +2,7 @@
   "mcpServers": {
     "nooticr": {
       "command": "npx",
-      "args": ["-y", "@nooticr/mcp"],
+      "args": ["-y", "@nooticr/mcp@1.26.56"],
       "env": {
         "NOOTICR_BASE_URL": "https://api.nooticr.com"
       }

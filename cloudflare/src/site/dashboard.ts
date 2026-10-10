@@ -84,8 +84,41 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   border-radius:var(--r-sm);padding:11px 14px;font-size:13.5px;margin-bottom:16px}
 .conn-row{display:flex;align-items:center;gap:9px;margin-top:9px}
 .conn-row code{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* api keys */
+.keyform{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.keyform input{flex:1;min-width:11rem;background:var(--bg-soft);border:1px solid var(--border);
+  border-radius:var(--r-sm);color:var(--fg);padding:9px 11px;font:inherit;font-size:13.5px}
+.keyform input:focus{outline:none;border-color:var(--brand)}
+.keyform input.days{flex:0 0 7.5rem;min-width:0}
+/* The one-time reveal. Loud on purpose: this is the only time the secret
+   exists outside the caller's own machine. */
+.reveal{margin-top:14px;padding:14px;border-radius:var(--r-sm);
+  border:1px solid color-mix(in srgb,var(--brand) 45%,transparent);
+  background:color-mix(in srgb,var(--brand) 9%,transparent)}
+.reveal b{display:block;font-size:13px;margin-bottom:8px}
+.reveal .conn-row code{background:var(--bg-soft);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:8px 10px;font-size:12.5px}
+.reveal p{margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+.keyrow td.st{font-size:12px}
+.keyrow.gone td{opacity:.5}
+/* td.name above breaks anywhere so a long tool name cannot widen the page.
+   That rule splits a date down the middle here, where the content is prose
+   and a key head, neither of which needs it. (No backticks in this file's
+   CSS: it lives in a template literal and one would end the string.) */
+.keyrow td.name .s{word-break:normal}
 `;
 
+/**
+ * The dashboard's inline script.
+ *
+ * Everything in here is served to the browser verbatim, comments included —
+ * which is why the expiry is built up into `payload` rather than passed
+ * inline with a ternary. A rendered dashboard has shipped the words "NaN" and
+ * "undefined" before, so a test greps the whole page for both, and it cannot
+ * tell a stray value from a mention of one. Explanations that need those
+ * words belong out here, where they do not ship.
+ */
 const SCRIPT = `
 document.querySelectorAll('[data-copy]').forEach(function(b){
   b.addEventListener('click',function(){
@@ -94,6 +127,75 @@ document.querySelectorAll('[data-copy]').forEach(function(b){
     }).catch(function(){});
   });
 });
+var keyForm=document.getElementById('keyform');
+if(keyForm){
+  keyForm.addEventListener('submit',async function(e){
+    e.preventDefault();
+    var btn=keyForm.querySelector('button[type=submit]');
+    var nameEl=document.getElementById('keyname');
+    var daysEl=document.getElementById('keydays');
+    var out=document.getElementById('keyout');
+    var days=parseInt(daysEl.value,10);
+    var payload={name:nameEl.value};
+    if(Number.isInteger(days))payload.expiresInDays=days;
+    btn.disabled=true;var o=btn.textContent;btn.textContent='Creating…';
+    out.innerHTML='';
+    try{
+      var r=await fetch('/api/keys',{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify(payload)});
+      var j=await r.json();
+      if(!r.ok||!j.key){out.innerHTML='<div class="err"></div>';out.firstChild.textContent=j.error||'The key could not be created.';}
+      else{
+        var box=document.createElement('div');box.className='reveal';
+        var b1=document.createElement('b');b1.textContent='Copy it now — this is the only time it is shown.';
+        var row=document.createElement('div');row.className='conn-row';
+        var code=document.createElement('code');code.textContent=j.key;
+        var copy=document.createElement('button');copy.className='btn btn-ghost btn-sm';copy.textContent='Copy';
+        copy.addEventListener('click',function(){navigator.clipboard.writeText(j.key).then(function(){
+          copy.textContent='Copied';setTimeout(function(){copy.textContent='Copy';},1400);}).catch(function(){});});
+        row.appendChild(code);row.appendChild(copy);
+        var note=document.createElement('p');
+        note.textContent='Nooticr stores only a hash of it and cannot show it again. Give it to your server as NOOTICR_API_KEY, or send it as Authorization: Bearer.';
+        box.appendChild(b1);box.appendChild(row);box.appendChild(note);
+        out.appendChild(box);
+        var tb=document.getElementById('keyrows');
+        if(tb){
+          var empty=tb.querySelector('td[colspan]');if(empty)tb.innerHTML='';
+          var tr=document.createElement('tr');tr.className='keyrow';
+          var c1=document.createElement('td');c1.className='name';
+          c1.textContent=(j.prefix||'')+'… '+(j.name||'');
+          var sub=document.createElement('div');sub.className='s faint';sub.style.fontSize='11.5px';
+          sub.textContent='created '+new Date().toISOString().slice(0,10)+' · last used never';
+          c1.appendChild(sub);
+          var c2=document.createElement('td');c2.className='st';c2.textContent='active';
+          var c3=document.createElement('td');c3.style.textAlign='right';
+          var rv=document.createElement('button');rv.className='btn btn-ghost btn-sm';rv.textContent='Revoke';
+          rv.setAttribute('data-revoke',j.id);c3.appendChild(rv);
+          tr.appendChild(c1);tr.appendChild(c2);tr.appendChild(c3);
+          tb.insertBefore(tr,tb.firstChild);
+          wireRevoke(rv);
+        }
+        nameEl.value='';daysEl.value='';
+      }
+    }catch(e){out.innerHTML='<div class="err"></div>';out.firstChild.textContent='The key could not be created.';}
+    btn.disabled=false;btn.textContent=o;
+  });
+}
+function wireRevoke(b){
+  b.addEventListener('click',async function(){
+    if(!confirm('Revoke this key? Anything still using it stops working immediately.'))return;
+    b.disabled=true;var o=b.textContent;b.textContent='Revoking…';
+    try{
+      var r=await fetch('/api/keys/revoke',{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({id:b.getAttribute('data-revoke')})});
+      var j=await r.json();
+      if(r.ok){location.reload();return;}
+      alert(j.error||'The key could not be revoked.');
+    }catch(e){alert('The key could not be revoked.');}
+    b.disabled=false;b.textContent=o;
+  });
+}
+document.querySelectorAll('[data-revoke]').forEach(wireRevoke);
 document.querySelectorAll('[data-buy]').forEach(function(b){
   b.addEventListener('click',async function(){
     b.disabled=true;var o=b.textContent;b.textContent='Opening…';
@@ -117,6 +219,17 @@ export interface UsageData {
   byTool: { tool: string; calls: number; credits: number; cost: number }[];
   recent: { id: number; delta: number; reason: string; tool?: string | null; kind: string; createdAt: string }[];
   pricing: { tool: string; cost: number; freeFirstUse: boolean }[];
+}
+
+/** An API key as the listing endpoint returns it — never the secret. */
+export interface ApiKeySummary {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
 }
 
 export interface DashboardUser {
@@ -150,11 +263,87 @@ export function dashboardSignedOut(publicUrl: string, error?: string): string {
   );
 }
 
+/**
+ * The card that mints the credential a server-side integration runs on.
+ *
+ * It exists here because this is already the one signed-in, browser-
+ * authenticated nooticr surface on this domain — and because the alternative
+ * we shipped first, `npx @nooticr/mcp api-key create`, asks someone to
+ * install Node and open a terminal to get a string they are going to paste
+ * into a deployment config anyway.
+ *
+ * `keys` is null when the listing could not be read at all (a worker running
+ * against a backend older than `/auth/api-keys`); that says so rather than
+ * drawing an empty table, which would read as "you have none".
+ */
+function apiKeysCard(keys: ApiKeySummary[] | null): string {
+  if (keys === null) {
+    return (
+      `<div class="card" id="keys"><div class="card-h"><h2>API keys</h2></div>` +
+      `<div class="card-b"><div class="empty">Keys are unavailable right now. ` +
+      `You can still mint one with <code>npx -y @nooticr/mcp api-key create</code>.</div></div></div>`
+    );
+  }
+
+  const state = (k: ApiKeySummary): string => {
+    if (k.revokedAt) return "revoked";
+    if (k.expiresAt && new Date(k.expiresAt).getTime() <= Date.now()) return "expired";
+    return "active";
+  };
+  const day = (v?: string): string => {
+    if (!v) return "never";
+    const at = new Date(v);
+    return isNaN(at.getTime()) ? "" : at.toISOString().slice(0, 10);
+  };
+
+  const rows = keys.length
+    ? keys
+        .map((k) => {
+          const live = state(k) === "active";
+          return (
+            `<tr class="keyrow${live ? "" : " gone"}">` +
+            `<td class="name">${esc(k.prefix)}\u2026 ${esc(k.name)}` +
+            `<div class="s faint" style="font-size:11.5px">created ${esc(day(k.createdAt))}` +
+            ` · last used ${esc(day(k.lastUsedAt))}` +
+            (k.expiresAt ? ` · expires ${esc(day(k.expiresAt))}` : "") +
+            `</div></td>` +
+            `<td class="st">${esc(state(k))}</td>` +
+            `<td style="text-align:right">` +
+            (live
+              ? `<button class="btn btn-ghost btn-sm" data-revoke="${esc(k.id)}">Revoke</button>`
+              : "") +
+            `</td></tr>`
+          );
+        })
+        .join("")
+    : `<tr><td colspan="3"><div class="empty">No keys yet. Create one to connect a server that cannot open a browser.</div></td></tr>`;
+
+  return (
+    `<div class="card" id="keys"><div class="card-h"><h2>API keys</h2>` +
+    `<span class="faint" style="font-size:12px">for servers, no browser</span></div>` +
+    `<div class="card-b">` +
+    `<p class="muted" style="font-size:13px;margin:0 0 12px">A key does not expire and needs no sign-in. ` +
+    `Set it as <code>NOOTICR_API_KEY</code>, or send it to <code>/mcp</code> as <code>Authorization: Bearer</code>. ` +
+    `<a href="/documentation#connect-server" style="color:var(--brand)">How to use one</a></p>` +
+    `<form class="keyform" id="keyform">` +
+    `<input id="keyname" type="text" maxlength="120" placeholder="What is it for? e.g. aybee-prod" aria-label="Key name">` +
+    `<input id="keydays" class="days" type="number" min="1" max="3650" placeholder="Expires (days)" aria-label="Expires in days">` +
+    `<button class="btn btn-primary btn-sm" type="submit">Create key</button>` +
+    `</form>` +
+    `<div id="keyout"></div>` +
+    `</div>` +
+    `<div class="card-b flush"><table class="t"><thead><tr><th>Key</th><th>State</th>` +
+    `<th style="text-align:right">Action</th></tr></thead><tbody id="keyrows">${rows}</tbody></table></div>` +
+    `</div>`
+  );
+}
+
 export function dashboardPage(
   publicUrl: string,
   user: DashboardUser,
   usage: UsageData,
-  token: string
+  token: string,
+  keys: ApiKeySummary[] | null = null
 ): string {
   const maxCalls = Math.max(1, ...usage.byTool.map((t) => t.calls));
 
@@ -236,6 +425,8 @@ export function dashboardPage(
     `<div class="card-b flush"><table class="t"><thead><tr><th>Event</th>` +
     `<th style="text-align:right">Credits</th><th style="text-align:right">When (UTC)</th></tr></thead>` +
     `<tbody>${recentRows}</tbody></table></div></div>` +
+
+    apiKeysCard(keys) +
     `</div>` +
 
     // right column

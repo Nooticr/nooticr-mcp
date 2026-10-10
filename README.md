@@ -52,10 +52,10 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-68 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+90 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
-Seven of them — the ones under **Answer a question you actually have** — are not
+The job tools under **Answer a question you actually have** are not
 endpoint wrappers. Each names a job, fans out over the calls that job needs,
 groups the evidence by whatever you are deciding about, gives every item an id
 a follow-up tool can act on, and hands the reading to your model rather than to
@@ -67,7 +67,7 @@ them caps that fan-out with an argument.
 | Tool | Credits | What it is for |
 |------|---------|----------------|
 | `get_social_media` | 1 | The post's facts and media — contentType, title, caption, author, stats, direct media URLs, plus an inline thumbnail. Use when you want the post itself and nothing interpreted. |
-| `get_post_transcript` | 1 | The words actually spoken. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is — exact rather than inferred, and far cheaper than watching the video; everywhere else the post's own audio is transcribed, which needs speech-to-text configured on the server. Use before any analysis when the wording matters. |
+| `get_post_transcript` | 1 | The words actually spoken. Where the platform publishes a caption track (TikTok, Douyin, YouTube) it is read as-is — exact rather than inferred, and far cheaper than watching the video; everywhere else the post's own audio is transcribed, which needs speech-to-text configured on the server. `format: "srt"` or `"vtt"` also returns a ready caption file built from the track's own timing, at no extra cost. Use before any analysis when the wording matters. |
 | `get_post_frames` | 2 | Frames sampled evenly across a post's video, returned as **images you can actually look at** — not a description of them. ffmpeg opens the stream directly rather than downloading it, so HLS works and an expired link is re-resolved on the spot. Verified live at 3/3 on TikTok, YouTube, Instagram, Douyin and X; Reddit works on video posts. A carousel or slideshow returns its own images unchanged. Each frame costs roughly 1,200 tokens of your context. |
 | `get_post_comments` | 2 | Top comments plus the themes the platform clusters them into, with which ones the creator pinned or liked. Use when you want to read what people wrote. |
 
@@ -78,11 +78,11 @@ them caps that fan-out with an argument.
 | `analyze_post_fast` | 2 | The post's transcript, caption and stats — everything but the pictures, which is what makes it the cheap read. Two fetches: `get_social_media` (1) and `get_post_transcript` (1). The sensible default. |
 | `analyze_post` | 3 | Frames sampled across the video, as **images your model can actually look at**, plus the transcript. Two fetches: `get_post_frames` (2) and `get_post_transcript` (1). Use when the visuals are the point — framing, editing, on-screen text. |
 | `understand_social_post` | 3 | The same two fetches, asked for a description of what physically happens on screen rather than why it works. Use when you need the events, not the strategy. |
-| `analyze_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. |
+| `summarize_post_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. Pass `verbatim: true` to have every item rendered whole for quoting rather than clipped to fit; same price. |
 | `show_comment_review` | free | Draws the classifications your model produced — every comment with its sentiment and category, filterable and selectable. Makes no requests; it only renders what you pass it. |
-| `show_analysis` | free | Draws the analysis your model wrote from `analyze_post`/`analyze_post_fast`/`understand_social_post` — hook strength, script structure, quotable lines, suggested hashtags and more, whichever fields you produced. Makes no requests; it only renders what you pass it. |
-| `compare_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
-| `show_comparison` | free | Draws the comparison your model wrote from `compare_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
+| `show_post_analysis` | free | Draws the analysis your model wrote from `analyze_post`/`analyze_post_fast`/`understand_social_post` — hook strength, script structure, quotable lines, suggested hashtags and more, whichever fields you produced. Makes no requests; it only renders what you pass it. |
+| `compare_social_posts` | 1 | The first of two to five posts, fetched with its stats, and the comparison left to you. Fetch the rest with `get_social_media` at 1 credit each. Use when performance differs and you need to know why. |
+| `show_compared_posts` | free | Draws the comparison your model wrote from `compare_social_posts` — each post scored, the winner marked, what differed and the next test worth running. Makes no requests; it only renders what you pass it. |
 
 ### Research a niche or a creator
 
@@ -92,16 +92,19 @@ them caps that fan-out with an argument.
 | `get_user_posts` | 2 | One creator's recent posts with stats. Use to scan an account. |
 | `search_creators` | 2 | People by what they make — designers, developers, photographers, anyone with an audience — found by craft, niche or keyword. Use when you know the kind of person but not their names. Searches TikTok, Instagram and Xiaohongshu; **not** YouTube, Douyin, X, Reddit or LinkedIn, which cannot be creator-searched upstream. |
 | `get_similar_creators` | 2 | Lookalikes for a creator that already works. |
+| `suggest_creator_identity` | 2 per network searched, plus 2 to find the handle (6 by default) | The same person on the other networks, from one handle you already know — with the evidence for each: a link published in both bios, one bio naming the other account, an identical handle, a matching display name. **Suggests, never merges**: nothing is stored, a human confirms, and two accounts' follower counts are never added together. TikTok, Instagram and Xiaohongshu. |
 | `discover_sounds` | 2 | Trending audio with playable previews. Sound is a major ranking signal on TikTok. |
 | `discover_hashtags` | 2 | What to tag with. TikTok comes from the Creative Center trend board — volumes plus rising/cooling/steady. The other eight searchable networks have no trend board upstream, so tags are counted across a live sweep of a niche you name: real and current, but a single sample, so no rising/cooling signal. `source` says which you got. LinkedIn cannot be swept. |
 | `find_hook_pattern` | 2 | A creator's recent posts, so their opening lines can be read as a set and turned into fill-in-the-blank templates. One `get_user_posts` call. |
 | `search_mentions` | 2 per network (5 for Xiaohongshu) | **Brand monitoring.** Every *comment* that names a term, across nine networks at once, grouped under the post it was left on. A brand is named far more often in the replies than in a caption, so the comment is the unit — not the post. Takes a `since` date to read a past window, and pages with `offset`/`pageSize` so a nine-network sweep does not arrive all at once. Does not read speech inside a video — `search_spoken_mentions` does, on TikTok, YouTube and Douyin. |
 | `watch_creator` | free | Add a creator to your watchlist. Stores the handle only — nothing is fetched. |
 | `unwatch_creator` | free | Drop a creator from the watchlist. |
+| `list_watchlist` | free | Who you are watching: handle, platform, note, and when you last caught up on each. |
 | `catch_up_watchlist` | 2 per creator | What everyone you watch has posted since your last catch-up. Compares against the snapshot taken last time and moves it forward, so it answers "what is new" rather than "what exists". |
-| `create_brand_watch` | free to call | Schedule a recurring sweep and get emailed only what is new. `kind: "mentions"` (default) is a recurring `search_mentions` sweep for `term`/`platforms`; `kind: "competitor"` is a recurring `get_user_posts` check on one creator (`handle`/`platform`), mailing only what beats their own recent median. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling the matching tool yourself — 2 credits per network (5 for Xiaohongshu) for mentions, a flat 2 credits for competitor. |
+| `create_brand_watch` | free to call | Schedule a recurring sweep and get emailed only what is new. `kind: "mentions"` (default) is a recurring `search_mentions` sweep for `term`/`platforms`; `kind: "competitor"` is a recurring `get_user_posts` check on one creator (`handle`/`platform`), mailing only what beats their own recent median; `kind: "report"` runs `job: {tool, args}` — `niche_report` (mailed as written every run) or `discover_social_posts` (only unseen posts) — on the schedule; `kind: "portfolio"` sweeps up to 25 `terms` (your brand, products, competitors) across the same networks under one budget and mails one digest with each term's share of voice. Two calls by design: the first returns the quote (cost per run, cadence, cost per day) and a `confirmationToken`; nothing is created or charged until you call it again with `confirm: true` and that token. Each run then bills the same as calling the matching tool yourself — 2 credits per network (5 for Xiaohongshu) for mentions, a flat 2 credits for competitor, the job tool's own price for a report (3 for `niche_report`), and a mentions sweep per term for a portfolio — whose budget is split evenly and trims networks, never terms, and which refunds any term whose sweep fails. |
 | `list_brand_watches` | free | Every watch you have scheduled: term, networks, cadence, cost per run, credits spent so far, runs made, and when the next one is due. |
 | `mention_trend` | free | **What a watch has seen over time**, which nothing else here answers — every other read is about now. One point per run: when it ran, how many mentions it found, how many were new, and both counts per network, so "which network is growing" and "did it go quiet or did we stop looking" come apart. On a competitor watch each point carries the median that run measured, which turns "they beat their own median" into "and that median has doubled". Plus the mentions more than one run has seen. Free because the sweeps were billed when they ran; charging again to read what was already paid for is the thing it fixes. |
+| `update_watch_portfolio` | free | Add or remove a portfolio watch's terms by `watchId`. No new confirmation, because the per-run budget you agreed to does not move — more terms split it more ways, and the reply names any network a run no longer reaches. |
 | `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
 | `analyze_creator_profile` | 2 | A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms, who the audience is. One `get_user_posts` call. |
@@ -110,7 +113,7 @@ them caps that fan-out with an argument.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply, because no nooticr connection carries comment-write permission on any network. `limit` caps how many posts are opened, which is the price. |
+| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply: nooticr does not post comments on any network, even where a connection's grant allows managing them. `limit` caps how many posts are opened, which is the price. |
 | `prepare_handoff` | free | **The hand-off to your tracker.** Turns items you classified — a bug report in a comment, a complaint said out loud in a video — into the exact `title`, `body` and `labels` to file through whichever GitHub, Jira or Linear MCP server the host also has connected. nooticr files nothing and holds no tracker credential. The body carries the quote fenced and framed as a third-party report rather than as instructions, because the issue is read next by a coding agent; contact details are redacted, `@handles` and `#numbers` are defanged so filing notifies nobody by accident, and a `searchFirst` string dedupes a second sweep against the first. Makes no requests. |
 | `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
 | `show_standings` | free | Draws the standings your model read out of `compare_creators` or `watchlist_standings` — one row per creator, with the window and the median it was scored against. `ranking` records which axis you ordered on, and `tooThin` draws a creator with too short a window as unranked rather than last: missing from a comparison is not the same as losing it. Makes no requests. |
@@ -119,31 +122,64 @@ them caps that fan-out with an argument.
 | `compare_creators` | 2 per creator (4-10) | Two to five creators side by side on the one axis that compares: each post's ratio to **that creator's own** median. Per creator you get the window that was scored, their median, the share of it that beat that median, how hard they beat it when they did, every ratio, and their best and worst post. It does not rank them — "how often they land one" and "how big it is when they do" usually disagree, and a hit rate over a short window is one post either way, so the window travels with every number and the read is yours. |
 | `watchlist_standings` | 2 per watched creator | The same, across everyone on your watchlist: "who moved" in one call instead of one per creator. Reading the watchlist is free; the fetches are not, so it confirms the total before spending. `catch_up_watchlist` answers what is **new**; this answers how it **did**. |
 | `who_should_i_work_with` | 2, or 4 with a seed | A collaboration shortlist: a keyword search merged with the lookalikes of a creator who already fits, marked by which search found each one. Every candidate also carries the **links pulled out of their bio**, typed and sorted by how much opening one will tell you — a repository to read the code in, their own site, a link hub that holds the real links — so vetting is reading the work rather than re-reading the follower count. Those links are never fetched here: they came out of a field the person being evaluated controls, so the host opens them, and the result says so. It does **not** measure audience overlap — that costs about nine credits a candidate, so the result says so and shows how to check a finalist rather than faking the signal. |
-| `find_people_with_problem` | 2 per platform | Find people **describing a problem in their own words** — prospects, early users, anyone whose complaint your product answers. Say the problem the way a person would say it and it searches for posts shaped like that complaint rather than for the topic it is about: searching the topic finds marketing about it, which is what `discover_social_posts` is for. Widens the query into the forms a complaint takes — the plain phrasing, the does-anyone-else question, the is-there-a-tool ask — and marks which one surfaced each post. A wide cheap net and **not** a filter: the posts come back for you to judge, and plenty will be off-target. Defaults to reddit, where people describe workflow pain in sentences. |
+| `find_people_with_problem` | 6 per platform | Find people **describing a problem in their own words** — prospects, early users, anyone whose complaint your product answers. Say the problem the way a person would say it and it searches for posts shaped like that complaint rather than for the topic it is about: searching the topic finds marketing about it, which is what `discover_social_posts` is for. Widens the query into the forms a complaint takes — the plain phrasing, the does-anyone-else question, the is-there-a-tool ask — and marks which one surfaced each post. A wide cheap net and **not** a filter: the posts come back for you to judge, and plenty will be off-target. Defaults to reddit, where people describe workflow pain in sentences. Each platform is searched once per query shape — three by default, at 2 credits a search. Not searchable here: linkedin, which has no keyword post search upstream. Pass `verbatim: true` to have every item rendered whole for quoting rather than clipped to fit; same price. |
 | `show_collab_shortlist` | free | Draws the candidates you scored, ranked, and asks the user which to approach. The scores are attributed to your model, not presented as a nooticr rating, and a candidate scored without anything having been opened is marked unverified. Makes no requests. |
-| `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_posts`, which weighs two URLs you already picked. |
+| `why_did_this_underperform` | 3 | One post against the creator's own recent distribution, with the post taken back out of its own baseline. Returns median, quartiles, ratio and percentile, so the answer can be "this is an ordinary result, not a failure". Different question from `compare_social_posts`, which weighs two URLs you already picked. |
 | `what_should_i_make_next` | 2 + 2 per post read + 2 (12 by default) | Demand against supply: what your commenters explicitly ask for, set beside what a niche sweep shows is already being made. A gap nobody asked for is noise; a request nobody serves is the opportunity. Falls back to your most-used hashtag when you name no niche. |
+| `detect_spoken_mentions` | 2 | **Every brand named out loud in one video.** The spoken transcript and the written caption, side by side, for your model to list each brand with its verbatim sentence, the creator's framing and whether it was said, written or both. Works where the creator never enabled captions, because the audio is transcribed. 1 credit for `get_post_transcript` plus 1 for `get_social_media`; nothing when no transcript can be made. |
 | `search_spoken_mentions` | 2 per platform narrowed by niche + 2 per creator handle + 1 per transcript, up to `maxTranscripts` | **The mirror of `search_mentions`, for what was said rather than typed.** Narrows to candidate posts (a niche sweep, named handles, and/or your watchlist), transcribes only the most-viewed survivors up to a hard ceiling, and searches the words for the term — TikTok, YouTube and Douyin, and only where the creator actually enabled captions. Reports how many candidates were found, transcribed and matched, so the spend is legible. |
+
+### Study a market on Amazon
+
+Everything above reads social content. These read a **marketplace** — the place
+where the same audience says what it actually bought and why it sent it back.
+The question they exist for is a category decision: *we are considering
+ashwagandha — what makes people buy, what stops them, what are the incumbents
+good at, and where is the gap?* Every one of those answers lives in review text,
+so the unit of work is a scan of the category rather than a lookup of a product.
+
+Collection is genuinely slow, and honestly so: each listing is a real browser
+render behind Amazon's bot defences, and the pace between them is set by what
+Amazon tolerates rather than by what the machine can do. Ten listings with their
+reviews is minutes, not seconds — so a scan returns what is ready and hands back
+a `scanId` for the rest.
+
+| Tool | Credits | What it is for |
+|------|---------|----------------|
+| `scan_amazon_category` | 3 per listing collected (30 by default) | The category, collected: listings with prices, star histograms, Amazon's own review-aspect counts and the review text itself, plus the arithmetic over them — price spread, rating spread, which aspects recur across how many brands, and the share of each listing's ratings sitting at 1-2 stars, read from the histogram rather than from the handful of reviews a scrape returns. Pass `query` to search the category, `asins` to pin the competitors a customer named, or both; named competitors keep their place at the front. Because the price is set by an argument, it confirms the total before spending it. |
+| `amazon_scan_status` | free | Picks a running collection back up by `scanId` — the listings collected since, with the same rollup. Free: it is the poll `scan_amazon_category` asked for, and billing the second half of one answer would charge for a wait the server chose. |
+| `get_amazon_product` | 3 | One listing by ASIN or URL: price, rating, the full star histogram, features, specs, Amazon's review digest and aspect breakdown, and the reviews. |
+| `scan_marketplace_category` | 3 per product collected (30 by default) | The same category read on eleven more sites — AliExpress, Cdiscount, Flipkart, Mercado Libre, Lazada, Otto, Rakuten, Trendyol, Jumia, Vinted and Temu. Vinted is resale rather than retail, so its `rating` describes the seller and the scan says so in `ratingScope` — do not read it as a product's reviews. `marketplace` picks the site; `market` picks the storefront for the sites that have several, and the argument names the real set per site so a model cannot send Otto a Lazada region. Same rollup, same confirmation before spending. |
+| `marketplace_scan_status` | free | Picks a running marketplace collection back up by `scanId` and the same `marketplace`. Free, for the same reason `amazon_scan_status` is. |
+| `get_marketplace_product` | 3 | One product from any of the twelve sites, by id or URL: price, rating, the full star histogram, specs and the reviews. |
+| `show_amazon_category_insights` | free | Draws the read **your model** wrote — purchase drivers, barriers, what each brand does well, the gaps, the positioning angles — beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. The conclusions are attributed to your model, never presented as a nooticr rating of anyone's product. Given the `scanId`, it re-reads the listings from the scan itself (free) instead of drawing whatever the model re-sends, and flags any ASIN the read cites that the scan does not contain; without one, the card says its listings were not checked. |
+| `show_marketplace_category_insights` | free | The same card for the other eleven marketplaces: your read beside that site's listings and reviews, labelled with the right site, re-read from the scan by `scanId` and `marketplace` so nothing is re-typed. |
 
 ### Make something
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `write_hooks` | 2, or free | The source post and its transcript, to write openings against. Give a topic instead of a url and it fetches nothing and costs nothing. |
-| `show_hooks` | free | Draws the hooks your model wrote from `write_hooks` — each one with the device it uses and who it stops. Makes no requests; it only renders what you pass it. |
-| `score_draft` | free | **Your** draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the three fixes worth making and a rewritten opening. Fetches nothing: the text is already yours. The only tool that runs before the content exists. |
-| `repurpose_post` | 2 | The source post and its transcript, to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
-| `show_repurposed_post` | free | Draws the rewritten copy your model produced from `repurpose_post` — one entry per surface. Makes no requests; it only renders what you pass it. |
-| `create_variants` | 2 | The post that worked, with its transcript, to build variants from: hook, the angle that changes, ordered shot beats and a CTA. |
-| `show_variants` | free | Draws the variants your model wrote from `create_variants` — each one's hook, angle, beats and CTA. Makes no requests; it only renders what you pass it. |
+| `generate_hook_ideas` | 2, or free | The source post and its transcript, to write openings against. Give a topic instead of a url and it fetches nothing and costs nothing. |
+| `show_hooks` | free | Draws the hooks your model wrote from `generate_hook_ideas` — each one with the device it uses and who it stops. Makes no requests; it only renders what you pass it. |
+| `evaluate_social_draft` | free | **Your** draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the three fixes worth making and a rewritten opening. Fetches nothing: the text is already yours. The only tool that runs before the content exists. |
+| `adapt_post_for_platform` | 2 | The source post and its transcript, to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube metadata, newsletter. |
+| `show_repurposed_post` | free | Draws the rewritten copy your model produced from `adapt_post_for_platform` — one entry per surface. Makes no requests; it only renders what you pass it. |
+| `generate_post_variants` | 2 | The post that worked, with its transcript, to build variants from: hook, the angle that changes, ordered shot beats and a CTA. |
+| `show_variants` | free | Draws the variants your model wrote from `generate_post_variants` — each one's hook, angle, beats and CTA. Makes no requests; it only renders what you pass it. |
 
 ### Account
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
+| `nooticr_getting_started` | free | **Start here.** Where this account stands — balance, connected accounts, watchlist — and the next calls worth making, each with its price and an example. The server's `instructions` point every host at it. |
 | `check_nooticr_credits` | free | Balance and billing URL. |
+| `nooticr_settings_read` | free | Read your default social platform and result count. |
+| `nooticr_settings_update` | free | Save the default platform and result count used by supported searches when arguments are omitted. |
+| `list_tool_runs` | free | Your tool-call history: what ran, whether it worked, and the credits each call actually took (0 for a free, refunded, cached or replayed call). `scope: "workspace"` shows every member's runs to owners and admins. |
+| `get_tool_run` | free | One run from that history by id, with its full error. |
+| `get_usage_report` | free | The run ledger added up over a window: total calls, failures and credits actually taken, per tool, per day and the most recent failures. `scope: "workspace"` adds one row per seat, for the workspace's owners and admins. |
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
-| `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
+| `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. "Manage comments" reports the platform's grant; no nooticr tool posts or replies to a comment. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
 | `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
 | `create_product` | free | Create a product in your own workspace — the row every other own-account tool needs before it has anything to work with. Always creates in the calling session's workspace, never one you could name. `name` and `slug` are required; every other field is snake_case and read by exact key, so a camelCase `websiteUrl` lands nowhere. Writes no brand playbook. |
 | `update_product` | free | Patch a product's fields. An omitted argument leaves its column unchanged, so this cannot blank a field by not mentioning it, and the result lists what was actually written — a misspelled field shows up as one that did not change rather than as a silent no-op. |
@@ -160,6 +196,9 @@ Everything above reads someone else's content. These read and generate for **you
 | `get_scheduled_posts` | free | Your own scheduled and draft posts in the content pipeline — title, status, scheduled time, approval status. What is queued to publish. |
 | `get_post_performance` | free | Your own already-published posts with their engagement counters — views, likes, comments, shares, platform, post date. The raw performance history, not an interpretation of it; pair with `growth_brief` for that. |
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
+| `get_google_analytics_data` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
+| `get_search_console_data` | free | Search Console clicks, impressions and top queries, as of the last sync — whether people search for what your content is about. |
+| `get_posthog_analytics` | free | Your PostHog pageview trend, as of the last sync — line a post's date up against traffic to your site. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
 | `get_brand_playbook` | free | Your product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by `analyze_product`. Read-only; `available: false` when none exists. |
 | `review_post` | free | Score a draft before you publish it — hook strength, an A/B hook comparison, aesthetic and storytelling notes, rewritten hooks/captions. Never billed, same as the dashboard's own pre-publish review. |
@@ -243,13 +282,13 @@ Twenty frames is about 2.4% of a million-token context.
 | Tool | What comes back | Credits |
 |---|---|---|
 | `analyze_post` | frames as images, plus the transcript and stats | **3** (2 + 1) |
-| `analyze_comments` | the comments, each with an id, and the labels to use | **2** |
+| `summarize_post_comments` | the comments, each with an id, and the labels to use | **2** |
 | `analyze_creator_profile` | the creator's recent posts and their numbers | **2** |
-| `score_draft` | your own draft, and the rubric to score it against | **free** |
+| `evaluate_social_draft` | your own draft, and the rubric to score it against | **free** |
 
 The prices above are derived from the fetches each tool makes rather than
 written down twice — see `EVIDENCE_PLANS` and `planCost` in
-`src/shared/evidence.ts`. `score_draft` has no plan at all: it reviews text you
+`src/shared/evidence.ts`. `evaluate_social_draft` has no plan at all: it reviews text you
 already have, so there is nothing to fetch and nothing to charge for.
 
 `show_comment_review` closes the loop: hand back your classifications and it
@@ -311,6 +350,76 @@ npx @nooticr/mcp --http     # remote HTTP with OAuth (for OpenAI Agents SDK)
 `login` stores your nooticr tokens in `~/.config/nooticr-mcp/credentials.json`
 (mode `0600`). If your browser cannot be opened automatically, copy the URL it
 prints into a browser manually.
+
+## Running on a server (no browser)
+
+`login` and the OAuth flow both need a browser once, and both leave behind a
+15-minute access token kept alive by a refresh token. That is the wrong shape
+for an integration running server-side: nothing there can complete a consent
+screen, and a refresh chain that breaks has to be repaired by hand.
+
+An **API key** is the other way in. Mint one from a browser at
+[mcp.nooticr.com/dashboard](https://mcp.nooticr.com/dashboard) — sign in, name
+the key, copy it — or from a machine you *can* sign in on, once:
+
+```bash
+npx @nooticr/mcp login                                  # the one interactive step
+npx @nooticr/mcp api-key create --name "aybee-prod"     # prints the key, once
+```
+
+Then give it to the deployment. There is nothing else to configure and nothing
+to refresh — the key stays valid until you revoke it.
+
+```bash
+# stdio, as a subprocess of your own service
+NOOTICR_API_KEY=nk_... npx @nooticr/mcp
+```
+
+On a server, prefer the environment variable: it is what every container
+runtime and secret manager already injects, and it leaves nothing on a disk
+that a redeploy is going to throw away. Where setting one is the awkward part
+— a laptop, or a client like Claude Desktop that does not inherit your shell —
+store the key in the credentials file instead:
+
+```bash
+npx @nooticr/mcp login --api-key nk_...
+```
+
+That checks the key against the server before writing it, so a typo fails
+while you are still there to fix it, and then behaves exactly like the
+environment variable: no browser, no refresh, valid until revoked. The file
+holds one credential, so this replaces any session an earlier `login` left
+behind (and `NOOTICR_API_KEY` still overrides it).
+
+```http
+# or against the remote endpoint, as an ordinary bearer token —
+# no /authorize, no PKCE, no redirect URI
+POST https://mcp.nooticr.com/mcp
+Authorization: Bearer nk_...
+```
+
+Managing them, from the dashboard's **API keys** card or the CLI:
+
+```bash
+npx @nooticr/mcp api-key create --name "staging" --expires-in-days 90
+npx @nooticr/mcp api-key list
+npx @nooticr/mcp api-key revoke <id>
+```
+
+Every command takes `--json` for scripting. A few things worth knowing:
+
+- The key is shown **once**, by `api-key create`. nooticr stores only a hash of
+  it and cannot show it again; `list` shows the head (`nk_1a2b3c4d…`) so you
+  can tell keys apart.
+- A key carries the scope of whoever created it — their account, and the
+  workspace they were in (`--workspace-id` picks another one you belong to).
+- A key **cannot create or revoke keys**. That is deliberate: it means a leaked
+  key cannot mint a replacement that outlives revoking the original.
+- `--expires-in-days` is optional. Without it a key does not expire on its own.
+- Revoking takes effect immediately at the API. The hosted remote endpoint
+  caches the "this key is real" answer for up to five minutes, which only ever
+  lets a revoked key see the tool list — every call that touches your account
+  is checked against nooticr-server on the spot.
 
 ## Usage in Claude Desktop
 
@@ -430,6 +539,11 @@ nooticr-mcp --stdio            Same as above
 nooticr-mcp --http [--port N]  Start the remote HTTP transport with OAuth (default port 3457)
 nooticr-mcp login              Sign in to nooticr via Google in your browser
 nooticr-mcp login --email ... --password ...   Password login
+nooticr-mcp login --api-key nk_...             Sign in with an API key, no browser
+nooticr-mcp api-key create [--name N] [--expires-in-days D] [--workspace-id W] [--json]
+                               Mint a key for a server with no browser
+nooticr-mcp api-key list [--json]         List this account's keys
+nooticr-mcp api-key revoke <id> [--json]  Revoke one
 nooticr-mcp --help             Show help
 ```
 
@@ -438,7 +552,8 @@ nooticr-mcp --help             Show help
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NOOTICR_BASE_URL` | `https://api.nooticr.com` | nooticr server base URL (trailing slash stripped) |
-| `NOOTICR_ACCESS_TOKEN` | — | nooticr JWT access token; takes priority over the credentials file |
+| `NOOTICR_ACCESS_TOKEN` | — | nooticr JWT access token; takes priority over everything below |
+| `NOOTICR_API_KEY` | — | nooticr API key from `api-key create` — no browser, no refresh, valid until revoked; takes priority over the credentials file (including a key `login --api-key` put there) |
 | `NOOTICR_CREDENTIALS_FILE` | `~/.config/nooticr-mcp/credentials.json` | token store path |
 | `NOOTICR_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
 | `NOOTICR_PORT` | `3457` | port for `--http` and `login` |
@@ -446,10 +561,20 @@ nooticr-mcp --help             Show help
 
 ## How authentication works
 
-**stdio mode** (Claude Desktop, Cursor): the server uses the token from
-`NOOTICR_ACCESS_TOKEN` or the credentials file written by `login`. If the token
-is expired it is automatically refreshed with the stored refresh token, and if
-the nooticr API returns `401` the request is retried once after a refresh.
+**stdio mode** (Claude Desktop, Cursor): the server uses the first credential
+it finds — `NOOTICR_ACCESS_TOKEN`, then `NOOTICR_API_KEY`, then the credentials
+file written by `login`. That file holds one credential, whichever `login` last
+wrote: an API key (`login --api-key`) or a session. A session token that has
+expired is refreshed with the stored refresh token, and a `401` from the
+nooticr API is retried once after a refresh. An API key is never refreshed
+wherever it came from: it does not expire, so a `401` on one means revoked or
+mistyped, and retrying would only hide that.
+
+**API key** (any transport, no browser): send it as the bearer token, or set
+`NOOTICR_API_KEY`. nooticr-server resolves the key to its owner and the
+workspace it was scoped to, and every authorization check downstream sees
+exactly what it would have seen for a signed-in session. See
+[Running on a server](#running-on-a-server-no-browser).
 
 **HTTP mode** (OpenAI Agents SDK, remote clients): the server runs its own
 OAuth 2.0 authorization server (Authorization Code + PKCE S256, public client,
@@ -463,7 +588,9 @@ per the MCP 2025-03-26 spec):
   one-time code
 - `POST /token` — verifies PKCE and issues an opaque Bearer token bound to the
   nooticr session (valid 1 hour)
-- every MCP RPC validates the Bearer token against the session map
+- every MCP RPC validates the Bearer token against the session map — or, when
+  the bearer is an API key, forwards it to nooticr-server as the caller's own
+  credential, which is what makes this endpoint usable with no browser at all
 
 ## Supported URLs
 
@@ -483,8 +610,14 @@ and text** posts.
 
 ## Troubleshooting
 
-- **`Not authenticated with nooticr` / 401**: run `npx @nooticr/mcp login` or set
-  `NOOTICR_ACCESS_TOKEN`.
+- **`Not authenticated with nooticr` / 401**: run `npx @nooticr/mcp login`, or
+  set `NOOTICR_API_KEY` (see [Running on a server](#running-on-a-server-no-browser)).
+- **`unknown, revoked or expired nooticr API key`**: the key is not one this
+  account has live. `npx @nooticr/mcp api-key list` shows every key and its
+  state, revoked ones included.
+- **`API keys cannot manage API keys`**: `api-key create`/`list`/`revoke` need a
+  signed-in session, which is why they ignore a key in `NOOTICR_API_KEY` *and*
+  one stored by `login --api-key`. Run `npx @nooticr/mcp login` first.
 - **402 paywall / `insufficient MCP credits`**: your nooticr account is out of
   credits. Prices are listed per tool in [Tools](#tools) — 1 credit for a post
   lookup or transcript, 2 for discovery and for a tool that makes one fetch, 3
@@ -516,7 +649,12 @@ package for **Claude Desktop**, **Cursor**, and **OpenAI Agents SDK**.
   (in-memory).
 - Access tokens are opaque, random, and bound to the in-memory session map;
   they expire after 1 hour. Restarting the server invalidates all sessions.
-- Never share your credentials file or `NOOTICR_ACCESS_TOKEN`.
+- API keys are stored as a sha256 hash, never in the clear, so a database dump
+  cannot be replayed against the API. They are scoped to one account and one
+  workspace, carry their owner's role as it is *now* rather than as it was when
+  the key was minted, and cannot be used to create or revoke keys.
+- Never share your credentials file, `NOOTICR_ACCESS_TOKEN` or
+  `NOOTICR_API_KEY`.
 
 ## Development
 

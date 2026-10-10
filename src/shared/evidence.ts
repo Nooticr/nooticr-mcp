@@ -234,7 +234,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "what moved while it was there, so do not describe motion you have not",
         "seen across two frames.",
         "",
-        "When you are done, call show_analysis with the url and your analysis —",
+        "When you are done, call show_post_analysis with the url and your analysis —",
         "it draws what you found (hook strength, script structure, quotable",
         "lines, suggested hashtags, target audience and whichever other fields",
         "you produced) so it is visible, not only said in chat.",
@@ -271,7 +271,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "not what moved during it, so describe stills unless two frames actually",
         "show the change.",
         "",
-        "When you are done, call show_analysis with the url and your analysis —",
+        "When you are done, call show_post_analysis with the url and your analysis —",
         "it draws what you found so it is visible, not only said in chat.",
         ownIt,
       ].join("\n");
@@ -293,13 +293,13 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "yourself and look at the frames — do not ask anyone else to fetch",
         "them for you.",
         "",
-        "When you are done, call show_analysis with the url and your analysis —",
+        "When you are done, call show_post_analysis with the url and your analysis —",
         "it draws what you found so it is visible, not only said in chat.",
         ownIt,
       ].join("\n"),
   },
 
-  compare_posts: {
+  compare_social_posts: {
     via: "get_social_media",
     args: (a) => ({ url: String((a.urls as string[])?.[0] ?? "") }),
     guidance: (a) =>
@@ -310,7 +310,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "which performed better, what actually differed, and the single test",
         "worth running next. Ground every difference in a number or a quote.",
         "",
-        "When you are done, call show_comparison with all the posts (same shape",
+        "When you are done, call show_compared_posts with all the posts (same shape",
         "get_social_media returned for each) and your comparison — it draws a",
         "scoreboard with the winner marked, so the comparison is visible, not",
         "only said in chat.",
@@ -398,7 +398,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
       ].join("\n"),
   },
 
-  write_hooks: {
+  generate_hook_ideas: {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
@@ -428,7 +428,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     },
   },
 
-  create_variants: {
+  generate_post_variants: {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
@@ -451,7 +451,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     },
   },
 
-  repurpose_post: {
+  adapt_post_for_platform: {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
@@ -474,14 +474,14 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
 };
 
 /**
- * `score_draft` has no plan, and deliberately so.
+ * `evaluate_social_draft` has no plan, and deliberately so.
  *
  * It reviews text the caller already supplied, so there is nothing to fetch:
  * a plan for it would be a paid call that handed back the caller's own input.
  * It stays on the tool list as a free tool instead — see `scoreDraftGuidance`,
  * which is the whole of what it now does.
  */
-export const FETCHES_NOTHING = ["score_draft"] as const;
+export const FETCHES_NOTHING = ["evaluate_social_draft"] as const;
 
 /**
  * What the calling model is asked to produce for a draft.
@@ -493,7 +493,7 @@ export const FETCHES_NOTHING = ["score_draft"] as const;
  *
  * The tool could have been dropped instead. It is kept because a model reading
  * a tool list treats the list as the menu of what is worth doing — with no
- * `score_draft` on it, "check this before I film it" stops being a step
+ * `evaluate_social_draft` on it, "check this before I film it" stops being a step
  * anybody takes, and the `check_my_draft` prompt loses its first move. Naming
  * the axes also makes two runs comparable, which free-form prose never is.
  */

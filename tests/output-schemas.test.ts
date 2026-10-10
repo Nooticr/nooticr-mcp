@@ -138,11 +138,11 @@ describe("check_nooticr_credits free-tool aliases", () => {
 
   it.each([
     ["neither present", {}],
-    ["only firstFreeTools", { firstFreeTools: ["analyze_comments"] }],
-    ["only firstFreeRemaining", { firstFreeRemaining: ["analyze_comments"] }],
+    ["only firstFreeTools", { firstFreeTools: ["summarize_post_comments"] }],
+    ["only firstFreeRemaining", { firstFreeRemaining: ["summarize_post_comments"] }],
     ["both, agreeing", {
-      firstFreeTools: ["analyze_comments", "get_post_transcript"],
-      firstFreeRemaining: ["analyze_comments", "get_post_transcript"],
+      firstFreeTools: ["summarize_post_comments", "get_post_transcript"],
+      firstFreeRemaining: ["summarize_post_comments", "get_post_transcript"],
     }],
     ["both empty", { firstFreeTools: [], firstFreeRemaining: [] }],
     ["both null", { firstFreeTools: null, firstFreeRemaining: null }],
@@ -155,12 +155,12 @@ describe("check_nooticr_credits free-tool aliases", () => {
   // the drift it exists to catch.
   it.each([
     ["the lists differ", {
-      firstFreeTools: ["analyze_comments"],
+      firstFreeTools: ["summarize_post_comments"],
       firstFreeRemaining: ["get_post_transcript"],
     }],
     ["one has been spent and the other has not", {
       firstFreeTools: [],
-      firstFreeRemaining: ["analyze_comments"],
+      firstFreeRemaining: ["summarize_post_comments"],
     }],
     ["the order differs", {
       firstFreeTools: ["a", "b"],
@@ -177,7 +177,7 @@ describe("check_nooticr_credits free-tool aliases", () => {
   it("does not fail the call when they disagree", () => {
     const drifted = {
       balance: 18,
-      firstFreeTools: ["analyze_comments"],
+      firstFreeTools: ["summarize_post_comments"],
       firstFreeRemaining: ["get_post_transcript"],
     };
     expect(agrees(drifted)).toBe(false);
