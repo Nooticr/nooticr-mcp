@@ -66,6 +66,7 @@ NO_APP = {
     "list_brand_watches",
     "list_own_apps",
     "analyze_product",
+    "marketplace_changes",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"
