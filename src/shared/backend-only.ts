@@ -26,7 +26,7 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
   get_latest_analysis:
     "Returns the dashboard's stored AI fleet-analysis verdict; the public surface sells the evidence, not a judgement of ours.",
   propose_listing_update:
-    "Commerce writes (nooticr-server C1 3/4) stay in the dashboard until exposing store writes to hosts is a product decision. connect_store and list_store_products, the C1 read pair, are undecided and want settling together with these.",
+    "Commerce writes (nooticr-server C1 3/4) stay in the dashboard until exposing store writes to hosts is a product decision.",
   apply_listing_update:
     "Commerce writes (nooticr-server C1 3/4) stay in the dashboard until exposing store writes to hosts is a product decision; applying a change edits the merchant's live store.",
   propose_price_change:

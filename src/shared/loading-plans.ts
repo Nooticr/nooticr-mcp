@@ -588,6 +588,10 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
 
+  // ─── Store connections (store-read.ts): a link, and a read of the store's own catalogue ───
+  connect_store: { label: "Minting a store link", kind: "text", n: 1, steps: [], free: true },
+  list_store_products: { label: "Reading your store's catalogue", kind: "list", n: 3, steps: [], free: true },
+
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },
   get_content_plan: { label: "Reading the saved plan", kind: "text", n: 1, steps: [], free: true },

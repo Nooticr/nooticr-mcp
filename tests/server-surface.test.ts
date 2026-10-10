@@ -62,6 +62,8 @@ const NOT_READ_ONLY = [
   "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
+  // Mints a one-time store-authorisation link every call.
+  "connect_store",
   // Both spend credits to start public marketplace collection jobs.
   "scan_amazon_category",
   "scan_marketplace_category",
@@ -87,7 +89,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(90);
+    expect(tools).toHaveLength(92);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -113,6 +115,7 @@ describe("tool annotations", () => {
       "analyze_product_status",
       "check_nooticr_credits",
       "connect_social_account",
+      "connect_store",
       "create_product",
       "draft_post",
       "generate_captions",
