@@ -262,6 +262,16 @@ function toolError(what: string, err: unknown) {
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
+/** `siteStatus` is `{status, since, note}` from the server; a bare string is accepted too. */
+function siteStatusName(v: unknown): string | undefined {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const status = (v as Record<string, unknown>).status;
+    if (typeof status === "string") return status;
+  }
+  return undefined;
+}
+
 /**
  * The scan, in the shape the view and the digest read.
  *
@@ -270,7 +280,7 @@ const num = (v: unknown): number | null => (typeof v === "number" && Number.isFi
  * `market`, because each collector calls it something different and a caller
  * should not have to know which.
  */
-function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: string) {
+export function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: string) {
   const products = normaliseProducts(payload.products);
   const rollup = (payload.rollup ?? {}) as Record<string, unknown>;
   const reviews = allReviews(products);
@@ -297,6 +307,9 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     statusTool: "marketplace_scan_status",
     statusArgs: { marketplace: m.slug },
     status: typeof payload.status === "string" ? payload.status : undefined,
+    notice: typeof payload.notice === "string" ? payload.notice : undefined,
+    // The server sends `{status, since, note}`; a bare string is accepted too.
+    siteStatus: siteStatusName(payload.siteStatus),
     total: num(progress.total) ?? undefined,
     // Its own view, labelled with this site (#95): pointing a model at
     // show_amazon_category_insights would have it draw a Lazada scan as an
@@ -326,6 +339,11 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     reviews,
     errors: payload.errors ?? [],
     mcpCredits: payload.mcpCredits ?? null,
+    // Degraded-scan fields (nooticr-server#239); absent on an older server.
+    notice: payload.notice ?? null,
+    quality: payload.quality ?? null,
+    collectorStatus: payload.collectorStatus ?? null,
+    siteStatus: payload.siteStatus ?? null,
   };
 
   return {
