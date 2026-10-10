@@ -584,6 +584,9 @@ describe("tool surface", () => {
     "generate_captions",
     "list_social_connections",
     "connect_social_account",
+    "list_comments_to_answer",
+    "draft_comment_reply",
+    "post_comment_reply",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -753,6 +756,10 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // Free to call; draft_comment_reply charges 1 only when the server writes the reply,
+      // and says so in its description.
+      "list_comments_to_answer",
+      "post_comment_reply",
       // Formats what the caller classified for a tracker elsewhere. The only
       // network call in that chain is the one the other server makes.
       "prepare_handoff",

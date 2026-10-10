@@ -176,6 +176,42 @@
         "destructive_justification": "Not destructive: each call mints a new link rather than replacing a connection, and nothing is connected until the user approves."
       }
     },
+    "list_comments_to_answer": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists comments on the user's own posts that have no reply yet and changes nothing.",
+        "open_world_justification": "Open world: it reads comments from the platform (YouTube) through the user's own connected account. It reads only and posts nothing.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "draft_comment_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a reply draft in the user's workspace. Nothing is posted.",
+        "open_world_justification": "Closed domain: it touches only the caller's own nooticr workspace; no third-party network is written to.",
+        "destructive_justification": "Not destructive: each call stores a new draft and replaces nothing."
+      }
+    },
+    "post_comment_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it posts one reply to a comment on the user's own connected account.",
+        "open_world_justification": "Open world: it writes to a third-party network (the platform the comment is on), as the user's own account, and only the exact draft the user confirmed.",
+        "destructive_justification": "Not destructive: it adds one reply, deletes or overwrites nothing, and each comment can be answered at most once."
+      }
+    },
     "create_brand_watch": {
       "annotations": {
         "readOnlyHint": false,

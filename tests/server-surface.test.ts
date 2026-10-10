@@ -27,6 +27,10 @@ async function connect(structured: unknown = {}) {
 }
 
 const NOT_READ_ONLY = [
+  // Draft stores a reply (and bills 1 credit when nooticr writes it); post
+  // writes one comment to a third-party network as the user's own account.
+  "draft_comment_reply",
+  "post_comment_reply",
   // The watchlist tools write: two change stored state, and the catch-up also
   // moves every baseline forward, which is why it is not idempotent either.
   "watch_creator",
@@ -87,7 +91,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(90);
+    expect(tools).toHaveLength(93);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -114,6 +118,7 @@ describe("tool annotations", () => {
       "check_nooticr_credits",
       "connect_social_account",
       "create_product",
+      "draft_comment_reply",
       "draft_post",
       "generate_captions",
       "generate_content_plan",

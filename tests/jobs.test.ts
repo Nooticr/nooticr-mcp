@@ -1039,6 +1039,7 @@ describe("the comment grant and the drafting tools agree", () => {
     const { client } = await connect(twoPostBackend());
     const { tools } = await client.listTools();
     const t = tools.find((x) => x.name === "list_social_connections")!;
-    expect(t.description).toMatch(/no nooticr tool posts, replies to or moderates a comment/);
+    expect(t.description).toMatch(/this tool posts nothing/);
+    expect(t.description).toMatch(/post_comment_reply/);
   });
 });

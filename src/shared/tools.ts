@@ -55,6 +55,7 @@ import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { registerReplyTools } from "./replies.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
@@ -3379,6 +3380,7 @@ const TOOL_NAMES = [
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
  registerConnectionTools(server, makeClient);
+ registerReplyTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);
  // Neither fetches, neither takes a client: one formats what the model
  // classified for a tracker on another server, the other draws what it scored.

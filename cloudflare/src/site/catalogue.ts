@@ -324,6 +324,24 @@ export const TOOLS: Tool[] = [
     when: "The job is answering your own audience rather than reading about strangers.",
   },
   {
+    name: "list_comments_to_answer", cost: 0, group: "own",
+    args: "platform?, influencerId?, postId?, sinceDays?, limit?, includeAnswered?",
+    desc: "Recent comments on your own connected account that nobody has answered yet, newest first. Read-only; sends nothing. Free.",
+    when: "You want to answer your audience and the account is connected with comment management.",
+  },
+  {
+    name: "draft_comment_reply", cost: 0, group: "own",
+    args: "platform, commentId, postId, text?, guidance?",
+    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it. Returns a draftId and confirmationToken.",
+    when: "After list_comments_to_answer, to have a reply ready for the user to read.",
+  },
+  {
+    name: "post_comment_reply", cost: 0, group: "own",
+    args: "draftId, confirm, confirmationToken",
+    desc: "Posts a stored draft as the user's own account. Only after the user has agreed to the exact text. Each comment is answered at most once. Free.",
+    when: "The user has read the draft and said to send it.",
+  },
+  {
     name: "show_audience_replies", cost: 0, group: "research",
     args: "your drafted replies",
     desc: "Draws the replies you drafted, grouped under the post each comment was left on. Sends nothing.",

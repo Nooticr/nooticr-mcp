@@ -66,6 +66,9 @@ NO_APP = {
     "list_brand_watches",
     "list_own_apps",
     "analyze_product",
+    "list_comments_to_answer",
+    "draft_comment_reply",
+    "post_comment_reply",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"
