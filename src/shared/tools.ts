@@ -55,6 +55,7 @@ import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { registerEmployeeTools } from "./employees.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
@@ -3379,6 +3380,8 @@ const TOOL_NAMES = [
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
  registerConnectionTools(server, makeClient);
+ // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
+ registerEmployeeTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);
  // Neither fetches, neither takes a client: one formats what the model
  // classified for a tracker on another server, the other draws what it scored.

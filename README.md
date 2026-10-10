@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-90 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+97 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -181,6 +181,13 @@ a `scanId` for the rest.
 | `nooticr_login` | free | Re-link the account when a call fails with an authentication error. |
 | `list_social_connections` | free | What you have connected and what each connection is actually allowed to do — read the account, publish a post, manage comments — as yes, no or **unknown**. "Manage comments" reports the platform's grant; no nooticr tool posts or replies to a comment. Unknown means the grant predates scope recording: treat it as "try it", not as a refusal. Also says which platforms can be linked at all, which is a smaller set than the networks nooticr reads. |
 | `connect_social_account` | free | A link the user opens to connect one account. They approve at the provider in their own browser; nothing is connected until they do, and no credential passes through the tool or the model's context. Each call mints a fresh link — an old one does not work twice. |
+| `hire_employee` | free to call | Hire an AI employee (for example a Social Media Manager) that works on a schedule inside your workspace. Two calls by design: the first creates nothing and returns a quote and a `confirmationToken`; call again with `confirm: true` and that token only after you say yes. Public actions wait for your approval unless autopilot is on. Its runs bill the hiring user, up to the monthly budget. |
+| `list_employees` | free | Your AI employees with status, schedule, next run and budget left; `includeFired: true` adds the ones let go. |
+| `pause_employee` | free | Pause an AI employee (it keeps its memory and thread) or resume it with `resume: true`. Only the person who hired it or a workspace admin can. |
+| `fire_employee` | free | Let an AI employee go for good: runs stop and actions awaiting approval are discarded. The first call only describes what will happen; confirm with `confirm: true`. |
+| `list_pending_actions` | free | What your AI employees are waiting to do until you approve, each with a preview of what will be published, sent or changed. Optionally one `employeeId`. |
+| `approve_action` | free | Approve one pending action by `actionId`. The first call returns the preview and a `confirmationToken` and runs nothing; after you confirm, the stored action runs exactly once. |
+| `reject_action` | free | Reject one pending action, with an optional note the employee can learn from. |
 | `create_product` | free | Create a product in your own workspace — the row every other own-account tool needs before it has anything to work with. Always creates in the calling session's workspace, never one you could name. `name` and `slug` are required; every other field is snake_case and read by exact key, so a camelCase `websiteUrl` lands nowhere. Writes no brand playbook. |
 | `update_product` | free | Patch a product's fields. An omitted argument leaves its column unchanged, so this cannot blank a field by not mentioning it, and the result lists what was actually written — a misspelled field shows up as one that did not change rather than as a silent no-op. |
 

@@ -66,6 +66,15 @@ NO_APP = {
     "list_brand_watches",
     "list_own_apps",
     "analyze_product",
+    # AI employees (employees.ts). View pending for all seven: the two lists would be
+    # tables and the two quotes confirmation cards, which the design system has no card for.
+    "hire_employee",  # view pending: a hire quote and its confirm step
+    "list_employees",  # view pending: a table of employees with status and budget left
+    "pause_employee",  # pure state mutation: nothing to draw
+    "fire_employee",  # view pending: the confirm step; otherwise a pure state mutation
+    "list_pending_actions",  # view pending: a queue of previews awaiting approval
+    "approve_action",  # view pending: the preview and its confirm step
+    "reject_action",  # pure state mutation: nothing to draw
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"

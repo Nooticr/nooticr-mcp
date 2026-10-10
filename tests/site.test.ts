@@ -656,6 +656,14 @@ describe("tool surface", () => {
     "nooticr_settings_read",
     "nooticr_settings_update",
     "show_marketplace_category_insights",
+    // AI employees (employees.ts).
+    "hire_employee",
+    "list_employees",
+    "pause_employee",
+    "fire_employee",
+    "list_pending_actions",
+    "approve_action",
+    "reject_action",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -768,6 +776,14 @@ describe("tool surface", () => {
       "amazon_scan_status",
       // The same poll, for the other ten sites.
       "marketplace_scan_status",
+      // AI employees: managing one is free; its runs are billed when they happen.
+      "hire_employee",
+      "list_employees",
+      "pause_employee",
+      "fire_employee",
+      "list_pending_actions",
+      "approve_action",
+      "reject_action",
       "nooticr_settings_read",
       "nooticr_settings_update",
     ];

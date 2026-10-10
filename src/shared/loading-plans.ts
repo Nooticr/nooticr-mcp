@@ -588,6 +588,15 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
 
+  // ─── AI employees (employees.ts): managing one is free; its runs are billed when they happen ───
+  hire_employee: { label: "Preparing the hire", kind: "text", n: 1, steps: [], free: true },
+  list_employees: { label: "Reading your employees", kind: "list", n: 3, steps: [], free: true },
+  pause_employee: { label: "Updating the employee", kind: "text", n: 1, steps: [], free: true },
+  fire_employee: { label: "Letting the employee go", kind: "text", n: 1, steps: [], free: true },
+  list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
+  approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },
+  reject_action: { label: "Rejecting the action", kind: "text", n: 1, steps: [], free: true },
+
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },
   get_content_plan: { label: "Reading the saved plan", kind: "text", n: 1, steps: [], free: true },
