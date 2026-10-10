@@ -454,6 +454,42 @@ describe("dashboard", () => {
     expect(html).not.toContain("undefined");
   });
 
+  /**
+   * Reported as "keys created with the CLI don't get displayed here". The
+   * code path was right; what was missing was any way to see that the CLI and
+   * this page were looking at different accounts, or different servers. The
+   * card named neither, and every read failure collapsed into one word.
+   */
+  it("names the account and the server its key list belongs to", () => {
+    const html = dashboardPage(
+      URL, { email: "julian@aybee.io" }, usage, "tok", [], undefined, "https://api.nooticr.com"
+    );
+    expect(html).toContain("julian@aybee.io");
+    expect(html).toContain("https://api.nooticr.com");
+    // And says where a CLI-made key would have gone instead.
+    expect(html).toMatch(/NOOTICR_BASE_URL/);
+  });
+
+  it("says why a key list could not be read, not just that it could not", () => {
+    const reason = "This deployment reads https://api.nooticr.com, which has no API-key endpoint yet.";
+    const html = dashboardPage(URL, { email: "j@a.io" }, usage, "tok", null, reason, "https://api.nooticr.com");
+    expect(html).toContain(reason);
+    // The old copy said this and nothing else; it must not be the whole answer.
+    const generic = "Keys are unavailable right now";
+    expect(html).not.toContain(generic);
+    // A failure is drawn as one, not as an empty list.
+    expect(html).not.toContain("No keys yet");
+    expect(html).toContain('class="err"');
+  });
+
+  it("tells an empty list apart from a mismatched one", () => {
+    const html = dashboardPage(URL, { email: "j@a.io" }, usage, "tok", [], undefined, "https://api.nooticr.com");
+    expect(html).toContain("No keys yet");
+    expect(html, "an empty list should mention the two things that make a key invisible").toMatch(
+      /same account/i
+    );
+  });
+
   it("signed-out view offers a way in and does not leak an error object", () => {
     const html = dashboardSignedOut(URL);
     expect(html).toContain("/dashboard/login");

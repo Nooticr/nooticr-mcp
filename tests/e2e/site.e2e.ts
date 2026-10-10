@@ -74,7 +74,15 @@ const ROUTES: Record<string, () => string> = {
   "/dashboard-nokeys": () =>
     dashboardPage(PUBLIC_URL, { email: "e2e@nooticr.com", displayName: "E2E" }, USAGE, "secret-token", []),
   "/dashboard-keys-down": () =>
-    dashboardPage(PUBLIC_URL, { email: "e2e@nooticr.com", displayName: "E2E" }, USAGE, "secret-token", null),
+    dashboardPage(
+      PUBLIC_URL,
+      { email: "e2e@nooticr.com", displayName: "E2E" },
+      USAGE,
+      "secret-token",
+      null,
+      "api.nooticr.test answered 404 when asked for your keys.",
+      "https://api.nooticr.test"
+    ),
   "/signed-out": () => dashboardSignedOut(PUBLIC_URL),
 };
 
@@ -371,13 +379,22 @@ test.describe("dashboard API keys", () => {
     await expect(page.locator("#keyform")).toBeVisible();
   });
 
-  test("a backend that cannot list keys says so instead of showing none", async ({ page }) => {
-    // The difference matters: "you have none" invites creating a duplicate of
-    // a key that already exists.
+  test("a backend that cannot list keys says which one, and why", async ({ page }) => {
+    // The difference matters twice over: "you have none" invites creating a
+    // duplicate of a key that already exists, and a bare "unavailable" gave
+    // whoever reported a missing key nothing to check.
     await page.goto(`${base}/dashboard-keys-down`);
-    await expect(page.locator("#keys")).toContainText("unavailable");
-    await expect(page.locator("#keys")).toContainText("api-key create");
+    const card = page.locator("#keys");
+    await expect(card).toContainText("answered 404");
+    await expect(card).toContainText("api.nooticr.test");
+    await expect(card).toContainText("api-key create");
+    await expect(card).not.toContainText("No keys yet");
     await expect(page.locator("#keyform")).toHaveCount(0);
+  });
+
+  test("names the account a key list belongs to", async ({ page }) => {
+    await page.goto(`${base}/dashboard`);
+    await expect(page.locator("#keys")).toContainText("e2e@nooticr.com");
   });
 
   for (const width of [320, 768, 1280]) {
