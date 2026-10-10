@@ -400,8 +400,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "connect_social_account",
  title: "Connect Social Account",
- description: "Get a link to open so you can connect one social account. The user approves at the provider; nothing is connected until they do, and no credential ever passes through this tool. No cost to call.",
- inputSchema: z.object({ platform: z.string().describe("Which network to connect."), influencerId: z.number().int().optional(), appId: z.number().int().optional() }).strict(),
+ description: "Get a link to open so you can connect one social account. The user approves at the provider; nothing is connected until they do, and no credential ever passes through this tool. For YouTube, pass capabilities [\"manage_comments\"] to also ask for the comment-management grant. No cost to call.",
+ inputSchema: z.object({ platform: z.string().describe("Which network to connect."), influencerId: z.number().int().optional(), appId: z.number().int().optional(), capabilities: z.array(z.enum(["manage_comments"])).optional().describe("YouTube only: [\"manage_comments\"] asks for the comment-management grant.") }).strict(),
  },
  {
  name: "answer_my_audience",
