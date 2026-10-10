@@ -46,7 +46,9 @@
     "test:mutation": "node scripts/mutation-guard.mjs",
     "test:invariants": "node scripts/invariant-guard.mjs",
     "verify:deep": "npm run verify && npm run test:mutation && npm run test:invariants",
-    "check:submission": "node scripts/check-submission-schema.mjs"
+    "check:submission": "node scripts/check-submission-schema.mjs",
+    "registry:check": "node scripts/registry-drift.mjs",
+    "registry:publish": "bash scripts/publish-registry.sh"
   },
   "keywords": [
     "mcp",

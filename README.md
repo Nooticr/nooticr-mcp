@@ -638,6 +638,10 @@ and text** posts.
 See [docs/SUBMISSION.md](docs/SUBMISSION.md) for ready-to-paste configs and the submission
 package for **Claude Desktop**, **Cursor**, and **OpenAI Agents SDK**.
 
+The official MCP registry entry `com.nooticr/mcp` must equal `server.json`'s version after each
+release; see [docs/registry-publishing.md](docs/registry-publishing.md) for the drift check
+(`npm run registry:check`) and the publish script (`npm run registry:publish`).
+
 ## Security notes
 
 - The credentials file is written with mode `0600` and the directory with
