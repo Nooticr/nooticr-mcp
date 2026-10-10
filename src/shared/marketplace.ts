@@ -297,6 +297,8 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     statusTool: "marketplace_scan_status",
     statusArgs: { marketplace: m.slug },
     status: typeof payload.status === "string" ? payload.status : undefined,
+    notice: typeof payload.notice === "string" ? payload.notice : undefined,
+    siteStatus: typeof payload.siteStatus === "string" ? payload.siteStatus : undefined,
     total: num(progress.total) ?? undefined,
     // Its own view, labelled with this site (#95): pointing a model at
     // show_amazon_category_insights would have it draw a Lazada scan as an
@@ -326,6 +328,11 @@ function marketplaceResult(payload: Record<string, unknown>, m: Market, focus?: 
     reviews,
     errors: payload.errors ?? [],
     mcpCredits: payload.mcpCredits ?? null,
+    // Degraded-scan fields (nooticr-server#239); absent on an older server.
+    notice: payload.notice ?? null,
+    quality: payload.quality ?? null,
+    collectorStatus: payload.collectorStatus ?? null,
+    siteStatus: payload.siteStatus ?? null,
   };
 
   return {
