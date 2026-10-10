@@ -87,7 +87,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(90);
+    expect(tools).toHaveLength(92);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -114,6 +114,8 @@ describe("tool annotations", () => {
       "check_nooticr_credits",
       "connect_social_account",
       "create_product",
+      "creative_assets_list",
+      "creative_job_status",
       "draft_post",
       "generate_captions",
       "generate_content_plan",

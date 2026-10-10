@@ -1397,6 +1397,20 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
+  // Creative assets (nooticr-server CR1). Assets and jobs are the server's own
+  // shapes, so only the stable fields are named.
+  creative_assets_list: open({
+    assets: listOf(open({ id: scalar(), kind: scalar(), appId: scalar(), url: scalar(), mime: scalar(), createdAt: scalar() })),
+    nextCursor: scalar(),
+  }),
+  creative_job_status: open({
+    jobId: scalar(),
+    status: scalar(),
+    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+    creativeCredits: anyObject().nullish(),
+    pollAfterSeconds: scalar(),
+  }),
+
   list_brand_watches: open({
     watches: listOf(
       open({

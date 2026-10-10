@@ -1378,6 +1378,18 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    case "creative_assets_list": {
+      return {
+        content: [{ type: "text", text: "1 creative asset." }],
+        structuredContent: { assets: [{ id: "00000000-0000-0000-0000-0000000000c1", kind: "image", appId: 1, url: "https://example.test/c1.png" }], nextCursor: null },
+      };
+    }
+    case "creative_job_status": {
+      return {
+        content: [{ type: "text", text: "Job done." }],
+        structuredContent: { jobId: args.jobId ?? "fixture-job", status: "done", assets: [] },
+      };
+    }
     case "list_brand_watches": {
       return {
         content: [{ type: "text", text: "1 active brand watch." }],

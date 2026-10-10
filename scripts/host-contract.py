@@ -65,6 +65,10 @@ NO_APP = {
     "update_watch_portfolio",
     "list_brand_watches",
     "list_own_apps",
+    # Creative assets (creative.ts): the asset list would be a gallery and the job a status
+    # line; the design system has no card for either.
+    "creative_assets_list",
+    "creative_job_status",
     "analyze_product",
 }
 

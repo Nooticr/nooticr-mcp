@@ -53,6 +53,7 @@ import {
 } from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
+import { registerCreativeTools } from "./creative.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
@@ -3378,6 +3379,8 @@ const TOOL_NAMES = [
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
+ // Creative assets (creative.ts): the free reads of nooticr-server's creative_* family.
+ registerCreativeTools(server, makeClient);
  registerConnectionTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);
  // Neither fetches, neither takes a client: one formats what the model

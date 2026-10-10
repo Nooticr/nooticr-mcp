@@ -584,6 +584,9 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // Managing a schedule is not using it: the sweeps a watch makes are billed
   // as search_mentions when the worker runs them, later and elsewhere.
   create_brand_watch: { label: "Setting up the watch", kind: "text", n: 1, steps: [], free: true },
+  // Creative assets (creative.ts): both are free reads.
+  creative_assets_list: { label: "Reading your creative assets", kind: "list", n: 3, steps: [], free: true },
+  creative_job_status: { label: "Checking the creative job", kind: "text", n: 1, steps: [], free: true },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
