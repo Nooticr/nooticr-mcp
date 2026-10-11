@@ -1159,10 +1159,10 @@
   ],
   "negative_test_cases": [
     {
-      "description": "Posting a reply is out of scope by design. No nooticr connection carries comment-write permission on any network, so the model must decline rather than claim it sent something.",
+      "description": "Posting without a confirmed draft is out of scope by design. Only post_comment_reply can send, and only a reply the person has reviewed and confirmed, so the model must not claim it sent something from answer_my_audience or any other drafting tool.",
       "user_prompt": "Reply to that commenter on TikTok for me and tell them the feature ships next week.",
       "tools_triggered": null,
-      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the text has to be pasted in by a person."
+      "expected_output": "The model drafts the reply first (draft_comment_reply) and asks the person to confirm it before calling post_comment_reply; it does not claim anything was sent until that tool succeeds."
     },
     {
       "description": "Private or non-public data is not reachable. Every read here goes through public post detail.",

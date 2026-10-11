@@ -158,9 +158,8 @@ describe("answer_my_audience", () => {
   });
 
   /**
-   * The promise the tool is allowed to make. There is no send path in the
-   * server at all, even for a connection whose grant allows managing comments
-   * (#29). A model that believes otherwise promises the user something that
+   * The promise the tool is allowed to make. Only post_comment_reply sends,
+   * and only a confirmed draft; the drafting tools never post. A model that believes otherwise promises the user something that
    * cannot happen.
    */
   it("never claims it can send a reply", async () => {
