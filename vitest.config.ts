@@ -9,6 +9,9 @@ export default defineConfig({
     // defaults give false timeouts (and worker-RPC timeouts) on tests that pass.
     testTimeout: 60_000,
     hookTimeout: 60_000,
-    maxWorkers: 2,
+    // worker_threads RPC (onTaskUpdate) times out when the runner starves the
+    // event loop; child processes, one at a time, avoid that.
+    pool: "forks",
+    maxWorkers: 1,
   },
 });
