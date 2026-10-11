@@ -103,7 +103,7 @@ export function privacyPage(publicUrl: string, nooticrBase: string): string {
       `<li>We store your account identity, your credit balance, and a log of which tools you called and when.</li>` +
       `<li>We do <strong>not</strong> store the content of the posts your assistant retrieves.</li>` +
       `<li>We do <strong>not</strong> sell your data, and we do not use it to train models.</li>` +
-      `<li>We never connect to your social accounts and cannot act on them.</li>` +
+      `<li>We connect to your social accounts only if you choose to connect them, and act on them only on your instruction: a reply is posted only after you have seen its exact text and confirmed it.</li>` +
       `</ul>` +
 
       `<h2>What we collect</h2>` +
@@ -120,7 +120,7 @@ export function privacyPage(publicUrl: string, nooticrBase: string): string {
       `<ul>` +
       `<li>Your card number, CVC or bank details — Stripe handles payment and we only receive a reference.</li>` +
       `<li>The bodies of your AI conversations. We see the tool call, not the chat around it.</li>` +
-      `<li>Credentials for any social network. The service reads public data only and has no access to your social accounts.</li>` +
+      `<li>Your social-network passwords. If you choose to connect an account, access is granted through that network&rsquo;s own authorisation flow and is used only for actions you confirm.</li>` +
       `<li>The retrieved posts themselves. Media is streamed through to your assistant and cached only transiently to make it viewable.</li>` +
       `</ul>` +
 
