@@ -1983,7 +1983,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 draft: z
                   .string()
                   .optional()
-                  .describe("The reply, in the creator's voice, for them to paste in themselves."),
+                  .describe("The reply, in the creator's voice. It is only a draft: nothing is posted until the creator confirms its exact text."),
                 kind: z
                   .enum(["answer", "pin", "make_a_video", "escalate", "ignore"])
                   .optional()

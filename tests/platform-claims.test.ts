@@ -452,6 +452,17 @@ describe("the social-listening skill's platform claims", () => {
     expect(skill).toMatch(/post text\s*\*{0,2}\s*only/i);
   });
 
+  it("never tells the model or a reviewer that replies are paste-only", () => {
+    const submission = readFileSync(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+    const jobs = readFileSync(new URL("../src/shared/jobs.ts", import.meta.url), "utf8");
+    for (const [name, text] of [["submission", submission], ["jobs.ts", jobs]] as const) {
+      expect(text, `${name} still says replies are pasted by the person`).not.toMatch(
+        /paste (it )?in themselves|for a person to paste|No nooticr connection carries comment-write/i,
+      );
+    }
+    expect(JSON.parse(submission).app_info.description).toContain("only after the user confirms its exact text");
+  });
+
   it("states the boundaries that are not about platforms", () => {
     // The submission tells a reviewer this cannot write to a social account.
     // The skill is what the model reads, so it must say the same thing.
