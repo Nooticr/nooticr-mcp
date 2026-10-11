@@ -362,6 +362,15 @@ describe("the submission file against the server", () => {
     return client;
   }
 
+  it("does not tell the reviewer that nothing posts to a social network", () => {
+    const { app_info } = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8")) as {
+      app_info: { description: string };
+    };
+    expect(app_info.description).not.toMatch(/nothing here posts/i);
+    expect(app_info.description).not.toMatch(/comment-write permission/i);
+    expect(app_info.description).toMatch(/post_comment_reply/);
+  });
+
   it("covers every tool the server ships, and no tool it does not", async () => {
     const { tools } = await (await connectServer()).listTools();
     const shipped = tools.map((t) => t.name).sort();
