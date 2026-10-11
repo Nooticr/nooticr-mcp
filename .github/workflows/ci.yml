@@ -224,9 +224,13 @@ jobs:
       can_deploy: ${{ steps.cf.outputs.can_deploy }}
     steps:
       # Full history: the version step below asks what this push changed.
+      # The release commit pushed below must pass the org ruleset, and the
+      # Actions token can't be a ruleset bypass actor; this repo-only write
+      # deploy key can, so the `git push` below uses it.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
 
       - uses: actions/setup-node@v4
         with:
