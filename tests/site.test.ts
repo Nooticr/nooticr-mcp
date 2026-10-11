@@ -230,6 +230,12 @@ describe("legal pages", () => {
     expect(p).toContain("Until you delete the account");
   });
 
+  it("terms say replies are posted only after the user confirms the exact text", () => {
+    const t = termsPage(URL, API);
+    expect(t).toContain("only after you have seen the exact text and confirmed it");
+    expect(t).not.toContain("does not connect to your social accounts at all");
+  });
+
   it("terms cover payment, acceptable use and liability", () => {
     const t = termsPage(URL, API);
     for (const heading of ["Credits and payment", "Acceptable use", "Liability", "Termination"]) {
