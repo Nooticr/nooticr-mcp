@@ -711,8 +711,8 @@ export const OUTPUT_SCHEMAS = {
     sinceApplied: scalar().describe("False when the platform returned no dates, so the window could not be honoured."),
     postsChecked: scalar().describe("Posts whose comments were actually read."),
     repliesCanBeSent: scalar().describe(
-      "Always false. nooticr does not post replies, even where list_social_connections reports a " +
-        "connection can manage comments, so the drafts this produces are for a person to paste in themselves.",
+      "Always false. This tool only drafts and never sends; a reply is posted only by a separate step, " +
+        "on the user's connected account, after the user confirms the exact text.",
     ),
     totalMentions: scalar().describe("Comments returned across every group."),
     totalThreads: scalar(),

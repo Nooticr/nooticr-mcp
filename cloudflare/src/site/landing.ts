@@ -267,7 +267,7 @@ export function landingPage(publicUrl: string, nooticrBase: string): string {
     `<div class="wrap"><section class="faq">` +
     `<div class="sec-head"><span class="eyebrow">Questions</span><h2>Before you connect</h2></div>` +
     `<div style="max-width:46rem;margin:0 auto">` +
-    faq("What data does Nooticr access?", "Only public posts you or your assistant explicitly ask for, by URL or search. Nooticr never reads your private messages, drafts or account data, and never posts on your behalf.") +
+    faq("What data does Nooticr access?", "Only public posts you or your assistant explicitly ask for, by URL or search. Nooticr never reads your private messages, drafts or account data, and never posts on your behalf without you confirming the exact text first.") +
     faq("Do I need a credit card to try it?", "No. New accounts get 20 credits, which is enough for a full pass over a post and its comments several times over. You only pay when you choose to top up.") +
     faq("What happens if a tool call fails?", "You are not charged. Failed calls are refunded to your balance automatically, and a call interrupted mid-flight is billed once at most, never twice.") +
     faq("Where is my usage visible?", `Your <a href="/dashboard" style="color:var(--brand)">dashboard</a> shows balance, credits spent, calls per tool and recent activity. Your assistant can also call <code>check_nooticr_credits</code> at any time.`) +
