@@ -230,6 +230,12 @@ describe("legal pages", () => {
     expect(p).toContain("Until you delete the account");
   });
 
+  it("terms say only a confirmed reply posts, and drop the old no-action claim", () => {
+    const t = termsPage(URL, API);
+    expect(t).toContain("only when you have reviewed and explicitly confirmed that specific reply");
+    expect(t).not.toContain("does not post, comment, like, follow, message, or take any other action");
+  });
+
   it("terms cover payment, acceptable use and liability", () => {
     const t = termsPage(URL, API);
     for (const heading of ["Credits and payment", "Acceptable use", "Liability", "Termination"]) {
