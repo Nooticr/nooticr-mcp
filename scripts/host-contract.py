@@ -66,6 +66,9 @@ NO_APP = {
     "list_brand_watches",
     "list_own_apps",
     "analyze_product",
+    # The three reply tools return plain JSON (comment lists, a stored draft and
+    # its confirmation token, a post receipt). The user confirms the draft in
+    # the host's chat, so there is nothing for a widget to draw.
     "list_comments_to_answer",
     "draft_comment_reply",
     "post_comment_reply",

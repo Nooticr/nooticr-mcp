@@ -8,6 +8,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "../src/shared/tools.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
+import { TOOL_DEFINITIONS } from "../src/shared/tools-def.js";
 
 async function connect() {
   const calls: Array<{ name: string; args: unknown }> = [];
@@ -25,6 +26,16 @@ async function connect() {
 }
 
 describe("reply tools", () => {
+  it("tools-def mirrors the registered descriptions of the reply tools", async () => {
+    const { client } = await connect();
+    const { tools } = await client.listTools();
+    for (const name of ["list_comments_to_answer", "draft_comment_reply", "post_comment_reply"]) {
+      const registered = tools.find((t) => t.name === name)?.description;
+      const mirror = TOOL_DEFINITIONS.find((t) => t.name === name)?.description;
+      expect(mirror, name).toBe(registered);
+    }
+  });
+
   it("post_comment_reply refuses a call without confirm and the token", async () => {
     const { client, calls } = await connect();
     const res = await client.callTool({ name: "post_comment_reply", arguments: { draftId: "d1" } });
