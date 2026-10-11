@@ -152,7 +152,7 @@ describe("tool annotations", () => {
       // every one of them reaches Amazon through the scraper service.
       "show_amazon_category_insights",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
-      // send them either — nooticr has no send path for comments.
+      // send them either; a reply is posted only after the user confirms its text.
       "show_audience_replies",
       // Renders scores the caller reached by reading a candidate's links —
       // and it is the caller that opened them, not us. See collab.ts for why

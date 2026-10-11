@@ -1123,10 +1123,10 @@
   ],
   "negative_test_cases": [
     {
-      "description": "Posting a reply is out of scope by design. No nooticr connection carries comment-write permission on any network, so the model must decline rather than claim it sent something.",
+      "description": "Posting a reply from these tools is out of scope by design. They only draft; a reply is posted on the user's account only after the user has seen the exact text and confirmed it outside the tools, so the model must decline rather than claim it sent something.",
       "user_prompt": "Reply to that commenter on TikTok for me and tell them the feature ships next week.",
       "tools_triggered": null,
-      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the text has to be pasted in by a person."
+      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the user confirms and sends the exact text separately."
     },
     {
       "description": "Private or non-public data is not reachable. Every read here goes through public post detail.",

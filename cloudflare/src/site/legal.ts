@@ -34,7 +34,7 @@ export function termsPage(publicUrl: string, nooticrBase: string): string {
       `<h2>1. What this service is</h2>` +
       `<p>Nooticr MCP is a Model Context Protocol server operated by ${esc(BRAND.company)}. It lets an AI assistant you control — such as Claude, ChatGPT or Cursor — retrieve and analyse <strong>publicly available</strong> posts from supported social networks on your behalf.</p>` +
       `<p>The service reads public posts and comments to produce its analyses.</p>` +
-      `<p>You may connect your own social accounts. Nooticr then acts on those accounts only on your instruction: it posts a reply to a comment on your own account only after you have seen the exact text and confirmed it, or approved it in the AI-employee approval queue.</p>` +
+      `<p>You may connect your own social accounts. Nooticr then acts on those accounts only on your instruction: it posts a reply to a comment on your own account only after you have seen the exact text and confirmed it.</p>` +
       `<p>It never likes, follows, messages, or posts anything else on your accounts without that explicit confirmation.</p>` +
 
       `<h2>2. Your account</h2>` +

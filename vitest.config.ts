@@ -9,6 +9,6 @@ export default defineConfig({
     // defaults give false timeouts (and worker-RPC timeouts) on tests that pass.
     testTimeout: 60_000,
     hookTimeout: 60_000,
-    maxWorkers: 3,
+    maxWorkers: 2,
   },
 });

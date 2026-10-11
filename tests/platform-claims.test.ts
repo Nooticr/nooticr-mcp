@@ -456,6 +456,7 @@ describe("the social-listening skill's platform claims", () => {
     // The submission tells a reviewer this cannot write to a social account.
     // The skill is what the model reads, so it must say the same thing.
     expect(skill).toMatch(/cannot post/i);
+    expect(skill).toMatch(/only after the user has seen the exact text and confirmed it/i);
     expect(skill).toMatch(/draft/i);
     expect(skill).toMatch(/public data only/i);
     // Every tool returning third-party text frames it as evidence; a skill
