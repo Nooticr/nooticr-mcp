@@ -35,8 +35,8 @@ describe("creative tools", () => {
   it("forwards each call to the backend tool of the same name with its arguments", async () => {
     const { client, calls } = await connect();
     const args: Record<string, Record<string, unknown>> = {
-      creative_assets_list: { appId: 3, kind: "image", briefId: "b1", since: "2026-01-01T00:00:00Z", limit: 10, cursor: "c" },
-      creative_job_status: { jobId: "j1" },
+      creative_assets_list: { appId: 3, kind: "image", briefId: "11111111-1111-4111-8111-111111111111", since: "2026-01-01T00:00:00Z", limit: 10, cursor: "c" },
+      creative_job_status: { jobId: "22222222-2222-4222-8222-222222222222" },
     };
     for (const name of NAMES) {
       const res = await client.callTool({ name, arguments: args[name] });

@@ -65,8 +65,8 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         .object({
           appId: z.number().int().optional().describe("Only this product's assets."),
           kind: z.enum(CREATIVE_ASSET_KINDS).optional(),
-          briefId: z.string().optional(),
-          since: z.string().optional().describe("ISO 8601 timestamp."),
+          briefId: z.string().uuid().optional(),
+          since: z.string().datetime({ offset: true }).optional().describe("ISO 8601 timestamp."),
           limit: z.number().int().min(1).max(100).optional(),
           cursor: z.string().optional().describe("nextCursor from the previous page."),
         })
@@ -85,7 +85,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         "canceled, with the finished assets and the credits quoted, charged and refunded. Poll " +
         "after pollAfterSeconds. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: z.object({ jobId: z.string().describe("jobId returned when the job was started.") }).strict(),
+      inputSchema: z.object({ jobId: z.string().uuid().describe("jobId returned when the job was started.") }).strict(),
       outputSchema: OUTPUT_SCHEMAS.creative_job_status,
     },
     passthrough("creative_job_status"),
