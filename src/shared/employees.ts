@@ -1,0 +1,211 @@
+/**
+ * AI employees (nooticr-server P1): hire one, see what it is waiting to do,
+ * approve or reject that, pause it, let it go. Every tool here is a passthrough
+ * to the server's `POST /mcp` dispatch; the server owns the quote, the
+ * confirmation token, the permission check (the hiring user or a workspace
+ * admin) and the stored action that approve_action runs exactly once.
+ *
+ * None of these has a view yet: the lists would be drawn as tables and the
+ * quotes as confirmation cards, and the design system has no card for either.
+ */
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
+import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
+import type { NooticrClient, McpProxyResult } from "./nooticr.js";
+import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+
+interface MakeClient {
+  (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
+    | Promise<NooticrClient>
+    | NooticrClient;
+}
+
+function toResult(proxy: McpProxyResult) {
+  const textBlock = proxy.contentBlocks.find((c) => c.type === "text");
+  const structured = proxy.structured as Record<string, unknown> | undefined;
+  // The backend's text block can be a one-line summary, and the employees,
+  // actions, previews and confirmation tokens are in `structuredContent`, which
+  // a host rendering a view keeps for the widget. Without a view here, the model
+  // must read them from the text, so carry the payload in both.
+  const text = structured ? JSON.stringify(structured) : String(textBlock?.text ?? "");
+  return { content: [{ type: "text" as const, text }], structuredContent: structured };
+}
+
+function failed(prefix: string, err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return {
+    content: [{ type: "text" as const, text: `${prefix}: ${msg}` }],
+    isError: true as const,
+  };
+}
+
+/** The sentence every two-step employee tool carries. A test pins it. */
+export const TWO_STEP_RULE =
+  "The first call changes nothing and returns a preview and a confirmationToken; show it to the " +
+  "user, and call again with confirm: true and the token only after the user explicitly agrees — " +
+  "never confirm on the user's behalf.";
+
+const confirm = z.boolean().optional();
+
+export function registerEmployeeTools(server: McpServer, makeClient: MakeClient): void {
+  const passthrough = (name: string) => async (args: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+    const client = await makeClient({ ...extra, arguments: args });
+    try {
+      return toResult(await client.callTool(name, args));
+    } catch (err) {
+      return failed(`${name} failed`, err);
+    }
+  };
+
+  server.registerTool(
+    "hire_employee",
+    {
+      title: "Hire Employee",
+      description:
+        "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside " +
+        "this workspace. Pass `template` and optionally name, instructions, appId, schedule, " +
+        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify. " +
+        TWO_STEP_RULE +
+        " Public actions (publish, email, reply, listing or price changes) wait for the user's " +
+        "approval unless autopilot is turned on. The hiring user is billed for runs, up to the " +
+        "monthly budget. No cost to call.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      inputSchema: z
+        .object({
+          template: z.string().describe("Template slug, e.g. social-media-manager."),
+          name: z.string().optional().describe("What to call the employee."),
+          instructions: z.string().optional().describe("Standing instructions from the customer (tone, topics to avoid, ...)."),
+          appId: z.number().int().optional().describe("Focus product id."),
+          schedule: z
+            .object({}).passthrough()
+            .optional()
+            .describe("{kind:'weekly',days:['mon'],times:['09:00'],tz:'Europe/Paris'} | {kind:'interval',minutes:N>=60} | {kind:'manual'}."),
+          monthlyBudgetCredits: z.number().int().min(1).optional(),
+          maxCreditsPerRun: z.number().int().min(1).optional(),
+          approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."),
+          notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack']}."),
+          model: z.string().optional().describe("Optional model."),
+          effort: z.string().optional().describe("low | medium | high."),
+          confirm,
+          confirmationToken: z.string().optional().describe("Token returned in the quote."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.hire_employee,
+    },
+    passthrough("hire_employee"),
+  );
+
+  server.registerTool(
+    "list_employees",
+    {
+      title: "List Employees",
+      description:
+        "List this workspace's AI employees with status, schedule, next run and budget left. " +
+        "Pass includeFired: true to include ones that were let go. No cost to call.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z.object({ includeFired: z.boolean().optional() }).strict(),
+      outputSchema: OUTPUT_SCHEMAS.list_employees,
+    },
+    passthrough("list_employees"),
+  );
+
+  server.registerTool(
+    "pause_employee",
+    {
+      title: "Pause Employee",
+      description:
+        "Pause an AI employee so it stops running (it keeps its memory and thread), or resume it " +
+        "with resume: true. Only the person who hired it or a workspace admin can. No cost to call.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          employeeId: z.string().describe("Employee id."),
+          resume: z.boolean().optional().describe("Resume instead of pausing."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.pause_employee,
+    },
+    passthrough("pause_employee"),
+  );
+
+  server.registerTool(
+    "fire_employee",
+    {
+      title: "Fire Employee",
+      description:
+        "Let an AI employee go for good: runs stop and actions waiting for approval are discarded; " +
+        "its thread stays readable. The first call only describes what will happen and changes " +
+        "nothing; call again with confirm: true only after the user explicitly agrees — never " +
+        "confirm on the user's behalf. Only the person who hired it or a workspace admin can. " +
+        "No cost to call.",
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+      inputSchema: z.object({ employeeId: z.string().describe("Employee id."), confirm }).strict(),
+      outputSchema: OUTPUT_SCHEMAS.fire_employee,
+    },
+    passthrough("fire_employee"),
+  );
+
+  server.registerTool(
+    "list_pending_actions",
+    {
+      title: "List Pending Actions",
+      description:
+        "List what AI employees are waiting to do until a human approves: each action has a " +
+        "preview of what will be published, sent or changed. Optionally filter by employeeId. " +
+        "No cost to call.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          employeeId: z.string().optional().describe("Only this employee's actions."),
+          limit: z.number().int().min(1).max(100).optional(),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.list_pending_actions,
+    },
+    passthrough("list_pending_actions"),
+  );
+
+  server.registerTool(
+    "approve_action",
+    {
+      title: "Approve Action",
+      description:
+        "Approve one pending AI-employee action by actionId. " +
+        TWO_STEP_RULE +
+        " The stored action then runs exactly once, and it may publish or send something publicly. " +
+        "Only the hiring user or a workspace admin can. No cost to call.",
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+      inputSchema: z
+        .object({
+          actionId: z.string().describe("Action id from list_pending_actions."),
+          confirm,
+          confirmationToken: z.string().optional().describe("Token from the first call."),
+          note: z.string().optional().describe("Optional note."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.approve_action,
+    },
+    passthrough("approve_action"),
+  );
+
+  server.registerTool(
+    "reject_action",
+    {
+      title: "Reject Action",
+      description:
+        "Reject one pending AI-employee action by actionId, with an optional note the employee " +
+        "can learn from. Only the hiring user or a workspace admin can. No cost to call.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          actionId: z.string().describe("Action id from list_pending_actions."),
+          note: z.string().optional().describe("Why, so the employee can learn."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.reject_action,
+    },
+    passthrough("reject_action"),
+  );
+}

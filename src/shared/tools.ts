@@ -55,6 +55,7 @@ import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { registerEmployeeTools } from "./employees.js";
 import { registerStoreReadTools } from "./store-read.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
@@ -3380,6 +3381,8 @@ const TOOL_NAMES = [
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
  registerConnectionTools(server, makeClient);
+ // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
+ registerEmployeeTools(server, makeClient);
  // Store connections (store-read.ts): the connect link and the catalogue read.
  registerStoreReadTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);

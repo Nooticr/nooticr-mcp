@@ -69,6 +69,13 @@ const NOT_READ_ONLY = [
   "scan_marketplace_category",
   // Settings change reversible per-account search preferences.
   "nooticr_settings_update",
+  // AI employees: hiring, pausing and firing change stored state; approving runs
+  // a stored public action; rejecting discards one. The two lists only read.
+  "hire_employee",
+  "pause_employee",
+  "fire_employee",
+  "approve_action",
+  "reject_action",
 ];
 
 describe("tool annotations", () => {
@@ -89,7 +96,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(93);
+    expect(tools).toHaveLength(100);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -118,6 +125,9 @@ describe("tool annotations", () => {
       "connect_store",
       "create_product",
       "draft_post",
+      // AI employees: stored rows inside nooticr. approve_action is absent on
+      // purpose: running the action reaches a public platform.
+      "fire_employee",
       "generate_captions",
       "generate_content_plan",
       "get_brand_playbook",
@@ -131,8 +141,11 @@ describe("tool annotations", () => {
       "get_usage_report",
       "get_video_stats",
       "growth_brief",
+      "hire_employee",
       "list_brand_watches",
+      "list_employees",
       "list_own_apps",
+      "list_pending_actions",
       "list_social_connections",
       "list_tool_runs",
       "list_watchlist",
@@ -144,10 +157,12 @@ describe("tool annotations", () => {
       "nooticr_login",
       "nooticr_settings_read",
       "nooticr_settings_update",
+      "pause_employee",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
       // the filing happens on whichever server the host also has connected.
       "prepare_handoff",
+      "reject_action",
       "review_post",
       // The show_* family: each draws what the caller already wrote/fetched
       // and reaches nothing. Sorted, so the renames in #45 moved two of them.
