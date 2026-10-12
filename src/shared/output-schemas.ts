@@ -1764,6 +1764,24 @@ export const OUTPUT_SCHEMAS = {
     connectUrl: scalar().describe("Open this in a browser to approve the connection."),
     message: scalar(),
   }),
+  // Store connections (nooticr-server C1). The catalogue rows are the platform's
+  // own shape, so only the stable fields are named.
+  connect_store: open({
+    platform: scalar(),
+    connectUrl: scalar().describe("Open this in a browser to approve the connection."),
+    message: scalar(),
+  }),
+  list_store_products: open({
+    products: listOf(anyObject()),
+    nextCursor: scalar(),
+    status: scalar(),
+    reportId: scalar(),
+    poll: anyObject().nullish(),
+    nextCall: anyObject().nullish(),
+    needsConnection: scalar(),
+    connections: listOf(anyObject()),
+    message: scalar(),
+  }),
 
   list_comments_to_answer: open({
     account: open({

@@ -609,6 +609,8 @@ describe("tool surface", () => {
     "list_comments_to_answer",
     "draft_comment_reply",
     "post_comment_reply",
+    "connect_store",
+    "list_store_products",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -782,6 +784,9 @@ describe("tool surface", () => {
       // and says so in its description.
       "list_comments_to_answer",
       "post_comment_reply",
+      // Store link and the store's own catalogue: free to call, and the read is the merchant's own.
+      "connect_store",
+      "list_store_products",
       // Formats what the caller classified for a tracker elsewhere. The only
       // network call in that chain is the one the other server makes.
       "prepare_handoff",
