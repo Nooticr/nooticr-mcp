@@ -219,6 +219,13 @@ describe("legal pages", () => {
     expect(p).toContain('href="/terms"');
   });
 
+  it("privacy does not deny social-account connections that the terms allow", () => {
+    const p = privacyPage(URL, API);
+    expect(p).not.toContain("We never connect to your social accounts and cannot act on them.");
+    expect(p).not.toContain("has no access to your social accounts");
+    expect(p).toContain("only after you have seen its exact text and confirmed it");
+  });
+
   it("disclose what is collected and what is not", () => {
     const p = privacyPage(URL, API);
     // Claims a reviewer checks for, and that the implementation must honour.
@@ -228,6 +235,12 @@ describe("legal pages", () => {
     // Retention is disclosed per-category in the collection table.
     expect(p).toContain("Kept for");
     expect(p).toContain("Until you delete the account");
+  });
+
+  it("terms say replies are posted only after the user confirms the exact text", () => {
+    const t = termsPage(URL, API);
+    expect(t).toContain("only after you have seen the exact text and confirmed it");
+    expect(t).not.toContain("does not connect to your social accounts at all");
   });
 
   it("terms cover payment, acceptable use and liability", () => {
