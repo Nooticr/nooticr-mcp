@@ -1405,10 +1405,15 @@ export const OUTPUT_SCHEMAS = {
   }),
   creative_job_status: open({
     jobId: scalar(),
+    tool: scalar(),
     status: scalar(),
+    assetIds: listOf(scalar()),
     assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
-    creativeCredits: anyObject().nullish(),
+    creditsQuoted: scalar(),
+    creditsCharged: scalar(),
+    creditsRefunded: scalar(),
     pollAfterSeconds: scalar(),
+    error: scalar(),
   }),
 
   list_brand_watches: open({
