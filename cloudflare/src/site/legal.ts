@@ -33,7 +33,9 @@ export function termsPage(publicUrl: string, nooticrBase: string): string {
 
       `<h2>1. What this service is</h2>` +
       `<p>Nooticr MCP is a Model Context Protocol server operated by ${esc(BRAND.company)}. It lets an AI assistant you control — such as Claude, ChatGPT or Cursor — retrieve and analyse <strong>publicly available</strong> posts from supported social networks on your behalf.</p>` +
-      `<p>The service returns data about public posts. It does not post, comment, like, follow, message, or take any other action on your social accounts, and it does not connect to your social accounts at all.</p>` +
+      `<p>The service reads public posts and comments to produce its analyses.</p>` +
+      `<p>You may connect your own social accounts. Nooticr then acts on those accounts only on your instruction: it posts a reply to a comment on your own account only after you have seen the exact text and confirmed it.</p>` +
+      `<p>It never likes, follows, messages, or posts anything else on your accounts without that explicit confirmation.</p>` +
 
       `<h2>2. Your account</h2>` +
       `<p>You need an Nooticr account to use the service. You are responsible for keeping your credentials secure and for everything done through your account. Access is granted to your AI client through OAuth 2.1; you can revoke it at any time by disconnecting the connector in that client.</p>` +
@@ -101,7 +103,7 @@ export function privacyPage(publicUrl: string, nooticrBase: string): string {
       `<li>We store your account identity, your credit balance, and a log of which tools you called and when.</li>` +
       `<li>We do <strong>not</strong> store the content of the posts your assistant retrieves.</li>` +
       `<li>We do <strong>not</strong> sell your data, and we do not use it to train models.</li>` +
-      `<li>We never connect to your social accounts and cannot act on them.</li>` +
+      `<li>We connect to your social accounts only if you choose to connect them, and act on them only on your instruction: a reply is posted only after you have seen its exact text and confirmed it.</li>` +
       `</ul>` +
 
       `<h2>What we collect</h2>` +
@@ -118,7 +120,7 @@ export function privacyPage(publicUrl: string, nooticrBase: string): string {
       `<ul>` +
       `<li>Your card number, CVC or bank details — Stripe handles payment and we only receive a reference.</li>` +
       `<li>The bodies of your AI conversations. We see the tool call, not the chat around it.</li>` +
-      `<li>Credentials for any social network. The service reads public data only and has no access to your social accounts.</li>` +
+      `<li>Your social-network passwords. If you choose to connect an account, access is granted through that network&rsquo;s own authorisation flow and is used only for actions you confirm.</li>` +
       `<li>The retrieved posts themselves. Media is streamed through to your assistant and cached only transiently to make it viewable.</li>` +
       `</ul>` +
 
