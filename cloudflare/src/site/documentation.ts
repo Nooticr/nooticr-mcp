@@ -64,7 +64,7 @@ table.doc-t code{font-size:12.5px;white-space:nowrap}
    whole page into a horizontal scroll. Wrapping at the spaces that already
    separate the arguments breaks nothing. (No backticks in this CSS: it is a
    template literal and one would end the string.) */
-table.doc-t td.args code{white-space:normal}
+table.doc-t td.args code{white-space:normal;overflow-wrap:anywhere}
 .cost-cell{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--brand)}
 
 .yesno{display:grid;gap:14px;margin:18px 0}
@@ -169,7 +169,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<li>Access anything on the user's device or network</li>` +
         `<li>Reach other systems in your environment — it only calls out to the services listed below</li>` +
         `</ul></div></div>` +
-        `<div class="callout good"><p><strong>Nothing it writes leaves Nooticr.</strong> Of the 95 tools, 75 carry <code>readOnlyHint: true</code>. The 20 that do not include writes to the user's own Nooticr account, consent-flow setup, store-connection links, and two paid marketplace scans that collect public listings and reviews. Eight carry <code>destructiveHint: true</code> because they replace a saved marker, portfolio, product value, analysis, or content plan, or stop something the user started. None writes to your organisation's systems, and none can post, comment, like, follow or message anywhere.</p></div>` +
+        `<div class="callout good"><p><strong>Almost nothing it writes leaves Nooticr.</strong> Of the 102 tools, 77 carry <code>readOnlyHint: true</code>. The 25 that do not include writes to the user's own Nooticr account, consent-flow setup, store-connection links, AI-employee management, and two paid marketplace scans that collect public listings and reviews. Ten carry <code>destructiveHint: true</code> because they replace a saved marker, portfolio, product value, analysis, or content plan, stop something the user started, let an AI employee go, or approve one of its queued actions. None writes to your organisation's systems. Public actions an AI employee prepares (publish, email, reply, listing or price changes) wait for the user's approval through <code>approve_action</code>, and only the exact action the user was shown and approved goes out, unless the user has turned autopilot on for that action type; no other tool can post, comment, like, follow or message anywhere.</p></div>` +
 
         `<h3 id="admins-access">Access and revocation</h3>` +
         `<p>Interactive clients authenticate with OAuth 2.1 with PKCE (S256) and dynamic client registration — no key is ever pasted into a chat window, and the tokens it issues are scoped and expiring.</p>` +

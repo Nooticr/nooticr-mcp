@@ -536,6 +536,48 @@ export const TOOL_DEFINITIONS = [
   inputSchema: z.object({ marketplace: z.string().describe("The same site the scan ran against."), scanId: z.string().describe("The scanId scan_marketplace_category returned."), waitSeconds: z.number().int().optional().describe("How long to wait for more products before answering (default 30, max 55)."), focus: z.string().optional().describe("Same optional steer as scan_marketplace_category.") }).strict(),
  },
  {
+  name: "hire_employee",
+  title: "Hire Employee",
+  description: "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside this workspace. Pass `template` and optionally name, instructions, appId, schedule, monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify. The first call changes nothing and returns a preview and a confirmationToken; show it to the user, and call again with confirm: true and the token only after the user explicitly agrees — never confirm on the user's behalf. Public actions (publish, email, reply, listing or price changes) wait for the user's approval unless autopilot is turned on. The hiring user is billed for runs, up to the monthly budget. No cost to call.",
+  inputSchema: z.object({ template: z.string().describe("Template slug, e.g. social-media-manager."), name: z.string().optional().describe("What to call the employee."), instructions: z.string().optional().describe("Standing instructions from the customer (tone, topics to avoid, ...)."), appId: z.number().int().optional().describe("Focus product id."), schedule: z.object({}).passthrough().optional().describe("{kind:'weekly',days:['mon'],times:['09:00'],tz:'Europe/Paris'} | {kind:'interval',minutes:N>=60} | {kind:'manual'}."), monthlyBudgetCredits: z.number().int().min(1).optional(), maxCreditsPerRun: z.number().int().min(1).optional(), approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."), notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack']}."), model: z.string().optional().describe("Optional model."), effort: z.string().optional().describe("low | medium | high."), confirm: z.boolean().optional(), confirmationToken: z.string().optional().describe("Token returned in the quote.") }).strict(),
+ },
+ {
+  name: "list_employees",
+  title: "List Employees",
+  description: "List this workspace's AI employees with status, schedule, next run and budget left. Pass includeFired: true to include ones that were let go. No cost to call.",
+  inputSchema: z.object({ includeFired: z.boolean().optional() }).strict(),
+ },
+ {
+  name: "pause_employee",
+  title: "Pause Employee",
+  description: "Pause an AI employee so it stops running (it keeps its memory and thread), or resume it with resume: true. Only the person who hired it or a workspace admin can. No cost to call.",
+  inputSchema: z.object({ employeeId: z.string().describe("Employee id."), resume: z.boolean().optional().describe("Resume instead of pausing.") }).strict(),
+ },
+ {
+  name: "fire_employee",
+  title: "Fire Employee",
+  description: "Let an AI employee go for good: runs stop and actions waiting for approval are discarded; its thread stays readable. The first call only describes what will happen and changes nothing; call again with confirm: true only after the user explicitly agrees — never confirm on the user's behalf. Only the person who hired it or a workspace admin can. No cost to call.",
+  inputSchema: z.object({ employeeId: z.string().describe("Employee id."), confirm: z.boolean().optional() }).strict(),
+ },
+ {
+  name: "list_pending_actions",
+  title: "List Pending Actions",
+  description: "List what AI employees are waiting to do until a human approves: each action has a preview of what will be published, sent or changed. Optionally filter by employeeId. No cost to call.",
+  inputSchema: z.object({ employeeId: z.string().optional().describe("Only this employee's actions."), limit: z.number().int().min(1).max(100).optional() }).strict(),
+ },
+ {
+  name: "approve_action",
+  title: "Approve Action",
+  description: "Approve one pending AI-employee action by actionId. The first call changes nothing and returns a preview and a confirmationToken; show it to the user, and call again with confirm: true and the token only after the user explicitly agrees — never confirm on the user's behalf. The stored action then runs exactly once, and it may publish or send something publicly. Only the hiring user or a workspace admin can. No cost to call.",
+  inputSchema: z.object({ actionId: z.string().describe("Action id from list_pending_actions."), confirm: z.boolean().optional(), confirmationToken: z.string().optional().describe("Token from the first call."), note: z.string().optional().describe("Optional note.") }).strict(),
+ },
+ {
+  name: "reject_action",
+  title: "Reject Action",
+  description: "Reject one pending AI-employee action by actionId, with an optional note the employee can learn from. Only the hiring user or a workspace admin can. No cost to call.",
+  inputSchema: z.object({ actionId: z.string().describe("Action id from list_pending_actions."), note: z.string().optional().describe("Why, so the employee can learn.") }).strict(),
+ },
+ {
   name: "marketplace_changes",
   title: "Marketplace Changes",
   description: "What moved in a category since the run before: products that entered or left a search's results, and ones whose price or place changed. Compared from the two latest stored scans of the same marketplace and `query`, so it fetches nothing and never re-scans — run scan_marketplace_category first, and again later, to have two runs to compare. `new` and `gone` mean entered or left the results, not listed or delisted. A category scanned only once has no earlier run and says so. Free.",

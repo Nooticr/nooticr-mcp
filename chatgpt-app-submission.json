@@ -1147,6 +1147,90 @@
         "open_world_justification": "Closed domain. It changes only preferences stored for the caller's Nooticr account; no network is contacted.",
         "destructive_justification": "Not destructive: it changes reversible search defaults and deletes no account data or content."
       }
+    },
+    "hire_employee": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it creates an AI employee in the caller's workspace. The first call only returns a quote.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; the employee's later public actions (publish, email, reply, listing or price changes) wait for the user's approval unless the user has turned autopilot on for that action type.",
+        "destructive_justification": "Not destructive: it adds a new employee and removes nothing."
+      }
+    },
+    "list_employees": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's AI employees. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "pause_employee": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it pauses or resumes an employee's schedule.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: the employee keeps its memory and thread, and resume undoes it."
+      }
+    },
+    "fire_employee": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it ends an employee for good. The first call only describes the effect.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
+        "destructive_justification": "Destructive: runs stop for good and actions waiting for approval are discarded; the user must confirm explicitly."
+      }
+    },
+    "list_pending_actions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists actions AI employees are waiting to run, with previews. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "approve_action": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it runs the stored action once. The first call only returns the preview and a token.",
+        "open_world_justification": "Open domain: the approved action may publish or send something on a third-party platform or by email, exactly as the preview the user saw.",
+        "destructive_justification": "Destructive: the action cannot be unsent once run; the user must confirm explicitly after seeing the preview."
+      }
+    },
+    "reject_action": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it marks a pending action rejected.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; nothing is published or sent.",
+        "destructive_justification": "Not destructive: the action is discarded unrun, which is the safe outcome."
+      }
     }
   },
   "test_cases": [

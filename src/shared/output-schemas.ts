@@ -1814,6 +1814,35 @@ export const OUTPUT_SCHEMAS = {
   // the result does not have to know which site it asked.
   scan_marketplace_category: marketplaceScan,
   marketplace_scan_status: marketplaceScan,
+  // AI employees (nooticr-server P1). The quote and employee/action views are
+  // the server's own shapes, so only the stable fields are named.
+  hire_employee: open({
+    created: scalar(),
+    requiresConfirmation: scalar(),
+    confirmationToken: scalar(),
+    message: scalar(),
+    instructions: scalar(),
+    employee: anyObject().nullish(),
+  }),
+  pause_employee: open({ employee: anyObject().nullish() }),
+  fire_employee: open({
+    fired: scalar(),
+    requiresConfirmation: scalar(),
+    pendingActions: scalar(),
+    instructions: scalar(),
+    employee: anyObject().nullish(),
+  }),
+  approve_action: open({
+    executed: scalar(),
+    requiresConfirmation: scalar(),
+    confirmationToken: scalar(),
+    expiresInSeconds: scalar(),
+    instructions: scalar(),
+    action: anyObject().nullish(),
+  }),
+  reject_action: open({ rejected: scalar(), action: anyObject().nullish() }),
+  list_employees: open({ employees: listOf(open({ id: scalar(), name: scalar(), status: scalar() })) }),
+  list_pending_actions: open({ actions: listOf(open({ id: scalar(), employeeId: scalar() })) }),
   // A diff of two stored scans, drawn by no view: the rows are the answer.
   marketplace_changes: open({
     display: scalar(),
