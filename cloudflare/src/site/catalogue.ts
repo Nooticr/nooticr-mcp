@@ -607,6 +607,18 @@ export const TOOLS: Tool[] = [
     desc: "A link to open so the user can connect one account. They approve at the provider; no credential passes through this tool.",
     when: "list_social_connections showed the platform is connectable and not yet connected.",
   },
+  {
+    name: "connect_store", cost: 0, group: "own",
+    args: "platform, shop?, region?, appId?",
+    desc: "A link a workspace owner or admin opens to connect an Amazon seller account or a Shopify shop. They approve at the store; no credential passes through this tool. Free.",
+    when: "You want your own store's catalogue read and none is connected yet.",
+  },
+  {
+    name: "list_store_products", cost: 0, group: "own",
+    args: "connectionId?, query?, limit?, cursor?, productRef?",
+    desc: "Your connected store's own catalogue: title, description, status, price and Amazon listing issues. Read-only. Free.",
+    when: "Before changing anything about a listing, or to see what the store currently says.",
+  },
 
   // ── account ──
   {

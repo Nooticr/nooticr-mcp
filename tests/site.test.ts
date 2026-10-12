@@ -597,6 +597,8 @@ describe("tool surface", () => {
     "generate_captions",
     "list_social_connections",
     "connect_social_account",
+    "connect_store",
+    "list_store_products",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -766,6 +768,9 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // Store link and the store's own catalogue: free to call, and the read is the merchant's own.
+      "connect_store",
+      "list_store_products",
       // Formats what the caller classified for a tracker elsewhere. The only
       // network call in that chain is the one the other server makes.
       "prepare_handoff",
