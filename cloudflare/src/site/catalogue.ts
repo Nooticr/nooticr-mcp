@@ -442,6 +442,12 @@ export const TOOLS: Tool[] = [
     when: "A scan came back incomplete \u2014 which the first call usually does.",
   },
   {
+    name: "marketplace_changes", cost: 0, group: "market",
+    args: "marketplace, query, market?",
+    desc: "What moved in a category since the run before: products that entered or left a search's results, and ones whose price or place changed. Compared from stored scans, so it fetches nothing. Free.",
+    when: "A category was scanned before and you want to know what changed; scan it again first to have a second run.",
+  },
+  {
     name: "get_marketplace_product", cost: 3, group: "market",
     args: "marketplace, item, market?",
     desc: "One product by id or URL: price, rating, the full star histogram, specs and the review text.",

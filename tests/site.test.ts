@@ -674,6 +674,7 @@ describe("tool surface", () => {
     "nooticr_settings_read",
     "nooticr_settings_update",
     "show_marketplace_category_insights",
+    "marketplace_changes",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -791,6 +792,8 @@ describe("tool surface", () => {
       "amazon_scan_status",
       // The same poll, for the other ten sites.
       "marketplace_scan_status",
+      // Compares two stored scans; fetches nothing.
+      "marketplace_changes",
       "nooticr_settings_read",
       "nooticr_settings_update",
     ];
