@@ -64,7 +64,7 @@ table.doc-t code{font-size:12.5px;white-space:nowrap}
    whole page into a horizontal scroll. Wrapping at the spaces that already
    separate the arguments breaks nothing. (No backticks in this CSS: it is a
    template literal and one would end the string.) */
-table.doc-t td.args code{white-space:normal}
+table.doc-t td.args code{white-space:normal;overflow-wrap:anywhere}
 .cost-cell{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--brand)}
 
 .yesno{display:grid;gap:14px;margin:18px 0}
