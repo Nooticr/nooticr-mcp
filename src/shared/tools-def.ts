@@ -524,6 +524,12 @@ export const TOOL_DEFINITIONS = [
   inputSchema: z.object({ marketplace: z.string().describe("The same site the scan ran against."), scanId: z.string().describe("The scanId scan_marketplace_category returned."), waitSeconds: z.number().int().optional().describe("How long to wait for more products before answering (default 30, max 55)."), focus: z.string().optional().describe("Same optional steer as scan_marketplace_category.") }).strict(),
  },
  {
+  name: "marketplace_changes",
+  title: "Marketplace Changes",
+  description: "What moved in a category since the run before: products that entered or left a search's results, and ones whose price or place changed. Compared from the two latest stored scans of the same marketplace and `query`, so it fetches nothing and never re-scans — run scan_marketplace_category first, and again later, to have two runs to compare. `new` and `gone` mean entered or left the results, not listed or delisted. A category scanned only once has no earlier run and says so. Free.",
+  inputSchema: z.object({ marketplace: z.string().describe("Which site the scan read."), query: z.string().describe("The category search to compare, exactly as it was scanned."), market: z.string().optional().describe("The storefront the scan read, if the site has several.") }).strict(),
+ },
+ {
   name: "get_marketplace_product",
   title: "Get Marketplace Product",
   description: "Fetch one product from any of twelve marketplaces by id or URL: price, rating, the full star histogram, specs, and the review text. marketplace picks the site — one of amazon, aliexpress, cdiscount, flipkart, mercadolibre, lazada, otto, rakuten, trendyol, jumia, vinted, temu. Use for a single product; for a category or a competitive set, scan_marketplace_category collects many in one job and rolls them up. Consumes 3 nooticr credits.",

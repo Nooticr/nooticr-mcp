@@ -1795,6 +1795,26 @@ export const OUTPUT_SCHEMAS = {
   // the result does not have to know which site it asked.
   scan_marketplace_category: marketplaceScan,
   marketplace_scan_status: marketplaceScan,
+  // A diff of two stored scans, drawn by no view: the rows are the answer.
+  marketplace_changes: open({
+    display: scalar(),
+    hasBaseline: scalar(),
+    since: scalar(),
+    takenAt: scalar(),
+    counts: open({ new: scalar(), gone: scalar(), moved: scalar() }).nullish(),
+    totalChanges: scalar(),
+    rows: listOf(
+      open({
+        change: scalar(),
+        id: scalar(),
+        title: scalar(),
+        meta: scalar(),
+        url: scalar(),
+        move: scalar(),
+      }),
+    ),
+    note: scalar(),
+  }),
   get_marketplace_product: open({
     ...marketplaceScanShape,
     product: amazonProduct.nullish().describe("The single product, also present as products[0]."),

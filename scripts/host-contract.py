@@ -69,6 +69,7 @@ NO_APP = {
     "connect_store",  # view pending: the link and the state around it
     "list_store_products",  # view pending: a table of products with status and price
     "analyze_product",
+    "marketplace_changes",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"
