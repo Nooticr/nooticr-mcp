@@ -130,7 +130,7 @@ describe("the site describes the server that actually shipped", () => {
     const docs = documentationPage(URL, API);
     const at = docs.indexOf("<code>draft_comment_reply</code>");
     expect(at).toBeGreaterThan(-1);
-    const cell = docs.slice(at, at + 200).match(/<td class="cost-cell">([^<]*)<\/td>/);
+    const cell = docs.slice(at, at + 200).match(/<td class="cost-cell[^"]*">([^<]*)<\/td>/);
     expect(cell?.[1]).toBe("Free with your text, else 1 cr");
   });
 });

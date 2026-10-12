@@ -66,6 +66,8 @@ table.doc-t code{font-size:12.5px;white-space:nowrap}
    template literal and one would end the string.) */
 table.doc-t td.args code{white-space:normal;overflow-wrap:anywhere}
 .cost-cell{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--brand)}
+/* A costNote is a sentence, not a number: let it wrap or it sets the column's width. */
+.cost-cell.cost-note{white-space:normal;min-width:7em}
 
 .yesno{display:grid;gap:14px;margin:18px 0}
 @media(min-width:700px){.yesno{grid-template-columns:1fr 1fr}}
@@ -127,7 +129,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
       .map(
         (t) =>
           `<tr><td><code>${esc(t.name)}</code></td>` +
-          `<td class="cost-cell">${costLabel(t)}</td>` +
+          `<td class="cost-cell${t.costNote ? " cost-note" : ""}">${costLabel(t)}</td>` +
           `<td class="args"><code>${esc(t.args ?? "—")}</code></td>` +
           `<td>${esc(t.desc)}${t.when ? `<br><span style="opacity:.75">${esc(t.when)}</span>` : ""}</td></tr>`
       )
