@@ -596,6 +596,9 @@ describe("tool surface", () => {
     "stop_brand_watch",
     "update_watch_portfolio",
     "list_own_apps",
+    // Creative assets (creative.ts).
+    "creative_assets_list",
+    "creative_job_status",
     "create_product",
     "update_product",
     "get_scheduled_posts",
@@ -759,6 +762,8 @@ describe("tool surface", () => {
       "list_watchlist",
       "nooticr_getting_started",
       "nooticr_login",
+      "creative_assets_list",
+      "creative_job_status",
       "watch_creator",
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.

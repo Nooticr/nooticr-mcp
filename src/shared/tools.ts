@@ -53,6 +53,7 @@ import {
 } from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
+import { registerCreativeTools } from "./creative.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerReplyTools } from "./replies.js";
@@ -76,7 +77,7 @@ import {
 } from "./settings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.59";
+export const MCP_SERVER_VERSION = "1.26.61";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -3381,6 +3382,8 @@ const TOOL_NAMES = [
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
+ // Creative assets (creative.ts): the free reads of nooticr-server's creative_* family.
+ registerCreativeTools(server, makeClient);
  registerConnectionTools(server, makeClient);
  registerReplyTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.

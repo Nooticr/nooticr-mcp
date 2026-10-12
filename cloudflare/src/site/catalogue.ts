@@ -408,6 +408,18 @@ export const TOOLS: Tool[] = [
     when: "Before creating one \u2014 a second watch on the same term is a second recurring charge for the same answer.",
   },
   {
+    name: "creative_assets_list", cost: 0, group: "own",
+    args: "appId?, kind?, briefId?, since?, limit?, cursor?",
+    desc: "The creative assets (voice-overs, images, videos, composites) generated in your workspace, newest first. Free.",
+    when: "You want to see or reuse what was already generated before making more.",
+  },
+  {
+    name: "creative_job_status", cost: 0, group: "own",
+    args: "jobId",
+    desc: "Where an asynchronous creative job stands, with its finished assets and the credits quoted, charged and refunded. Free.",
+    when: "A creative job was started and you are waiting for it; poll after pollAfterSeconds.",
+  },
+  {
     name: "stop_brand_watch", cost: 0, group: "research",
     args: "id",
     desc: "Stops a watch immediately: the run that was due does not happen and nothing further is charged.",

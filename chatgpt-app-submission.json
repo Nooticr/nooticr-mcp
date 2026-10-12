@@ -620,6 +620,30 @@
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data."
       }
     },
+    "creative_assets_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists creative assets generated in the caller's own workspace. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "creative_job_status": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reports the status of one of the caller's own creative jobs. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
     "list_brand_watches": {
       "annotations": {
         "readOnlyHint": true,
