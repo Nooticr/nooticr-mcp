@@ -1407,7 +1407,7 @@ export const OUTPUT_SCHEMAS = {
     jobId: scalar(),
     tool: scalar(),
     status: scalar(),
-    assetIds: listOf(scalar()),
+    assetIds: listOf(oneType(z.string())),
     assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
     creditsQuoted: scalar(),
     creditsCharged: scalar(),
