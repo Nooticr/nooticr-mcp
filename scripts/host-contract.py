@@ -75,6 +75,7 @@ NO_APP = {
     "list_comments_to_answer",
     "draft_comment_reply",
     "post_comment_reply",
+    "marketplace_changes",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"

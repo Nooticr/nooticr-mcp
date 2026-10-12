@@ -93,7 +93,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(95);
+    expect(tools).toHaveLength(96);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -141,6 +141,8 @@ describe("tool annotations", () => {
       "list_social_connections",
       "list_tool_runs",
       "list_watchlist",
+      // Compares two stored scans; fetches nothing.
+      "marketplace_changes",
       "mention_trend",
       // Reads the caller's own balance, connections and watchlist; suggests.
       "nooticr_getting_started",
