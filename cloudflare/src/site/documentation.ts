@@ -118,6 +118,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
    */
   const costLabel = (t: (typeof TOOLS)[number]): string => {
     if (t.billing === "plan") return "Plan AI credits";
+    if (t.costNote) return t.costNote;
     return t.cost === 0 ? "Free" : `${t.cost} cr`;
   };
 

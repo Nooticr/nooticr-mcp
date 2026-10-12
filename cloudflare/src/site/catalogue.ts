@@ -44,6 +44,12 @@ export interface Tool {
    * one direction that costs somebody money.
    */
   billing?: "plan";
+  /**
+   * Overrides the cost cell on the docs page for a tool whose price depends
+   * on its arguments (free with one input, billed with another). `cost` stays
+   * 0 so the landing page lists only flat-priced tools.
+   */
+  costNote?: string;
 }
 
 export const GROUPS: { id: Group; title: string; blurb: string }[] = [
@@ -330,7 +336,7 @@ export const TOOLS: Tool[] = [
     when: "You want to answer your audience and the account is connected with comment management.",
   },
   {
-    name: "draft_comment_reply", cost: 0, group: "own",
+    name: "draft_comment_reply", cost: 0, costNote: "Free with your text, else 1 cr", group: "own",
     args: "platform, commentId, postId, text?, guidance?",
     desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it. Returns a draftId and confirmationToken.",
     when: "After list_comments_to_answer, to have a reply ready for the user to read.",

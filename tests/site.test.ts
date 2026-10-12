@@ -124,6 +124,15 @@ describe("the site describes the server that actually shipped", () => {
       expect(landingPage(URL, API).indexOf(`>${t.name}</h3>`)).toBe(-1);
     }
   });
+
+  it("does not print draft_comment_reply's cost cell as Free", () => {
+    // It bills 1 credit when nooticr writes the reply text.
+    const docs = documentationPage(URL, API);
+    const at = docs.indexOf("<code>draft_comment_reply</code>");
+    expect(at).toBeGreaterThan(-1);
+    const cell = docs.slice(at, at + 200).match(/<td class="cost-cell">([^<]*)<\/td>/);
+    expect(cell?.[1]).toBe("Free with your text, else 1 cr");
+  });
 });
 
 /**
