@@ -448,6 +448,48 @@ export const TOOLS: Tool[] = [
     when: "A scan came back incomplete \u2014 which the first call usually does.",
   },
   {
+    name: "hire_employee", cost: 0, group: "own",
+    args: "template, name?, instructions?, schedule?, monthlyBudgetCredits?, maxCreditsPerRun?",
+    desc: "Hires an AI employee that works on a schedule inside your workspace. Free to call: it quotes first and creates nothing until you confirm; the runs are billed to the hiring user, up to the monthly budget.",
+    when: "You want recurring work done for you. Public actions wait for your approval unless autopilot is on.",
+  },
+  {
+    name: "list_employees", cost: 0, group: "own",
+    args: "includeFired?",
+    desc: "Your workspace's AI employees with status, schedule, next run and budget left. Free.",
+    when: "Before hiring another, or to see what is running.",
+  },
+  {
+    name: "pause_employee", cost: 0, group: "own",
+    args: "employeeId, resume?",
+    desc: "Pauses an AI employee, or resumes it. It keeps its memory and thread. Free.",
+    when: "You want it to stop for a while rather than for good.",
+  },
+  {
+    name: "fire_employee", cost: 0, group: "own",
+    args: "employeeId",
+    desc: "Lets an AI employee go for good and discards what was waiting for approval. Describes the effect first and acts only on confirmation. Free.",
+    when: "You are done with it; to stop it temporarily, pause it instead.",
+  },
+  {
+    name: "list_pending_actions", cost: 0, group: "own",
+    args: "employeeId?, limit?",
+    desc: "What your AI employees are waiting to do until you approve: a preview of what will be published, sent or changed. Free.",
+    when: "Before approving or rejecting anything.",
+  },
+  {
+    name: "approve_action", cost: 0, group: "own",
+    args: "actionId",
+    desc: "Approves one pending action. Returns the preview and a token first and runs nothing; the stored action runs exactly once after you confirm. Free.",
+    when: "You have read the preview and want it to go out.",
+  },
+  {
+    name: "reject_action", cost: 0, group: "own",
+    args: "actionId, note?",
+    desc: "Rejects one pending action, with a note the employee can learn from. Free.",
+    when: "The preview is not something you want published or sent.",
+  },
+  {
     name: "marketplace_changes", cost: 0, group: "market",
     args: "marketplace, query, market?",
     desc: "What moved in a category since the run before: products that entered or left a search's results, and ones whose price or place changed. Compared from stored scans, so it fetches nothing. Free.",

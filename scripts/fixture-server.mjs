@@ -1378,6 +1378,42 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    case "list_employees": {
+      return {
+        content: [{ type: "text", text: "1 AI employee." }],
+        structuredContent: {
+          employees: [{ id: "00000000-0000-0000-0000-0000000000e1", name: "Social Media Manager", status: "active" }],
+        },
+      };
+    }
+    case "list_pending_actions": {
+      return {
+        content: [{ type: "text", text: "1 action is waiting for approval." }],
+        structuredContent: {
+          actions: [{ id: "00000000-0000-0000-0000-0000000000a1", employeeId: "00000000-0000-0000-0000-0000000000e1", status: "pending" }],
+        },
+      };
+    }
+    case "hire_employee": {
+      return {
+        content: [{ type: "text", text: "Quote ready; confirm to hire." }],
+        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", instructions: "Show the user the quote, then confirm." },
+      };
+    }
+    case "pause_employee":
+    case "fire_employee":
+    case "reject_action": {
+      return {
+        content: [{ type: "text", text: "Done." }],
+        structuredContent: { employee: { id: "00000000-0000-0000-0000-0000000000e1", status: "paused" } },
+      };
+    }
+    case "approve_action": {
+      return {
+        content: [{ type: "text", text: "Nothing has run; confirm to approve." }],
+        structuredContent: { executed: false, requiresConfirmation: true, confirmationToken: "fixture-token" },
+      };
+    }
     case "list_brand_watches": {
       return {
         content: [{ type: "text", text: "1 active brand watch." }],
