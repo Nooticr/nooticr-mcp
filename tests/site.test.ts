@@ -219,6 +219,13 @@ describe("legal pages", () => {
     expect(p).toContain('href="/terms"');
   });
 
+  it("privacy does not deny social-account connections that the terms allow", () => {
+    const p = privacyPage(URL, API);
+    expect(p).not.toContain("We never connect to your social accounts and cannot act on them.");
+    expect(p).not.toContain("has no access to your social accounts");
+    expect(p).toContain("only after you have seen its exact text and confirmed it");
+  });
+
   it("disclose what is collected and what is not", () => {
     const p = privacyPage(URL, API);
     // Claims a reviewer checks for, and that the implementation must honour.
@@ -230,10 +237,10 @@ describe("legal pages", () => {
     expect(p).toContain("Until you delete the account");
   });
 
-  it("terms say only a confirmed reply posts, and drop the old no-action claim", () => {
+  it("terms say replies are posted only after the user confirms the exact text", () => {
     const t = termsPage(URL, API);
-    expect(t).toContain("only when you have reviewed and explicitly confirmed that specific reply");
-    expect(t).not.toContain("does not post, comment, like, follow, message, or take any other action");
+    expect(t).toContain("only after you have seen the exact text and confirmed it");
+    expect(t).not.toContain("does not connect to your social accounts at all");
   });
 
   it("terms cover payment, acceptable use and liability", () => {

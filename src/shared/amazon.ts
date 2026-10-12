@@ -233,8 +233,14 @@ export function categoryGuidance(opts: {
    * current.
    */
   freshness?: string;
-  /** The collector's own state: "failed" means it will never finish. */
+  /** The collector's own state: "failed" means it will never finish; "degraded"
+   *  means the site was blocked or returned no usable content (see `notice`). */
   status?: string;
+  /** The server's relayable explanation of a degraded scan. */
+  notice?: string;
+  /** Set when the site's collector is degraded/down but the scan still returned
+   *  data, so the data may be partial. */
+  siteStatus?: string;
   /** How many listings the scan set out to collect, when known. */
   total?: number;
   /** Arguments the poll needs besides scanId, e.g. the marketplace. */
@@ -277,7 +283,16 @@ export function categoryGuidance(opts: {
   // commonest reason is a query in a language that storefront does not sell
   // in. Said here rather than only in the tool description because by the time
   // this is read the description is long out of the model's attention.
-  if (opts.products === 0 && opts.complete) {
+  if (opts.status === "degraded") {
+    lines.push(
+      `DEGRADED SCAN: ${site} could not be read properly right now, so this is not a finding ` +
+        `about the category and not evidence that nothing sells there. ` +
+        (opts.notice
+          ? `Tell the user this, verbatim: "${opts.notice}". `
+          : `Tell the user the site is currently unavailable. `) +
+        `Do not retry with other queries and do not call the category empty.`,
+    );
+  } else if (opts.products === 0 && opts.complete) {
     lines.push(
       `No listings came back. This is not a finding about the category — it is a search that ` +
         `matched nothing. Before reporting it: check the query is in the language that ` +
@@ -291,6 +306,12 @@ export function categoryGuidance(opts: {
   // that has already started composing a read is past the point where a
   // caveat changes what it writes.
   if (opts.freshness) lines.push(opts.freshness);
+  if (opts.siteStatus && opts.status !== "degraded") {
+    lines.push(
+      `Caveat: the ${site} collector is currently ${opts.siteStatus}, so this data may be ` +
+        `partial. Say so when you report it.`,
+    );
+  }
   if (polling) {
     lines.push(
       `Stop polling only if ${statusTool} reports status "failed", or returns the same number of ` +

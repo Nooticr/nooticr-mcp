@@ -372,10 +372,8 @@ function audienceGuidance(a: {
       "ones asking the same thing: a single pinned reply beats twenty individual ones, and a " +
       "question that recurs across posts is a video rather than a reply.",
     "",
-    "You are drafting, not sending. This tool posts nothing, so these are for the creator to paste " +
-      "in themselves; to have nooticr send one, use draft_comment_reply and then post_comment_reply, " +
-      "which post only the exact text the creator confirmed. Say that rather than implying the " +
-      "replies will go out by themselves.",
+    "You are drafting, not sending. this tool cannot post: nothing is sent from here, and a reply is posted only " +
+      "after the creator confirms its exact text. Say that rather than implying the replies will go out.",
     "",
     "Do not invent facts about the product, the price or the creator's plans to fill a gap. If a " +
       "comment cannot be answered from what is here, say what you would need.",
@@ -815,9 +813,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "reads the comments on each, and returns them grouped under the post they were left on — " +
         "every comment with a stable id, and the ones that look like questions or requests " +
         "flagged and sorted to the top. This FINDS and helps you DRAFT answers; it cannot post " +
-        "them itself, so the replies are for a person to paste in themselves — or to send through " +
-        "draft_comment_reply then post_comment_reply once the user has confirmed the exact text. " +
-        "Never promise the user a reply will be sent without that confirmation. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
+        "them: this tool sends nothing, and a reply is only ever posted after the user confirms its " +
+        "exact text — never promise the user a reply will go out on its own. `since` filters on the POST's date, not the comments'. `limit` caps how many " +
         "posts are opened. Pair it with show_audience_replies to lay the drafts out for triage. " +
         "Costs 2 nooticr credits for the post list plus 2 per post opened — 14 credits at the " +
         "default of 6 posts. Use when the job is to answer people; search_mentions is for what " +
@@ -1956,8 +1953,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       description:
         "Lay out the replies you drafted from answer_my_audience so a person can read them. " +
         "Free, and makes no requests — it only draws what you pass it. It does NOT send " +
-        "anything: each row is a draft for the creator to copy into the app themselves, or to send " +
-        "through draft_comment_reply and post_comment_reply after confirming the text. Each comment shows with what you decided to do " +
+        "anything: each row is a draft, and a reply is posted only after the creator confirms its " +
+        "exact text. Each comment shows with what you decided to do " +
         "about it and your draft underneath, grouped under its post, so they can work through " +
         "them one at a time and skip the rest. Call this after you have drafted the replies, not " +
         "instead of drafting them.",
@@ -1986,7 +1983,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
                 draft: z
                   .string()
                   .optional()
-                  .describe("The reply, in the creator's voice, for them to paste in themselves."),
+                  .describe("The reply, in the creator's voice. It is only a draft: nothing is posted until the creator confirms its exact text."),
                 kind: z
                   .enum(["answer", "pin", "make_a_video", "escalate", "ignore"])
                   .optional()

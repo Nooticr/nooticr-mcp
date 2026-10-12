@@ -89,21 +89,28 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "or product — omit both and this picks the only one if there is just one, or lists the " +
         "choices if there is more than one. The user approves at the provider; nothing is " +
         "connected until they do, and no credential ever passes through this tool. Each call " +
-        "mints a fresh link, so do not reuse an old one. No cost to call.",
+        "mints a fresh link, so do not reuse an old one. For YouTube, pass capabilities " +
+        "[\"manage_comments\"] to also ask for the comment-management grant. No cost to call.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           platform: z.string().describe("Which network to connect, e.g. tiktok, youtube."),
           influencerId: z.number().int().optional().describe("Which creator profile — call list_own_apps or list_social_connections first if unsure."),
           appId: z.number().int().optional().describe("Which product this connection is for."),
+          capabilities: z
+            .array(z.enum(["manage_comments"]))
+            .optional()
+            .describe("Extra access to ask for. YouTube only: [\"manage_comments\"] asks for the comment-management grant. Omit for the default."),
         })
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.connect_social_account,
     },
-    async (args: { platform: string; influencerId?: number; appId?: number }, extra) => {
+    async (args: { platform: string; influencerId?: number; appId?: number; capabilities?: "manage_comments"[] }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });
       try {
-        return toResult(await client.callTool("connect_social_account", args));
+        // Forward capabilities only when supplied, so a plain call is unchanged.
+        const { capabilities, ...rest } = args;
+        return toResult(await client.callTool("connect_social_account", capabilities ? { ...rest, capabilities } : rest));
       } catch (err) {
         return failed("connect_social_account failed", err);
       }
