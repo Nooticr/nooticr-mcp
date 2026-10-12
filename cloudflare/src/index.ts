@@ -51,12 +51,32 @@ export default {
      const path = url.pathname.replace(/\/+$/, "") || "/";
      const method = request.method;
 
-    if ((path === "/.well-known/oauth-authorization-server" || path === "/.well-known/openid-configuration") && method === "GET") {
-      return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL, { registration: true }), {
-        "access-control-allow-origin": "*",
-      });
+    // Both RFCs tell a client to build the metadata URL by inserting the
+    // well-known segment BEFORE the resource path, not by appending it:
+    // a client that knows the resource is `https://mcp.nooticr.com/mcp` asks
+    // for `/.well-known/oauth-protected-resource/mcp` (RFC 9728 §3.1), and the
+    // authorisation-server document has the same rule in RFC 8414 §3.
+    //
+    // We matched the bare root form only, so the spec-constructed URL 404'd —
+    // 75 times in a week from `undici`, which is the MCP TypeScript SDK's own
+    // fetch (#65). It mostly went unnoticed because the 401 challenge carries a
+    // correct `WWW-Authenticate` pointing at the root form, so a client that
+    // hits the 401 first recovers. What does not recover is a client that
+    // discovers BEFORE it gets a challenge, or that follows the construction
+    // rule first.
+    //
+    // The document is identical either way: `resource` and `issuer` name the
+    // real URLs, which is what makes serving it at both paths correct rather
+    // than merely convenient.
+    if (isWellKnown(path, "/.well-known/oauth-authorization-server") ||
+        isWellKnown(path, "/.well-known/openid-configuration")) {
+      if (method === "GET") {
+        return jsonResponse(200, authorizationServerMetadata(env.PUBLIC_URL, { registration: true }), {
+          "access-control-allow-origin": "*",
+        });
+      }
     }
-    if (path === "/.well-known/oauth-protected-resource" && method === "GET") {
+    if (isWellKnown(path, "/.well-known/oauth-protected-resource") && method === "GET") {
       return jsonResponse(200, protectedResourceMetadata(env.PUBLIC_URL), {
         "access-control-allow-origin": "*",
       });
@@ -514,20 +534,42 @@ async function handleDashboard(request: Request, env: Env): Promise<Response> {
   // Keys are a separate ask, and a failure here must not cost the user their
   // whole dashboard: a worker deployed against a backend that predates
   // `/auth/api-keys` would otherwise take balance and usage down with it.
+  //
+  // The reason travels with the failure. Collapsing every one of them to
+  // "unavailable" is what made the first bug report here unanswerable: a key
+  // created by the CLI and absent from this card can mean three different
+  // things — a different account, a different backend, or a read that failed
+  // — and the card said none of them.
   let keys: ApiKeySummary[] | null = null;
+  let keysError: string | undefined;
   try {
     const res = await callAsUser(env, token, session, "/auth/api-keys");
     if (res.ok) {
       const body = (await res.json()) as { keys?: ApiKeySummary[] };
       keys = Array.isArray(body.keys) ? body.keys : [];
+    } else {
+      keysError =
+        res.status === 404
+          ? `This deployment reads ${env.NOOTICR_BASE_URL}, which has no API-key endpoint yet.`
+          : `${env.NOOTICR_BASE_URL} answered ${res.status} when asked for your keys.`;
     }
-  } catch {
-    keys = null;
+  } catch (err) {
+    keysError = `Could not reach ${env.NOOTICR_BASE_URL}: ${
+      err instanceof Error ? err.message : "unknown error"
+    }`;
   }
 
   return htmlResponse(
     200,
-    dashboardPage(env.PUBLIC_URL, session.nooticrUser ?? {}, usage as never, token, keys)
+    dashboardPage(
+      env.PUBLIC_URL,
+      session.nooticrUser ?? {},
+      usage as never,
+      token,
+      keys,
+      keysError,
+      env.NOOTICR_BASE_URL
+    )
   );
 }
 
@@ -887,6 +929,25 @@ async function handleRegister(request: Request, _env: Env): Promise<Response> {
  * at the authorisation server through `www-authenticate`. With both invisible
  * a browser client can neither hold a session nor discover where to log in.
  */
+/**
+ * Does this path ask for a well-known document, in either form the RFCs allow?
+ *
+ * RFC 9728 §3.1 and RFC 8414 §3 both say a client inserts the well-known
+ * segment BEFORE the resource path — so a resource at `/mcp` is discovered at
+ * `/.well-known/oauth-protected-resource/mcp`, not at the bare root form. We
+ * only matched the root, so every spec-constructed request 404'd (#65).
+ *
+ * Matching a prefix rather than doing `startsWith` on its own: `startsWith`
+ * would also match `/.well-known/oauth-protected-resource-of-somebody-else`,
+ * which is a different document and should stay a 404. The path must be the
+ * base exactly, or the base followed by `/`.
+ *
+ * Exported for tests.
+ */
+export function isWellKnown(path: string, base: string): boolean {
+  return path === base || path.startsWith(`${base}/`);
+}
+
 /**
  * Descriptors probed on a schedule that this server deliberately does not
  * publish. See the handler for the decision behind each one (#67).

@@ -1,7 +1,7 @@
 {
   "name": "@nooticr/mcp",
   "mcpName": "com.nooticr/mcp",
-  "version": "1.26.56",
+  "version": "1.26.58",
   "description": "MCP server for nooticr - fetch, discover and understand TikTok/Instagram/YouTube/X/Reddit/LinkedIn/Weibo posts with AI (media metadata, niche discovery, brand monitoring, hook & viral analysis)",
   "homepage": "https://mcp.nooticr.com",
   "repository": {
@@ -46,7 +46,9 @@
     "test:mutation": "node scripts/mutation-guard.mjs",
     "test:invariants": "node scripts/invariant-guard.mjs",
     "verify:deep": "npm run verify && npm run test:mutation && npm run test:invariants",
-    "check:submission": "node scripts/check-submission-schema.mjs"
+    "check:submission": "node scripts/check-submission-schema.mjs",
+    "registry:check": "node scripts/registry-drift.mjs",
+    "registry:publish": "bash scripts/publish-registry.sh"
   },
   "keywords": [
     "mcp",

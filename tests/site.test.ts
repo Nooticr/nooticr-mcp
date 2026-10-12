@@ -219,6 +219,13 @@ describe("legal pages", () => {
     expect(p).toContain('href="/terms"');
   });
 
+  it("privacy does not deny social-account connections that the terms allow", () => {
+    const p = privacyPage(URL, API);
+    expect(p).not.toContain("We never connect to your social accounts and cannot act on them.");
+    expect(p).not.toContain("has no access to your social accounts");
+    expect(p).toContain("only after you have seen its exact text and confirmed it");
+  });
+
   it("disclose what is collected and what is not", () => {
     const p = privacyPage(URL, API);
     // Claims a reviewer checks for, and that the implementation must honour.
@@ -228,6 +235,12 @@ describe("legal pages", () => {
     // Retention is disclosed per-category in the collection table.
     expect(p).toContain("Kept for");
     expect(p).toContain("Until you delete the account");
+  });
+
+  it("terms say replies are posted only after the user confirms the exact text", () => {
+    const t = termsPage(URL, API);
+    expect(t).toContain("only after you have seen the exact text and confirmed it");
+    expect(t).not.toContain("does not connect to your social accounts at all");
   });
 
   it("terms cover payment, acceptable use and liability", () => {
@@ -454,6 +467,42 @@ describe("dashboard", () => {
     expect(html).not.toContain("undefined");
   });
 
+  /**
+   * Reported as "keys created with the CLI don't get displayed here". The
+   * code path was right; what was missing was any way to see that the CLI and
+   * this page were looking at different accounts, or different servers. The
+   * card named neither, and every read failure collapsed into one word.
+   */
+  it("names the account and the server its key list belongs to", () => {
+    const html = dashboardPage(
+      URL, { email: "julian@aybee.io" }, usage, "tok", [], undefined, "https://api.nooticr.com"
+    );
+    expect(html).toContain("julian@aybee.io");
+    expect(html).toContain("https://api.nooticr.com");
+    // And says where a CLI-made key would have gone instead.
+    expect(html).toMatch(/NOOTICR_BASE_URL/);
+  });
+
+  it("says why a key list could not be read, not just that it could not", () => {
+    const reason = "This deployment reads https://api.nooticr.com, which has no API-key endpoint yet.";
+    const html = dashboardPage(URL, { email: "j@a.io" }, usage, "tok", null, reason, "https://api.nooticr.com");
+    expect(html).toContain(reason);
+    // The old copy said this and nothing else; it must not be the whole answer.
+    const generic = "Keys are unavailable right now";
+    expect(html).not.toContain(generic);
+    // A failure is drawn as one, not as an empty list.
+    expect(html).not.toContain("No keys yet");
+    expect(html).toContain('class="err"');
+  });
+
+  it("tells an empty list apart from a mismatched one", () => {
+    const html = dashboardPage(URL, { email: "j@a.io" }, usage, "tok", [], undefined, "https://api.nooticr.com");
+    expect(html).toContain("No keys yet");
+    expect(html, "an empty list should mention the two things that make a key invisible").toMatch(
+      /same account/i
+    );
+  });
+
   it("signed-out view offers a way in and does not leak an error object", () => {
     const html = dashboardSignedOut(URL);
     expect(html).toContain("/dashboard/login");
@@ -548,6 +597,8 @@ describe("tool surface", () => {
     "generate_captions",
     "list_social_connections",
     "connect_social_account",
+    "connect_store",
+    "list_store_products",
     "get_social_media",
     "get_post_transcript",
     "discover_social_posts",
@@ -718,6 +769,9 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // Store link and the store's own catalogue: free to call, and the read is the merchant's own.
+      "connect_store",
+      "list_store_products",
       // Formats what the caller classified for a tracker elsewhere. The only
       // network call in that chain is the one the other server makes.
       "prepare_handoff",
