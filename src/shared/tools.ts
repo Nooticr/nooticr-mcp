@@ -53,6 +53,7 @@ import {
 } from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
+import { registerCreativeTools } from "./creative.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerEmployeeTools } from "./employees.js";
@@ -3380,6 +3381,8 @@ const TOOL_NAMES = [
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);
  registerOwnAccountTools(server, makeClient);
+ // Creative assets (creative.ts): the free reads of nooticr-server's creative_* family.
+ registerCreativeTools(server, makeClient);
  registerConnectionTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
  registerEmployeeTools(server, makeClient);

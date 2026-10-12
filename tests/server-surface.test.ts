@@ -96,7 +96,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(100);
+    expect(tools).toHaveLength(102);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -124,6 +124,8 @@ describe("tool annotations", () => {
       "connect_social_account",
       "connect_store",
       "create_product",
+      "creative_assets_list",
+      "creative_job_status",
       "draft_post",
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.

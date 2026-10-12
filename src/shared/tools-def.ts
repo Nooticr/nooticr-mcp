@@ -266,6 +266,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ kind: z.enum(["mentions", "competitor", "report", "portfolio"]).optional().describe("\"mentions\" (default), \"competitor\", \"report\" or \"portfolio\"."), job: z.object({ tool: z.enum(["niche_report", "discover_social_posts"]), args: z.object({}).passthrough() }).optional().describe("kind: report only — the job each run performs."), terms: z.array(z.string()).optional().describe("kind: portfolio only — the terms to compare (1-25)."), term: z.string().optional().describe("kind: mentions only — what to watch for (max 120 chars)."), platforms: z.array(z.string()).optional().describe("kind: mentions only — networks to sweep (default: every searchable network)."), handle: z.string().optional().describe("kind: competitor only — the creator's handle."), platform: z.string().optional().describe("kind: competitor only — the platform that creator posts on."), cadence: z.enum(["hourly", "every_6_hours", "every_12_hours", "daily", "weekly"]).optional().describe("How often to run (default daily)."), budgetCredits: z.number().int().optional().describe("Hard per-run credit ceiling (default the full sweep's cost)."), deliverTo: z.string().optional().describe("Digest email (default the account's own)."), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted cost."), confirmationToken: z.string().optional().describe("The token the first call returned.") }).strict(),
  },
  {
+ name: "creative_assets_list",
+ title: "List Creative Assets",
+ description: "List the creative assets (voice-overs, sound effects, music, images, videos, composites) generated in this workspace, newest first. Optional filters: appId, kind, briefId, since (ISO timestamp). Pass the returned nextCursor as cursor for the next page. No cost to call.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Only this product's assets."), kind: z.enum(["voiceover", "sfx", "music", "image", "video", "composite"]).optional(), briefId: z.string().optional(), since: z.string().optional().describe("ISO 8601 timestamp."), limit: z.number().int().min(1).max(100).optional(), cursor: z.string().optional().describe("nextCursor from the previous page.") }).strict(),
+ },
+ {
+ name: "creative_job_status",
+ title: "Creative Job Status",
+ description: "Status of an asynchronous creative job by jobId: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after pollAfterSeconds. No cost to call.",
+ inputSchema: z.object({ jobId: z.string().describe("jobId returned when the job was started.") }).strict(),
+ },
+ {
  name: "list_brand_watches",
  title: "List Brand Watches",
  description: "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
