@@ -679,6 +679,7 @@ describe("tool surface", () => {
     "list_pending_actions",
     "approve_action",
     "reject_action",
+    "marketplace_changes",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -802,6 +803,8 @@ describe("tool surface", () => {
       "list_pending_actions",
       "approve_action",
       "reject_action",
+      // Compares two stored scans; fetches nothing.
+      "marketplace_changes",
       "nooticr_settings_read",
       "nooticr_settings_update",
     ];

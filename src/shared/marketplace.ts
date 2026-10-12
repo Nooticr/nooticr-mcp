@@ -524,6 +524,49 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
   );
 
   server.registerTool(
+    "marketplace_changes",
+    {
+      title: "Marketplace Changes",
+      description:
+        "What moved in a category since the run before: products that entered or left a search's " +
+        "results, and ones whose price or place changed. Compared from the two latest stored scans " +
+        "of the same marketplace and `query`, so it fetches nothing and never re-scans — run " +
+        "scan_marketplace_category first, and again later, to have two runs to compare. `new` and " +
+        "`gone` mean entered or left the results, not listed or delisted. A category scanned only " +
+        "once has no earlier run and says so. Free.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      outputSchema: OUTPUT_SCHEMAS.marketplace_changes,
+      inputSchema: z
+        .object({
+          marketplace: marketplaceArg,
+          query: z.string().describe("The category search to compare, exactly as it was scanned."),
+          market: z.string().optional().describe("The storefront the scan read, if the site has several."),
+        })
+        .strict(),
+    },
+    async (args: Record<string, unknown>, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const m = marketOf(args.marketplace);
+      if (!m) return toolError("marketplace_changes failed", new Error(`unknown marketplace — one of ${SLUGS}`));
+      try {
+        const res = await client.callTool("marketplace_changes", args);
+        const payload = structured(res);
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(payload) }],
+          structuredContent: payload,
+        };
+      } catch (err) {
+        return toolError("marketplace_changes failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
     "get_marketplace_product",
     {
       title: "Get Marketplace Product",

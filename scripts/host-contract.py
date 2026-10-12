@@ -78,6 +78,7 @@ NO_APP = {
     "list_pending_actions",  # view pending: a queue of previews awaiting approval
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
+    "marketplace_changes",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"

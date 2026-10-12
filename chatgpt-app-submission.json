@@ -368,6 +368,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "marketplace_changes": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it compares the two latest stored scans of a category and reports what moved. Nothing is written.",
+        "open_world_justification": "Stays inside nooticr: it fetches nothing from any marketplace, only diffs scans already stored.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "get_marketplace_product": {
       "annotations": {
         "readOnlyHint": true,
