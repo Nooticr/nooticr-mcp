@@ -1120,7 +1120,7 @@
       },
       "justifications": {
         "read_only_justification": "Not read-only: on confirmation it creates an AI employee in the caller's workspace. The first call only returns a quote.",
-        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; the employee's later public actions each wait for the user's approval.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; the employee's later public actions (publish, email, reply, listing or price changes) wait for the user's approval unless the user has turned autopilot on for that action type.",
         "destructive_justification": "Not destructive: it adds a new employee and removes nothing."
       }
     },

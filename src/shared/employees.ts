@@ -66,7 +66,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside " +
         "this workspace. Pass `template` and optionally name, instructions, appId, schedule, " +
-        "budgets, approvalPolicy and notify. " +
+        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify. " +
         TWO_STEP_RULE +
         " Public actions (publish, email, reply, listing or price changes) wait for the user's " +
         "approval unless autopilot is turned on. The hiring user is billed for runs, up to the " +
