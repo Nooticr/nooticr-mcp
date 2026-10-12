@@ -62,6 +62,8 @@ const NOT_READ_ONLY = [
   "review_post",
   // Mints a fresh OAuth state row every call — a retry is not a no-op.
   "connect_social_account",
+  // Mints a one-time store-authorisation link every call.
+  "connect_store",
   // Both spend credits to start public marketplace collection jobs.
   "scan_amazon_category",
   "scan_marketplace_category",
@@ -94,7 +96,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(97);
+    expect(tools).toHaveLength(99);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -120,6 +122,7 @@ describe("tool annotations", () => {
       "analyze_product_status",
       "check_nooticr_credits",
       "connect_social_account",
+      "connect_store",
       "create_product",
       "draft_post",
       // AI employees: stored rows inside nooticr. approve_action is absent on
@@ -167,7 +170,7 @@ describe("tool annotations", () => {
       // every one of them reaches Amazon through the scraper service.
       "show_amazon_category_insights",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
-      // send them either — nooticr has no send path for comments.
+      // send them either; a reply is posted only after the user confirms its text.
       "show_audience_replies",
       // Renders scores the caller reached by reading a candidate's links —
       // and it is the caller that opened them, not us. See collab.ts for why

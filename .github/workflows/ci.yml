@@ -224,9 +224,14 @@ jobs:
       can_deploy: ${{ steps.cf.outputs.can_deploy }}
     steps:
       # Full history: the version step below asks what this push changed.
+      # The release commit is pushed to main, which the agent-loop-gate ruleset
+      # blocks for GITHUB_TOKEN (it needs agent/verification and agent/blockers,
+      # and a [skip ci] commit gets neither). The release-bot deploy key is a
+      # ruleset bypass actor, so checkout authenticates the push with it.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
 
       - uses: actions/setup-node@v4
         with:

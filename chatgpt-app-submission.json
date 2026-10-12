@@ -4,7 +4,7 @@
   "app_info": {
     "display_name": "Nooticr",
     "subtitle": "Social listening, then create",
-    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nNothing here posts to a social network. No nooticr connection carries comment-write permission, so the audience-reply tools draft text for a person to paste in themselves.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
+    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nNothing here posts to a social network. The audience-reply tools draft a reply in the creator's voice; a reply is posted to a connected account only after the user confirms its exact text, and never on its own.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
     "category": "BUSINESS"
   },
   "tools": {
@@ -176,88 +176,28 @@
         "destructive_justification": "Not destructive: each call mints a new link rather than replacing a connection, and nothing is connected until the user approves."
       }
     },
-    "hire_employee": {
+    "connect_store": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
         "destructiveHint": false
       },
       "justifications": {
-        "read_only_justification": "Not read-only: on confirmation it creates an AI employee in the caller's workspace. The first call only returns a quote.",
-        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; the employee's later public actions each wait for the user's approval.",
-        "destructive_justification": "Not destructive: it adds a new employee and removes nothing."
+        "read_only_justification": "Not read-only: it mints a fresh one-time authorisation link. No store is connected until the owner approves at Amazon or Shopify, and no credential passes through this tool.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; the store is contacted only when the owner opens the link.",
+        "destructive_justification": "Not destructive: each call mints a new link rather than replacing a connection, and nothing is connected until the owner approves."
       }
     },
-    "list_employees": {
+    "list_store_products": {
       "annotations": {
         "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Read-only: it lists the workspace's AI employees. Nothing is written.",
-        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
-        "destructive_justification": "Not destructive: it changes nothing."
-      }
-    },
-    "pause_employee": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Not read-only: it pauses or resumes an employee's schedule.",
-        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
-        "destructive_justification": "Not destructive: the employee keeps its memory and thread, and resume undoes it."
-      }
-    },
-    "fire_employee": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": true
-      },
-      "justifications": {
-        "read_only_justification": "Not read-only: on confirmation it ends an employee for good. The first call only describes the effect.",
-        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
-        "destructive_justification": "Destructive: runs stop for good and actions waiting for approval are discarded; the user must confirm explicitly."
-      }
-    },
-    "list_pending_actions": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Read-only: it lists actions AI employees are waiting to run, with previews. Nothing is written.",
-        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
-        "destructive_justification": "Not destructive: it changes nothing."
-      }
-    },
-    "approve_action": {
-      "annotations": {
-        "readOnlyHint": false,
         "openWorldHint": true,
-        "destructiveHint": true
-      },
-      "justifications": {
-        "read_only_justification": "Not read-only: on confirmation it runs the stored action once. The first call only returns the preview and a token.",
-        "open_world_justification": "Open domain: the approved action may publish or send something on a third-party platform or by email, exactly as the preview the user saw.",
-        "destructive_justification": "Destructive: the action cannot be unsent once run; the user must confirm explicitly after seeing the preview."
-      }
-    },
-    "reject_action": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
         "destructiveHint": false
       },
       "justifications": {
-        "read_only_justification": "Not read-only: it marks a pending action rejected.",
-        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; nothing is published or sent.",
-        "destructive_justification": "Not destructive: the action is discarded unrun, which is the safe outcome."
+        "read_only_justification": "Read-only: it reads the connected store's catalogue. Nothing is written to the store or to nooticr.",
+        "open_world_justification": "Reaches a third party: nooticr's API reads the merchant's Amazon or Shopify store live, so the result depends on data outside this server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
     "create_brand_watch": {
@@ -1171,6 +1111,90 @@
         "open_world_justification": "Closed domain. It changes only preferences stored for the caller's Nooticr account; no network is contacted.",
         "destructive_justification": "Not destructive: it changes reversible search defaults and deletes no account data or content."
       }
+    },
+    "hire_employee": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it creates an AI employee in the caller's workspace. The first call only returns a quote.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; the employee's later public actions each wait for the user's approval.",
+        "destructive_justification": "Not destructive: it adds a new employee and removes nothing."
+      }
+    },
+    "list_employees": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's AI employees. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "pause_employee": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it pauses or resumes an employee's schedule.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: the employee keeps its memory and thread, and resume undoes it."
+      }
+    },
+    "fire_employee": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it ends an employee for good. The first call only describes the effect.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
+        "destructive_justification": "Destructive: runs stop for good and actions waiting for approval are discarded; the user must confirm explicitly."
+      }
+    },
+    "list_pending_actions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists actions AI employees are waiting to run, with previews. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "approve_action": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it runs the stored action once. The first call only returns the preview and a token.",
+        "open_world_justification": "Open domain: the approved action may publish or send something on a third-party platform or by email, exactly as the preview the user saw.",
+        "destructive_justification": "Destructive: the action cannot be unsent once run; the user must confirm explicitly after seeing the preview."
+      }
+    },
+    "reject_action": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it marks a pending action rejected.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; nothing is published or sent.",
+        "destructive_justification": "Not destructive: the action is discarded unrun, which is the safe outcome."
+      }
     }
   },
   "test_cases": [
@@ -1207,10 +1231,10 @@
   ],
   "negative_test_cases": [
     {
-      "description": "Posting a reply is out of scope by design. No nooticr connection carries comment-write permission on any network, so the model must decline rather than claim it sent something.",
+      "description": "Posting a reply from these tools is out of scope by design. They only draft; a reply is posted on the user's account only after the user has seen the exact text and confirmed it outside the tools, so the model must decline rather than claim it sent something.",
       "user_prompt": "Reply to that commenter on TikTok for me and tell them the feature ships next week.",
       "tools_triggered": null,
-      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the text has to be pasted in by a person."
+      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the user confirms and sends the exact text separately."
     },
     {
       "description": "Private or non-public data is not reachable. Every read here goes through public post detail.",

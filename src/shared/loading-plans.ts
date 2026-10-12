@@ -596,6 +596,9 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },
   reject_action: { label: "Rejecting the action", kind: "text", n: 1, steps: [], free: true },
+  // ─── Store connections (store-read.ts): a link, and a read of the store's own catalogue ───
+  connect_store: { label: "Minting a store link", kind: "text", n: 1, steps: [], free: true },
+  list_store_products: { label: "Reading your store's catalogue", kind: "list", n: 3, steps: [], free: true },
 
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },

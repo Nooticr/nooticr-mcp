@@ -56,6 +56,7 @@ import { registerBrandWatch } from "./brand-watch.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerEmployeeTools } from "./employees.js";
+import { registerStoreReadTools } from "./store-read.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
@@ -74,7 +75,7 @@ import {
 } from "./settings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.56";
+export const MCP_SERVER_VERSION = "1.26.58";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -3382,6 +3383,8 @@ const TOOL_NAMES = [
  registerConnectionTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
  registerEmployeeTools(server, makeClient);
+ // Store connections (store-read.ts): the connect link and the catalogue read.
+ registerStoreReadTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);
  // Neither fetches, neither takes a client: one formats what the model
  // classified for a tracker on another server, the other draws what it scored.

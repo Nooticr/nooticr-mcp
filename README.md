@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-97 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+99 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -113,7 +113,7 @@ them caps that fan-out with an argument.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply: nooticr does not post comments on any network, even where a connection's grant allows managing them. `limit` caps how many posts are opened, which is the price. |
+| `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply. This tool never sends anything; a reply is posted only if you then ask for it, on your connected account, after you confirm the exact text. `limit` caps how many posts are opened, which is the price. |
 | `prepare_handoff` | free | **The hand-off to your tracker.** Turns items you classified — a bug report in a comment, a complaint said out loud in a video — into the exact `title`, `body` and `labels` to file through whichever GitHub, Jira or Linear MCP server the host also has connected. nooticr files nothing and holds no tracker credential. The body carries the quote fenced and framed as a third-party report rather than as instructions, because the issue is read next by a coding agent; contact details are redacted, `@handles` and `#numbers` are defanged so filing notifies nobody by accident, and a `searchFirst` string dedupes a second sweep against the first. Makes no requests. |
 | `show_audience_replies` | free | Lays your drafts out for a person to work through, grouped under the post, each with what you decided to do about it. Sends nothing; fetches nothing. |
 | `show_standings` | free | Draws the standings your model read out of `compare_creators` or `watchlist_standings` — one row per creator, with the window and the median it was scored against. `ranking` records which axis you ordered on, and `tooThin` draws a creator with too short a window as unranked rather than last: missing from a comparison is not the same as losing it. Makes no requests. |
@@ -188,6 +188,8 @@ a `scanId` for the rest.
 | `list_pending_actions` | free | What your AI employees are waiting to do until you approve, each with a preview of what will be published, sent or changed. Optionally one `employeeId`. |
 | `approve_action` | free | Approve one pending action by `actionId`. The first call returns the preview and a `confirmationToken` and runs nothing; after you confirm, the stored action runs exactly once. |
 | `reject_action` | free | Reject one pending action, with an optional note the employee can learn from. |
+| `connect_store` | free | A link a workspace owner or admin opens to connect an Amazon seller account or a Shopify shop. They approve at the store; nothing is connected until they do, and no credential passes through the tool. |
+| `list_store_products` | free | Read the connected store's own catalogue: title, description, status, price, and Amazon listing issues. Read-only. |
 | `create_product` | free | Create a product in your own workspace — the row every other own-account tool needs before it has anything to work with. Always creates in the calling session's workspace, never one you could name. `name` and `slug` are required; every other field is snake_case and read by exact key, so a camelCase `websiteUrl` lands nowhere. Writes no brand playbook. |
 | `update_product` | free | Patch a product's fields. An omitted argument leaves its column unchanged, so this cannot blank a field by not mentioning it, and the result lists what was actually written — a misspelled field shows up as one that did not change rather than as a silent no-op. |
 
@@ -644,6 +646,10 @@ and text** posts.
 
 See [docs/SUBMISSION.md](docs/SUBMISSION.md) for ready-to-paste configs and the submission
 package for **Claude Desktop**, **Cursor**, and **OpenAI Agents SDK**.
+
+The official MCP registry entry `com.nooticr/mcp` must equal `server.json`'s version after each
+release; see [docs/registry-publishing.md](docs/registry-publishing.md) for the drift check
+(`npm run registry:check`) and the publish script (`npm run registry:publish`).
 
 ## Security notes
 

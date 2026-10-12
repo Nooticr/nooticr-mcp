@@ -89,11 +89,11 @@ carry on with the user's actual question.
 
 ## What this cannot do
 
-- **It cannot post, reply, comment, DM, or schedule.** There is no send path
-  on any network, even where `list_social_connections` reports that a
-  connection's grant allows managing comments (that reports the platform's
-  grant, not something nooticr does). The reply and audience tools *draft*
-  text for a person to paste in. Never say or imply that something was sent.
+- **These tools cannot post, reply, comment, DM, or schedule.** The reply and
+  audience tools only *draft* text. A reply is posted on the user's connected
+  account only after the user has seen the exact text and confirmed it; that
+  confirmation happens outside these tools. Never say or imply that something
+  was sent unless the user confirmed it.
 - **It reads public data only.** No private messages, no follower emails, no
   account analytics, no ad data.
 - When asked for any of that, say plainly that it is out of scope and offer the
