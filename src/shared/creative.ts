@@ -4,8 +4,9 @@
  * Both are passthroughs to the server's `POST /mcp` dispatch, which owns the
  * tenancy check (another workspace's id answers "not found").
  *
- * The paid creative tools (CR2-CR6) register here when they ship;
- * `creative_test_render` is a server test fixture and is never registered.
+ * The paid creative tools register here when they ship. `creative_image` and
+ * `creative_image_edit` (CR3) are paid and use the server's quote-then-confirm
+ * handshake. `creative_test_render` is a server test fixture and is never registered.
  * Neither tool has a view yet: the asset list would be a gallery, which the
  * design system has no card for.
  */
@@ -89,5 +90,70 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       outputSchema: OUTPUT_SCHEMAS.creative_job_status,
     },
     passthrough("creative_job_status"),
+  );
+
+  const imageSize = z
+    .enum(["1024x1536", "1024x1024", "1536x1024", "1088x1920", "1088x1360"])
+    .optional()
+    .describe("Default 1024x1536 (portrait).");
+  const imageHandshake = {
+    briefId: z.string().optional(),
+    confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."),
+    confirmationToken: z.string().optional().describe("The token the quote returned."),
+  };
+  const imageAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+
+  server.registerTool(
+    "creative_image",
+    {
+      title: "Create Images",
+      description:
+        "Generate 1-4 still images with GPT Image (low quality, fast and cheap) and store them as " +
+        "creative assets. The prompt is up to 4000 characters; do not put long text in it (use " +
+        "creative_compose captions) and do not ask for real named people. The first call is a free " +
+        "price quote in credits; nothing is charged until you confirm. Show the user the credits and " +
+        "ask before calling again with the same arguments plus confirm: true and the " +
+        "confirmationToken. Settles to the real usage, never above the quote. Returns assets and " +
+        "creativeCredits.",
+      annotations: imageAnnotations,
+      inputSchema: z
+        .object({
+          appId: z.number().int(),
+          prompt: z.string().min(1).max(4000),
+          size: imageSize,
+          n: z.number().int().min(1).max(4).optional(),
+          transparent: z.boolean().optional(),
+          ...imageHandshake,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.creative_image,
+    },
+    passthrough("creative_image"),
+  );
+
+  server.registerTool(
+    "creative_image_edit",
+    {
+      title: "Edit Images",
+      description:
+        "Edit or combine 1-4 existing creative image assets (imageAssetIds, from creative_assets_list " +
+        "or a previous creative_image) with GPT Image (low quality), with an optional maskAssetId, and " +
+        "store the result as a new asset. The first call is a free price quote in credits; nothing is " +
+        "charged until you confirm. Show the user the credits and ask before calling again with " +
+        "confirm: true and the confirmationToken. Returns assets and creativeCredits.",
+      annotations: imageAnnotations,
+      inputSchema: z
+        .object({
+          appId: z.number().int(),
+          prompt: z.string().min(1).max(4000),
+          imageAssetIds: z.array(z.string()).min(1).max(4),
+          maskAssetId: z.string().optional(),
+          size: imageSize,
+          ...imageHandshake,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.creative_image_edit,
+    },
+    passthrough("creative_image_edit"),
   );
 }

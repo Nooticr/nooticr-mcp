@@ -1384,6 +1384,22 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { assets: [{ id: "00000000-0000-0000-0000-0000000000c1", kind: "image", appId: 1, url: "https://example.test/c1.png" }], nextCursor: null },
       };
     }
+    case "creative_image":
+    case "creative_image_edit": {
+      if (args.confirm === true && args.confirmationToken) {
+        return {
+          content: [{ type: "text", text: "Generated." }],
+          structuredContent: {
+            assets: [{ id: "00000000-0000-0000-0000-0000000000c3", kind: "image", url: "https://example.test/c3.png" }],
+            creativeCredits: { charged: 5, refunded: 0, quoted: 5, balance: 95 },
+          },
+        };
+      }
+      return {
+        content: [{ type: "text", text: "Quote: 5 credits." }],
+        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", creditsQuoted: 5 },
+      };
+    }
     case "creative_job_status": {
       return {
         content: [{ type: "text", text: "Job done." }],

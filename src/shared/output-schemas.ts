@@ -1403,6 +1403,21 @@ export const OUTPUT_SCHEMAS = {
     assets: listOf(open({ id: scalar(), kind: scalar(), appId: scalar(), url: scalar(), mime: scalar(), createdAt: scalar() })),
     nextCursor: scalar(),
   }),
+  // The paid image tools answer a quote first, then the generated assets with the credits settled.
+  creative_image: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    creditsQuoted: scalar(),
+    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+    creativeCredits: open({ charged: scalar(), refunded: scalar(), quoted: scalar(), balance: scalar() }).nullish(),
+  }),
+  creative_image_edit: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    creditsQuoted: scalar(),
+    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+    creativeCredits: open({ charged: scalar(), refunded: scalar(), quoted: scalar(), balance: scalar() }).nullish(),
+  }),
   creative_job_status: open({
     jobId: scalar(),
     tool: scalar(),

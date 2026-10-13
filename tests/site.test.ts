@@ -581,6 +581,8 @@ describe("tool surface", () => {
     // Creative assets (creative.ts).
     "creative_assets_list",
     "creative_job_status",
+    "creative_image",
+    "creative_image_edit",
     "create_product",
     "update_product",
     "get_scheduled_posts",

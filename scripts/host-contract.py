@@ -69,6 +69,8 @@ NO_APP = {
     # line; the design system has no card for either.
     "creative_assets_list",
     "creative_job_status",
+    "creative_image",
+    "creative_image_edit",
     # Store connections (store-read.ts). View pending: a catalogue is a table the design system has no card for.
     "connect_store",  # view pending: the link and the state around it
     "list_store_products",  # view pending: a table of products with status and price
