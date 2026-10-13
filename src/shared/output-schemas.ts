@@ -1404,6 +1404,29 @@ export const OUTPUT_SCHEMAS = {
     assets: listOf(open({ id: scalar(), kind: scalar(), appId: scalar(), url: scalar(), mime: scalar(), createdAt: scalar() })),
     nextCursor: scalar(),
   }),
+  creative_voices_search: open({
+    voices: listOf(open({ voiceRef: open({ publicOwnerId: scalar(), voiceId: scalar() }), name: scalar(), language: scalar(), accent: scalar(), previewUrl: scalar() })),
+  }),
+  // The paid tools answer a quote first, then the generated assets (or a job for music).
+  creative_voiceover: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    creditsQuoted: scalar(),
+    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+  }),
+  creative_sfx: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    creditsQuoted: scalar(),
+    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+  }),
+  creative_music: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to start the job."),
+    creditsQuoted: scalar(),
+    jobId: scalar().describe("Poll creative_job_status with this."),
+    pollAfterSeconds: scalar(),
+  }),
   creative_job_status: open({
     jobId: scalar(),
     tool: scalar(),
