@@ -41,7 +41,7 @@ describe("employee tools", () => {
   it("forwards each call to the backend tool of the same name with its arguments", async () => {
     const { client, calls } = await connect();
     const args: Record<string, Record<string, unknown>> = {
-      hire_employee: { template: "social-media-manager", appId: 3, monthlyBudgetCredits: 50 },
+      hire_employee: { template: "social-media-manager", products: [3, 4], monthlyBudgetCredits: 50 },
       list_employees: { includeFired: true },
       pause_employee: { employeeId: "e1", resume: true },
       fire_employee: { employeeId: "e1", confirm: true },
@@ -54,6 +54,16 @@ describe("employee tools", () => {
       expect(res.isError, name).toBeFalsy();
     }
     expect(calls).toEqual(NAMES.map((name) => ({ name, args: args[name] })));
+  });
+
+  it("forwards products as \"all\" and rejects an empty list", async () => {
+    const { client, calls } = await connect();
+    const ok = await client.callTool({ name: "hire_employee", arguments: { template: "t", products: "all" } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", products: "all" } }]);
+    const bad = await client.callTool({ name: "hire_employee", arguments: { template: "t", products: [] } });
+    expect(bad.isError).toBe(true);
+    expect(calls).toHaveLength(1);
   });
 
   it("rejects arguments the server does not know", async () => {
