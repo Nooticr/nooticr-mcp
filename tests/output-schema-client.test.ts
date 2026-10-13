@@ -114,6 +114,17 @@ const CASES: Array<[string, Record<string, unknown>, unknown]> = [
     { url: "https://x/1" },
     { sourceUrl: "https://x/1", post: { id: "1" }, repurposed: { linkedin: "…" } },
   ],
+  // nooticr-server#552 returns words as an array of {text,start,end}.
+  [
+    "creative_voiceover",
+    { appId: 3, text: "Hello", voiceRef: { publicOwnerId: "o", voiceId: "v" }, confirm: true, confirmationToken: "tok" },
+    { assetId: "a1", url: "https://x/a.mp3", key: "k", durationMs: 1200, words: [{ text: "Hello", start: 0, end: 0.5 }], wordsTruncated: false, creativeCredits: {} },
+  ],
+  [
+    "creative_voiceover",
+    { appId: 3, text: "Hello", voiceRef: { publicOwnerId: "o", voiceId: "v" }, confirm: true, confirmationToken: "tok" },
+    { assetId: "a1", url: "https://x/a.mp3", key: "k", durationMs: 1200, words: [], wordsTruncated: false },
+  ],
 ];
 
 describe("a client can read what the server returns", () => {
