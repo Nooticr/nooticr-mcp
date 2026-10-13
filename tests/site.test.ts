@@ -585,6 +585,8 @@ describe("tool surface", () => {
     "creative_voiceover",
     "creative_sfx",
     "creative_music",
+    "creative_image",
+    "creative_image_edit",
     "create_product",
     "update_product",
     "get_scheduled_posts",

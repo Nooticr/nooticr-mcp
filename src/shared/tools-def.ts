@@ -296,6 +296,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ appId: z.number().int(), prompt: z.string().min(1).max(500), durationSeconds: z.number().int().min(5).max(60), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
  },
  {
+ name: "creative_image",
+ title: "Create Images",
+ description: "Generate 1-4 still images with GPT Image (low quality, fast and cheap) and store them as creative assets. The prompt is up to 4000 characters; do not put long text in it (put long text in a caption overlay) and do not ask for real named people. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken. Settles to the real usage, never above the quote. Returns assets and creativeCredits.",
+ inputSchema: z.object({ appId: z.number().int(), prompt: z.string().min(1).max(4000), size: z.enum(["1024x1536", "1024x1024", "1536x1024", "1088x1920", "1088x1360"]).optional().describe("Default 1024x1536 (portrait)."), n: z.number().int().min(1).max(4).optional(), transparent: z.boolean().optional(), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
+ },
+ {
+ name: "creative_image_edit",
+ title: "Edit Images",
+ description: "Edit or combine 1-4 existing creative image assets (imageAssetIds, from creative_assets_list or a previous creative_image) with GPT Image (low quality), with an optional maskAssetId, and store the result as a new asset. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with confirm: true and the confirmationToken. Returns assets and creativeCredits.",
+ inputSchema: z.object({ appId: z.number().int(), prompt: z.string().min(1).max(4000), imageAssetIds: z.array(z.string()).min(1).max(4), maskAssetId: z.string().optional(), size: z.enum(["1024x1536", "1024x1024", "1536x1024", "1088x1920", "1088x1360"]).optional().describe("Default 1024x1536 (portrait)."), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
+ },
+ {
  name: "creative_job_status",
  title: "Creative Job Status",
  description: "Status of an asynchronous creative job by jobId: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after pollAfterSeconds. No cost to call.",
