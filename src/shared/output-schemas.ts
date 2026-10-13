@@ -1403,19 +1403,43 @@ export const OUTPUT_SCHEMAS = {
     assets: listOf(open({ id: scalar(), kind: scalar(), appId: scalar(), url: scalar(), mime: scalar(), createdAt: scalar() })),
     nextCursor: scalar(),
   }),
-  // The paid image tools answer a quote first, then the generated assets with the credits settled.
-  creative_image: open({
+  creative_voices_search: open({
+    voices: listOf(open({ voiceRef: open({ publicOwnerId: scalar(), voiceId: scalar() }), name: scalar(), language: scalar(), accent: scalar(), previewUrl: scalar() })),
+  }),
+  // The paid tools answer a quote first, then the generated assets (or a job for music).
+  creative_voiceover: open({
     requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
     confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
     creditsQuoted: scalar(),
     assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+  }),
+  creative_sfx: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    creditsQuoted: scalar(),
+    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+  }),
+  creative_music: open({
+    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to start the job."),
+    creditsQuoted: scalar(),
+    jobId: scalar().describe("Poll creative_job_status with this."),
+    pollAfterSeconds: scalar(),
+  }),
+  // The paid image tools answer a quote first (`quote`, a token, an expiry), then the generated assets
+  // with the credits settled. Keys are the server's (crates/server/src/creative/billing.rs, tools.rs).
+  creative_image: open({
+    quote: open({ credits: scalar() }).nullish(),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    expiresAt: scalar(),
+    assets: listOf(open({ assetId: scalar(), url: scalar(), key: scalar(), width: scalar(), height: scalar() })),
     creativeCredits: open({ charged: scalar(), refunded: scalar(), quoted: scalar(), balance: scalar() }).nullish(),
   }),
   creative_image_edit: open({
-    requiresConfirmation: scalar().describe("true on the first call: nothing was generated or charged yet."),
+    quote: open({ credits: scalar() }).nullish(),
     confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
-    creditsQuoted: scalar(),
-    assets: listOf(open({ id: scalar(), kind: scalar(), url: scalar() })),
+    expiresAt: scalar(),
+    assets: listOf(open({ assetId: scalar(), url: scalar(), key: scalar(), width: scalar(), height: scalar() })),
     creativeCredits: open({ charged: scalar(), refunded: scalar(), quoted: scalar(), balance: scalar() }).nullish(),
   }),
   creative_job_status: open({

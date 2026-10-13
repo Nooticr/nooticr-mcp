@@ -272,9 +272,33 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ appId: z.number().int().optional().describe("Only this product's assets."), kind: z.enum(["voiceover", "sfx", "music", "image", "video", "composite"]).optional(), briefId: z.string().optional(), since: z.string().optional().describe("ISO 8601 timestamp."), limit: z.number().int().min(1).max(100).optional(), cursor: z.string().optional().describe("nextCursor from the previous page.") }).strict(),
  },
  {
+ name: "creative_voices_search",
+ title: "Search Creative Voices",
+ description: "Search ElevenLabs' voice library for a voice to use in creative_voiceover. Library voices only, never a real person's cloned voice. Returns voiceRef, name, labels, language, accent and previewUrl. No cost to call.",
+ inputSchema: z.object({ query: z.string().optional(), language: z.string().optional().describe("e.g. en, fr, es."), accent: z.string().optional(), gender: z.enum(["male", "female", "neutral"]).optional(), age: z.enum(["young", "middle_aged", "old"]).optional(), useCase: z.enum(["narration", "social_media", "advertisement", "conversational", "characters"]).optional(), limit: z.number().int().min(1).max(20).optional() }).strict(),
+ },
+ {
+ name: "creative_voiceover",
+ title: "Create Voice-over",
+ description: "Voice-over with word timings (for burned-in captions); the text is spoken verbatim, up to 2500 characters. Pass a voiceRef (or voiceId) from creative_voices_search; library voices only, no cloning. quality: final (default) or draft (cheaper, faster). The first call is a free price quote in credits; nothing is charged until you confirm (vendor cost plus markup, never above the quote); nothing is charged until you confirm. Show the user the credits and ask before calling again with confirm: true and the confirmationToken. No real people's likeness or voice, no copyrighted music, logos or characters.",
+ inputSchema: z.object({ appId: z.number().int(), text: z.string().min(1).max(2500), voiceRef: z.object({ publicOwnerId: z.string(), voiceId: z.string() }).strict().optional().describe("A voiceRef from creative_voices_search."), voiceId: z.string().optional(), quality: z.enum(["final", "draft"]).optional(), stability: z.number().min(0).max(1).optional(), style: z.number().min(0).max(1).optional(), speed: z.number().min(0.7).max(1.2).optional(), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
+ },
+ {
+ name: "creative_sfx",
+ title: "Create Sound Effect",
+ description: "Generate a short sound effect (0.5-10 s) from a description of up to 300 characters; the text is a prompt, not spoken. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with confirm: true and the confirmationToken. No real people's likeness or voice, no copyrighted music, logos or characters.",
+ inputSchema: z.object({ appId: z.number().int(), description: z.string().min(1).max(300), durationSeconds: z.number().min(0.5).max(10).optional(), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
+ },
+ {
+ name: "creative_music",
+ title: "Create Music Bed",
+ description: "Instrumental music bed, 5-60 seconds, as an asynchronous job. Describe mood, tempo and instruments, not artists or songs. May be switched off on this deployment (it then says so and offers stock music). The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with confirm: true and the confirmationToken, then poll creative_job_status every 10-20 s. No real people's likeness or voice, no copyrighted music, logos or characters.",
+ inputSchema: z.object({ appId: z.number().int(), prompt: z.string().min(1).max(500), durationSeconds: z.number().int().min(5).max(60), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
+ },
+ {
  name: "creative_image",
  title: "Create Images",
- description: "Generate 1-4 still images with GPT Image (low quality, fast and cheap) and store them as creative assets. The prompt is up to 4000 characters; do not put long text in it (use creative_compose captions) and do not ask for real named people. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken. Settles to the real usage, never above the quote. Returns assets and creativeCredits.",
+ description: "Generate 1-4 still images with GPT Image (low quality, fast and cheap) and store them as creative assets. The prompt is up to 4000 characters; do not put long text in it (put long text in a caption overlay) and do not ask for real named people. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken. Settles to the real usage, never above the quote. Returns assets and creativeCredits.",
  inputSchema: z.object({ appId: z.number().int(), prompt: z.string().min(1).max(4000), size: z.enum(["1024x1536", "1024x1024", "1536x1024", "1088x1920", "1088x1360"]).optional().describe("Default 1024x1536 (portrait)."), n: z.number().int().min(1).max(4).optional(), transparent: z.boolean().optional(), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
  },
  {

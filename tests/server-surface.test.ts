@@ -58,6 +58,9 @@ const NOT_READ_ONLY = [
   "update_product",
   // Paid generation: the confirmed call spends credits and stores a new asset
   // (the first call only quotes). Not idempotent: a repeat is a second charge.
+  "creative_voiceover",
+  "creative_sfx",
+  "creative_music",
   "creative_image",
   "creative_image_edit",
   // The exception to the billing rule: free, and still not read-only.
@@ -100,7 +103,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(104);
+    expect(tools).toHaveLength(108);
   });
 
   it("marks read-only exactly where it is true", async () => {
