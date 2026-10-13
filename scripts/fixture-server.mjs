@@ -1384,6 +1384,26 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { assets: [{ id: "00000000-0000-0000-0000-0000000000c1", kind: "image", appId: 1, url: "https://example.test/c1.png" }], nextCursor: null },
       };
     }
+    case "creative_voices_search": {
+      return {
+        content: [{ type: "text", text: "1 voice." }],
+        structuredContent: { voices: [{ voiceRef: { publicOwnerId: "fixture-owner", voiceId: "fixture-voice" }, name: "Fixture", language: "en" }] },
+      };
+    }
+    case "creative_voiceover":
+    case "creative_sfx":
+    case "creative_music": {
+      if (args.confirm === true && args.confirmationToken) {
+        return {
+          content: [{ type: "text", text: "Generated." }],
+          structuredContent: name === "creative_music" ? { jobId: "fixture-job", pollAfterSeconds: 10 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
+        };
+      }
+      return {
+        content: [{ type: "text", text: "Quote: 5 credits." }],
+        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", creditsQuoted: 5 },
+      };
+    }
     case "creative_job_status": {
       return {
         content: [{ type: "text", text: "Job done." }],
