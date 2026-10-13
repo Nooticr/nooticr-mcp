@@ -12,6 +12,6 @@ export default defineConfig({
     // worker_threads RPC (onTaskUpdate) times out when the runner starves the
     // event loop; child processes, one at a time, avoid that.
     pool: "forks",
-    maxWorkers: 2,
+    maxWorkers: 1,
   },
 });
