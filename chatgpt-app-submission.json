@@ -1315,6 +1315,30 @@
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; nothing is published or sent.",
         "destructive_justification": "Not destructive: the action is discarded unrun, which is the safe outcome."
       }
+    },
+    "creative_image": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it generates images, stores the result as an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the prompt to a third-party image provider (OpenAI) to generate the image.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data."
+      }
+    },
+    "creative_image_edit": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it edits images the caller already owns, stores the result as an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the prompt to a third-party image provider (OpenAI) to generate the image.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data."
+      }
     }
   },
   "test_cases": [

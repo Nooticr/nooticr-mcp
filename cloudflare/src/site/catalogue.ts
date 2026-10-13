@@ -443,6 +443,18 @@ export const TOOLS: Tool[] = [
     when: "You need background music; describe mood and tempo, not artists. Poll creative_job_status for the result.",
   },
   {
+    name: "creative_image", cost: 0, group: "own", billing: "quote",
+    args: "appId, prompt, size?, n?, transparent?, confirm?, confirmationToken?",
+    desc: "1-4 still images with GPT Image (low quality). The first call returns a credit quote; nothing is charged until you confirm.",
+    when: "You need a picture, a background or a transparent sticker; put long text in captions, not in the prompt.",
+  },
+  {
+    name: "creative_image_edit", cost: 0, group: "own", billing: "quote",
+    args: "appId, prompt, imageAssetIds, maskAssetId?, size?, confirm?, confirmationToken?",
+    desc: "Edit or combine 1-4 of your existing image assets, with an optional mask. The first call returns a credit quote; nothing is charged until you confirm.",
+    when: "You want to change or merge images you already generated rather than start over.",
+  },
+  {
     name: "creative_job_status", cost: 0, group: "own",
     args: "jobId",
     desc: "Where an asynchronous creative job stands, with its finished assets and the credits quoted, charged and refunded. Free.",
