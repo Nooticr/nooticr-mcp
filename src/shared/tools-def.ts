@@ -316,7 +316,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "list_brand_watches",
  title: "List Brand Watches",
- description: "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
+ description: "Every scheduled brand-monitoring watch in this workspace (every member's watches, not only yours): term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
  {
