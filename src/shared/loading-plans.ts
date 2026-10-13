@@ -589,6 +589,11 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // Creative assets (creative.ts): both are free reads.
   creative_assets_list: { label: "Reading your creative assets", kind: "list", n: 3, steps: [], free: true },
   creative_job_status: { label: "Checking the creative job", kind: "text", n: 1, steps: [], free: true },
+  creative_voices_search: { label: "Searching voices", kind: "list", n: 3, steps: [], free: true },
+  // Paid, but the first call only quotes; the charge waits for the confirmed second call.
+  creative_voiceover: { label: "Quoting the voice-over", kind: "text", n: 1, steps: [] },
+  creative_sfx: { label: "Quoting the sound effect", kind: "text", n: 1, steps: [] },
+  creative_music: { label: "Quoting the music bed", kind: "text", n: 1, steps: [] },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },

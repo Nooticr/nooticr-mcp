@@ -596,6 +596,54 @@
         "destructive_justification": "Not destructive: it changes nothing."
       }
     },
+    "creative_voices_search": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches a public voice library. Nothing is written.",
+        "open_world_justification": "Reaches the third-party ElevenLabs voice library, whose contents are independently controlled.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "creative_voiceover": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it generates a voice-over, stores it as an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the script to a third-party speech provider (ElevenLabs) to generate the audio.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data."
+      }
+    },
+    "creative_sfx": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it generates a sound effect, stores it as an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the description to a third-party audio provider (ElevenLabs) to generate the sound.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data."
+      }
+    },
+    "creative_music": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it starts a music-generation job that stores an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the prompt to a third-party music provider (ElevenLabs) to generate the track.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data."
+      }
+    },
     "creative_job_status": {
       "annotations": {
         "readOnlyHint": true,

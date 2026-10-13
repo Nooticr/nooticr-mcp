@@ -43,7 +43,12 @@ export interface Tool {
    * do come out of. Printing them as "free" would be the wrong claim in the
    * one direction that costs somebody money.
    */
-  billing?: "plan";
+  billing?: "plan" | "quote";
+  /**
+   * `"quote"`: the price depends on the arguments, so the first call returns a
+   * quote in credits and nothing is charged until the user confirms. Carries
+   * `cost: 0` for the same reason as `"plan"`; the pages print "Quoted".
+   */
 }
 
 export const GROUPS: { id: Group; title: string; blurb: string }[] = [
@@ -388,6 +393,30 @@ export const TOOLS: Tool[] = [
     args: "appId?, kind?, briefId?, since?, limit?, cursor?",
     desc: "The creative assets (voice-overs, images, videos, composites) generated in your workspace, newest first. Free.",
     when: "You want to see or reuse what was already generated before making more.",
+  },
+  {
+    name: "creative_voices_search", cost: 0, group: "own",
+    args: "query?, language?, accent?, gender?, age?, useCase?, limit?",
+    desc: "Search ElevenLabs' voice library for a voice to use in a voice-over. Library voices only. Free.",
+    when: "Before creative_voiceover: it needs a voiceRef from here.",
+  },
+  {
+    name: "creative_voiceover", cost: 0, group: "own", billing: "quote",
+    args: "appId, text, voiceRef?, quality?, confirm?, confirmationToken?",
+    desc: "A voice-over with word timings. The first call returns a credit quote; nothing is charged until you confirm.",
+    when: "You have a script and a voice from creative_voices_search.",
+  },
+  {
+    name: "creative_sfx", cost: 0, group: "own", billing: "quote",
+    args: "appId, description, durationSeconds?, confirm?, confirmationToken?",
+    desc: "A short sound effect from a description. The first call returns a credit quote; nothing is charged until you confirm.",
+    when: "You need a one-off sound, not a music bed.",
+  },
+  {
+    name: "creative_music", cost: 0, group: "own", billing: "quote",
+    args: "appId, prompt, durationSeconds, confirm?, confirmationToken?",
+    desc: "An instrumental music bed of 5-60 seconds, generated as a job. The first call returns a credit quote; nothing is charged until you confirm.",
+    when: "You need background music; describe mood and tempo, not artists. Poll creative_job_status for the result.",
   },
   {
     name: "creative_job_status", cost: 0, group: "own",

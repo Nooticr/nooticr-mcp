@@ -581,6 +581,10 @@ describe("tool surface", () => {
     // Creative assets (creative.ts).
     "creative_assets_list",
     "creative_job_status",
+    "creative_voices_search",
+    "creative_voiceover",
+    "creative_sfx",
+    "creative_music",
     "create_product",
     "update_product",
     "get_scheduled_posts",
@@ -747,6 +751,7 @@ describe("tool surface", () => {
       "nooticr_login",
       "creative_assets_list",
       "creative_job_status",
+      "creative_voices_search",
       "watch_creator",
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
