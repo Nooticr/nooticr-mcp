@@ -1,7 +1,7 @@
 {
   "name": "nooticr",
   "description": "Social intelligence for Claude. Read public posts, transcripts, comments, creator profiles, sounds and hashtags across ten social networks; monitor brand mentions across nine; and turn research into hooks, content variants and draft reviews. Explore product categories across Amazon and eleven other marketplaces using listings, ratings, specifications and customer reviews to identify buyer needs and market gaps.",
-  "version": "1.26.65",
+  "version": "1.26.66",
   "author": {
     "name": "Nooticr",
     "url": "https://github.com/Nooticr"
