@@ -1196,6 +1196,54 @@
         "destructive_justification": "Destructive: runs stop for good and actions waiting for approval are discarded; the user must confirm explicitly."
       }
     },
+    "crm_upsert_creator": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds a creator to the workspace's pipeline or updates the one already there.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: only the fields passed change, and nothing is deleted."
+      }
+    },
+    "crm_list_creators": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's creator pipeline. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "crm_update_status": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it moves a creator to a new pipeline status and records a history entry.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: the status can be changed again and the history keeps every move."
+      }
+    },
+    "crm_log_interaction": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it appends an interaction to a creator's history.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: it only adds an entry."
+      }
+    },
     "list_pending_actions": {
       "annotations": {
         "readOnlyHint": true,

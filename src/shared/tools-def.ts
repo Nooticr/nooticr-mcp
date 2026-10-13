@@ -578,6 +578,30 @@ export const TOOL_DEFINITIONS = [
   inputSchema: z.object({ actionId: z.string().describe("Action id from list_pending_actions."), note: z.string().optional().describe("Why, so the employee can learn.") }).strict(),
  },
  {
+  name: "crm_upsert_creator",
+  title: "Upsert Creator",
+  description: "Add a creator to this workspace's creator pipeline, or update the one already there (matched by platform + handle, case-insensitive). Only the fields you pass change. New creators start as 'prospect'; use crm_update_status to change that. Put every number you cite in `evidence` as [{tool, url, metric, value, at}]. engagementRate is a fraction (0.052 = 5.2%). No cost to call.",
+  inputSchema: z.object({ platform: z.string().describe("tiktok, instagram, youtube, ..."), handle: z.string(), displayName: z.string().optional(), profileUrl: z.string().optional(), followers: z.number().int().min(0).optional(), avgViews: z.number().int().min(0).optional(), engagementRate: z.number().min(0).max(1).optional(), niche: z.string().optional(), country: z.string().optional(), contactEmail: z.string().optional().describe("Only an address the creator published."), fitScore: z.number().int().min(0).max(100).optional(), fitReasons: z.array(z.string()).optional(), risks: z.array(z.string()).optional(), evidence: z.array(z.object({}).passthrough()).optional(), nextStep: z.string().optional(), nextStepDue: z.string().optional().describe("YYYY-MM-DD"), appId: z.number().int().optional().describe("Product this creator is for.") }).strict(),
+ },
+ {
+  name: "crm_list_creators",
+  title: "List Creators",
+  description: "List the workspace's creator pipeline, most recently updated first, each with its last interaction. Filter by status, appId, query (handle or name) or dueBefore (next step due on or before YYYY-MM-DD). limit is at most 100. No cost to call.",
+  inputSchema: z.object({ status: z.enum(["prospect", "shortlisted", "contacted", "replied", "negotiating", "active", "paused", "declined", "do_not_contact"]).optional(), appId: z.number().int().optional(), query: z.string().optional(), limit: z.number().int().min(1).max(100).optional(), dueBefore: z.string().optional().describe("YYYY-MM-DD") }).strict(),
+ },
+ {
+  name: "crm_update_status",
+  title: "Update Creator Status",
+  description: "Move a creator to a new pipeline status and record why (writes a status_change entry). A creator marked do_not_contact stays that way unless a person changes it. AI employees may only use prospect, shortlisted or paused. No cost to call.",
+  inputSchema: z.object({ creatorId: z.string().describe("Id from crm_list_creators."), status: z.enum(["prospect", "shortlisted", "contacted", "replied", "negotiating", "active", "paused", "declined", "do_not_contact"]), note: z.string().describe("Why.") }).strict(),
+ },
+ {
+  name: "crm_log_interaction",
+  title: "Log Creator Interaction",
+  description: "Record something that happened with a creator: a note, vetting result, outreach draft (put the message in body), reply or deliverable. AI employees cannot log outreach_sent: a person sends outreach and logs it. No cost to call.",
+  inputSchema: z.object({ creatorId: z.string(), kind: z.enum(["note", "vetting", "outreach_draft", "outreach_sent", "reply", "deliverable"]), summary: z.string().describe("At most 4000 characters."), body: z.string().optional().describe("At most 8000 characters, e.g. the drafted message.") }).strict(),
+ },
+ {
   name: "marketplace_changes",
   title: "Marketplace Changes",
   description: "What moved in a category since the run before: products that entered or left a search's results, and ones whose price or place changed. Compared from the two latest stored scans of the same marketplace and `query`, so it fetches nothing and never re-scans — run scan_marketplace_category first, and again later, to have two runs to compare. `new` and `gone` mean entered or left the results, not listed or delisted. A category scanned only once has no earlier run and says so. Free.",

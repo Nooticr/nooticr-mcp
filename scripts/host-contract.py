@@ -82,6 +82,12 @@ NO_APP = {
     "list_pending_actions",  # view pending: a queue of previews awaiting approval
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
+    # Creator CRM (crm.ts): the pipeline would be a table the design system has no card for;
+    # the other three are pure state mutations.
+    "crm_upsert_creator",  # pure state mutation: nothing to draw
+    "crm_list_creators",  # view pending: a table of creators with status and next step
+    "crm_update_status",  # pure state mutation: nothing to draw
+    "crm_log_interaction",  # pure state mutation: nothing to draw
     "marketplace_changes",
 }
 
