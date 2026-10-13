@@ -1416,7 +1416,7 @@ export const OUTPUT_SCHEMAS = {
     url: scalar(),
     key: scalar(),
     durationMs: scalar(),
-    words: scalar(),
+    words: listOf(open({ text: scalar(), start: scalar(), end: scalar() })),
     wordsTruncated: scalar(),
     creativeCredits: open({}).nullish(),
   }),
