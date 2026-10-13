@@ -594,6 +594,9 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   creative_voiceover: { label: "Quoting the voice-over", kind: "text", n: 1, steps: [] },
   creative_sfx: { label: "Quoting the sound effect", kind: "text", n: 1, steps: [] },
   creative_music: { label: "Quoting the music bed", kind: "text", n: 1, steps: [] },
+  // Paid, but the first call only quotes; the charge waits for the confirmed second call.
+  creative_image: { label: "Quoting the images", kind: "text", n: 1, steps: [] },
+  creative_image_edit: { label: "Quoting the image edit", kind: "text", n: 1, steps: [] },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },

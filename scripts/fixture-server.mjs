@@ -1390,6 +1390,8 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { voices: [{ voiceRef: { publicOwnerId: "fixture-owner", voiceId: "fixture-voice" }, name: "Fixture", language: "en" }] },
       };
     }
+    case "creative_image":
+    case "creative_image_edit":
     case "creative_voiceover":
     case "creative_sfx":
     case "creative_music": {

@@ -1442,6 +1442,22 @@ export const OUTPUT_SCHEMAS = {
     refused: scalar().describe("not_enabled when music generation is switched off for this account."),
     alternative: scalar(),
   }),
+  // The paid image tools answer a quote first (`quote`, a token, an expiry), then the generated assets
+  // with the credits settled. Keys are the server's (crates/server/src/creative/billing.rs, tools.rs).
+  creative_image: open({
+    quote: open({ credits: scalar() }).nullish(),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    expiresAt: scalar(),
+    assets: listOf(open({ assetId: scalar(), url: scalar(), key: scalar(), width: scalar(), height: scalar() })),
+    creativeCredits: open({ charged: scalar(), refunded: scalar(), quoted: scalar(), balance: scalar() }).nullish(),
+  }),
+  creative_image_edit: open({
+    quote: open({ credits: scalar() }).nullish(),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to generate."),
+    expiresAt: scalar(),
+    assets: listOf(open({ assetId: scalar(), url: scalar(), key: scalar(), width: scalar(), height: scalar() })),
+    creativeCredits: open({ charged: scalar(), refunded: scalar(), quoted: scalar(), balance: scalar() }).nullish(),
+  }),
   creative_job_status: open({
     jobId: scalar(),
     tool: scalar(),

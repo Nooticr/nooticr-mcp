@@ -4,10 +4,10 @@
  * Both are passthroughs to the server's `POST /mcp` dispatch, which owns the
  * tenancy check (another workspace's id answers "not found").
  *
- * The ElevenLabs half (CR2): `creative_voices_search` is free; `creative_voiceover`,
- * `creative_sfx` and `creative_music` are paid and use the server's quote-then-confirm
- * handshake. The remaining paid creative tools (image, video, ...) register here when
- * they ship; `creative_test_render` is a server test fixture and is never registered.
+ * The paid creative tools register here when they ship. The ElevenLabs half (CR2):
+ * `creative_voices_search` is free; `creative_voiceover`, `creative_sfx` and `creative_music` are paid.
+ * `creative_image` and `creative_image_edit` (CR3) are paid. All paid tools use the server's
+ * quote-then-confirm handshake. `creative_test_render` is a server test fixture and is never registered.
  * Neither tool has a view yet: the asset list would be a gallery, which the
  * design system has no card for.
  */
@@ -93,6 +93,10 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
     passthrough("creative_job_status"),
   );
 
+  const imageSize = z
+    .enum(["1024x1536", "1024x1024", "1536x1024", "1088x1920", "1088x1360"])
+    .optional()
+    .describe("Default 1024x1536 (portrait).");
   const voiceRef = z
     .object({ publicOwnerId: z.string(), voiceId: z.string() })
     .strict()
@@ -104,6 +108,60 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
   };
   const paidAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
   const NO_LIKENESS = " No real people's likeness or voice, no copyrighted music, logos or characters.";
+
+    server.registerTool(
+    "creative_image",
+    {
+      title: "Create Images",
+      description:
+        "Generate 1-4 still images with GPT Image (low quality, fast and cheap) and store them as " +
+        "creative assets. The prompt is up to 4000 characters; do not put long text in it (put " +
+        "long text in a caption overlay) and do not ask for real named people. The first call is a free " +
+        "price quote in credits; nothing is charged until you confirm. Show the user the credits and " +
+        "ask before calling again with the same arguments plus confirm: true and the " +
+        "confirmationToken. Settles to the real usage, never above the quote. Returns assets and " +
+        "creativeCredits.",
+      annotations: paidAnnotations,
+      inputSchema: z
+        .object({
+          appId: z.number().int(),
+          prompt: z.string().min(1).max(4000),
+          size: imageSize,
+          n: z.number().int().min(1).max(4).optional(),
+          transparent: z.boolean().optional(),
+          ...handshake,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.creative_image,
+    },
+    passthrough("creative_image"),
+  );
+
+  server.registerTool(
+    "creative_image_edit",
+    {
+      title: "Edit Images",
+      description:
+        "Edit or combine 1-4 existing creative image assets (imageAssetIds, from creative_assets_list " +
+        "or a previous creative_image) with GPT Image (low quality), with an optional maskAssetId, and " +
+        "store the result as a new asset. The first call is a free price quote in credits; nothing is " +
+        "charged until you confirm. Show the user the credits and ask before calling again with " +
+        "confirm: true and the confirmationToken. Returns assets and creativeCredits.",
+      annotations: paidAnnotations,
+      inputSchema: z
+        .object({
+          appId: z.number().int(),
+          prompt: z.string().min(1).max(4000),
+          imageAssetIds: z.array(z.string()).min(1).max(4),
+          maskAssetId: z.string().optional(),
+          size: imageSize,
+          ...handshake,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.creative_image_edit,
+    },
+    passthrough("creative_image_edit"),
+  );
 
   server.registerTool(
     "creative_voices_search",

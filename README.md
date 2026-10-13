@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-106 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+108 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -108,6 +108,8 @@ them caps that fan-out with an argument.
 | `creative_voiceover` | quoted first | A voice-over of up to 2500 characters with word timings for burned-in captions, in a voice from `creative_voices_search`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. |
 | `creative_sfx` | quoted first | A short sound effect (0.5-10 s) from a description. Same quote-then-confirm handshake as `creative_voiceover`. |
 | `creative_music` | quoted first | An instrumental music bed of 5-60 seconds, generated as a job: confirm the quote, then poll `creative_job_status`. May be switched off on a deployment, in which case it says so. Describe mood, tempo and instruments, not artists or songs. |
+| `creative_image` | quoted first | 1-4 still images from a `prompt` with GPT Image (low quality), at a `size` (default portrait 1024x1536), optionally `transparent`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. Returns the new `assets` and `creativeCredits`. Keep long text out of the prompt and ask for invented people, not real ones. |
+| `creative_image_edit` | quoted first | Edit or combine 1-4 existing image assets (`imageAssetIds`) with a `prompt`, with an optional `maskAssetId`. Same quote-then-confirm handshake as `creative_image`; returns a new asset and `creativeCredits`. |
 | `creative_job_status` | free | Where an asynchronous creative job stands by `jobId`: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after `pollAfterSeconds`. |
 | `mention_trend` | free | **What a watch has seen over time**, which nothing else here answers — every other read is about now. One point per run: when it ran, how many mentions it found, how many were new, and both counts per network, so "which network is growing" and "did it go quiet or did we stop looking" come apart. On a competitor watch each point carries the median that run measured, which turns "they beat their own median" into "and that median has doubled". Plus the mentions more than one run has seen. Free because the sweeps were billed when they ran; charging again to read what was already paid for is the thing it fixes. |
 | `update_watch_portfolio` | free | Add or remove a portfolio watch's terms by `watchId`. No new confirmation, because the per-run budget you agreed to does not move — more terms split it more ways, and the reply names any network a run no longer reaches. |
