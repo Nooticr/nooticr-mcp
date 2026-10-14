@@ -83,6 +83,11 @@ const NOT_READ_ONLY = [
   "fire_employee",
   "approve_action",
   "reject_action",
+  // Google Sheets: the writes create or change cells in the customer's own spreadsheet.
+  "sheets_create",
+  "sheets_append_rows",
+  "sheets_update_range",
+  "sheets_add_sheet",
 ];
 
 describe("tool annotations", () => {
@@ -103,7 +108,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(108);
+    expect(tools).toHaveLength(114);
   });
 
   it("marks read-only exactly where it is true", async () => {

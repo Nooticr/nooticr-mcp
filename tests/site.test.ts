@@ -587,6 +587,13 @@ describe("tool surface", () => {
     "creative_music",
     "creative_image",
     "creative_image_edit",
+    // Google Sheets (sheets.ts).
+    "sheets_create",
+    "sheets_list",
+    "sheets_read",
+    "sheets_append_rows",
+    "sheets_update_range",
+    "sheets_add_sheet",
     "create_product",
     "update_product",
     "get_scheduled_posts",
@@ -750,6 +757,13 @@ describe("tool surface", () => {
       "creative_assets_list",
       "creative_job_status",
       "creative_voices_search",
+      // Google Sheets: no credits are charged; approval for picked files is the customer's, not a price.
+      "sheets_create",
+      "sheets_list",
+      "sheets_read",
+      "sheets_append_rows",
+      "sheets_update_range",
+      "sheets_add_sheet",
       "watch_creator",
       "unwatch_creator",
       // Draws what the caller already worked out; makes no request at all.
