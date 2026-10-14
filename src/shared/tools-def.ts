@@ -328,7 +328,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "sheets_read",
  title: "Read Spreadsheet Range",
- description: "Read a range (A1 notation, e.g. \"Ledger!A1:F200\") of a spreadsheet. Numbers come back as numbers and dates as formatted text; at most 10000 cells, and a range open at the bottom (\"A:F\") or longer than the cap is cut to the rows that fit, with truncated=true when more may remain: read further down with a range that starts after the last row. Free.",
+ description: "Read a range (A1 notation, e.g. \"Ledger!A1:F200\") of a spreadsheet. Numbers come back as numbers and dates as formatted text; at most 10000 cells, and a range open at the bottom (\"A:F\", \"Ledger!$A:$F\") or longer than the cap is cut to the rows that fit, with truncated=true when more may remain: read further down with a range that starts after the last row. A bare name without quotes (\"Expenses\") is passed to Google as written, since it may be a named range, so name a tab as \"Ledger!A:F\" or \"'My Tab'\" to have it bounded. Free.",
  inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), id: z.string().describe("Spreadsheet id from sheets_create or sheets_list."), range: z.string() }).strict(),
  },
  {
