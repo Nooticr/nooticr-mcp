@@ -66,6 +66,8 @@ table.doc-t code{font-size:12.5px;white-space:nowrap}
    template literal and one would end the string.) */
 table.doc-t td.args code{white-space:normal;overflow-wrap:anywhere}
 .cost-cell{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--brand)}
+/* A costNote is a sentence, not a number: let it wrap or it sets the column's width. */
+.cost-cell.cost-note{white-space:normal;min-width:7em}
 
 .yesno{display:grid;gap:14px;margin:18px 0}
 @media(min-width:700px){.yesno{grid-template-columns:1fr 1fr}}
@@ -118,6 +120,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
    */
   const costLabel = (t: (typeof TOOLS)[number]): string => {
     if (t.billing === "plan") return "Plan AI credits";
+    if (t.costNote) return t.costNote;
     if (t.billing === "quote") return "Quoted first";
     return t.cost === 0 ? "Free" : `${t.cost} cr`;
   };
@@ -127,7 +130,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
       .map(
         (t) =>
           `<tr><td><code>${esc(t.name)}</code></td>` +
-          `<td class="cost-cell">${costLabel(t)}</td>` +
+          `<td class="cost-cell${t.costNote ? " cost-note" : ""}">${costLabel(t)}</td>` +
           `<td class="args"><code>${esc(t.args ?? "—")}</code></td>` +
           `<td>${esc(t.desc)}${t.when ? `<br><span style="opacity:.75">${esc(t.when)}</span>` : ""}</td></tr>`
       )
@@ -170,7 +173,7 @@ export function documentationPage(publicUrl: string, nooticrBase: string): strin
         `<li>Access anything on the user's device or network</li>` +
         `<li>Reach other systems in your environment — it only calls out to the services listed below</li>` +
         `</ul></div></div>` +
-        `<div class="callout good"><p><strong>Almost nothing it writes leaves Nooticr.</strong> Of the 118 tools, 81 carry <code>readOnlyHint: true</code>. The 37 that do not include writes to the user's own Nooticr account, consent-flow setup, store-connection links, AI-employee management, creator-pipeline records, and two paid marketplace scans that collect public listings and reviews. Ten carry <code>destructiveHint: true</code> because they replace a saved marker, portfolio, product value, analysis, or content plan, stop something the user started, let an AI employee go, or approve one of its queued actions. None writes to your organisation's systems. Public actions an AI employee prepares (publish, email, reply, listing or price changes) wait for the user's approval through <code>approve_action</code>, and only the exact action the user was shown and approved goes out, unless the user has turned autopilot on for that action type; no other tool can post, comment, like, follow or message anywhere.</p></div>` +
+        `<div class="callout good"><p><strong>Almost nothing it writes leaves Nooticr.</strong> Of the 121 tools, 82 carry <code>readOnlyHint: true</code>. The 39 that do not include writes to the user's own Nooticr account, consent-flow setup, store-connection links, a confirmed comment reply, AI-employee management, creator-pipeline records, and two paid marketplace scans that collect public listings and reviews. Ten carry <code>destructiveHint: true</code> because they replace a saved marker, portfolio, product value, analysis, or content plan, stop something the user started, let an AI employee go, or approve one of its queued actions. None writes to your organisation's systems. Public actions an AI employee prepares (publish, email, reply, listing or price changes) wait for the user's approval through <code>approve_action</code>, and only the exact action the user was shown and approved goes out, unless the user has turned autopilot on for that action type, and the one tool that writes to a third-party network, <code>post_comment_reply</code>, posts a single reply to a comment on the user's own account, and only the exact text the user confirmed; no other tool can post, comment, like, follow or message anywhere.</p></div>` +
 
         `<h3 id="admins-access">Access and revocation</h3>` +
         `<p>Interactive clients authenticate with OAuth 2.1 with PKCE (S256) and dynamic client registration — no key is ever pasted into a chat window, and the tokens it issues are scoped and expiring.</p>` +

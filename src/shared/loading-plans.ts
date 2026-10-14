@@ -656,6 +656,15 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   list_watchlist: { label: "Reading your watchlist", kind: "text", n: 1, steps: [], free: true },
   list_social_connections: { label: "Reading your connections", kind: "list", n: 3, steps: [], free: true },
   connect_social_account: { label: "Minting a fresh link", kind: "text", n: 1, steps: [], free: true },
+  list_comments_to_answer: { label: "Reading the comments waiting for a reply", kind: "list", n: 5, steps: [], free: true },
+  // Free when the caller passes `text`; 1 credit when the server writes the reply.
+  draft_comment_reply: {
+    label: "Drafting the reply",
+    kind: "text",
+    n: 1,
+    steps: [{ via: "draft_comment_reply", label: "Writing the reply", detail: "Free when you pass the text yourself", credits: 1 }],
+  },
+  post_comment_reply: { label: "Posting the reply", kind: "text", n: 1, steps: [], free: true },
   create_product: { label: "Writing the row", kind: "text", n: 1, steps: [], free: true },
   update_product: { label: "Patching the row", kind: "text", n: 1, steps: [], free: true },
 };

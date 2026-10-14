@@ -994,8 +994,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         postsChecked: threads.length,
         // Stated in the payload as well as the prose, because a model that
         // believes it can send will promise the user something that cannot
-        // happen. Some grants do allow managing comments (#29); nooticr has no
-        // send path whatever the grant says.
+        // happen. This payload comes from the drafting tools, which never post;
+        // only post_comment_reply sends, and only a confirmed draft.
         repliesCanBeSent: false,
         totalMentions: totalComments,
         totalThreads: threads.length,

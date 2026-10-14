@@ -57,6 +57,7 @@ import { registerCreativeTools } from "./creative.js";
 import { registerSheetsTools } from "./sheets.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
+import { registerReplyTools } from "./replies.js";
 import { registerEmployeeTools } from "./employees.js";
 import { registerCrmTools } from "./crm.js";
 import { registerStoreReadTools } from "./store-read.js";
@@ -78,7 +79,7 @@ import {
 } from "./settings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.66";
+export const MCP_SERVER_VERSION = "1.26.68";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -3388,6 +3389,7 @@ const TOOL_NAMES = [
  // Google Sheets (sheets.ts): the sheets_* family of nooticr-server BK2.
  registerSheetsTools(server, makeClient);
  registerConnectionTools(server, makeClient);
+ registerReplyTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
  registerEmployeeTools(server, makeClient);
  // Creator CRM (crm.ts): the workspace's creator pipeline.

@@ -711,8 +711,9 @@ export const OUTPUT_SCHEMAS = {
     sinceApplied: scalar().describe("False when the platform returned no dates, so the window could not be honoured."),
     postsChecked: scalar().describe("Posts whose comments were actually read."),
     repliesCanBeSent: scalar().describe(
-      "Always false. This tool only drafts and never sends; a reply is posted only by a separate step, " +
-        "on the user's connected account, after the user confirms the exact text.",
+      "Always false: answer_my_audience posts nothing, so the drafts this produces are for a person to " +
+        "paste in themselves, or to send through draft_comment_reply and post_comment_reply after " +
+        "confirming the text.",
     ),
     totalMentions: scalar().describe("Comments returned across every group."),
     totalThreads: scalar(),
@@ -1862,6 +1863,40 @@ export const OUTPUT_SCHEMAS = {
     needsConnection: scalar(),
     connections: listOf(anyObject()),
     message: scalar(),
+  }),
+
+  list_comments_to_answer: open({
+    account: open({
+      platform: scalar(),
+      username: scalar(),
+      influencerId: scalar(),
+      canManageComments: scalar(),
+      manageCommentsStatus: scalar(),
+    }).nullish(),
+    comments: listOf(open({})),
+    unsupported: listOf(open({ platform: scalar(), reason: scalar() })),
+    note: scalar(),
+    message: scalar(),
+  }),
+  draft_comment_reply: open({
+    draftId: scalar(),
+    reply: scalar().describe("The stored reply text. Show it to the user before posting."),
+    comment: open({ author: scalar(), snippet: scalar() }).nullish(),
+    postUrl: scalar(),
+    status: scalar(),
+    expiresInSeconds: scalar(),
+    confirmationToken: scalar().describe("Pass to post_comment_reply with confirm: true after the user agrees."),
+    rejected: scalar(),
+    instructions: scalar(),
+    mcpCredits: open({ cost: scalar(), balance: scalar() }).nullish(),
+  }),
+  post_comment_reply: open({
+    posted: scalar(),
+    alreadyPosted: scalar(),
+    draftId: scalar(),
+    platformReplyId: scalar(),
+    url: scalar(),
+    postedAt: scalar(),
   }),
 
   // Marketplace. One shape for all three collection tools: a status poll

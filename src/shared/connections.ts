@@ -60,8 +60,9 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "no, or unknown; unknown means the grant predates scope recording, so treat it as \"try " +
         "it\", not as a refusal. Also returns which platforms can be connected at all, which is a " +
         "smaller set than the networks nooticr can read. \"Manage comments\" reports what the " +
-        "platform granted, not something nooticr does: no nooticr tool posts, replies to or " +
-        "moderates a comment, so a yes there never means a drafted reply will be sent. Call this " +
+        "platform granted, not something this tool does: this tool posts nothing, and a yes there " +
+        "never means a drafted reply will be sent by itself. A reply goes out only through " +
+        "post_comment_reply, on a draft the user confirmed. Call this " +
         "before promising that something can be posted or replied to. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),

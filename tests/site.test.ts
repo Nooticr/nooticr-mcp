@@ -124,6 +124,15 @@ describe("the site describes the server that actually shipped", () => {
       expect(landingPage(URL, API).indexOf(`>${t.name}</h3>`)).toBe(-1);
     }
   });
+
+  it("does not print draft_comment_reply's cost cell as Free", () => {
+    // It bills 1 credit when nooticr writes the reply text.
+    const docs = documentationPage(URL, API);
+    const at = docs.indexOf("<code>draft_comment_reply</code>");
+    expect(at).toBeGreaterThan(-1);
+    const cell = docs.slice(at, at + 200).match(/<td class="cost-cell[^"]*">([^<]*)<\/td>/);
+    expect(cell?.[1]).toBe("Free with your text, else 1 cr");
+  });
 });
 
 /**
@@ -375,6 +384,15 @@ describe("the submission file against the server", () => {
     return client;
   }
 
+  it("does not tell the reviewer that nothing posts to a social network", () => {
+    const { app_info } = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8")) as {
+      app_info: { description: string };
+    };
+    expect(app_info.description).not.toMatch(/nothing here posts/i);
+    expect(app_info.description).not.toMatch(/comment-write permission/i);
+    expect(app_info.description).toMatch(/post_comment_reply/);
+  });
+
   it("covers every tool the server ships, and no tool it does not", async () => {
     const { tools } = await (await connectServer()).listTools();
     const shipped = tools.map((t) => t.name).sort();
@@ -613,6 +631,9 @@ describe("tool surface", () => {
     "generate_captions",
     "list_social_connections",
     "connect_social_account",
+    "list_comments_to_answer",
+    "draft_comment_reply",
+    "post_comment_reply",
     "connect_store",
     "list_store_products",
     "get_social_media",
@@ -807,6 +828,10 @@ describe("tool surface", () => {
       // no upstream fetch either way.
       "list_social_connections",
       "connect_social_account",
+      // Free to call; draft_comment_reply charges 1 only when the server writes the reply,
+      // and says so in its description.
+      "list_comments_to_answer",
+      "post_comment_reply",
       // Store link and the store's own catalogue: free to call, and the read is the merchant's own.
       "connect_store",
       "list_store_products",

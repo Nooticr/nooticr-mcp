@@ -158,9 +158,8 @@ describe("answer_my_audience", () => {
   });
 
   /**
-   * The promise the tool is allowed to make. There is no send path in the
-   * tool itself: it drafts, and a reply is posted only after the user confirms
-   * its exact text (#29). A model that believes otherwise promises the user something that
+   * The promise the tool is allowed to make. Only post_comment_reply sends,
+   * and only a confirmed draft; the drafting tools never post. A model that believes otherwise promises the user something that
    * cannot happen.
    */
   it("never claims it can send a reply", async () => {
@@ -1039,6 +1038,7 @@ describe("the comment grant and the drafting tools agree", () => {
     const { client } = await connect(twoPostBackend());
     const { tools } = await client.listTools();
     const t = tools.find((x) => x.name === "list_social_connections")!;
-    expect(t.description).toMatch(/no nooticr tool posts, replies to or moderates a comment/);
+    expect(t.description).toMatch(/this tool posts nothing/);
+    expect(t.description).toMatch(/post_comment_reply/);
   });
 });

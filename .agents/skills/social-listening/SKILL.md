@@ -89,11 +89,12 @@ carry on with the user's actual question.
 
 ## What this cannot do
 
-- **These tools cannot post, reply, comment, DM, or schedule.** The reply and
-  audience tools only *draft* text. A reply is posted on the user's connected
-  account only after the user has seen the exact text and confirmed it; that
-  confirmation happens outside these tools. Never say or imply that something
-  was sent unless the user confirmed it.
+- **Only `post_comment_reply` can send, and only a confirmed draft.** It posts
+  a reply that a person has reviewed and confirmed through `draft_comment_reply`.
+  `answer_my_audience`, `list_social_connections` and the other reply and
+  audience tools never post: they *draft* text for a person to confirm or paste
+  in. It cannot DM or schedule. Never say or imply that something was sent
+  unless `post_comment_reply` returned success.
 - **It reads public data only.** No private messages, no follower emails, no
   account analytics, no ad data.
 - When asked for any of that, say plainly that it is out of scope and offer the

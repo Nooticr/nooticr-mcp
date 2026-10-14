@@ -86,6 +86,12 @@ NO_APP = {
     "connect_store",  # view pending: the link and the state around it
     "list_store_products",  # view pending: a table of products with status and price
     "analyze_product",
+    # The three reply tools return plain JSON (comment lists, a stored draft and
+    # its confirmation token, a post receipt). The user confirms the draft in
+    # the host's chat, so there is nothing for a widget to draw.
+    "list_comments_to_answer",
+    "draft_comment_reply",
+    "post_comment_reply",
     # AI employees (employees.ts). View pending for all seven: the two lists would be
     # tables and the two quotes confirmation cards, which the design system has no card for.
     "hire_employee",  # view pending: a hire quote and its confirm step

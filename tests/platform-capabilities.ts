@@ -177,7 +177,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     listIsCeiling: true,
     beyondList: "availability is per-deployment; list_social_connections is the live answer",
     enumerating: [],
-    quiet: ["connect_social_account", "list_social_connections"],
+    quiet: ["connect_social_account", "list_social_connections", "list_comments_to_answer", "draft_comment_reply", "post_comment_reply"],
   },
 } as const;
 

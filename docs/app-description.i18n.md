@@ -28,7 +28,7 @@ From there it can go further than just answering: hooks to open with, variants w
 
 It also watches a name for you — every comment mentioning your brand, grouped by the post it was left on, across nine networks, plus the mentions people said out loud in a video and never typed anywhere.
 
-It won't post or reply on your behalf. Anything audience-facing comes back as a draft for you to send yourself.
+Drafting tools never post. A reply is posted only through post_comment_reply, and only the draft you confirmed. Anything audience-facing comes back as a draft for you to review first.
 
 ---
 
@@ -42,7 +42,7 @@ Nooticr, c'est de l'intelligence sociale : demandez-lui ce qui se passe sur les 
 
 Il surveille aussi un nom pour vous : chaque commentaire mentionnant votre marque, regroupé par la publication sous laquelle il a été laissé, sur neuf réseaux, plus les mentions prononcées à voix haute dans une vidéo et jamais écrites nulle part.
 
-Il ne publiera pas et ne répondra pas à votre place. Tout ce qui s'adresse à votre audience revient sous forme de brouillon, que vous envoyez vous-même.
+Les outils de rédaction ne publient jamais. Une réponse n'est publiée que via post_comment_reply, et uniquement le brouillon que vous avez confirmé. Tout ce qui s'adresse à votre audience revient sous forme de brouillon, que vous relisez d'abord.
 
 ---
 
@@ -56,7 +56,7 @@ Von dort kann es mehr als nur antworten: Hooks für den Einstieg, Varianten, die
 
 Es beobachtet auch einen Namen für Sie: jeden Kommentar, der Ihre Marke nennt, gruppiert nach dem Post, unter dem er steht, über neun Netzwerke – dazu die Erwähnungen, die Leute in einem Video ausgesprochen und nie irgendwo getippt haben.
 
-Es wird nichts in Ihrem Namen posten oder beantworten. Alles, was an Ihr Publikum geht, kommt als Entwurf zurück, den Sie selbst senden.
+Die Entwurfswerkzeuge posten nie. Eine Antwort wird nur über post_comment_reply gepostet, und nur der Entwurf, den Sie bestätigt haben. Alles, was an Ihr Publikum geht, kommt als Entwurf zurück, den Sie zuerst prüfen.
 
 ---
 
@@ -70,7 +70,7 @@ Daí em diante, ele vai além de só responder: ganchos para abrir, variações 
 
 Ele também monitora um nome para você: cada comentário que menciona sua marca, agrupado pelo post em que foi deixado, em nove redes, além das menções que as pessoas falaram em voz alta em um vídeo e nunca digitaram em lugar nenhum.
 
-Ele não vai publicar nem responder no seu lugar. Tudo que é voltado ao público volta como rascunho, para você mesmo enviar.
+As ferramentas de rascunho nunca publicam. Uma resposta só é publicada por post_comment_reply, e apenas o rascunho que você confirmou. Tudo que é voltado ao público volta como rascunho, para você revisar antes.
 
 ---
 
@@ -84,7 +84,7 @@ A partir de ahí puede ir más allá de responder: ganchos con los que abrir, va
 
 También vigila un nombre por ti: cada comentario que menciona tu marca, agrupado por la publicación en la que se dejó, en nueve redes, más las menciones que la gente dijo en voz alta en un video y nunca escribió en ningún sitio.
 
-No publicará ni responderá en tu nombre. Todo lo que va dirigido a tu audiencia vuelve como borrador para que lo envíes tú.
+Las herramientas de borrador nunca publican. Una respuesta solo se publica mediante post_comment_reply, y únicamente el borrador que tú confirmaste. Todo lo que va dirigido a tu audiencia vuelve como borrador para que lo revises primero.
 
 ---
 

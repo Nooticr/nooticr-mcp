@@ -4,7 +4,7 @@
   "app_info": {
     "display_name": "Nooticr",
     "subtitle": "Social listening, then create",
-    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nNothing here posts to a social network. The audience-reply tools draft a reply in the creator's voice; a reply is posted to a connected account only after the user confirms its exact text, and never on its own.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
+    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nOnly one tool writes to a social network: post_comment_reply, and only after the user confirms its exact text, on a reply reviewed through draft_comment_reply first. The other audience-reply tools only draft in the creator's voice and never post.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
     "category": "BUSINESS"
   },
   "tools": {
@@ -174,6 +174,42 @@
         "read_only_justification": "Not read-only: it mints a fresh one-time authorisation link. No account is connected until the user approves at the provider, and no credential passes through this tool.",
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Not destructive: each call mints a new link rather than replacing a connection, and nothing is connected until the user approves."
+      }
+    },
+    "list_comments_to_answer": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists comments on the user's own posts that have no reply yet and changes nothing.",
+        "open_world_justification": "Open world: it reads comments from the platform (YouTube) through the user's own connected account. It reads only and posts nothing.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
+    "draft_comment_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a reply draft in the user's workspace. Nothing is posted.",
+        "open_world_justification": "Closed domain: it touches only the caller's own nooticr workspace; no third-party network is written to.",
+        "destructive_justification": "Not destructive: each call stores a new draft and replaces nothing."
+      }
+    },
+    "post_comment_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it posts one reply to a comment on the user's own connected account.",
+        "open_world_justification": "Open world: it writes to a third-party network (the platform the comment is on), as the user's own account, and only the exact draft the user confirmed.",
+        "destructive_justification": "Not destructive: it adds one reply, deletes or overwrites nothing, and each comment can be answered at most once."
       }
     },
     "connect_store": {
@@ -1459,10 +1495,10 @@
   ],
   "negative_test_cases": [
     {
-      "description": "Posting a reply from these tools is out of scope by design. They only draft; a reply is posted on the user's account only after the user has seen the exact text and confirmed it outside the tools, so the model must decline rather than claim it sent something.",
+      "description": "Posting without a confirmed draft is out of scope by design. Only post_comment_reply can send, and only a reply the person has reviewed and confirmed, so the model must not claim it sent something from answer_my_audience or any other drafting tool.",
       "user_prompt": "Reply to that commenter on TikTok for me and tell them the feature ships next week.",
       "tools_triggered": null,
-      "expected_output": "A refusal to send, with the draft offered instead and the reason stated: the tools find and draft replies but cannot post them, so the user confirms and sends the exact text separately."
+      "expected_output": "The model drafts the reply first (draft_comment_reply) and asks the person to confirm it before calling post_comment_reply; it does not claim anything was sent until that tool succeeds."
     },
     {
       "description": "Private or non-public data is not reachable. Every read here goes through public post detail.",

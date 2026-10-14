@@ -27,6 +27,10 @@ async function connect(structured: unknown = {}) {
 }
 
 const NOT_READ_ONLY = [
+  // Draft stores a reply (and bills 1 credit when nooticr writes it); post
+  // writes one comment to a third-party network as the user's own account.
+  "draft_comment_reply",
+  "post_comment_reply",
   // The watchlist tools write: two change stored state, and the catch-up also
   // moves every baseline forward, which is why it is not idempotent either.
   "watch_creator",
@@ -112,7 +116,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(118);
+    expect(tools).toHaveLength(121);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -147,6 +151,7 @@ describe("tool annotations", () => {
       "crm_log_interaction",
       "crm_update_status",
       "crm_upsert_creator",
+      "draft_comment_reply",
       "draft_post",
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.
@@ -195,7 +200,7 @@ describe("tool annotations", () => {
       // every one of them reaches Amazon through the scraper service.
       "show_amazon_category_insights",
       // Renders drafts the caller already wrote; fetches nothing, and cannot
-      // send them either; a reply is posted only after the user confirms its text.
+      // send them either — only post_comment_reply posts, from a confirmed draft.
       "show_audience_replies",
       // Renders scores the caller reached by reading a candidate's links —
       // and it is the caller that opened them, not us. See collab.ts for why
