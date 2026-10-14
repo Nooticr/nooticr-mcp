@@ -65,8 +65,8 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
       title: "Hire Employee",
       description:
         "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside " +
-        "this workspace. Pass `template` and optionally name, instructions, appId, schedule, " +
-        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify. " +
+        "this workspace. Pass `template` and optionally name, instructions, products (the string all, or a list of product ids; appId is deprecated), schedule, " +
+        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify (channels, and recipients: hirer, admins or member user ids). " +
         TWO_STEP_RULE +
         " Public actions (publish, email, reply, listing or price changes) wait for the user's " +
         "approval unless autopilot is turned on. The hiring user is billed for runs, up to the " +
@@ -77,7 +77,11 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           template: z.string().describe("Template slug, e.g. social-media-manager."),
           name: z.string().optional().describe("What to call the employee."),
           instructions: z.string().optional().describe("Standing instructions from the customer (tone, topics to avoid, ...)."),
-          appId: z.number().int().optional().describe("Focus product id."),
+          appId: z.number().int().optional().describe("Deprecated: same as products:[appId]. Do not send together with products."),
+          products: z
+            .union([z.literal("all"), z.array(z.number().int()).min(1)])
+            .optional()
+            .describe('"all" (every product, including ones added later) or a list of product ids the employee covers.'),
           schedule: z
             .object({}).passthrough()
             .optional()
@@ -85,7 +89,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           monthlyBudgetCredits: z.number().int().min(1).optional(),
           maxCreditsPerRun: z.number().int().min(1).optional(),
           approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."),
-          notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack']}."),
+          notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
           model: z.string().optional().describe("Optional model."),
           effort: z.string().optional().describe("low | medium | high."),
           confirm,

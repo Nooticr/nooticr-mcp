@@ -54,6 +54,7 @@ import {
 import { registerJobTools } from "./jobs.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerCreativeTools } from "./creative.js";
+import { registerSheetsTools } from "./sheets.js";
 import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerReplyTools } from "./replies.js";
@@ -77,7 +78,7 @@ import {
 } from "./settings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.64";
+export const MCP_SERVER_VERSION = "1.26.66";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -3384,6 +3385,8 @@ const TOOL_NAMES = [
  registerOwnAccountTools(server, makeClient);
  // Creative assets (creative.ts): the free reads of nooticr-server's creative_* family.
  registerCreativeTools(server, makeClient);
+ // Google Sheets (sheets.ts): the sheets_* family of nooticr-server BK2.
+ registerSheetsTools(server, makeClient);
  registerConnectionTools(server, makeClient);
  registerReplyTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.

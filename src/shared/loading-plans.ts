@@ -597,6 +597,13 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // Paid, but the first call only quotes; the charge waits for the confirmed second call.
   creative_image: { label: "Quoting the images", kind: "text", n: 1, steps: [] },
   creative_image_edit: { label: "Quoting the image edit", kind: "text", n: 1, steps: [] },
+  // Google Sheets (sheets.ts): reads are free; writes are free too (approval waits on the server side).
+  sheets_create: { label: "Creating the spreadsheet", kind: "text", n: 1, steps: [], free: true },
+  sheets_list: { label: "Listing your spreadsheets", kind: "list", n: 3, steps: [], free: true },
+  sheets_read: { label: "Reading the spreadsheet", kind: "text", n: 1, steps: [], free: true },
+  sheets_append_rows: { label: "Adding rows to the spreadsheet", kind: "text", n: 1, steps: [], free: true },
+  sheets_update_range: { label: "Updating the spreadsheet", kind: "text", n: 1, steps: [], free: true },
+  sheets_add_sheet: { label: "Adding a tab to the spreadsheet", kind: "text", n: 1, steps: [], free: true },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },

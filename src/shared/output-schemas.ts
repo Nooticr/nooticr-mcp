@@ -1472,6 +1472,14 @@ export const OUTPUT_SCHEMAS = {
     error: scalar(),
   }),
 
+  // Google Sheets (nooticr-server BK2, sheets.ts): the server's own shapes, only stable keys named.
+  sheets_create: open({ id: scalar(), url: scalar(), title: scalar(), sheets: listOf(oneType(z.string())), owner: scalar() }),
+  sheets_list: open({ files: listOf(open({ id: scalar(), title: scalar(), url: scalar() })) }),
+  sheets_read: open({}),
+  sheets_append_rows: open({ id: scalar(), sheet: scalar(), rowsAppended: scalar(), cells: scalar(), updatedRange: scalar() }),
+  sheets_update_range: open({ id: scalar(), updatedRange: scalar(), updatedCells: scalar(), cells: scalar() }),
+  sheets_add_sheet: open({ id: scalar(), sheetId: scalar(), name: scalar() }),
+
   list_brand_watches: open({
     watches: listOf(
       open({
