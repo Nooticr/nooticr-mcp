@@ -437,6 +437,42 @@ export const TOOLS: Tool[] = [
     when: "A creative job was started and you are waiting for it; poll after pollAfterSeconds.",
   },
   {
+    name: "sheets_create", cost: 0, group: "own",
+    args: "appId?, title, sheets?",
+    desc: "Create a Google spreadsheet in the connected Google account, with named tabs and header rows. Nooticr owns the file, so later writes need no approval. Free.",
+    when: "An employee needs a ledger, price table or report sheet it can keep writing to.",
+  },
+  {
+    name: "sheets_list", cost: 0, group: "own",
+    args: "appId?, limit?",
+    desc: "The spreadsheets this connection can see: the ones Nooticr created and the ones the customer picked, and whether each may be edited without approval. Free.",
+    when: "Before creating one: the sheet you need may already exist.",
+  },
+  {
+    name: "sheets_read", cost: 0, group: "own",
+    args: "appId?, id, range",
+    desc: "Read an A1 range of a spreadsheet (at most 10000 cells). Free.",
+    when: "You need the current numbers before adding to or changing a sheet.",
+  },
+  {
+    name: "sheets_append_rows", cost: 0, group: "own",
+    args: "appId?, id, sheet, rows",
+    desc: "Append typed rows after the last row of a tab. Free on files Nooticr created or the customer allowed; other picked files wait for approval.",
+    when: "You are logging new entries (an expense, a price check) without touching existing rows.",
+  },
+  {
+    name: "sheets_update_range", cost: 0, group: "own",
+    args: "appId?, id, range, values",
+    desc: "Overwrite an A1 range with typed values. Same approval rule as sheets_append_rows.",
+    when: "You are correcting or recalculating cells that already exist.",
+  },
+  {
+    name: "sheets_add_sheet", cost: 0, group: "own",
+    args: "appId?, id, name",
+    desc: "Add an empty tab to a spreadsheet. Same approval rule as sheets_append_rows.",
+    when: "A new month or product needs its own tab.",
+  },
+  {
     name: "stop_brand_watch", cost: 0, group: "research",
     args: "id",
     desc: "Stops a watch immediately: the run that was due does not happen and nothing further is charged.",
