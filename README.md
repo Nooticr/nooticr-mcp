@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-112 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+118 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -111,6 +111,12 @@ them caps that fan-out with an argument.
 | `creative_image` | quoted first | 1-4 still images from a `prompt` with GPT Image (low quality), at a `size` (default portrait 1024x1536), optionally `transparent`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. Returns the new `assets` and `creativeCredits`. Keep long text out of the prompt and ask for invented people, not real ones. |
 | `creative_image_edit` | quoted first | Edit or combine 1-4 existing image assets (`imageAssetIds`) with a `prompt`, with an optional `maskAssetId`. Same quote-then-confirm handshake as `creative_image`; returns a new asset and `creativeCredits`. |
 | `creative_job_status` | free | Where an asynchronous creative job stands by `jobId`: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after `pollAfterSeconds`. |
+| `sheets_create` | free | Create a Google spreadsheet in the connected Google account, with named tabs and a header row on each. Returns its id and URL; Nooticr owns the file, so later writes need no approval. Needs the product's Google Sheets connection. |
+| `sheets_list` | free | The spreadsheets the connection can see (created by Nooticr or picked by the customer) and whether each may be edited without approval. |
+| `sheets_read` | free | Read an A1 range (e.g. `Ledger!A1:F200`) of a spreadsheet; at most 10000 cells. |
+| `sheets_append_rows` | free | Append typed rows after the last row of a tab. Free on files Nooticr created or the customer allowed you to edit; any other picked file waits for approval. |
+| `sheets_update_range` | free | Overwrite an A1 range with typed values. Same approval rule as `sheets_append_rows`. |
+| `sheets_add_sheet` | free | Add an empty tab to a spreadsheet. Same approval rule as `sheets_append_rows`. |
 | `mention_trend` | free | **What a watch has seen over time**, which nothing else here answers — every other read is about now. One point per run: when it ran, how many mentions it found, how many were new, and both counts per network, so "which network is growing" and "did it go quiet or did we stop looking" come apart. On a competitor watch each point carries the median that run measured, which turns "they beat their own median" into "and that median has doubled". Plus the mentions more than one run has seen. Free because the sweeps were billed when they ran; charging again to read what was already paid for is the thing it fixes. |
 | `update_watch_portfolio` | free | Add or remove a portfolio watch's terms by `watchId`. No new confirmation, because the per-run budget you agreed to does not move — more terms split it more ways, and the reply names any network a run no longer reaches. |
 | `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |

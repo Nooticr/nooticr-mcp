@@ -314,6 +314,42 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ jobId: z.string().describe("jobId returned when the job was started.") }).strict(),
  },
  {
+ name: "sheets_create",
+ title: "Create Spreadsheet",
+ description: "Create a Google spreadsheet in the connected Google account, with the named sheets and a header row on each. Returns its id and URL; Nooticr owns the file, so later writes need no approval. Requires the product's Google Sheets connection. Free.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), title: z.string(), sheets: z.array(z.object({ name: z.string(), headers: z.array(z.string()).optional() })).optional().describe("Tabs to create.") }).strict(),
+ },
+ {
+ name: "sheets_list",
+ title: "List Spreadsheets",
+ description: "List the spreadsheets this connection can see: the ones Nooticr created and the ones the customer picked. Each says whether it was created or picked and whether the employee may edit it without approval. Free.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), limit: z.number().int().min(1).max(100).optional() }).strict(),
+ },
+ {
+ name: "sheets_read",
+ title: "Read Spreadsheet Range",
+ description: "Read a range (A1 notation, e.g. \"Ledger!A1:F200\") of a spreadsheet. Numbers come back as numbers and dates as formatted text; at most 10000 cells. Free.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), id: z.string().describe("Spreadsheet id from sheets_create or sheets_list."), range: z.string() }).strict(),
+ },
+ {
+ name: "sheets_append_rows",
+ title: "Append Spreadsheet Rows",
+ description: "Append rows after the last row of a sheet (tab). Values are typed: numbers stay numbers and ISO dates become sheet dates. At most 10000 cells per call. Free on a file Nooticr created or one the customer allowed you to edit; on any other file the customer picked it waits for their approval.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), id: z.string().describe("Spreadsheet id from sheets_create or sheets_list."), sheet: z.string().describe("Tab name."), rows: z.array(z.array(z.union([z.number(), z.boolean(), z.string(), z.null(), z.object({ formula: z.string() }).strict()]).describe('A number, boolean, text or an ISO date (2026-01-31) or datetime; null leaves the cell empty. Text that looks like a formula or number stays text; use {"formula": "=SUM(A1:A3)"} for a formula.'))) }).strict(),
+ },
+ {
+ name: "sheets_update_range",
+ title: "Update Spreadsheet Range",
+ description: "Overwrite a range (A1 notation, e.g. \"Ledger!B2:C3\") with values. Typed like sheets_append_rows; at most 10000 cells per call. Same approval rule as sheets_append_rows: free on a file Nooticr created or one the customer allowed you to edit, otherwise it waits for their approval.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), id: z.string().describe("Spreadsheet id from sheets_create or sheets_list."), range: z.string(), values: z.array(z.array(z.union([z.number(), z.boolean(), z.string(), z.null(), z.object({ formula: z.string() }).strict()]).describe('A number, boolean, text or an ISO date (2026-01-31) or datetime; null leaves the cell empty. Text that looks like a formula or number stays text; use {"formula": "=SUM(A1:A3)"} for a formula.'))) }).strict(),
+ },
+ {
+ name: "sheets_add_sheet",
+ title: "Add Spreadsheet Tab",
+ description: "Add an empty sheet (tab) to a spreadsheet. Same approval rule as sheets_append_rows: free on a file Nooticr created or one the customer allowed you to edit, otherwise it waits for their approval.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Product id; optional when the workspace has one product."), id: z.string().describe("Spreadsheet id from sheets_create or sheets_list."), name: z.string() }).strict(),
+ },
+ {
  name: "list_brand_watches",
  title: "List Brand Watches",
  description: "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per run, credits spent so far, runs made, next run due, and whether it is stopped and why. Read before creating a watch — a second watch on the same term is a second recurring charge for the same answer. No cost to call.",
@@ -574,8 +610,8 @@ export const TOOL_DEFINITIONS = [
  {
   name: "hire_employee",
   title: "Hire Employee",
-  description: "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside this workspace. Pass `template` and optionally name, instructions, appId, schedule, monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify. The first call changes nothing and returns a preview and a confirmationToken; show it to the user, and call again with confirm: true and the token only after the user explicitly agrees — never confirm on the user's behalf. Public actions (publish, email, reply, listing or price changes) wait for the user's approval unless autopilot is turned on. The hiring user is billed for runs, up to the monthly budget. No cost to call.",
-  inputSchema: z.object({ template: z.string().describe("Template slug, e.g. social-media-manager."), name: z.string().optional().describe("What to call the employee."), instructions: z.string().optional().describe("Standing instructions from the customer (tone, topics to avoid, ...)."), appId: z.number().int().optional().describe("Focus product id."), schedule: z.object({}).passthrough().optional().describe("{kind:'weekly',days:['mon'],times:['09:00'],tz:'Europe/Paris'} | {kind:'interval',minutes:N>=60} | {kind:'manual'}."), monthlyBudgetCredits: z.number().int().min(1).optional(), maxCreditsPerRun: z.number().int().min(1).optional(), approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."), notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack']}."), model: z.string().optional().describe("Optional model."), effort: z.string().optional().describe("low | medium | high."), confirm: z.boolean().optional(), confirmationToken: z.string().optional().describe("Token returned in the quote.") }).strict(),
+  description: "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside this workspace. Pass `template` and optionally name, instructions, products (the string all, or a list of product ids; appId is deprecated), schedule, monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify (channels, and recipients: hirer, admins or member user ids). The first call changes nothing and returns a preview and a confirmationToken; show it to the user, and call again with confirm: true and the token only after the user explicitly agrees — never confirm on the user's behalf. Public actions (publish, email, reply, listing or price changes) wait for the user's approval unless autopilot is turned on. The hiring user is billed for runs, up to the monthly budget. No cost to call.",
+  inputSchema: z.object({ template: z.string().describe("Template slug, e.g. social-media-manager."), name: z.string().optional().describe("What to call the employee."), instructions: z.string().optional().describe("Standing instructions from the customer (tone, topics to avoid, ...)."), appId: z.number().int().optional().describe("Deprecated: same as products:[appId]. Do not send together with products."), products: z.union([z.literal("all"), z.array(z.number().int()).min(1)]).optional().describe('"all" (every product, including ones added later) or a list of product ids the employee covers.'), schedule: z.object({}).passthrough().optional().describe("{kind:'weekly',days:['mon'],times:['09:00'],tz:'Europe/Paris'} | {kind:'interval',minutes:N>=60} | {kind:'manual'}."), monthlyBudgetCredits: z.number().int().min(1).optional(), maxCreditsPerRun: z.number().int().min(1).optional(), approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."), notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."), model: z.string().optional().describe("Optional model."), effort: z.string().optional().describe("low | medium | high."), confirm: z.boolean().optional(), confirmationToken: z.string().optional().describe("Token returned in the quote.") }).strict(),
  },
  {
   name: "list_employees",

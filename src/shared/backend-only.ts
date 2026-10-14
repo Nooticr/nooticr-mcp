@@ -35,4 +35,12 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "Commerce writes (nooticr-server C1 3/4) stay in the dashboard until exposing store writes to hosts is a product decision; applying a change edits the merchant's live prices.",
   brand_watch_history:
     "Not a deliberate exclusion: a candidate for the public surface once it has a trend view to draw. Listed so it reads as pending, not forgotten.",
+  bank_list_accounts:
+    "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
+  bank_list_transactions:
+    "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
+  bank_balances:
+    "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
+  bank_sync_status:
+    "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
 };

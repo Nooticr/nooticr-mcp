@@ -1351,6 +1351,78 @@
         "open_world_justification": "Sends the prompt to a third-party image provider (OpenAI) to generate the image.",
         "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data."
       }
+    },
+    "sheets_create": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it creates a new spreadsheet in the customer's connected Google account.",
+        "open_world_justification": "Writes to Google Sheets/Drive, a third-party service outside nooticr, using the customer's own connection.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new file and removes no existing data."
+      }
+    },
+    "sheets_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the spreadsheets the connection can see. Nothing is written.",
+        "open_world_justification": "Reads from the customer's Google account (Google Drive), a third-party service outside nooticr.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "sheets_read": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one range of a spreadsheet. Nothing is written.",
+        "open_world_justification": "Reads from the customer's Google Sheets, a third-party service outside nooticr.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
+    "sheets_append_rows": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds rows to a spreadsheet in the customer's Google account (a file Nooticr created or one the customer allowed; any other waits for approval).",
+        "open_world_justification": "Writes to Google Sheets, a third-party service outside nooticr.",
+        "destructive_justification": "Not destructive. Rows are added after the last row; existing cells are not changed."
+      }
+    },
+    "sheets_update_range": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it writes values into a range of a spreadsheet in the customer's Google account (a file Nooticr created or one the customer allowed; any other waits for approval).",
+        "open_world_justification": "Writes to Google Sheets, a third-party service outside nooticr.",
+        "destructive_justification": "Not destructive in intent: it replaces the cells in the one range the caller names, never anything outside it, and only on files the customer allowed or approved."
+      }
+    },
+    "sheets_add_sheet": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds an empty tab to a spreadsheet in the customer's Google account (same approval rule as other writes).",
+        "open_world_justification": "Writes to Google Sheets, a third-party service outside nooticr.",
+        "destructive_justification": "Not destructive. The write is additive: it adds an empty tab and removes nothing."
+      }
     }
   },
   "test_cases": [

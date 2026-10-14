@@ -75,6 +75,13 @@ NO_APP = {
     "creative_music",
     "creative_image",
     "creative_image_edit",
+    # Google Sheets (sheets.ts): sheet contents are a grid the design system has no card for.
+    "sheets_create",
+    "sheets_list",
+    "sheets_read",
+    "sheets_append_rows",
+    "sheets_update_range",
+    "sheets_add_sheet",
     # Store connections (store-read.ts). View pending: a catalogue is a table the design system has no card for.
     "connect_store",  # view pending: the link and the state around it
     "list_store_products",  # view pending: a table of products with status and price
