@@ -49,6 +49,12 @@ export interface Tool {
    * quote in credits and nothing is charged until the user confirms. Carries
    * `cost: 0` for the same reason as `"plan"`; the pages print "Quoted".
    */
+  /**
+   * Overrides the cost cell on the docs page for a tool whose price depends
+   * on its arguments (free with one input, billed with another). `cost` stays
+   * 0 so the landing page lists only flat-priced tools.
+   */
+  costNote?: string;
 }
 
 export const GROUPS: { id: Group; title: string; blurb: string }[] = [
@@ -327,6 +333,24 @@ export const TOOLS: Tool[] = [
     args: "username, platform?, limit?",
     desc: "Your own recent posts and the comments under them, so you can write the replies \u2014 2 credits for the post list plus 2 per post opened, 14 at the default of 6.",
     when: "The job is answering your own audience rather than reading about strangers.",
+  },
+  {
+    name: "list_comments_to_answer", cost: 0, group: "own",
+    args: "platform?, influencerId?, postId?, sinceDays?, limit?, includeAnswered?",
+    desc: "Recent comments on your own connected account that nobody has answered yet, newest first. Read-only; sends nothing. Free.",
+    when: "You want to answer your audience and the account is connected with comment management.",
+  },
+  {
+    name: "draft_comment_reply", cost: 0, costNote: "Free with your text, else 1 cr", group: "own",
+    args: "platform, commentId, postId, text?, guidance?",
+    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it. Returns a draftId and confirmationToken.",
+    when: "After list_comments_to_answer, to have a reply ready for the user to read.",
+  },
+  {
+    name: "post_comment_reply", cost: 0, group: "own",
+    args: "draftId, confirm, confirmationToken",
+    desc: "Posts a stored draft as the user's own account. Only after the user has agreed to the exact text. Each comment is answered at most once. Free.",
+    when: "The user has read the draft and said to send it.",
   },
   {
     name: "show_audience_replies", cost: 0, group: "research",

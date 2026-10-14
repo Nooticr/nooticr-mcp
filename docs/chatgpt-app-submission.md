@@ -257,10 +257,10 @@ Authorization codes and PKCE challenges are one-time use and short-lived.
   `src/shared/comment-review.ts`. `prepare_handoff` additionally redacts contact
   details and defangs `@handles` and `#numbers` before text reaches a tracker.
   Worth stating in the submission rather than leaving a reviewer to find it.
-- **Writes to social networks: none from these tools.** The audience-reply
-  tools only draft text. A reply is posted on the user's own connected account
-  only after the user has seen the exact text and confirmed it, outside these
-  tools.
+- **Writes to social networks: one, behind confirmation.** Only
+  `post_comment_reply` posts, and only a reply the person has reviewed through
+  `draft_comment_reply` and confirmed. The other audience-reply tools draft text
+  for a person to paste in and never post.
 - **Billing, and no commerce in the plugin:** nooticr credits, 20 free on
   signup. Each tool states its cost; the six whose price is set by an argument
   confirm over MCP `elicitation` above 6 credits, a scheduled watch always

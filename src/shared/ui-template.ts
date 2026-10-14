@@ -4412,7 +4412,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
           +'<div class="nt-commerce-chiprow">'+readOnly.map(function(k){
             return '<span class="nt-tag nt-commerce-nettag tag">'+glyph(k,12)+esc(pTitle(k))+"</span>";}).join("")+"</div>"
           +'<p class="nt-commerce-conn-sub" style="margin-top:8px">So "monitor my brand on Weibo" works and "reply to that Weibo comment" cannot — '
-          +"replies are never sent on their own: one is posted only after you confirm its exact text.</p></div>":""),
+          +"replies go out only through post_comment_reply, on a draft you confirmed, and only where a connection allows managing comments.</p></div>":""),
       footer:'<span class="ai-note">Each press mints a fresh link — an old one does not work twice. Approve in your own browser; nothing is connected until you do.</span>'});
   }
 

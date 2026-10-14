@@ -464,10 +464,11 @@ describe("the social-listening skill's platform claims", () => {
   });
 
   it("states the boundaries that are not about platforms", () => {
-    // The submission tells a reviewer this cannot write to a social account.
-    // The skill is what the model reads, so it must say the same thing.
-    expect(skill).toMatch(/cannot post/i);
-    expect(skill).toMatch(/only after the user has seen the exact text and confirmed it/i);
+    // The submission tells a reviewer that only post_comment_reply writes to a
+    // social account, from a confirmed draft. The skill must say the same.
+    expect(skill).toMatch(/only `post_comment_reply` can send/i);
+    expect(skill).toMatch(/confirmed draft/i);
+    expect(skill).toMatch(/never post/i);
     expect(skill).toMatch(/draft/i);
     expect(skill).toMatch(/public data only/i);
     // Every tool returning third-party text frames it as evidence; a skill
@@ -504,28 +505,28 @@ describe("the localised store descriptions", () => {
   const LANGUAGES: Record<string, { counts: Record<number, string>; refuses: RegExp; handsBack: RegExp }> = {
     English: {
       counts: { 9: "nine", 10: "ten" },
-      refuses: /won't post or reply on your behalf/i,
-      handsBack: /comes back as a draft for you to send yourself/i,
+      refuses: /Drafting tools never post\. A reply is posted only through post_comment_reply, and only the draft you confirmed/i,
+      handsBack: /comes back as a draft for you to review first/i,
     },
     "Français": {
       counts: { 9: "neuf", 10: "dix" },
-      refuses: /ne publiera pas et ne répondra pas à votre place/i,
-      handsBack: /revient sous forme de brouillon, que vous envoyez vous-même/i,
+      refuses: /ne publient jamais\. Une réponse n'est publiée que via post_comment_reply, et uniquement le brouillon que vous avez confirmé/i,
+      handsBack: /revient sous forme de brouillon, que vous relisez d'abord/i,
     },
     Deutsch: {
       counts: { 9: "neun", 10: "zehn" },
-      refuses: /wird nichts in Ihrem Namen posten oder beantworten/i,
-      handsBack: /kommt als Entwurf zurück, den Sie selbst senden/i,
+      refuses: /posten nie\. Eine Antwort wird nur über post_comment_reply gepostet, und nur der Entwurf, den Sie bestätigt haben/i,
+      handsBack: /kommt als Entwurf zurück, den Sie zuerst prüfen/i,
     },
     "Português": {
       counts: { 9: "nove", 10: "dez" },
-      refuses: /não vai publicar nem responder no seu lugar/i,
-      handsBack: /volta como rascunho, para você mesmo enviar/i,
+      refuses: /nunca publicam\. Uma resposta só é publicada por post_comment_reply, e apenas o rascunho que você confirmou/i,
+      handsBack: /volta como rascunho, para você revisar antes/i,
     },
     "Español": {
       counts: { 9: "nueve", 10: "diez" },
-      refuses: /No publicará ni responderá en tu nombre/i,
-      handsBack: /vuelve como borrador para que lo envíes tú/i,
+      refuses: /nunca publican\. Una respuesta solo se publica mediante post_comment_reply, y únicamente el borrador que tú confirmaste/i,
+      handsBack: /vuelve como borrador para que lo revises primero/i,
     },
   };
 
@@ -566,8 +567,8 @@ describe("the localised store descriptions", () => {
     // translator is most likely to soften into "it helps you post".
     const body = section(language);
     const { refuses, handsBack } = LANGUAGES[language];
-    expect(body, `${language} does not refuse to post on the user's behalf`).toMatch(refuses);
-    expect(body, `${language} does not say the output comes back for you to send`).toMatch(handsBack);
+    expect(body, `${language} does not say only a confirmed draft is posted`).toMatch(refuses);
+    expect(body, `${language} does not say the output comes back for you to review`).toMatch(handsBack);
   });
 
   it("offers exactly three example prompts, and none of them names a real brand", () => {

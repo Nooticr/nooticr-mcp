@@ -478,7 +478,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "list_social_connections",
  title: "List Social Connections",
- description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Manage comments reports the grant; no nooticr tool posts or replies to a comment. Also returns which platforms can be connected at all. No cost to call.",
+ description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Manage comments reports the grant; this tool posts nothing, and a reply goes out only through post_comment_reply on a draft the user confirmed. Also returns which platforms can be connected at all. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
  {
@@ -486,6 +486,24 @@ export const TOOL_DEFINITIONS = [
  title: "Connect Social Account",
  description: "Get a link to open so you can connect one social account. The user approves at the provider; nothing is connected until they do, and no credential ever passes through this tool. For YouTube, pass capabilities [\"manage_comments\"] to also ask for the comment-management grant. No cost to call.",
  inputSchema: z.object({ platform: z.string().describe("Which network to connect."), influencerId: z.number().int().optional(), appId: z.number().int().optional(), capabilities: z.array(z.enum(["manage_comments"])).optional().describe("YouTube only: [\"manage_comments\"] asks for the comment-management grant.") }).strict(),
+ },
+ {
+  name: "list_comments_to_answer",
+  title: "List Comments To Answer",
+  description: "List recent comments on the user's own connected account that nobody has answered yet, newest first. Only the user's own posts, through their own connection: YouTube works once connected with capabilities: [\"manage_comments\"] (see connect_social_account); networks that cannot be answered come back under `unsupported` with the reason. Optional platform, influencerId, postId, sinceDays (1-30, default 7), limit (1-100, default 30), includeAnswered. Read-only: it sends nothing. No cost to call.",
+  inputSchema: z.object({ platform: z.enum(["youtube", "instagram"]).optional().describe("Only this network."), influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."), postId: z.string().optional().describe("Only comments on this video/media id."), sinceDays: z.number().int().min(1).max(30).optional().describe("How far back to look (default 7)."), limit: z.number().int().min(1).max(100).optional().describe("Most comments to return (default 30)."), includeAnswered: z.boolean().optional().describe("Also list comments that already have a reply.") }).strict(),
+ },
+ {
+  name: "draft_comment_reply",
+  title: "Draft Comment Reply",
+  description: "Draft a reply to one comment from list_comments_to_answer and store it; nothing is posted. Pass `text` to use the user's own wording (no cost), or omit it and nooticr writes one (costs 1 nooticr credit); `guidance` steers the writing. Replies may not contain links, emails, phone numbers or @-mentions of anyone but the commenter. Returns a draftId and a confirmationToken: show the reply to the user first, then post it with post_comment_reply.",
+  inputSchema: z.object({ platform: z.enum(["youtube", "instagram"]).describe("The network the comment is on."), commentId: z.string().describe("Comment id from list_comments_to_answer."), postId: z.string().describe("Post id the comment is on."), text: z.string().optional().describe("The reply to store, in the user's words. Omit to have one written (1 credit)."), influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."), guidance: z.string().optional().describe("What the reply should say or avoid; a URL here is the only URL the reply may contain.") }).strict(),
+ },
+ {
+  name: "post_comment_reply",
+  title: "Post Comment Reply",
+  description: "Post a stored reply draft to the comment, as the user's own account. Only after the user has seen and agreed to the exact text: pass the draftId, confirm: true and the confirmationToken from draft_comment_reply. Each comment is answered at most once and daily limits apply. It writes to a third-party network and cannot be undone from here. No cost to call.",
+  inputSchema: z.object({ draftId: z.string().describe("Draft id from draft_comment_reply."), confirm: z.boolean().describe("true only once the user has agreed to the exact text."), confirmationToken: z.string().describe("Token returned with the draft.") }).strict(),
  },
  {
  name: "connect_store",
@@ -502,7 +520,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "answer_my_audience",
  title: "Answer My Audience",
- description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; this tool cannot post a reply \u2014 a reply is posted only after the user confirms its exact text. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
+ description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply \u2014 the drafts are for a person to paste in themselves, or to send through draft_comment_reply and post_comment_reply once the user has confirmed the text. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
  inputSchema: z.object({ username: z.string().describe("Your handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), limit: z.number().int().optional().describe("Posts to open (default 6, max 12). Each one is a comment fetch, so this is the price."), commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 20, max 50)."), since: z.string().optional().describe("Only posts published on or after this date, as YYYY-MM-DD. Windows the posts, not the comments.") }).strict(),
  },
  {
