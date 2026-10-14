@@ -58,6 +58,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         .object({
           platform: platform.optional().describe("Only this network."),
           influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."),
+          account: z.union([z.number().int(), z.string()]).optional().describe("Connection id (`connectionId` from list_social_connections) when the profile has more than one account on the platform."),
           postId: z.string().optional().describe("Only comments on this video/media id."),
           sinceDays: z.number().int().min(1).max(30).optional().describe("How far back to look (default 7)."),
           limit: z.number().int().min(1).max(100).optional().describe("Most comments to return (default 30)."),
@@ -94,6 +95,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
           postId: z.string().describe("Post id the comment is on."),
           text: z.string().optional().describe("The reply to store, in the user's words. Omit to have one written (1 credit)."),
           influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."),
+          account: z.union([z.number().int(), z.string()]).optional().describe("Connection id (`connectionId` from list_social_connections) when the profile has more than one account on the platform."),
           guidance: z.string().optional().describe("What the reply should say or avoid; a URL here is the only URL the reply may contain."),
         })
         .strict(),
