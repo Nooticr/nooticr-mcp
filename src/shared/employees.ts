@@ -66,7 +66,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside " +
         "this workspace. Pass `template` and optionally name, instructions, products (the string all, or a list of product ids; appId is deprecated), schedule, " +
-        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify. " +
+        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify (channels, and recipients: hirer, admins or member user ids). " +
         TWO_STEP_RULE +
         " Public actions (publish, email, reply, listing or price changes) wait for the user's " +
         "approval unless autopilot is turned on. The hiring user is billed for runs, up to the " +
@@ -89,7 +89,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           monthlyBudgetCredits: z.number().int().min(1).optional(),
           maxCreditsPerRun: z.number().int().min(1).optional(),
           approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."),
-          notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack']}."),
+          notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
           model: z.string().optional().describe("Optional model."),
           effort: z.string().optional().describe("low | medium | high."),
           confirm,
