@@ -101,7 +101,9 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
       title: "Read Spreadsheet Range",
       description:
         'Read a range (A1 notation, e.g. "Ledger!A1:F200") of a spreadsheet. ' +
-        "Numbers come back as numbers and dates as formatted text; at most 10000 cells. Free.",
+        "Numbers come back as numbers and dates as formatted text; at most 10000 cells, " +
+        'and a range open at the bottom ("A:F") or longer than the cap is cut to the rows that fit, ' +
+        "with truncated=true when more may remain: read further down with a range that starts after the last row. Free.",
       annotations: READ,
       inputSchema: z.object({ appId, id: spreadsheetId, range: z.string() }).strict(),
       outputSchema: OUTPUT_SCHEMAS.sheets_read,
