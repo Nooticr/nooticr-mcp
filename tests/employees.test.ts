@@ -66,6 +66,18 @@ describe("employee tools", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("documents notify.recipients and forwards it unchanged", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const hire = tools.find((t) => t.name === "hire_employee")!;
+    expect(hire.description).toContain("recipients");
+    expect(JSON.stringify(hire.inputSchema)).toContain("recipients");
+    const notify = { channels: ["email"], recipients: "admins" };
+    const ok = await client.callTool({ name: "hire_employee", arguments: { template: "t", notify } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", notify } }]);
+  });
+
   it("rejects arguments the server does not know", async () => {
     const { client, calls } = await connect();
     const res = await client.callTool({ name: "list_employees", arguments: { bogus: 1 } });
