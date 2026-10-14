@@ -98,7 +98,7 @@ test("loading: inline mark under 6 credits", async ({ page }) => {
   const errs = await boot(page);
   await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-input", params: { name: "get_social_media", arguments: { url: "https://tiktok.com/x" } } }, "*"));
   await page.waitForTimeout(400);
-  await expect(page.locator("svg.mk .iris").first()).toBeVisible();
+  await expect(page.locator("svg.mk.is-scanning .sq").first()).toBeVisible();
   expect(await page.locator(".load-price").textContent()).toBe("1 credit");
   expect(await page.locator(".load-centre").count()).toBe(0);
   expect(errs).toEqual([]);
@@ -118,7 +118,8 @@ test("idle mark is the same mark at rest", async ({ page }) => {
   const errs = await boot(page);
   await page.waitForTimeout(300);
   expect(await page.locator("svg.mk").count()).toBe(1);
-  expect(await page.locator("svg.mk .iris").count()).toBe(0);
+  expect(await page.locator("svg.mk.is-scanning").count()).toBe(0);
+  expect(await page.locator("svg.mk .sq").count()).toBe(9);
   expect(errs).toEqual([]);
 });
 
@@ -228,7 +229,7 @@ test("connect_social_account: hands over the link", async ({ page }) => {
   await result(page, CONNECT_LINK);
   expect(await page.locator(".own-title").textContent()).toBe("Waiting for you");
   expect(await page.locator("a.btn").getAttribute("href")).toBe(CONNECT_LINK.connectUrl);
-  await expect(page.locator("svg.mk .iris").first()).toBeAttached();
+  await expect(page.locator("svg.mk.is-scanning .sq").first()).toBeAttached();
   expect(errs).toEqual([]);
 });
 
