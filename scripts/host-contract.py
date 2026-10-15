@@ -75,6 +75,7 @@ NO_APP = {
     "creative_music",
     "creative_image",
     "creative_image_edit",
+    "creative_video",
     # Google Sheets (sheets.ts): sheet contents are a grid the design system has no card for.
     "sheets_create",
     "sheets_list",

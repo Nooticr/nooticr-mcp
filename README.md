@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-117 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+118 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -108,6 +108,7 @@ them caps that fan-out with an argument.
 | `creative_voiceover` | quoted first | A voice-over of up to 2500 characters with word timings for burned-in captions, in a voice from `creative_voices_search`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. |
 | `creative_sfx` | quoted first | A short sound effect (0.5-10 s) from a description. Same quote-then-confirm handshake as `creative_voiceover`. |
 | `creative_music` | quoted first | An instrumental music bed of 5-60 seconds, generated as a job: confirm the quote, then poll `creative_job_status`. May be switched off on a deployment, in which case it says so. Describe mood, tempo and instruments, not artists or songs. |
+| `creative_video` | quoted first | One short video clip (3-10 s, 360p draft quality) from a `prompt`, generated as a job: confirm the quote, then poll `creative_job_status`. Optional `firstFrameAssetId` or up to 3 `referenceAssetIds` (image assets), `aspect` 9:16 or 16:9, `audio` ambient or none. The quote covers the 10-second worst case and settles to the real length. Generates only; it does not edit uploaded videos. |
 | `creative_image` | quoted first | 1-4 still images from a `prompt` with GPT Image (low quality), at a `size` (default portrait 1024x1536), optionally `transparent`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. Returns the new `assets` and `creativeCredits`. Keep long text out of the prompt and ask for invented people, not real ones. |
 | `creative_image_edit` | quoted first | Edit or combine 1-4 existing image assets (`imageAssetIds`) with a `prompt`, with an optional `maskAssetId`. Same quote-then-confirm handshake as `creative_image`; returns a new asset and `creativeCredits`. |
 | `creative_job_status` | free | Where an asynchronous creative job stands by `jobId`: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after `pollAfterSeconds`. |

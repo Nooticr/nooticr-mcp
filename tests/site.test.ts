@@ -605,6 +605,7 @@ describe("tool surface", () => {
     "creative_music",
     "creative_image",
     "creative_image_edit",
+    "creative_video",
     // Google Sheets (sheets.ts).
     "sheets_create",
     "sheets_list",

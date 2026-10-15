@@ -67,6 +67,7 @@ const NOT_READ_ONLY = [
   "creative_music",
   "creative_image",
   "creative_image_edit",
+  "creative_video",
   // The exception to the billing rule: free, and still not read-only.
   // Given a postId it saves the review and score onto that scheduled post,
   // overwriting the previous one.
@@ -112,7 +113,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(117);
+    expect(tools).toHaveLength(118);
   });
 
   it("marks read-only exactly where it is true", async () => {

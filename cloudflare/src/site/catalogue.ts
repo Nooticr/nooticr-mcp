@@ -443,6 +443,12 @@ export const TOOLS: Tool[] = [
     when: "You need background music; describe mood and tempo, not artists. Poll creative_job_status for the result.",
   },
   {
+    name: "creative_video", cost: 0, group: "own", billing: "quote",
+    args: "appId, prompt, durationSeconds?, aspect?, firstFrameAssetId?, referenceAssetIds?, audio?, confirm?, confirmationToken?",
+    desc: "One short 360p draft video clip (3-10 s), generated as a job. The first call returns a credit quote; nothing is charged until you confirm.",
+    when: "You need a short clip, optionally from a first-frame image; add voice-over and music with the audio tools. Poll creative_job_status for the result.",
+  },
+  {
     name: "creative_image", cost: 0, group: "own", billing: "quote",
     args: "appId, prompt, size?, n?, transparent?, confirm?, confirmationToken?",
     desc: "1-4 still images with GPT Image (low quality). The first call returns a credit quote; nothing is charged until you confirm.",
