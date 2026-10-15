@@ -1555,7 +1555,7 @@ function handleMcpCall(name, args, workspaceId) {
     }
     case "get_price_history": {
       // An unknown product is a normal answer, not an error (nooticr-server#831).
-      if (String(args.id || "").includes("never")) {
+      if (String(args.id || "").toLowerCase().includes("never")) {
         return {
           content: [{ type: "text", text: "No stored record for that product yet." }],
           structuredContent: { recorded: false, billable: false, note: "Nothing stored for this product yet; a get_marketplace_product read records its first point." },
