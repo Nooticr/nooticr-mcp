@@ -591,6 +591,12 @@ export const TOOLS: Tool[] = [
     when: "A category was scanned before and you want to know what changed; scan it again first to have a second run.",
   },
   {
+    name: "get_price_history", cost: 0, group: "market",
+    args: "marketplace, id, market?, from?, to?, metric?",
+    desc: "One product's price, rating, review count or availability over time, from the observations stored each time it was scanned. Fetches nothing. Free.",
+    when: "You want to know whether a product got cheaper or better rated; read it once with get_marketplace_product to start its record.",
+  },
+  {
     name: "get_marketplace_product", cost: 3, group: "market",
     args: "marketplace, item, market?",
     desc: "One product by id or URL: price, rating, the full star histogram, specs and the review text.",

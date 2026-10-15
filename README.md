@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-117 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+118 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -168,6 +168,7 @@ a `scanId` for the rest.
 | `get_amazon_product` | 3 | One listing by ASIN or URL: price, rating, the full star histogram, features, specs, Amazon's review digest and aspect breakdown, and the reviews. |
 | `scan_marketplace_category` | 3 per product collected (30 by default) | The same category read on eleven more sites — AliExpress, Cdiscount, Flipkart, Mercado Libre, Lazada, Otto, Rakuten, Trendyol, Jumia, Vinted and Temu. Vinted is resale rather than retail, so its `rating` describes the seller and the scan says so in `ratingScope` — do not read it as a product's reviews. `marketplace` picks the site; `market` picks the storefront for the sites that have several, and the argument names the real set per site so a model cannot send Otto a Lazada region. Same rollup, same confirmation before spending. |
 | `marketplace_scan_status` | free | Picks a running marketplace collection back up by `scanId` and the same `marketplace`. Free, for the same reason `amazon_scan_status` is. |
+| `get_price_history` | free | One product's `price` over time, or its `rating`, `reviewCount` or `availability` with `metric`, from the observations stored each time it was scanned. `marketplace` and `id` name it as `get_marketplace_product` does; `from`/`to` default to the last 30 days. Returns the points oldest first with min, max, first, last and the change from first to last. Reads stored data only; a product never scanned answers `recorded: false`. |
 | `marketplace_changes` | free | What moved in a category since the previous scan of the same `marketplace` and `query`: products that entered or left the results and ones whose price or place changed. Read from the two latest stored scans, so it fetches nothing; a category scanned once says it has no earlier run. |
 | `get_marketplace_product` | 3 | One product from any of the twelve sites, by id or URL: price, rating, the full star histogram, specs and the reviews. |
 | `show_amazon_category_insights` | free | Draws the read **your model** wrote — purchase drivers, barriers, what each brand does well, the gaps, the positioning angles — beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. The conclusions are attributed to your model, never presented as a nooticr rating of anyone's product. Given the `scanId`, it re-reads the listings from the scan itself (free) instead of drawing whatever the model re-sends, and flags any ASIN the read cites that the scan does not contain; without one, the card says its listings were not checked. |

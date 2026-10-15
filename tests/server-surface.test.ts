@@ -112,7 +112,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(117);
+    expect(tools).toHaveLength(118);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -154,6 +154,8 @@ describe("tool annotations", () => {
       "get_google_analytics_data",
       "get_post_performance",
       "get_posthog_analytics",
+      // Reads stored marketplace observations back; fetches nothing.
+      "get_price_history",
       "get_scheduled_posts",
       "get_search_console_data",
       "get_tool_run",

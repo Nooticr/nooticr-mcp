@@ -717,6 +717,7 @@ describe("tool surface", () => {
     "approve_action",
     "reject_action",
     "marketplace_changes",
+    "get_price_history",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -856,6 +857,8 @@ describe("tool surface", () => {
       "reject_action",
       // Compares two stored scans; fetches nothing.
       "marketplace_changes",
+      // Reads stored observations back; fetches nothing.
+      "get_price_history",
       "nooticr_settings_read",
       "nooticr_settings_update",
     ];
