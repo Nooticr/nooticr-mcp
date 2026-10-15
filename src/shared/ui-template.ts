@@ -546,7 +546,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var app=document.getElementById("app");
     if(!app)return;
     // The still mark is the same SVG the wait animates, so a call that starts
-    // swaps nothing — the irises just begin to move.
+    // swaps nothing — the squares just begin their wave.
     app.innerHTML='<div class="nt-commerce-idle">'
       +mkSvg(77,44,false)
       +'<div class="nt-commerce-idle-title">'+esc(label)+'</div>'
@@ -1245,7 +1245,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var sparkle=icon?icon.innerHTML:"";
     btn.disabled=true;btn.classList.add("busy");btn.setAttribute("aria-busy","true");
     if(label)label.textContent="Working…";
-    if(icon)icon.innerHTML=ic("loader-circle",14,"nt-spin");
+    if(icon)icon.innerHTML=mkSvg(14,14,true);
     var restore=function(text){
       btn.classList.remove("busy");btn.removeAttribute("aria-busy");
       if(label)label.textContent=text||original;
@@ -4525,7 +4525,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     var was=btnEl.innerHTML;
     btnEl.disabled=true;
     btnEl.setAttribute("aria-busy","true");
-    btnEl.innerHTML=ic("loader-circle",14,"nt-spin")+"<span>"+esc(busyLabel)+"</span>";
+    btnEl.innerHTML=mkSvg(14,14,true)+"<span>"+esc(busyLabel)+"</span>";
     var restore=function(label){
       btnEl.disabled=false;
       btnEl.removeAttribute("aria-busy");
@@ -5104,7 +5104,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       +'<h3 class="nt-commerce-head-title amz-head-title">'+esc(s.title||"Category scan")+"</h3>"
       +'<p class="nt-commerce-head-sub amz-head-sub">'+esc(sub)+"</p>"
       +"</div>"
-      +(running?badge("outline",ic("loader-circle",12,"nt-spin")+"Collecting "+done+"/"+total,"nt-commerce-running amz-running"):"")
+      +(running?badge("outline",mkSvg(12,12,true)+"Collecting "+done+"/"+total,"nt-commerce-running amz-running"):"")
       +"</header>"
       // A scan that is still running says how far it has got, not only that
       // it is going: "4 of 10" is a thing to wait for, a spinner is not.

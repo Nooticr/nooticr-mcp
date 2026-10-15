@@ -285,6 +285,30 @@ test("5a Connect hands the call to the host and swaps in the link", async ({ pag
   expect(errs).toEqual([]);
 });
 
+// #234: a wait inside a view is the same nine-square mark as the first paint
+// and the tool-result wait, not a spinning ring. A host that never answers
+// holds both kinds of in-view button in their busy state for the assertion.
+test("an in-view action waits on the nine-square mark, not a spinner", async ({ page }) => {
+  const errs = await boot(page);
+  await page.evaluate(() => {
+    (window as unknown as { openai: unknown }).openai = { callTool: () => new Promise(() => {}) };
+  });
+  await result(page, { analysis: { summary: "A hook-led demo." }, post: TWO_POSTS[0] });
+  const ai = page.locator('.ai-btn[data-ai="generate_hook_ideas"]');
+  await ai.click();
+  await expect(ai).toHaveAttribute("aria-busy", "true");
+  expect(await ai.locator("svg.mk.is-scanning .sq").count()).toBe(9);
+  expect(await ai.locator(".nt-spin").count()).toBe(0);
+
+  await result(page, { ...CONNECTIONS, connections: [CONNECTIONS.connections[0]], connectedCount: 1 });
+  const connect = page.locator("[data-connect]");
+  await connect.click();
+  await expect(connect).toHaveAttribute("aria-busy", "true");
+  expect(await connect.locator("svg.mk.is-scanning .sq").count()).toBe(9);
+  expect(await connect.locator(".nt-spin").count()).toBe(0);
+  expect(errs).toEqual([]);
+});
+
 test("a spoken row says when it was said, and links to that moment", async ({ page }) => {
   const errs = await boot(page);
   await result(page, MENTIONS);
