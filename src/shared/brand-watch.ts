@@ -673,7 +673,7 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
     {
       title: "List Brand Watches",
       description:
-        "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per " +
+        "Every scheduled brand-monitoring watch in this workspace (every member's watches, not only yours): term, networks, cadence, cost per " +
         "run, credits spent so far, how many runs it has made, when the next one is due, and " +
         "whether it is stopped and why. Read this before creating a watch — a second watch on the " +
         "same term is a second recurring charge for the same answer. No cost to call.",
