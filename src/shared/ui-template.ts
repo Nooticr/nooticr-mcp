@@ -2067,7 +2067,8 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   var GROUP_PEEK=4;
   /** Groups the reader has opened, by post URL, kept across a filter or sort. */
   var expandedGroups={};
-  // Posters the reader has asked to play, keyed like expandedGroups.
+  // The poster the reader asked to play, keyed like expandedGroups. At most
+  // one key: see the [data-mplay] handler.
   var expandedMedia={};
 
   /** Reach of the post a comment sits under — how many people saw it. */
@@ -2228,11 +2229,16 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(mplay&&(monitorState||spokenState)){
       var mkey=mplay.getAttribute("data-mplay")||"";
       if(mkey&&mplay.className.indexOf("is-playable")>=0){
+        // One post plays at a time. Every expanded stage is redrawn with
+        // autoplay, so a second poster click used to restart the first video
+        // under the new one, and only the first stage in the page was
+        // registered below, so neither paused the other (#253).
+        expandedMedia={};
         expandedMedia[mkey]=true;
         renderMentions();
-        // renderMentions draws outside the top-level render, so anything it
-        // just wrote has nothing bound to it. initPlayers resets first, so
-        // calling it again here is safe.
+        // Nothing in a mention view is a bound player today (no .mp, .au or
+        // poster fallback), so this only resets the registries before the
+        // stage is registered; it binds anything a later view adds.
         initPlayers();
         var v=document.querySelector(".mgroup-stage video");
         if(v){registerAudio(v);stopAllPlayers();}
