@@ -1054,7 +1054,7 @@ describe("the comment grant and the drafting tools agree", () => {
     // #246: approval is the default, not a guarantee. A customer can put
     // publishing on autopilot, and hire_employee already says so; this
     // description must not promise the opposite.
-    expect(t.description).toMatch(/autopilot for publishing/);
+    expect(t.description).toMatch(/autopilot for publishing for that employee/);
     expect(t.description).not.toMatch(/only when a person approves/);
     for (const name of ["schedule_post", "enqueue_publish_job"]) {
       expect(tools.map((x) => x.name), name).not.toContain(name);

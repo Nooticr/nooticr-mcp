@@ -759,7 +759,7 @@ export const TOOLS: Tool[] = [
   {
     name: "list_social_connections", cost: 0, group: "own",
     args: "\u2014",
-    desc: "Which social accounts your workspace has connected and what each one is allowed to do \u2014 read, publish, manage comments \u2014 plus which platforms can be connected at all. Publishing happens through an AI employee, when you approve its post in the dashboard or on autopilot if you turned that on, not from here.",
+    desc: "Which social accounts your workspace has connected and what each one is allowed to do \u2014 read, publish, manage comments \u2014 plus which platforms can be connected at all. Publishing happens through an AI employee, when you approve its post in the dashboard, or on its own if you turned on autopilot for publishing for that employee; not from here.",
     when: "Before anything that needs an account linked.",
   },
   {

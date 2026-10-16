@@ -65,7 +65,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "post_comment_reply, on a draft the user confirmed. \"Publish\" is the grant an AI " +
         "employee's posts use: no tool on this server publishes a post. A post goes out when a " +
         "person approves that employee's schedule_post action in the Nooticr dashboard's Inbox, " +
-        "or automatically if the workspace has turned on autopilot for publishing. " +
+        "or on its own if the customer has turned on autopilot for publishing for that employee. " +
         "Call this before telling the user that something can be posted or replied to. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),

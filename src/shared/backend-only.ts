@@ -20,9 +20,9 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
   compose_sequence: "Rendering stays in the dashboard: it takes storage keys a public caller has no way to produce (#92).",
   spawn_variants: "Rendering stays in the dashboard: it takes storage keys a public caller has no way to produce (#92).",
   enqueue_publish_job:
-    "The public surface does not publish (#92, decided 2026-10-16): a post goes out when a person approves an AI employee's schedule_post action in the dashboard Inbox, or on autopilot if the customer turned that on.",
+    "The public surface does not publish (#92, decided 2026-10-16): a post goes out when a person approves an AI employee's schedule_post action in the dashboard Inbox, or on its own if the customer turned on autopilot for publishing for that employee.",
   schedule_post:
-    "The public surface does not publish (#92, decided 2026-10-16): AI employees propose it as an action, which a person approves in the dashboard Inbox unless the customer turned on autopilot for publishing.",
+    "The public surface does not publish (#92, decided 2026-10-16): AI employees propose it as an action, which a person approves in the dashboard Inbox unless the customer turned on autopilot for publishing for that employee.",
   get_batch_history:
     "History of the dashboard's compose batches, which only exist once rendering does; stays with #92.",
   get_latest_analysis:
