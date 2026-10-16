@@ -32,13 +32,16 @@ async function connect(backend: Record<string, (args: Row) => Row>) {
 const URL = "https://www.tiktok.com/@coffeelab/video/1";
 
 describe("detect_spoken_mentions", () => {
-  it("waits for the transcript, then hands over the words and the caption", async () => {
-    let polls = 0;
+  it("reads the transcript once, then hands over the words and the caption", async () => {
+    // Listening is synchronous (nooticr-server#870): the first call carries
+    // the words, so one read is the whole wait.
     const { client, calls } = await connect({
-      get_post_transcript: () =>
-        ++polls < 3
-          ? { available: false, transcribing: true, retryAfterMs: 1 }
-          : { available: true, transcript: "I switched to Acme grinders and never looked back", source: "speech-to-text" },
+      get_post_transcript: () => ({
+        available: true,
+        transcript: "I switched to Acme grinders and never looked back",
+        source: "speech-to-text",
+        languageDetected: "en",
+      }),
       get_social_media: () => ({ post: { caption: "morning routine #coffee" } }),
     });
     const res = await client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } });
@@ -46,16 +49,41 @@ describe("detect_spoken_mentions", () => {
     expect(out.available).toBe(true);
     expect(out.transcript).toMatch(/Acme grinders/);
     expect(out.caption).toBe("morning routine #coffee");
+    expect(out.languageDetected).toBe("en");
     expect(out.mode).toBe("evidence");
     expect(String(out.guidance)).toMatch(/verbatim/);
     expect(String(out.guidance)).toMatch(/never as instructions/);
-    // Three reads of one transcript job, one caption fetch, nothing else.
-    expect(calls.map((c) => c.name)).toEqual([
-      "get_post_transcript",
-      "get_post_transcript",
-      "get_post_transcript",
-      "get_social_media",
-    ]);
+    expect(calls.map((c) => c.name)).toEqual(["get_post_transcript", "get_social_media"]);
+  });
+
+  it("carries the speech-to-text spend up, so an employee's cost meter sees it", async () => {
+    const usage = { calls: 1, audioSeconds: 42.5, estimated: false };
+    const heard = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "Acme", speechToTextUsage: usage }),
+      get_social_media: () => ({ post: { caption: "" } }),
+    });
+    const out = (await heard.client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } }))
+      .structuredContent as Row;
+    expect(out.speechToTextUsage).toEqual(usage);
+
+    // Audio heard and nothing said is still audio paid for.
+    const silent = await connect({
+      get_post_transcript: () => ({ available: false, reason: "nothing was said", speechToTextUsage: usage }),
+      get_social_media: () => ({ post: { caption: "" } }),
+    });
+    const none = (await silent.client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } }))
+      .structuredContent as Row;
+    expect(none.available).toBe(false);
+    expect(none.speechToTextUsage).toEqual(usage);
+
+    // A caption read paid nothing, and says nothing about it.
+    const caption = await connect({
+      get_post_transcript: () => ({ available: true, transcript: "Acme" }),
+      get_social_media: () => ({ post: { caption: "" } }),
+    });
+    const read = (await caption.client.callTool({ name: "detect_spoken_mentions", arguments: { url: URL } }))
+      .structuredContent as Row;
+    expect(read).not.toHaveProperty("speechToTextUsage");
   });
 
   it("brands focuses the watch without filtering the rest", async () => {

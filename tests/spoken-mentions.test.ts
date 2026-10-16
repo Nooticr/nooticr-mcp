@@ -194,14 +194,12 @@ describe("matchExcerpts — where a term is actually said", () => {
   });
 });
 
-describe("search_spoken_mentions — polling a still-transcribing post", () => {
-  // Whisper is queue-backed: get_post_transcript can answer "transcribing:
-  // true, retryAfterMs" for a job that is accepted and running rather than a
-  // caption-track miss. Confusing the two would silently misreport every post
-  // whose answer just had not finished yet — this proves the tool asks again
-  // instead, and gives up honestly if it never finishes in time.
+describe("search_spoken_mentions — one read per post", () => {
+  // Listening is synchronous since nooticr-server#870: the first
+  // get_post_transcript call carries the words or a final reason. A second
+  // call for the same post would only ever be a second charge.
 
-  it("retries until the transcript is ready, and still finds the term", async () => {
+  it("reads each candidate's transcript once, and finds the term", async () => {
     let calls = 0;
     const { client } = await connect({
       get_user_posts: () => ({
@@ -209,9 +207,6 @@ describe("search_spoken_mentions — polling a still-transcribing post", () => {
       }),
       get_post_transcript: () => {
         calls++;
-        if (calls < 3) {
-          return { available: false, transcribing: true, retryAfterMs: 1 };
-        }
         return { available: true, transcript: "and that is why I switched to acme for good" };
       },
     });
@@ -219,36 +214,56 @@ describe("search_spoken_mentions — polling a still-transcribing post", () => {
       name: "search_spoken_mentions",
       arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
     });
-    expect(calls).toBe(3);
+    expect(calls).toBe(1);
     const structured = res.structuredContent as Row;
     expect(structured.matched).toBe(1);
     expect(structured.transcriptsAvailable).toBe(1);
     expect(structured.unavailable).toEqual([]);
   });
 
-  it("reports honestly, not as a caption miss, if it never finishes in the budget", async () => {
+  it("sums the speech-to-text spend of every transcript it heard", async () => {
+    const { client } = await connect({
+      get_user_posts: () => ({
+        posts: [
+          { externalUrl: "https://tiktok.com/@a/video/1", views: 300 },
+          { externalUrl: "https://tiktok.com/@a/video/2", views: 200 },
+          { externalUrl: "https://tiktok.com/@a/video/3", views: 100 },
+        ],
+      }),
+      get_post_transcript: ({ url }: Row) =>
+        String(url).endsWith("/1")
+          ? { available: true, transcript: "acme", speechToTextUsage: { calls: 1, audioSeconds: 30, estimated: false } }
+          : String(url).endsWith("/2")
+            ? { available: false, reason: "nothing was said", speechToTextUsage: { calls: 1, audioSeconds: 12.5, estimated: true } }
+            : // A caption read, or a transcript served from the cache: no spend.
+              { available: true, transcript: "no mention here" },
+    });
+    const structured = (
+      await client.callTool({
+        name: "search_spoken_mentions",
+        arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
+      })
+    ).structuredContent as Row;
+    expect(structured.speechToTextUsage).toEqual({ calls: 2, audioSeconds: 42.5, estimated: true });
+  });
+
+  it("carries no speech-to-text spend when nothing was heard", async () => {
     const { client } = await connect({
       get_user_posts: () => ({
         posts: [{ externalUrl: "https://tiktok.com/@a/video/1", views: 100 }],
       }),
-      get_post_transcript: () => ({ available: false, transcribing: true, retryAfterMs: 1 }),
+      get_post_transcript: () => ({ available: true, transcript: "acme" }),
     });
-    const res = await client.callTool({
-      name: "search_spoken_mentions",
-      arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
-    });
-    const structured = res.structuredContent as Row;
-    expect(structured.matched).toBe(0);
-    const unavailable = structured.unavailable as Row[];
-    expect(unavailable).toHaveLength(1);
-    // The whole point: this must not read like "no caption track" — that
-    // would tell a caller the post stays permanently invisible, when the
-    // truth is just "ask again".
-    expect(String(unavailable[0].reason)).toMatch(/still listening|try again/i);
-    expect(String(unavailable[0].reason)).not.toMatch(/no caption track/i);
-  }, 15_000);
+    const structured = (
+      await client.callTool({
+        name: "search_spoken_mentions",
+        arguments: { term: "acme", usernames: ["a"], platforms: ["tiktok"] },
+      })
+    ).structuredContent as Row;
+    expect(structured).not.toHaveProperty("speechToTextUsage");
+  });
 
-  it("does not confuse a genuine caption-track miss with a still-running job", async () => {
+  it("reports a caption-track miss with the reason the server gave", async () => {
     const { client } = await connect({
       get_user_posts: () => ({
         posts: [{ externalUrl: "https://tiktok.com/@a/video/1", views: 100 }],

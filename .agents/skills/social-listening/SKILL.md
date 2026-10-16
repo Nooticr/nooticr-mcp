@@ -32,7 +32,7 @@ and ask what it means.
    give the number. An assertion with no fetched thing behind it does not belong
    in the answer, and neither does a number you did not receive.
 5. **Say what you did not see.** A sweep that reached six of nine networks, a
-   post whose comments were not fetchable, a transcript that is still running:
+   post whose comments were not fetchable, a transcript that could not be made:
    the gap is part of the answer. Silence read as absence is the main way this
    goes wrong.
 6. **Render it** with the paired `show_*` tool where one exists — after you have
@@ -51,18 +51,18 @@ states its own limits in its description. The ones that surprise people:
 | Comment threads | nine | **Xiaohongshu** (no comment endpoint upstream) |
 | Creator search by topic | TikTok, Instagram, Xiaohongshu | **YouTube**, and the six others |
 | Similar creators, and sound/audio discovery | TikTok, Instagram | the eight others |
-| Spoken words | captions on TikTok, Douyin, YouTube; everywhere else the audio is transcribed | **Reddit** and **Bilibili**, whose audio cannot be fetched at all |
+| Spoken words | captions on TikTok, Douyin, YouTube; everywhere else the audio is transcribed | posts longer than 30 minutes, which are not transcribed |
 
 Two consequences worth stating out loud rather than absorbing silently:
 
 - A mention sweep that includes Xiaohongshu matches **post text only** there,
   because its comments cannot be read. Most brand mentions live in replies, so
   that network is systematically under-counted. Say so.
-- Transcription outside TikTok/Douyin/YouTube is **asynchronous**. A first call
-  returning `available: false` with `transcribing: true` and a `retryAfterMs` is
-  the job accepted, not a failure — wait and call again with the same URL. The
-  poll is free. It also needs speech-to-text configured server-side; when it is
-  not, the tool says so, and that is about the deployment, not about the post.
+- Transcription outside TikTok/Douyin/YouTube answers on the **first call**,
+  with words marked `source: "speech-to-text"` (heard, so spellings can be off)
+  or a final `available: false` with a reason. There is nothing to poll. It
+  needs speech-to-text configured server-side; when it is not, the tool says
+  so, and that is about the deployment, not about the post.
 
 ## Credits
 
