@@ -921,8 +921,12 @@ test.describe("media source", () => {
         playProxyUrl: "https://api.nooticr.com/media/proxy?url=p", videoCount: 5 }] } },
     }, "*"));
     await page.waitForTimeout(400);
+    // Except a sound preview: its raw playUrl is a signed, short-lived,
+    // cross-origin CDN link that never plays in the sandboxed frame, the
+    // server leaves it unproxied (nooticr-server#912), and the sound <audio>
+    // carries no retry. So it plays the server's signed proxy link (#256).
     expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
-      .toBe("https://cdn.example/play.mp3");
+      .toBe("https://api.nooticr.com/media/proxy?url=p");
   });
 });
 

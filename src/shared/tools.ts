@@ -251,92 +251,21 @@ export function argumentsDigest(value: unknown): string {
 }
 
 /**
- * Fields that must reach the client exactly as the server wrote them.
+ * Why nothing here rewrites a URL (#242).
  *
- * The blanket rewrite below is deliberately indiscriminate about *images*,
- * but these are not images:
- *  - `externalUrl` is the permalink on the social network. It is handed to
- *    `ui/open-link` and opened in a real browser tab, so proxying it turns
- *    "View on bilibili" into a fetch of the page through our image proxy.
- *  - `embedUrl` is an <iframe> src on the platform's own player origin.
- *  - the `*FallbackUrl` fields are already our own signed `/media/resolve`
- *    capability links; wrapping one in `/media/proxy` proxies our own
- *    resolver and invalidates nothing but the caller's playback.
- */
-const RAW_URL_KEYS = new Set([
- "externalUrl",
- "embedUrl",
- "videoFallbackUrl",
- "thumbnailFallbackUrl",
- "musicFallbackUrl",
-]);
-
-/**
- * Whether a URL already points at one of our own media endpoints.
+ * This worker used to wrap every external URL in a result as
+ * `${server}/media/proxy?url=...`, so a card's images would load inside
+ * ChatGPT's and Claude's sandboxed frames. Those links were unsigned, and
+ * `/media/proxy` fetches from the internet for whoever calls it, so the server
+ * could not start refusing unsigned links without blanking every card.
  *
- * Checked by host-agnostic path, not by prefix: the server may mint these
- * against a different base than this process knows about, and a prefix test
- * silently misses that and double-wraps.
+ * nooticr-server#893 moved the rewrite to where the signing key is: the HTTP
+ * `tools/call` route now hands back every external URL as a signed proxy link
+ * (`&sig=`), with this worker's old rule ported word for word (permalinks,
+ * embeds and our own resolve/files/copy links stay as they are). So a result
+ * reaches the host exactly as the server wrote it. Minting a link here again,
+ * for any field, is the bug this note exists to prevent: it would be unsigned.
  */
-function isOwnMediaUrl(url: string): boolean {
- // `/media/files` is nooticr's own re-hosted media — Weibo video arrives that
- // way. It was missing here, so whether it got wrapped a second time depended
- // on the host string matching NOOTICR_BASE_URL exactly: "localhost:8080" and
- // "127.0.0.1:8080" are the same server and different strings, and the proxy
- // then refused its own URL as an SSRF attempt. Recognising the path shape is
- // sturdier than trusting two spellings of a host to agree.
- return (
-  url.includes("/media/proxy") ||
-  url.includes("/media/resolve") ||
-  url.includes("/media/files")
- );
-}
-
-/**
- * Rewrite external image URLs to go through the nooticr proxy so they
- * work inside ChatGPT's sandboxed iframe (CORS + CSP restrictions).
- */
-function proxyImageUrl(url: string): string {
- if (!url || url.startsWith("data:")) return url;
- try {
-  const u = new URL(url);
-  // Only proxy external HTTP(S) URLs — skip our own proxy and data URIs
-  if (u.protocol === "http:" || u.protocol === "https:") {
-   const serverUrl = process.env.NOOTICR_API_URL || process.env.NOOTICR_BASE_URL || "";
-   if (serverUrl && !url.startsWith(serverUrl) && !isOwnMediaUrl(url)) {
-    return `${serverUrl.replace(/\/+$/, "")}/media/proxy?url=${encodeURIComponent(url)}`;
-   }
-  }
- } catch {}
- return url;
-}
-
-/** Recursively rewrite URL fields in a structured object for the proxy. */
-export function proxyUrls(obj: unknown): unknown {
- if (typeof obj === "string") {
-  // Check if it looks like a URL
-  if (/^https?:\/\//.test(obj) && !isOwnMediaUrl(obj)) {
-   return proxyImageUrl(obj);
-  }
-  return obj;
- }
- if (Array.isArray(obj)) return obj.map(proxyUrls);
- if (obj && typeof obj === "object") {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-   if (RAW_URL_KEYS.has(k)) {
-    out[k] = v;
-   } else if (["thumbnailUrl", "preview_url", "coverUrl", "avatarUrl", "avatar_thumb", "image_url", "videoUrl", "video_url", "url"].includes(k) && typeof v === "string") {
-    out[k] = proxyImageUrl(v);
-   } else {
-    out[k] = proxyUrls(v);
-   }
-  }
-  return out;
- }
- return obj;
-}
-
 const structuredOf = (res: { structured?: unknown }): Record<string, unknown> =>
  (res.structured ?? {}) as Record<string, unknown>;
 
@@ -393,9 +322,8 @@ async function toToolResult(proxy: McpProxyResult, guidance?: string): Promise<{
  const htmlPrefix = rawText.startsWith("<")
   ? rawText.substring(0, rawText.indexOf("\n\n{")).trimEnd()
   : "";
- const structured = proxy.structured as Record<string, unknown> | undefined;
- // Proxy thumbnail URLs in structured content for ChatGPT iframe
- const proxied = structured ? proxyUrls(structured) as Record<string, unknown> : {};
+ // URLs arrive already signed by the server; see the note above structuredOf.
+ const structured = (proxy.structured as Record<string, unknown> | undefined) ?? {};
  // `_htmlCards` is the rendered card HTML, and the text block already carries
  // it as htmlPrefix below. Leaving it in the structured payload sent the same
  // HTML a second time to the model and a third time into the widget: measured
@@ -403,23 +331,14 @@ async function toToolResult(proxy: McpProxyResult, guidance?: string): Promise<{
  // template reads (zero references in either embedded copy - views render from
  // `posts`). Dropped from both the JSON the model sees and the structured
  // content the widget receives; the prefix keeps the one copy that is used.
- const { _htmlCards: _renderedSeparately, ...forHosts } = proxied;
+ const { _htmlCards: _renderedSeparately, ...forHosts } = structured;
  const textJson = JSON.stringify(forHosts, null, 2);
- // Replace image URLs in HTML with proxied versions
- const proxiedHtml = htmlPrefix ? proxyImageUrlsInHtml(htmlPrefix) : "";
- const body = proxiedHtml ? `${proxiedHtml}\n\n${textJson}` : textJson;
+ const body = htmlPrefix ? `${htmlPrefix}\n\n${textJson}` : textJson;
  const text = guidance ? `${guidance}\n\n${body}` : body;
  return {
   content: [{ type: "text", text }],
   structuredContent: guidance ? { ...forHosts, guidance } : forHosts,
  };
-}
-
-/** Replace external image/video src, poster and href URLs in HTML with proxied versions. */
-function proxyImageUrlsInHtml(html: string): string {
- return html.replace(/(src|href|poster)="(https?:\/\/[^"']+?)"/g, (_match, attr, url) => {
-  return `${attr}="${proxyImageUrl(url)}"`;
- });
 }
 
 /**

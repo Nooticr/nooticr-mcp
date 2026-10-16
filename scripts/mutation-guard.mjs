@@ -80,12 +80,30 @@ const MUTATIONS = [
     catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'swaps in the real player'",
   },
   {
+    id: "worker-rewrites-permalink",
+    why: "the worker wrapping a post's own url in /media/proxy again, unsigned, so the model cites our proxy (#242, #254)",
+    file: "src/shared/tools.ts",
+    find: "const structured = (proxy.structured as Record<string, unknown> | undefined) ?? {};",
+    replace:
+      "const raw = (proxy.structured as Record<string, unknown> | undefined) ?? {};\n" +
+      " const structured = typeof raw.url === \"string\" ? { ...raw, url: `https://api.nooticr.com/media/proxy?url=${encodeURIComponent(raw.url)}` } : raw;",
+    catcher: "npx vitest run tests/media-urls.test.ts",
+  },
+  {
     id: "two-stages-play-at-once",
     why: "a second poster click restarting the first video under the second, both autoplaying (#253)",
     file: "src/shared/ui-template.ts",
     find: "expandedMedia={};\n        expandedMedia[mkey]=true;",
     replace: "expandedMedia[mkey]=true;",
     catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'plays that post alone'",
+  },
+  {
+    id: "sound-plays-raw-cdn",
+    why: "a sound preview playing the raw, unproxied playUrl again, which is silent in the sandboxed card (#256)",
+    file: "src/shared/ui-template.ts",
+    find: 'var play=s.playProxyUrl||s.playUrl||s.url||"";',
+    replace: 'var play=s.playUrl||s.playProxyUrl||s.url||"";',
+    catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'media source'",
   },
 ];
 
