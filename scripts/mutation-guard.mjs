@@ -89,6 +89,14 @@ const MUTATIONS = [
       " const structured = typeof raw.url === \"string\" ? { ...raw, url: `https://api.nooticr.com/media/proxy?url=${encodeURIComponent(raw.url)}` } : raw;",
     catcher: "npx vitest run tests/media-urls.test.ts",
   },
+  {
+    id: "two-stages-play-at-once",
+    why: "a second poster click restarting the first video under the second, both autoplaying (#253)",
+    file: "src/shared/ui-template.ts",
+    find: "expandedMedia={};\n        expandedMedia[mkey]=true;",
+    replace: "expandedMedia[mkey]=true;",
+    catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'plays that post alone'",
+  },
 ];
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);
