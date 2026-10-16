@@ -63,8 +63,9 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "platform granted, not something this tool does: this tool posts nothing, and a yes there " +
         "never means a drafted reply will be sent by itself. A reply goes out only through " +
         "post_comment_reply, on a draft the user confirmed. \"Publish\" is the grant an AI " +
-        "employee's posts use: no tool on this server publishes, and a post goes out only when a " +
-        "person approves that employee's schedule_post action in the Nooticr dashboard's Inbox. " +
+        "employee's posts use: no tool on this server publishes a post. A post goes out when a " +
+        "person approves that employee's schedule_post action in the Nooticr dashboard's Inbox, " +
+        "or automatically if the workspace has turned on autopilot for publishing. " +
         "Call this before telling the user that something can be posted or replied to. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),

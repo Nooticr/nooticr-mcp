@@ -1049,8 +1049,13 @@ describe("the comment grant and the drafting tools agree", () => {
     const { client } = await connect(twoPostBackend());
     const { tools } = await client.listTools();
     const t = tools.find((x) => x.name === "list_social_connections")!;
-    expect(t.description).toMatch(/no tool on this server publishes/);
+    expect(t.description).toMatch(/no tool on this server publishes a post/);
     expect(t.description).toMatch(/approves that employee's schedule_post action in the Nooticr dashboard/);
+    // #246: approval is the default, not a guarantee. A customer can put
+    // publishing on autopilot, and hire_employee already says so; this
+    // description must not promise the opposite.
+    expect(t.description).toMatch(/autopilot for publishing/);
+    expect(t.description).not.toMatch(/only when a person approves/);
     for (const name of ["schedule_post", "enqueue_publish_job"]) {
       expect(tools.map((x) => x.name), name).not.toContain(name);
     }

@@ -478,7 +478,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "list_social_connections",
  title: "List Social Connections",
- description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Manage comments reports the grant; this tool posts nothing, and a reply goes out only through post_comment_reply on a draft the user confirmed. Publish is the grant an AI employee's posts use: no tool on this server publishes, and a post goes out only when a person approves that employee's schedule_post action in the Nooticr dashboard's Inbox. Also returns which platforms can be connected at all. No cost to call.",
+ description: "List the social accounts your workspace has connected and what each connection is allowed to do — read the account, publish a post, manage comments. Manage comments reports the grant; this tool posts nothing, and a reply goes out only through post_comment_reply on a draft the user confirmed. Publish is the grant an AI employee's posts use: no tool on this server publishes a post. A post goes out when a person approves that employee's schedule_post action in the Nooticr dashboard's Inbox, or automatically if the workspace has turned on autopilot for publishing. Also returns which platforms can be connected at all. No cost to call.",
  inputSchema: z.object({}).strict(),
  },
  {
