@@ -97,6 +97,14 @@ const MUTATIONS = [
     replace: "expandedMedia[mkey]=true;",
     catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'plays that post alone'",
   },
+  {
+    id: "sound-plays-raw-cdn",
+    why: "a sound preview playing the raw, unproxied playUrl again, which is silent in the sandboxed card (#256)",
+    file: "src/shared/ui-template.ts",
+    find: 'var play=s.playProxyUrl||s.playUrl||s.url||"";',
+    replace: 'var play=s.playUrl||s.playProxyUrl||s.url||"";',
+    catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'media source'",
+  },
 ];
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);

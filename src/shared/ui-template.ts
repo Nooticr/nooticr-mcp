@@ -4214,8 +4214,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +(coverSrc?'<img class="sound-cover" data-avatar src="'+esc(coverSrc)+'" alt="" loading="lazy"/>':"")+"</span>";
       // The raw CDN URL is signed and cross-origin — only the proxied one
       // actually plays in this sandboxed frame. A bare link never played
-      // anything in-place, which is why sound cards were silent.
-      var play=s.playUrl||s.playProxyUrl||s.url||"";
+      // anything in-place, which is why sound cards were silent. So the
+      // server's signed playProxyUrl comes first: playUrl is not a media key
+      // the server proxies (nooticr-server#912), and this <audio> has no
+      // retry to fall back on (#256).
+      var play=s.playProxyUrl||s.playUrl||s.url||"";
       var secs=Number(s.duration)||0;
       var meta=[s.artist||s.author||"",secs>0?fmtTime(secs):""].filter(Boolean).join(" · ");
       var player=play
