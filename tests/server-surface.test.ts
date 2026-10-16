@@ -144,6 +144,8 @@ describe("tool annotations", () => {
       "creative_job_status",
       "draft_comment_reply",
       "draft_post",
+      // Holds the caller's own draft up to a rubric; makes no request at all.
+      "evaluate_social_draft",
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.
       "fire_employee",
@@ -221,6 +223,68 @@ describe("tool annotations", () => {
       "update_watch_portfolio",
       "watch_creator",
     ]);
+  });
+});
+
+/**
+ * What OpenAI's directory review rejected v1.0.0 for (#259): a hint left to a
+ * host's default reads as a claim nobody made, and a description that steers
+ * ("use this by default", "the cheap read", "the tool for all of those") is
+ * one the review will not pass, however accurate.
+ */
+describe("what a directory review reads", () => {
+  const HINTS = ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"] as const;
+
+  it("sets every hint on every tool, true or false", async () => {
+    const { tools } = await (await connect()).listTools();
+    const unset = tools.flatMap((t) =>
+      HINTS.filter((h) => typeof (t.annotations as Record<string, unknown> | undefined)?.[h] !== "boolean").map(
+        (h) => `${t.name}.${h}`,
+      ),
+    );
+    expect(unset, "a hint left to the host's default").toEqual([]);
+  });
+
+  /**
+   * Each paid call charges again, so a repeat is not a no-op. A paid tool
+   * marked idempotent tells a host it can retry for free.
+   */
+  it("marks no paid tool idempotent", async () => {
+    const { tools } = await (await connect()).listTools();
+    const priced = /\b(?:Costs|Consumes) [1-9]\d* nooticr credits?\b|nooticr credits? per\b/;
+    const wrong = tools.filter((t) => priced.test(t.description ?? "") && t.annotations?.idempotentHint === true);
+    expect(wrong.map((t) => t.name)).toEqual([]);
+  });
+
+  /**
+   * Comparative and preferential wording, listed as the review quoted it plus
+   * the variants this server had actually shipped. Naming another tool is
+   * fine ("analyze_post adds the frames"); ranking it is not.
+   */
+  const STEERING =
+    /\b(?:best|better|worse|cheaper|cheapest|faster|fastest|cheap|prefer|preferred|always use|instead of|sensible default|use this by default|start here|the tool for|no other tool|only way|superior|recommended|ideal|great|huge|free credits)\b/i;
+
+  it("describes tools without steering language", async () => {
+    const { tools } = await (await connect()).listTools();
+    const { TOOL_DEFINITIONS } = await import("../src/shared/tools-def.js");
+    const found = [
+      ...tools.map((t) => ["shipped", t.name, t.description ?? ""]),
+      ...(TOOL_DEFINITIONS as ReadonlyArray<{ name: string; description: string }>).map((t) => [
+        "declared",
+        t.name,
+        t.description,
+      ]),
+    ].flatMap(([where, name, text]) => {
+      const m = STEERING.exec(text);
+      return m ? [`${where} ${name}: "${m[0]}"`] : [];
+    });
+    expect(found).toEqual([]);
+  });
+
+  it("says when to use every tool", async () => {
+    const { tools } = await (await connect()).listTools();
+    const when = /\b(?:use|call)\b[^.]{0,40}\b(?:when|to|for|before|after|once|while)\b/i;
+    expect(tools.filter((t) => !when.test(t.description ?? "")).map((t) => t.name)).toEqual([]);
   });
 });
 

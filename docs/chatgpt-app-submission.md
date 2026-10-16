@@ -92,7 +92,7 @@ prompt that should spend nothing (*"What is the capital of Portugal?"*).
 | `app_info.subtitle` | "Social listening, then create" — 29 of 30 chars | written for this |
 | `app_info.description` | 1,648 of 4,000 chars, drawn from `README.md`'s opening rather than written fresh | `README.md` |
 | `app_info.category` | `BUSINESS` | see below |
-| `tools` | **every** tool the server ships, each with three annotations and three justifications | annotations read from `tools/list` on the built server, and pinned to it by `tests/site.test.ts` |
+| `tools` | **every** tool the server ships, each with four annotations and four justifications | annotations read from `tools/list` on the built server, and pinned to it by `tests/site.test.ts` |
 | `test_cases` | **exactly 5** — the uploader's requirement, not a minimum | written against real tool names and real behaviour |
 | `negative_test_cases` | **exactly 3** — same rule, inferred | the same |
 
@@ -102,18 +102,40 @@ task management. Both are defensible; if the listing reads better under
 `PRODUCTIVITY` it is a one-word change and the checker validates the enum.
 
 **On the annotations.** Not authored — read off the built server, so they cannot
-disagree with what a host receives. `tests/server-surface.test.ts` already fails
-if the `readOnlyHint` values and its own `NOT_READ_ONLY` list drift apart, which
-makes the 16 not-read-only tools in the import the same 16 a test holds in
-place. The five distinct annotation shapes across the surface:
+disagree with what a host receives. `tests/site.test.ts` compares all four hints
+in the file against a real `tools/list`. `tests/server-surface.test.ts` fails
+when a tool leaves any hint unset, when its `readOnlyHint` values drift from its
+`NOT_READ_ONLY` list, and when a paid tool claims to be idempotent.
 
-| `readOnly` / `openWorld` / `destructive` | count | what they are |
+The form's schema names three hints. OpenAI's review of v1.0.0 (#259) asked for
+all four, each set explicitly with a reason. `idempotentHint` and
+`idempotent_justification` are therefore in the file too; the schema allows
+extra keys. The rules behind the values:
+
+- **readOnlyHint** is false when the tool stores, changes or sends something,
+  or spends the workspace's plan AI credits. A nooticr credit charge on a
+  public read is billing, not a change to the user's data, so those reads stay
+  read-only.
+- **destructiveHint** is true when the tool replaces or removes something it
+  cannot restore. Examples: a snapshot, a saved review, cells in a range, a
+  pending action.
+- **idempotentHint** is false for every call that is charged, because a repeat
+  is charged again. It is also false for any call that creates something new
+  each time: a row, a link, a job or a draft.
+- **openWorldHint** is true when the call reaches a third party: a social
+  network, a marketplace, Google, ElevenLabs, or the product's own website.
+
+| `readOnly` / `openWorld` / `destructive` / `idempotent` | count | what they are |
 |---|---|---|
-| `true` / `true` / `false` | most | fetch public social content, write nothing |
-| `true` / `false` / `false` | many | read the caller's own workspace, or draw locally with no network call |
-| `false` / `false` / `false` | several | write to the caller's own workspace, or spend plan AI credits |
-| `false` / `true` / `false` | a few | fetch **and** advance the caller's own marker, or open a Stripe checkout |
-| `false` / `false` / `true` | 2 | `unwatch_creator`, `stop_brand_watch` |
+| `true` / `true` / `false` / `false` | 34 | paid reads of public social or marketplace content |
+| `true` / `true` / `false` / `true` | 7 | free reads of a third party: scan polls, the caller's own store, sheets, comments, the voice library |
+| `true` / `false` / `false` / `true` | 41 | free reads of the caller's own workspace, and the `show_*` views that draw locally |
+| `false` / `true` / `false` / `false` | 12 | paid generation and collection, posting a reply, creating sheets, creating a watch |
+| `false` / `true` / `true` / `false` | 5 | fetch and overwrite a stored marker or playbook, run an approved action, overwrite sheet cells |
+| `false` / `false` / `false` / `false` | 8 | create a row or mint a link inside nooticr, or spend plan AI credits |
+| `false` / `false` / `true` / `true` | 6 | remove, stop or overwrite stored state, where a repeat changes nothing more |
+| `false` / `false` / `false` / `true` | 3 | toggle or save a setting, add to the watchlist |
+| `false` / `false` / `true` / `false` | 2 | `generate_content_plan`, `review_post`: replace a saved plan or review |
 
 The justifications are written per tool rather than per group — each names what
 that specific tool does and why the hint follows, and a test rejects two tools

@@ -379,7 +379,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "repeating until the scan is done. Never conclude, or end your turn, on an incomplete " +
         "scan: a read of 4 of 10 listings presented as the category is wrong. " +
         "For Amazon specifically, scan_amazon_category returns the same shape plus Amazon's own " +
-        "review-aspect counts.",
+        "review-aspect counts. Use for a category or a competitive set on one of these marketplaces; get_marketplace_product reads one product.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -533,7 +533,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "of the same marketplace and `query`, so it fetches nothing and never re-scans — run " +
         "scan_marketplace_category first, and again later, to have two runs to compare. `new` and " +
         "`gone` mean entered or left the results, not listed or delisted. A category scanned only " +
-        "once has no earlier run and says so. Free.",
+        "once has no earlier run and says so. Free. Use when the user asks what changed in a category since an earlier scan.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -581,7 +581,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
-        idempotentHint: true,
+        idempotentHint: false,
         openWorldHint: true,
       },
       outputSchema: OUTPUT_SCHEMAS.get_marketplace_product,
@@ -636,7 +636,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "cite that the scan does not contain is flagged. Without a scanId, listings you pass are " +
         "drawn marked as not checked against a scan. Free. Your read is attributed to you, never " +
         "presented as a nooticr rating of anyone's product. For Amazon scans use " +
-        "show_amazon_category_insights. Call this after you have read the reviews, not instead of reading them.",
+        "show_amazon_category_insights. Call this after you have read the reviews and written the read.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

@@ -158,9 +158,9 @@ export function registerGettingStarted(server: McpServer, makeClient: MakeClient
       _meta: viewMeta("nooticr_getting_started"),
       title: "Getting Started with nooticr",
       description:
-        "Start here: help on what nooticr can do and what to try first. Free, and makes no paid call. " +
-        "Reads this account's state (credit balance, connected accounts, watchlist) and returns the next " +
-        "calls worth making, each with its price and an example. Use when the user asks what you can do " +
+        "Help on what nooticr can do and what to try first. Free, and makes no paid call. " +
+        "Reads this account's state (credit balance, connected accounts, watchlist) and suggests next " +
+        "calls, each with its price and an example. Use when the user asks what you can do " +
         "with nooticr, how to start, or for help, and before a first paid call when you do not know " +
         "where this account stands. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
