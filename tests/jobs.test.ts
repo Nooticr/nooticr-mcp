@@ -1041,4 +1041,23 @@ describe("the comment grant and the drafting tools agree", () => {
     expect(t.description).toMatch(/this tool posts nothing/);
     expect(t.description).toMatch(/post_comment_reply/);
   });
+
+  // #92, decided 2026-10-16: the public surface does not publish. A "publish:
+  // yes" read alone used to suggest a tool here could post; it must point at
+  // the only path that exists, an approved employee action in the dashboard.
+  it("list_social_connections says publishing happens by approving an employee's action, not here", async () => {
+    const { client } = await connect(twoPostBackend());
+    const { tools } = await client.listTools();
+    const t = tools.find((x) => x.name === "list_social_connections")!;
+    expect(t.description).toMatch(/no tool on this server publishes a post/);
+    expect(t.description).toMatch(/approves that employee's schedule_post action in the Nooticr dashboard/);
+    // #246: approval is the default, not a guarantee. A customer can put
+    // publishing on autopilot, and hire_employee already says so; this
+    // description must not promise the opposite.
+    expect(t.description).toMatch(/autopilot for publishing for that employee/);
+    expect(t.description).not.toMatch(/only when a person approves/);
+    for (const name of ["schedule_post", "enqueue_publish_job"]) {
+      expect(tools.map((x) => x.name), name).not.toContain(name);
+    }
+  });
 });

@@ -350,7 +350,10 @@ export function registerPrompts(server: McpServer): void {
           `happens on the nooticr dashboard at https://nooticr.com, not over MCP — do not invent a ` +
           `tool that does this, and do not carry on as if a product exists when it does not.\n` +
           `3. list_social_connections — free. What is already connected, and what each connection is ` +
-          `actually allowed to do: read the account, publish, manage comments. An "unknown" answer ` +
+          `actually allowed to do: read the account, publish, manage comments. Publish is what an AI ` +
+          `employee's posts use; no tool here publishes a post, which goes out when a person approves ` +
+          `the employee's action in the Nooticr dashboard's Inbox, or on its own if the customer has ` +
+          `turned on autopilot for publishing for that employee. An "unknown" answer ` +
           `means the grant predates scope recording, so treat it as "try it", not as "no". This also ` +
           `tells you which platforms can be connected at all, a smaller set than the networks nooticr ` +
           `can read from.\n` +
