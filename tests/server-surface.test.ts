@@ -151,6 +151,8 @@ describe("tool annotations", () => {
       "generate_content_plan",
       "get_brand_playbook",
       "get_content_plan",
+      // AU1: reads the employee's audit rows inside nooticr.
+      "get_employee_audit",
       "get_google_analytics_data",
       "get_post_performance",
       "get_posthog_analytics",

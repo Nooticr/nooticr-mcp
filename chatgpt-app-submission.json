@@ -1304,6 +1304,18 @@
         "destructive_justification": "Not destructive: it changes nothing."
       }
     },
+    "get_employee_audit": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one AI employee's stored audit events and can re-check their hash chain. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace, and only for workspace owners and admins.",
+        "destructive_justification": "Not destructive: it changes nothing."
+      }
+    },
     "approve_action": {
       "annotations": {
         "readOnlyHint": false,

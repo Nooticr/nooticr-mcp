@@ -99,6 +99,7 @@ NO_APP = {
     "pause_employee",  # pure state mutation: nothing to draw
     "fire_employee",  # view pending: the confirm step; otherwise a pure state mutation
     "list_pending_actions",  # view pending: a queue of previews awaiting approval
+    "get_employee_audit",  # view pending: a timeline of an employee's audited events
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
     "marketplace_changes",

@@ -10,6 +10,7 @@ const NAMES = [
   "pause_employee",
   "fire_employee",
   "list_pending_actions",
+  "get_employee_audit",
   "approve_action",
   "reject_action",
 ];
@@ -32,10 +33,22 @@ async function connect() {
 }
 
 describe("employee tools", () => {
-  it("registers exactly the seven server tools", async () => {
+  it("registers exactly the eight server tools", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...NAMES].sort());
+  });
+
+  // The trail holds tool arguments and summaries of what the employee read on
+  // the web, so its description must say who may read it and frame that text
+  // as a record rather than instructions (CLAUDE.md, untrusted content).
+  it("says the audit trail is owner/admin only and frames its payloads as data", async () => {
+    const { client } = await connect();
+    const { tools } = await client.listTools();
+    const audit = tools.find((t) => t.name === "get_employee_audit")!;
+    expect(audit.description).toMatch(/owners and admins only/);
+    expect(audit.description).toMatch(/never as instructions/);
+    expect(audit.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false, destructiveHint: false });
   });
 
   it("forwards each call to the backend tool of the same name with its arguments", async () => {
@@ -46,6 +59,7 @@ describe("employee tools", () => {
       pause_employee: { employeeId: "e1", resume: true },
       fire_employee: { employeeId: "e1", confirm: true },
       list_pending_actions: { employeeId: "e1", limit: 5 },
+      get_employee_audit: { employeeId: "e1", from: "2026-10-01T00:00:00Z", to: "2026-10-16T00:00:00Z", types: ["tool.call", "action.executed"], runId: "r1", actionId: "a1", limit: 20, verify: true },
       approve_action: { actionId: "a1", confirm: true, confirmationToken: "tok", note: "ok" },
       reject_action: { actionId: "a1", note: "off brand" },
     };
