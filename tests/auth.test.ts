@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
-import { AuthManager, isTokenExpired } from "../src/auth.js";
+import { AuthManager, createSessionTokenProvider, isTokenExpired } from "../src/auth.js";
 import { NooticrError } from "../src/nooticr.js";
 
 afterEach(() => {
@@ -177,5 +177,48 @@ describe("AuthManager", () => {
     const auth = new AuthManager("http://localhost:8080", file);
     expect(await auth.getAccessToken({ accessToken: "session-token" })).toBe("session-token");
     await fs.promises.rm(tmp, { recursive: true, force: true });
+  });
+});
+
+describe("createSessionTokenProvider", () => {
+  // HTTP mode once resolved the operator's environment and credentials file
+  // before an OAuth session's own token, answering every signed-in user as
+  // the operator.
+  it("answers with the session's token even when the operator has one", async () => {
+    process.env.NOOTICR_ACCESS_TOKEN = "operator-token";
+    process.env.NOOTICR_API_KEY = "nk_operator_key";
+    try {
+      const provider = createSessionTokenProvider("http://localhost:8080", {
+        nooticrAccessToken: "session-token",
+      });
+      expect(await provider.getAccessToken()).toBe("session-token");
+    } finally {
+      delete process.env.NOOTICR_API_KEY;
+    }
+  });
+
+  it("refreshes with the session's own refresh token and keeps the result in the session", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ accessToken: "fresh", refreshToken: "rt2", expiresIn: 3600 }), {
+        status: 200,
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const session = { nooticrAccessToken: "stale", nooticrRefreshToken: "session-rt" };
+    const provider = createSessionTokenProvider("http://localhost:8080", session);
+    expect(await provider.onUnauthorized?.()).toBe(true);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ refreshToken: "session-rt" });
+    expect(session).toEqual({ nooticrAccessToken: "fresh", nooticrRefreshToken: "rt2" });
+    expect(await provider.getAccessToken()).toBe("fresh");
+  });
+
+  it("gives up without a refresh token or when the refresh is refused", async () => {
+    expect(
+      await createSessionTokenProvider("http://localhost:8080", { nooticrAccessToken: "t" }).onUnauthorized?.()
+    ).toBe(false);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 401 })));
+    const session = { nooticrAccessToken: "t", nooticrRefreshToken: "rt" };
+    expect(await createSessionTokenProvider("http://localhost:8080", session).onUnauthorized?.()).toBe(false);
+    expect(session.nooticrAccessToken).toBe("t");
   });
 });
