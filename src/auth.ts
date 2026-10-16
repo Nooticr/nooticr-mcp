@@ -264,21 +264,37 @@ export function createManagementTokenProvider(auth: AuthManager): TokenProvider 
 /**
  * Builds a TokenProvider for one caller's own API key — the headless path
  * through HTTP mode, where the bearer the client presented *is* the nooticr
- * credential. Deliberately not `createHttpTokenProvider`: that one falls back
- * to the operator's environment and credentials file, which would answer one
- * tenant's call with another's account.
+ * credential. Never the operator's environment or credentials file, which would
+ * answer one tenant's call with another's account.
  */
 export function createApiKeyTokenProvider(apiKey: string): TokenProvider {
   return { getAccessToken: async () => apiKey };
 }
 
-/** Builds a TokenProvider for HTTP mode: env > api key > file > per-session tokens. */
-export function createHttpTokenProvider(
-  auth: AuthManager,
-  session?: { accessToken?: string; refreshToken?: string }
+/**
+ * Builds a TokenProvider for one OAuth session in HTTP mode: that session's
+ * nooticr tokens and nothing else. The environment and the credentials file
+ * belong to whoever runs the server; resolving them here answered every
+ * signed-in user as the operator. A refresh updates the session in place, so
+ * the next request from the same login carries the new token, and nothing is
+ * written to the operator's credentials file.
+ */
+export function createSessionTokenProvider(
+  baseUrl: string,
+  session: { nooticrAccessToken: string; nooticrRefreshToken?: string }
 ): TokenProvider {
   return {
-    getAccessToken: async () => auth.getAccessToken(session),
-    onUnauthorized: async () => auth.onUnauthorized(session),
+    getAccessToken: async () => session.nooticrAccessToken || undefined,
+    onUnauthorized: async () => {
+      if (!session.nooticrRefreshToken) return false;
+      try {
+        const next = await NooticrClient.refreshSession(baseUrl, session.nooticrRefreshToken);
+        session.nooticrAccessToken = next.accessToken;
+        session.nooticrRefreshToken = next.refreshToken ?? session.nooticrRefreshToken;
+        return true;
+      } catch {
+        return false;
+      }
+    },
   };
 }
