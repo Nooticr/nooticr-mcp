@@ -79,6 +79,16 @@ const MUTATIONS = [
     replace: "renderMentions();",
     catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'swaps in the real player'",
   },
+  {
+    id: "worker-rewrites-permalink",
+    why: "the worker wrapping a post's own url in /media/proxy again, unsigned, so the model cites our proxy (#242, #254)",
+    file: "src/shared/tools.ts",
+    find: "const structured = (proxy.structured as Record<string, unknown> | undefined) ?? {};",
+    replace:
+      "const raw = (proxy.structured as Record<string, unknown> | undefined) ?? {};\n" +
+      " const structured = typeof raw.url === \"string\" ? { ...raw, url: `https://api.nooticr.com/media/proxy?url=${encodeURIComponent(raw.url)}` } : raw;",
+    catcher: "npx vitest run tests/media-urls.test.ts",
+  },
 ];
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);

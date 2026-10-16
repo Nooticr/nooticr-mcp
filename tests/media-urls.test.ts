@@ -70,6 +70,31 @@ describe("media links in a tool result", () => {
     expect((res.structuredContent as Row).post).toEqual(post());
   });
 
+  it("keep every permalink raw, so the model cites the post and not our proxy (#254)", async () => {
+    // The shape #254 names: a top-level url, a thumbnail, and posts carrying
+    // their own url beside their media. Only the server may sign media; no
+    // url ever comes out of this worker as a /media/proxy link.
+    const result = {
+      url: "https://www.tiktok.com/@a/video/1",
+      thumbnailUrl: signed("https://p16.tiktokcdn.com/t.jpg"),
+      posts: [
+        {
+          url: "https://www.instagram.com/reel/abc/",
+          coverUrl: signed("https://scontent.cdninstagram.com/c.jpg"),
+          videoUrl: signed("https://scontent.cdninstagram.com/v.mp4"),
+        },
+      ],
+    };
+    const res = await callThrough(result);
+    const out = res.structuredContent as Row;
+    expect(out.url).toBe("https://www.tiktok.com/@a/video/1");
+    expect((out.posts as Row[])[0].url).toBe("https://www.instagram.com/reel/abc/");
+    expect(out).toEqual(result);
+    const text = String((res.content as Array<{ text?: string }>)[0]?.text ?? "");
+    expect(text).toContain('"url": "https://www.tiktok.com/@a/video/1"');
+    expect(text).toContain('"url": "https://www.instagram.com/reel/abc/"');
+  });
+
   it("never include a proxy link without a signature", async () => {
     // A raw CDN link the server left unwrapped is the case that used to be
     // wrapped here, unsigned. It must stay raw: an unsigned proxy link stops
