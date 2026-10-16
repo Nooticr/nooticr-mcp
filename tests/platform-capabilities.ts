@@ -52,6 +52,10 @@ export type ServedCapability = {
     readonly requiresConfiguration?: string;
     /** Platform → why the fallback cannot reach it, whatever the config. */
     readonly unreachable?: Readonly<Record<string, string>>;
+    /** Platform → how it is reached, for a route that exists but is unmeasured live. */
+    readonly unverified?: Readonly<Record<string, string>>;
+    /** The longest post the route transcribes; a longer one is refused before any spend. */
+    readonly maxMinutes?: number;
     readonly note?: string;
   };
 };

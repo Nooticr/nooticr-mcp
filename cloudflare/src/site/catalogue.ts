@@ -108,7 +108,7 @@ export const TOOLS: Tool[] = [
   {
     name: "get_post_transcript", cost: 1, group: "read",
     args: "url, language?",
-    desc: "The words actually spoken, read from the post's caption track (TikTok, YouTube).",
+    desc: "The words actually spoken: read from the caption track where a platform publishes one (TikTok, Douyin, YouTube), heard from the audio everywhere else.",
     when: "The exact wording matters — a hook, a claim, a CTA. Cheaper and more literal than any AI tool.",
   },
   {
