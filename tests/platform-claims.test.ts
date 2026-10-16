@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createMcpServer } from "../src/shared/tools.js";
+import { createMcpServer, LISTEN_MAX_MINUTES } from "../src/shared/tools.js";
 import type { NooticrClient } from "../src/shared/nooticr.js";
 import {
   CAPABILITIES,
@@ -304,11 +304,11 @@ describe("what the prose says about listening matches what the server publishes"
   });
 
   it("no tool offers to listen to a platform the fallback cannot fetch", async () => {
-    // Reddit's videoUrl is an HLS manifest and Bilibili carries no media URL
-    // at all, so both answer a spoken-mention sweep with silence that reads as
-    // "nobody said it". The manifest names them and why.
+    // Reddit and Bilibili were here once: an HLS manifest and a post with no
+    // media URL both answered a spoken-mention sweep with silence that read as
+    // "nobody said it". nooticr-server#870 gave both a route, so the manifest
+    // names none today; the check stays for the next one it names.
     const unreachable = Object.keys(fallbackRoute("transcript")?.unreachable ?? {});
-    expect(unreachable.length, "the manifest should name the exclusions").toBeGreaterThan(0);
 
     const offenders: string[] = [];
     for (const tool of await shippedTools()) {
@@ -326,6 +326,52 @@ describe("what the prose says about listening matches what the server publishes"
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("no tool rules out a platform the fallback does reach", async () => {
+    // The opposite drift, and the one #870 left behind: get_post_transcript
+    // went on telling hosts that Reddit and Bilibili "cannot be listened to"
+    // after the server learnt to, so a host would decline a question the
+    // tool could answer.
+    const route = fallbackRoute("transcript")!;
+    const reached = [...platformsFor("transcript"), ...route.platforms];
+    const offenders: string[] = [];
+    for (const tool of await shippedTools()) {
+      if (!/spoken|said out loud|words actually spoken/i.test(tool.description ?? "")) continue;
+      const prose = proseOf(tool);
+      for (const platform of reached) {
+        const ruledOut = new RegExp(
+          `(cannot|can't|never) (be )?(listened|heard|transcribed|reach)[^.]*\\b${platform}\\b|\\b${platform}\\b[^.]*(cannot|can't) be (listened|heard|transcribed|fetched)`,
+        );
+        if (ruledOut.test(prose)) offenders.push(`${tool.name} rules out ${platform}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("no tool tells a host to poll a route that answers on the first call", async () => {
+    // A host told to wait and call again spends a second call on an answer it
+    // already had: a cached transcript is free, but a refused one is asked
+    // for twice, and the words are on the first call in any case.
+    expect(fallbackRoute("transcript")!.note).toMatch(/synchronous/);
+    const offenders: string[] = [];
+    for (const tool of await shippedTools()) {
+      const text = `${tool.description ?? ""} ${JSON.stringify(tool.inputSchema ?? {})}`;
+      // Only the tools that read words: a creative render is a job to poll.
+      if (!/transcri|spoken/i.test(text)) continue;
+      if (/transcribing:\s*true|retryAfterMs|asynchronous|still being listened to|a poll costs/i.test(text)) {
+        offenders.push(tool.name);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("states the length the route refuses past, as the server publishes it", async () => {
+    const max = fallbackRoute("transcript")!.maxMinutes;
+    expect(max, "transcript.speechToText.maxMinutes").toBeGreaterThan(0);
+    expect(LISTEN_MAX_MINUTES).toBe(max);
+    const transcript = (await shippedTools()).find((t) => t.name === "get_post_transcript");
+    expect(transcript!.description).toContain(`longer than ${max} minutes`);
   });
 
   it("the tool that owns the route says it needs configuring", async () => {
@@ -402,19 +448,23 @@ describe("the social-listening skill's platform claims", () => {
     expect(doesNot, "YouTube must be named as unreachable, not merely omitted").toContain("youtube");
   });
 
-  it("names the caption networks and no others, and says the rest are asynchronous", () => {
+  it("names the caption networks and no others, and says the rest answer on the first call", () => {
     const [, reaches, doesNot] = row("Spoken words");
     for (const p of platformsFor("transcript")) expect(reaches).toContain(p);
     // The two whose audio cannot be fetched at all must be called out, or
     // silence there reads as "nobody said anything".
-    const unreachable = Object.keys(fallbackRoute("transcript")?.unreachable ?? {});
-    expect(unreachable.length).toBeGreaterThan(0);
+    const route = fallbackRoute("transcript")!;
+    const unreachable = Object.keys(route.unreachable ?? {});
     for (const p of unreachable) expect(doesNot, `spoken row does not exclude ${p}`).toContain(p);
-    // A `transcribing: true` is the job accepted. A skill that omits this
-    // turns the first poll into a reported failure.
-    expect(skill).toMatch(/retryAfterMs/);
-    expect(skill).toMatch(/poll is free/i);
-    expect(skill).toMatch(/asynchronous/i);
+    // And a network the route reaches is not excluded: the row once named
+    // Reddit and Bilibili as unfetchable after the server learnt to hear both.
+    for (const p of route.platforms.filter(SAFE)) {
+      expect(doesNot, `spoken row excludes ${p}, which the route reaches`).not.toContain(p);
+    }
+    // The words come back on the first call. A skill that still says to poll
+    // sends a host to ask twice for every transcript.
+    expect(skill).not.toMatch(/retryAfterMs|asynchronous|poll is free/i);
+    expect(skill).toMatch(/first call/i);
   });
 
   it("counts the networks the way the manifest counts them", () => {
