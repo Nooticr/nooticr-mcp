@@ -112,10 +112,10 @@ all four, each set explicitly with a reason. `idempotentHint` and
 `idempotent_justification` are therefore in the file too; the schema allows
 extra keys. The rules behind the values:
 
-- **readOnlyHint** is false when the tool stores, changes or sends something,
-  or spends the workspace's plan AI credits. A nooticr credit charge on a
-  public read is billing, not a change to the user's data, so those reads stay
-  read-only.
+- **readOnlyHint** is true when the tool changes none of the user's stored
+  data and sends nothing outside nooticr. Spending credits, nooticr credits or
+  plan AI credits, is billing, not a change to the user's data, so a paid read
+  or a generation that stores nothing stays read-only.
 - **destructiveHint** is true when the tool replaces or removes something it
   cannot restore. Examples: a snapshot, a saved review, cells in a range, a
   pending action.
@@ -132,7 +132,8 @@ extra keys. The rules behind the values:
 | `true` / `false` / `false` / `true` | 41 | free reads of the caller's own workspace, and the `show_*` views that draw locally |
 | `false` / `true` / `false` / `false` | 12 | paid generation and collection, posting a reply, creating sheets, creating a watch |
 | `false` / `true` / `true` / `false` | 5 | fetch and overwrite a stored marker or playbook, run an approved action, overwrite sheet cells |
-| `false` / `false` / `false` / `false` | 8 | create a row or mint a link inside nooticr, or spend plan AI credits |
+| `true` / `false` / `false` / `false` | 3 | `growth_brief`, `draft_post`, `generate_captions`: generate from the caller's own data and store nothing, billed in plan AI credits |
+| `false` / `false` / `false` / `false` | 5 | create a row, a draft or a link inside nooticr |
 | `false` / `false` / `true` / `true` | 6 | remove, stop or overwrite stored state, where a repeat changes nothing more |
 | `false` / `false` / `false` / `true` | 3 | toggle or save a setting, add to the watchlist |
 | `false` / `false` / `true` / `false` | 2 | `generate_content_plan`, `review_post`: replace a saved plan or review |

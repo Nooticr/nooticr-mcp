@@ -46,13 +46,10 @@ const NOT_READ_ONLY = [
   "stop_brand_watch",
   // Rewrites a portfolio watch's stored terms.
   "update_watch_portfolio",
-  // Own-account generation: each spends the workspace's plan AI credits.
-  "draft_post",
-  "generate_captions",
+  // Saves the generated plan. Its siblings draft_post, generate_captions and
+  // growth_brief spend the same plan AI credits but store nothing, so they are
+  // read-only (#259): spending credits is billing, not a change to the user's data.
   "generate_content_plan",
-  // Same billing, same conclusion — this one was missed because it writes
-  // nothing of the user's, but the credits alone put it here.
-  "growth_brief",
   // Starts an async analysis job every call (a fresh jobId, spending plan AI
   // credits) — same conclusion as the generation tools above, for the same
   // reason connect_social_account is on this list: a retry is not a no-op.

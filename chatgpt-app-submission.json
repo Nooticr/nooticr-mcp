@@ -360,13 +360,13 @@
     },
     "draft_post": {
       "annotations": {
-        "readOnlyHint": false,
+        "readOnlyHint": true,
         "openWorldHint": false,
         "destructiveHint": false,
         "idempotentHint": false
       },
       "justifications": {
-        "read_only_justification": "Not read-only: it spends the workspace's plan AI credits. It saves and schedules nothing — the draft text is returned for the caller to use.",
+        "read_only_justification": "Read-only. It returns draft text and saves or schedules nothing. It spends the workspace's plan AI credits, which is billing, not a change to the user's data.",
         "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data.",
         "idempotent_justification": "Not idempotent: each call spends plan AI credits and generates a new draft."
@@ -402,13 +402,13 @@
     },
     "generate_captions": {
       "annotations": {
-        "readOnlyHint": false,
+        "readOnlyHint": true,
         "openWorldHint": false,
         "destructiveHint": false,
         "idempotentHint": false
       },
       "justifications": {
-        "read_only_justification": "Not read-only: it spends the workspace's plan AI credits. It burns nothing onto any video and touches no stored media.",
+        "read_only_justification": "Read-only. It returns caption cues and touches no stored media. It spends the workspace's plan AI credits, which is billing, not a change to the user's data.",
         "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data.",
         "idempotent_justification": "Not idempotent: each call spends plan AI credits and generates the cues again."
@@ -710,13 +710,13 @@
     },
     "growth_brief": {
       "annotations": {
-        "readOnlyHint": false,
+        "readOnlyHint": true,
         "openWorldHint": false,
         "destructiveHint": false,
         "idempotentHint": false
       },
       "justifications": {
-        "read_only_justification": "Not read-only: it spends the workspace's plan AI credits. It changes none of the caller's content.",
+        "read_only_justification": "Read-only. It reads the product's posts and synced analytics and returns a brief; nothing is stored or sent. It spends the workspace's plan AI credits, which is billing, not a change to the user's data.",
         "open_world_justification": "Closed domain. It calls the workspace's own configured AI provider over the caller's own stored data; no third-party social network is contacted.",
         "destructive_justification": "Not destructive. The write is additive or an in-place field update — it creates or amends the caller's own row and removes no existing data.",
         "idempotent_justification": "Not idempotent: each call spends plan AI credits and generates a new brief."

@@ -606,7 +606,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "your workspace's plan AI credits, a different balance from your personal MCP credits and " +
         "not tracked by check_nooticr_credits. Use when the user asks for a post written for their own product.",
       _meta: viewMeta("draft_post"),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
@@ -647,7 +647,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       // what puts this outside read-only, by the same rule that already
       // covers draft_post and generate_content_plan. It writes no content of
       // the user's, which is why the description says so in those words.
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
@@ -722,7 +722,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "treating the captions as real. Billed like the dashboard's own Generate Captions button: " +
         "your workspace's plan AI credits, not your personal MCP credits. Use when the user needs timed on-screen captions for one of their videos.",
       _meta: viewMeta("generate_captions"),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
