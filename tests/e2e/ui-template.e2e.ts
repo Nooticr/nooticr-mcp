@@ -921,8 +921,12 @@ test.describe("media source", () => {
         playProxyUrl: "https://api.nooticr.com/media/proxy?url=p", videoCount: 5 }] } },
     }, "*"));
     await page.waitForTimeout(400);
+    // Except a sound preview: its raw playUrl is a signed, short-lived,
+    // cross-origin CDN link that never plays in the sandboxed frame, the
+    // server leaves it unproxied (nooticr-server#912), and the sound <audio>
+    // carries no retry. So it plays the server's signed proxy link (#256).
     expect(await page.evaluate(() => document.querySelector("audio")?.getAttribute("src")))
-      .toBe("https://cdn.example/play.mp3");
+      .toBe("https://api.nooticr.com/media/proxy?url=p");
   });
 });
 
@@ -1838,6 +1842,30 @@ test.describe("brand sweep shows the post, not just its comments", () => {
     await expect(page.locator(".mgroup-stage video")).toHaveCount(1);
     // The comments the sweep is for must survive the swap.
     await expect(page.locator(".mention")).toHaveCount(1);
+  });
+
+  test("a second poster click plays that post alone, not both", async ({ page }) => {
+    // Every expanded stage is redrawn with autoplay, so keeping the first one
+    // expanded restarted its video under the second: two soundtracks, and
+    // only the first stage registered for exclusivity (#253).
+    const video = (n: number) =>
+      thread({
+        platform: "tiktok",
+        title: `Post ${n}`,
+        externalUrl: `https://tiktok.com/@a/video/${n}`,
+        contentType: "video",
+        thumbnailUrl: PIXEL,
+        videoUrl: `https://example.com/v${n}.mp4`,
+      });
+    await renderTemplate(page, sweep([video(1), video(2)]));
+    await page.locator(".mgroup-media").nth(0).click();
+    await expect(page.locator(".mgroup-stage video")).toHaveAttribute("src", "https://example.com/v1.mp4");
+    // Post 1's poster is now its stage, so the only poster left is post 2's.
+    await page.locator(".mgroup-media").first().click();
+    await expect(page.locator(".mgroup-stage video")).toHaveCount(1);
+    await expect(page.locator(".mgroup-stage video")).toHaveAttribute("src", "https://example.com/v2.mp4");
+    // Post 1 is back to a poster the reader can play again.
+    await expect(page.locator(".mgroup-media.is-playable")).toHaveCount(1);
   });
 
   test("a still image post shows the poster without offering to play it", async ({ page }) => {

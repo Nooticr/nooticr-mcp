@@ -27,7 +27,7 @@ import {
   AuthManager,
   NooticrAuthError,
   createApiKeyTokenProvider,
-  createHttpTokenProvider,
+  createSessionTokenProvider,
   createManagementTokenProvider,
   createStdioTokenProvider,
 } from "./auth.js";
@@ -287,9 +287,6 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
     client: new NooticrClient(baseUrl, {
       getAccessToken: async () => undefined,
     }),
-    onSession: async (session) => {
-      await auth.persistSession(session);
-    },
   });
 
   const state: HttpState = {
@@ -301,9 +298,9 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
       createMcpServer((extra) => {
         const bearer = extra.authInfo?.token;
         // A caller who presented their own API key is answered as themselves.
-        // Falling through to `createHttpTokenProvider` here would resolve the
-        // *operator's* environment or credentials file instead — one tenant's
-        // request served from another's account.
+        // No branch below falls back to the *operator's* environment or
+        // credentials file: that would serve one tenant's request from
+        // another's account.
         if (looksLikeApiKey(bearer)) {
           return new NooticrClient(baseUrl, createApiKeyTokenProvider(bearer));
         }
@@ -317,20 +314,15 @@ export async function runHttp(port: number, publicUrl?: string): Promise<void> {
             forwardedHeaders(forwarded)
           );
         }
+        // An OAuth login of this server: only that session's own tokens.
         const session: McpSession | undefined = bearer
           ? oauth.verifyToken(bearer)
           : undefined;
         return new NooticrClient(
           baseUrl,
-          createHttpTokenProvider(
-            auth,
-            session
-              ? {
-                  accessToken: session.nooticrAccessToken,
-                  refreshToken: session.nooticrRefreshToken,
-                }
-              : undefined
-          )
+          session
+            ? createSessionTokenProvider(baseUrl, session)
+            : { getAccessToken: async () => undefined }
         );
       }),
   };
