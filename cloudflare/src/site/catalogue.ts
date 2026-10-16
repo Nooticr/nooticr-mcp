@@ -573,6 +573,12 @@ export const TOOLS: Tool[] = [
     when: "Before approving or rejecting anything.",
   },
   {
+    name: "get_employee_audit", cost: 0, group: "own",
+    args: "employeeId, from?, to?, types?, runId?, actionId?, limit?, verify?",
+    desc: "One AI employee's tamper-evident audit trail: runs, calls and their cost, approvals, executed actions, config changes. Owners and admins only. Free.",
+    when: "You need to know what an employee did, why an action went out, or that the record is intact.",
+  },
+  {
     name: "approve_action", cost: 0, group: "own",
     args: "actionId",
     desc: "Approves one pending action. Returns the preview and a token first and runs nothing; the stored action runs exactly once after you confirm. Free.",

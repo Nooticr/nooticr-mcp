@@ -614,6 +614,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   pause_employee: { label: "Updating the employee", kind: "text", n: 1, steps: [], free: true },
   fire_employee: { label: "Letting the employee go", kind: "text", n: 1, steps: [], free: true },
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
+  get_employee_audit: { label: "Reading the audit trail", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },
   reject_action: { label: "Rejecting the action", kind: "text", n: 1, steps: [], free: true },
   // ─── Store connections (store-read.ts): a link, and a read of the store's own catalogue ───

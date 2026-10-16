@@ -1448,6 +1448,15 @@ function handleMcpCall(name, args, workspaceId) {
         },
       };
     }
+    case "get_employee_audit": {
+      const events = [
+        { seq: 2, occurredAt: "2026-10-15T09:01:00Z", recordedAt: "2026-10-15T09:01:00Z", eventType: "tool.call", actor: { kind: "employee" }, runId: "00000000-0000-0000-0000-0000000000f1", agentRunId: null, actionId: null, payload: { tool: "search_mentions", summary: "12 mentions" }, hash: "h2", prevHash: "h1" },
+        { seq: 1, occurredAt: "2026-10-15T09:00:00Z", recordedAt: "2026-10-15T09:00:00Z", eventType: "run.started", actor: { kind: "schedule" }, runId: "00000000-0000-0000-0000-0000000000f1", agentRunId: null, actionId: null, payload: {}, hash: "h1", prevHash: null },
+      ];
+      const sc = { employeeId: args.employeeId, events };
+      if (args.verify === true) sc.verify = { ok: true, checked: 2, firstSeq: 1, lastSeq: 2, headHash: "h2", brokenAt: null, reason: null, verifiedAt: "2026-10-15T10:00:00Z" };
+      return { content: [{ type: "text", text: "2 audit events." }], structuredContent: sc };
+    }
     case "hire_employee": {
       return {
         content: [{ type: "text", text: "Quote ready; confirm to hire." }],
