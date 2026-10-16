@@ -28,7 +28,7 @@
     "check": "npx playwright test tests/e2e/ui-template.e2e.ts -g 'brand sweep'",
     "mutant": {
       "file": "src/shared/ui-template.ts",
-      "find": "+mgroupMediaHtml(post,key,playing)",
+      "find": "+mgroupMediaHtml(o.mediaPost||post,o.key,!!expandedMedia[o.key],o.startMs)",
       "replace": "+\"\""
     }
   },
