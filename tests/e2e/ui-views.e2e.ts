@@ -98,7 +98,7 @@ test("loading: inline mark under 6 credits", async ({ page }) => {
   const errs = await boot(page);
   await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-input", params: { name: "get_social_media", arguments: { url: "https://tiktok.com/x" } } }, "*"));
   await page.waitForTimeout(400);
-  await expect(page.locator("svg.mk .iris").first()).toBeVisible();
+  await expect(page.locator("svg.mk.is-scanning .sq").first()).toBeVisible();
   expect(await page.locator(".load-price").textContent()).toBe("1 credit");
   expect(await page.locator(".load-centre").count()).toBe(0);
   expect(errs).toEqual([]);
@@ -118,7 +118,8 @@ test("idle mark is the same mark at rest", async ({ page }) => {
   const errs = await boot(page);
   await page.waitForTimeout(300);
   expect(await page.locator("svg.mk").count()).toBe(1);
-  expect(await page.locator("svg.mk .iris").count()).toBe(0);
+  expect(await page.locator("svg.mk.is-scanning").count()).toBe(0);
+  expect(await page.locator("svg.mk .sq").count()).toBe(9);
   expect(errs).toEqual([]);
 });
 
@@ -228,7 +229,7 @@ test("connect_social_account: hands over the link", async ({ page }) => {
   await result(page, CONNECT_LINK);
   expect(await page.locator(".own-title").textContent()).toBe("Waiting for you");
   expect(await page.locator("a.btn").getAttribute("href")).toBe(CONNECT_LINK.connectUrl);
-  await expect(page.locator("svg.mk .iris").first()).toBeAttached();
+  await expect(page.locator("svg.mk.is-scanning .sq").first()).toBeAttached();
   expect(errs).toEqual([]);
 });
 
@@ -281,6 +282,30 @@ test("5a Connect hands the call to the host and swaps in the link", async ({ pag
   });
   expect(await page.locator(".own-title").textContent()).toBe("Waiting for you");
   expect(await page.locator("a.btn").getAttribute("href")).toBe(CONNECT_LINK.connectUrl);
+  expect(errs).toEqual([]);
+});
+
+// #234: a wait inside a view is the same nine-square mark as the first paint
+// and the tool-result wait, not a spinning ring. A host that never answers
+// holds both kinds of in-view button in their busy state for the assertion.
+test("an in-view action waits on the nine-square mark, not a spinner", async ({ page }) => {
+  const errs = await boot(page);
+  await page.evaluate(() => {
+    (window as unknown as { openai: unknown }).openai = { callTool: () => new Promise(() => {}) };
+  });
+  await result(page, { analysis: { summary: "A hook-led demo." }, post: TWO_POSTS[0] });
+  const ai = page.locator('.ai-btn[data-ai="generate_hook_ideas"]');
+  await ai.click();
+  await expect(ai).toHaveAttribute("aria-busy", "true");
+  expect(await ai.locator("svg.mk.is-scanning .sq").count()).toBe(9);
+  expect(await ai.locator(".nt-spin").count()).toBe(0);
+
+  await result(page, { ...CONNECTIONS, connections: [CONNECTIONS.connections[0]], connectedCount: 1 });
+  const connect = page.locator("[data-connect]");
+  await connect.click();
+  await expect(connect).toHaveAttribute("aria-busy", "true");
+  expect(await connect.locator("svg.mk.is-scanning .sq").count()).toBe(9);
+  expect(await connect.locator(".nt-spin").count()).toBe(0);
   expect(errs).toEqual([]);
 });
 
