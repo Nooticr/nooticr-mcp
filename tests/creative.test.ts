@@ -7,7 +7,7 @@ import { OUTPUT_SCHEMAS } from "../src/shared/output-schemas.js";
 import { BACKEND_ONLY_TOOLS } from "../src/shared/backend-only.js";
 
 const FREE = ["creative_assets_list", "creative_job_status", "creative_voices_search"];
-const PAID = ["creative_image", "creative_image_edit", "creative_music", "creative_sfx", "creative_voiceover"];
+const PAID = ["creative_image", "creative_image_edit", "creative_music", "creative_sfx", "creative_video", "creative_voiceover"];
 const NAMES = [...FREE, ...PAID].sort();
 
 async function connect() {
@@ -51,6 +51,7 @@ describe("creative tools", () => {
       creative_music: { appId: 3, prompt: "calm piano", durationSeconds: 30, confirm: true, confirmationToken: "tok" },
       creative_image: { appId: 3, prompt: "a red bicycle", size: "1088x1920", n: 2, transparent: true, confirm: true, confirmationToken: "tok" },
       creative_image_edit: { appId: 3, prompt: "add snow", imageAssetIds: ["33333333-3333-4333-8333-333333333333"], maskAssetId: "44444444-4444-4444-8444-444444444444", size: "1024x1024" },
+      creative_video: { appId: 3, prompt: "waves at dusk", durationSeconds: 8, aspect: "16:9", referenceAssetIds: ["55555555-5555-4555-8555-555555555555"], audio: "none", briefId: "b", confirm: true, confirmationToken: "tok" },
     };
     for (const name of NAMES) {
       const res = await client.callTool({ name, arguments: args[name] });
@@ -76,6 +77,13 @@ describe("creative tools", () => {
       ["creative_image_edit", { appId: 3, prompt: "p", imageAssetIds: [] }],
       ["creative_image_edit", { appId: 3, prompt: "p", imageAssetIds: ["a", "b", "c", "d", "e"] }],
       ["creative_image_edit", { appId: 3, prompt: "p" }],
+      ["creative_video", { appId: 3, prompt: "p", durationSeconds: 11 }],
+      ["creative_video", { appId: 3, prompt: "p", durationSeconds: 2 }],
+      ["creative_video", { appId: 3, prompt: "p", aspect: "1:1" }],
+      ["creative_video", { appId: 3, prompt: "x".repeat(2001) }],
+      ["creative_video", { appId: 3, prompt: "p", referenceAssetIds: ["a", "b", "c", "d"] }],
+      ["creative_video", { appId: 3, prompt: "p", audio: "music" }],
+      ["creative_video", { prompt: "no app" }],
     ] as const) {
       const res = await client.callTool({ name, arguments: arguments_ });
       expect(res.isError, name).toBe(true);
