@@ -79,6 +79,14 @@ const MUTATIONS = [
     replace: "renderMentions();",
     catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'swaps in the real player'",
   },
+  {
+    id: "two-stages-play-at-once",
+    why: "a second poster click restarting the first video under the second, both autoplaying (#253)",
+    file: "src/shared/ui-template.ts",
+    find: "expandedMedia={};\n        expandedMedia[mkey]=true;",
+    replace: "expandedMedia[mkey]=true;",
+    catcher: "npx playwright test tests/e2e/ui-template.e2e.ts -g 'plays that post alone'",
+  },
 ];
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);
