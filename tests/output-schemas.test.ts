@@ -221,6 +221,21 @@ describe("declared shapes match what the backend sends", () => {
     expect(parsed.plan?.plan?.[0]?.influencerName).toBe("Zoe");
   });
 
+  // crates/server/src/mcp_tools.rs (nooticr-server#870) — two answers come
+  // before the debit, and a heard transcript carries its speech-to-text spend.
+  it("get_post_transcript accepts a cached and a refused answer, and declares the heard fields", () => {
+    const schema = OUTPUT_SCHEMAS.get_post_transcript;
+    expect(
+      schema.safeParse({ available: true, transcript: "hi", mcpCredits: { cost: 0, cached: true, tool: "get_post_transcript" } }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({ available: false, reason: "not configured", mcpCredits: { cost: 0, charged: false } }).success,
+    ).toBe(true);
+    const keys = keysOf(schema as z.ZodTypeAny);
+    for (const key of ["source", "languageDetected", "speechToTextUsage"]) expect(keys).toContain(key);
+    expect(keysOf(OUTPUT_SCHEMAS.detect_spoken_mentions as z.ZodTypeAny)).not.toContain("transcribing");
+  });
+
   // These two cannot be pinned by parsing a payload, and that is the point.
   // `open()` is passthrough, so a payload keeps every key it arrived with
   // whatever the schema declares — reading `parsed.draft.title` succeeds even

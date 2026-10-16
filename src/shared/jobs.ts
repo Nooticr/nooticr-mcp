@@ -312,6 +312,40 @@ class Spend {
   }
 }
 
+/**
+ * What a run of transcripts paid the speech-to-text service, summed.
+ *
+ * The server puts `speechToTextUsage` on each get_post_transcript answer that
+ * actually listened, and an AI employee's cost meter reads it off the result
+ * it gets back. A tool that makes several of those calls and returns one
+ * result has to carry the total, or every call it made through this surface
+ * is missing from that meter. Nothing is added when nothing was heard.
+ */
+class SpeechToTextUsage {
+  private calls = 0;
+  private audioSeconds = 0;
+  private estimated = false;
+  add(usage: unknown): void {
+    if (!usage || typeof usage !== "object") return;
+    const u = usage as Row;
+    const calls = numberOf(u.calls);
+    if (!(calls > 0)) return;
+    this.calls += calls;
+    this.audioSeconds += numberOf(u.audioSeconds);
+    if (u.estimated) this.estimated = true;
+  }
+  get field(): Row {
+    if (this.calls === 0) return {};
+    return {
+      speechToTextUsage: {
+        calls: this.calls,
+        audioSeconds: Math.round(this.audioSeconds * 100) / 100,
+        estimated: this.estimated,
+      },
+    };
+  }
+}
+
 /** The stats a post carries, reduced to the metrics worth ranking on. */
 export const METRICS = ["views", "likes", "comments", "shares", "engagementRate"] as const;
 export type Metric = (typeof METRICS)[number];
@@ -2111,7 +2145,6 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // — is confirmed before a single call is made, the same way search_mentions
   // confirms a worst case from its own arguments alone.
   // ───────────────────────────────────────────────────────────────────────────
-  const SPOKEN_TRANSCRIBE_BUDGET_MS = 12_000;
   server.registerTool(
     "search_spoken_mentions",
     {
@@ -2379,6 +2412,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       const unavailable: Row[] = [...narrowingFailures];
       let transcribed = 0;
       let transcriptsAvailable = 0;
+      const speechToText = new SpeechToTextUsage();
 
       for (const [index, post] of toCheck.entries()) {
         const url = String(post.externalUrl ?? post.url ?? "");
@@ -2389,29 +2423,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }
         transcribed++;
         try {
-          // A speech-to-text fallback can come back "transcribing: true,
-          // retryAfterMs" — the job is accepted and running, not a caption-track
-          // miss — and treating it as one would silently misreport every post
-          // whose answer just hadn't finished yet. Poll it out under a bounded
-          // budget so one slow job can't hang the whole search; the first
-          // callTool above already spent this post's credit, and every retry
-          // below re-reads the same cached job rather than spending again.
-          let structured = structuredOf(await client.callTool("get_post_transcript", { url }));
+          // One call, one answer: the listening route is synchronous, so an
+          // available:false here is final and carries its reason.
+          const structured = structuredOf(await client.callTool("get_post_transcript", { url }));
           spend.record("get_post_transcript", structured);
-          const pollStartedAt = Date.now();
-          while (structured.transcribing && Date.now() - pollStartedAt < SPOKEN_TRANSCRIBE_BUDGET_MS) {
-            const waitMs = Math.min(Number(structured.retryAfterMs) || 1000, 5000);
-            await new Promise((r) => setTimeout(r, waitMs));
-            structured = structuredOf(await client.callTool("get_post_transcript", { url }));
-          }
-          if (structured.transcribing) {
-            unavailable.push({
-              postId: id,
-              url,
-              reason: "still listening to this post's audio — try again shortly",
-            });
-            continue;
-          }
+          speechToText.add(structured.speechToTextUsage);
           if (!structured.available) {
             unavailable.push({ postId: id, url, reason: String(structured.reason ?? "no caption track") });
             continue;
@@ -2425,9 +2441,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
               matchCount,
               // TikTok and YouTube both publish a timed caption track, and
               // those are the only two platforms this tool narrows to — so a
-              // hit here almost always knows the moment it was said. The
-              // speech-to-text fallback carries no clock, and an excerpt from
-              // one simply arrives without a timecode.
+              // hit here almost always knows the moment it was said. A
+              // transcript that carries no cues simply arrives without a
+              // timecode.
               excerpts: timeExcerpts(excerpts, structured.cues),
               wordCount: numberOf(structured.wordCount),
               language: structured.language ?? null,
@@ -2477,6 +2493,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           unavailable,
           creditsCharged: spend.credits,
           mcpCredits: spend.payload,
+          ...speechToText.field,
         },
       );
     },
