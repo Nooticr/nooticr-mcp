@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-117 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+118 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -204,6 +204,7 @@ a `scanId` for the rest.
 | `pause_employee` | free | Pause an AI employee (it keeps its memory and thread) or resume it with `resume: true`. Only the person who hired it or a workspace admin can. |
 | `fire_employee` | free | Let an AI employee go for good: runs stop and actions awaiting approval are discarded. The first call only describes what will happen; confirm with `confirm: true`. |
 | `list_pending_actions` | free | What your AI employees are waiting to do until you approve, each with a preview of what will be published, sent or changed. Optionally one `employeeId`. |
+| `get_employee_audit` | free | One AI employee's audit trail, newest first: runs, model calls and their cost, tool calls (arguments redacted), sources read, approvals with the approver's edits, executed actions and their external ids, config changes, pauses and errors. Filter by `from`/`to`, `types`, `runId` or `actionId`; `verify: true` re-checks the tamper-evident hash chain. Workspace owners and admins only. |
 | `approve_action` | free | Approve one pending action by `actionId`. The first call returns the preview and a `confirmationToken` and runs nothing; after you confirm, the stored action runs exactly once. |
 | `reject_action` | free | Reject one pending action, with an optional note the employee can learn from. |
 | `connect_store` | free | A link a workspace owner or admin opens to connect an Amazon seller account or a Shopify shop. They approve at the store; nothing is connected until they do, and no credential passes through the tool. |

@@ -1941,6 +1941,35 @@ export const OUTPUT_SCHEMAS = {
   reject_action: open({ rejected: scalar(), action: anyObject().nullish() }),
   list_employees: open({ employees: listOf(open({ id: scalar(), name: scalar(), status: scalar() })) }),
   list_pending_actions: open({ actions: listOf(open({ id: scalar(), employeeId: scalar() })) }),
+  // AU1 (nooticr-server employees/mcp.rs get_employee_audit; event shape from employee_audit_view::event_view).
+  get_employee_audit: open({
+    employeeId: scalar(),
+    events: listOf(
+      open({
+        seq: scalar(),
+        occurredAt: scalar(),
+        recordedAt: scalar(),
+        eventType: scalar(),
+        actor: anyObject().nullish(),
+        runId: scalar(),
+        agentRunId: scalar(),
+        actionId: scalar(),
+        payload: anyObject().nullish(),
+        hash: scalar(),
+        prevHash: scalar(),
+      }),
+    ),
+    verify: open({
+      ok: scalar(),
+      checked: scalar(),
+      firstSeq: scalar(),
+      lastSeq: scalar(),
+      headHash: scalar(),
+      brokenAt: scalar(),
+      reason: scalar(),
+      verifiedAt: scalar(),
+    }).nullish().describe("Present only when verify: true was passed."),
+  }),
   // A diff of two stored scans, drawn by no view: the rows are the answer.
   marketplace_changes: open({
     display: scalar(),

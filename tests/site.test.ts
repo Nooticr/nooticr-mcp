@@ -714,6 +714,7 @@ describe("tool surface", () => {
     "pause_employee",
     "fire_employee",
     "list_pending_actions",
+    "get_employee_audit",
     "approve_action",
     "reject_action",
     "marketplace_changes",
@@ -852,6 +853,7 @@ describe("tool surface", () => {
       "pause_employee",
       "fire_employee",
       "list_pending_actions",
+      "get_employee_audit",
       "approve_action",
       "reject_action",
       // Compares two stored scans; fetches nothing.
