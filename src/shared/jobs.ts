@@ -312,6 +312,40 @@ class Spend {
   }
 }
 
+/**
+ * What a run of transcripts paid the speech-to-text service, summed.
+ *
+ * The server puts `speechToTextUsage` on each get_post_transcript answer that
+ * actually listened, and an AI employee's cost meter reads it off the result
+ * it gets back. A tool that makes several of those calls and returns one
+ * result has to carry the total, or every call it made through this surface
+ * is missing from that meter. Nothing is added when nothing was heard.
+ */
+class SpeechToTextUsage {
+  private calls = 0;
+  private audioSeconds = 0;
+  private estimated = false;
+  add(usage: unknown): void {
+    if (!usage || typeof usage !== "object") return;
+    const u = usage as Row;
+    const calls = numberOf(u.calls);
+    if (!(calls > 0)) return;
+    this.calls += calls;
+    this.audioSeconds += numberOf(u.audioSeconds);
+    if (u.estimated) this.estimated = true;
+  }
+  get field(): Row {
+    if (this.calls === 0) return {};
+    return {
+      speechToTextUsage: {
+        calls: this.calls,
+        audioSeconds: Math.round(this.audioSeconds * 100) / 100,
+        estimated: this.estimated,
+      },
+    };
+  }
+}
+
 /** The stats a post carries, reduced to the metrics worth ranking on. */
 export const METRICS = ["views", "likes", "comments", "shares", "engagementRate"] as const;
 export type Metric = (typeof METRICS)[number];
@@ -819,7 +853,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Costs 2 nooticr credits for the post list plus 2 per post opened — 14 credits at the " +
         "default of 6 posts. Use when the job is to answer people; search_mentions is for what " +
         "strangers say elsewhere.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.answer_my_audience,
       inputSchema: z
         .object({
@@ -1024,15 +1058,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       title: "Track Competitor",
       _meta: viewMeta("track_creator"),
       description:
-        "Track a competitor, keep an eye on a rival, see how someone is doing lately, catch what " +
-        "they shipped since you last looked — this is the tool for all of those. What a creator " +
-        "shipped recently and which of it beat THEIR OWN baseline: fetches their recent posts " +
+        "What a creator shipped recently and which of it beat THEIR OWN baseline: fetches their recent posts " +
         "once and scores each against the median of that same window, because a raw view count " +
         "mostly measures follower count — outperformance against themselves is the signal. If " +
         "they are on your watchlist it also marks what is new since your last track_creator " +
         "call and moves that marker forward. " +
-        "Consumes 2 nooticr credits — one post list, whatever the window size. Use for a rival " +
-        "you follow; analyze_creator_profile is the full teardown of one you do not.",
+        "Consumes 2 nooticr credits — one post list, whatever the window size. Use to track a " +
+        "competitor, keep an eye on a rival, see how someone is doing lately, or catch what they " +
+        "shipped since you last looked; analyze_creator_profile is for a one-off profile teardown.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -1250,15 +1283,15 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       _meta: viewMeta("compare_creators"),
       description:
         "Two to five creators side by side, each scored against THEIR OWN recent median rather " +
-        "than against each other's raw numbers — which is the only way the comparison means " +
-        "anything, because a raw view count mostly measures follower count. Returns per creator: " +
+        "than against each other's raw numbers, because a raw view count mostly measures follower " +
+        "count. Returns per creator: " +
         "how many posts were scored, their own median, the share of the window that beat it, how " +
-        "hard they beat it when they did, every post's ratio, and their best and worst post. The " +
+        "hard they beat it when they did, every post's ratio, and their highest and lowest post. The " +
         "ranking is yours to make: 'how often' and 'how big' usually disagree, and a hit rate " +
         "over a short window is one post either way, so the window size travels with every " +
         "number. Fetches one post list per creator: 2 nooticr credits each, 4-10 in total. " +
-        "Use for 'is their hit rate better than mine'; track_creator is one creator alone.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+        "Use to compare hit rates between two to five creators, yourself included; track_creator covers one creator.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.compare_creators,
       inputSchema: z
         .object({
@@ -1342,13 +1375,13 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       _meta: viewMeta("watchlist_standings"),
       description:
         "The same comparison across everyone on your watchlist, answering 'who moved' in one " +
-        "call instead of one per creator. Each is scored against their own recent median, so the " +
+        "call. Each is scored against their own recent median, so the " +
         "numbers are comparable between accounts of different sizes; the window size travels " +
         "with each so a short one is not ranked as if it were a season. Reads the watchlist " +
         "itself for free and fetches one post list per creator on it: 2 nooticr credits each, so " +
         "the price is the size of your watchlist — it confirms before spending. Use for the " +
-        "weekly 'who is accelerating'; catch_up_watchlist is what is NEW rather than how it did.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+        "weekly 'who is accelerating'; catch_up_watchlist lists what is new since the last check.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.watchlist_standings,
       inputSchema: z
         .object({
@@ -1444,7 +1477,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "per candidate, so the result says so and tells you how to check a finalist yourself. " +
         "Consumes 2 nooticr credits, or 4 with a seed creator. Use to build a list to vet; " +
         "get_similar_creators is the raw lookalike call.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.who_should_i_work_with,
       inputSchema: z
         .object({
@@ -1609,7 +1642,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "quartiles, ratio and percentile — so the answer can be 'this is a normal result, not a " +
         "failure'. Consumes 3 nooticr credits (1 for the post, 2 for the window). Use when you " +
         "have one post and no comparison; compare_social_posts is for two URLs you already picked.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.why_did_this_underperform,
       inputSchema: z
         .object({
@@ -1751,7 +1784,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Consumes 2 nooticr credits for the post list, 2 per post read for comments, and 2 for the " +
         "niche sweep — 12 at the default of 4 posts. Use to decide what to film; niche_report " +
         "covers the supply half alone.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.what_should_i_make_next,
       inputSchema: z
         .object({
@@ -1956,8 +1989,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "anything: each row is a draft, and a reply is posted only after the creator confirms its " +
         "exact text. Each comment shows with what you decided to do " +
         "about it and your draft underneath, grouped under its post, so they can work through " +
-        "them one at a time and skip the rest. Call this after you have drafted the replies, not " +
-        "instead of drafting them.",
+        "them one at a time and skip the rest. Call this after you have drafted the replies.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -2111,7 +2143,6 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // — is confirmed before a single call is made, the same way search_mentions
   // confirms a worst case from its own arguments alone.
   // ───────────────────────────────────────────────────────────────────────────
-  const SPOKEN_TRANSCRIBE_BUDGET_MS = 12_000;
   server.registerTool(
     "search_spoken_mentions",
     {
@@ -2119,14 +2150,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       _meta: viewMeta("search_spoken_mentions"),
       description:
         "Brand mentions people SAY but never type. search_mentions reads captions, post bodies " +
-        "and comments — text — so a video that names a brand only out loud is invisible to it. " +
+        "and comments — text — so it does not see a brand named only out loud in a video. " +
         "This reads the words actually spoken, from the platform's own caption track (not our own " +
         "speech recognition — see get_post_transcript), and searches them for a term. Narrows to " +
         "candidate posts first (a niche/keyword sweep, named creator handles, and/or your " +
         "watchlist), transcribes only the most-viewed survivors up to a hard ceiling you set, and " +
         "returns the matched line with surrounding context so tone can be judged. TikTok, YouTube " +
-        "and Douyin — the networks whose post detail already carries a caption track, which is " +
-        "what makes a transcript one cheap read rather than a wait. Every other network's audio " +
+        "and Douyin — the networks whose post detail already carries a caption track, so a " +
+        "transcript is read directly rather than waited for. Every other network's audio " +
         "can be transcribed too, at the same price, but not yet from here: see " +
         "get_post_transcript for that route. Even on these three a video whose creator disabled " +
         "captions is invisible to this tool; coverage is real but " +
@@ -2137,7 +2168,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "count. Above 6 credits worst-case it asks first, like search_mentions. Use when a term " +
         "might be spoken on camera but not written anywhere; search_mentions is for what people " +
         "typed.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.search_spoken_mentions,
       inputSchema: z
         .object({
@@ -2379,6 +2410,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
       const unavailable: Row[] = [...narrowingFailures];
       let transcribed = 0;
       let transcriptsAvailable = 0;
+      const speechToText = new SpeechToTextUsage();
 
       for (const [index, post] of toCheck.entries()) {
         const url = String(post.externalUrl ?? post.url ?? "");
@@ -2389,29 +2421,11 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }
         transcribed++;
         try {
-          // A speech-to-text fallback can come back "transcribing: true,
-          // retryAfterMs" — the job is accepted and running, not a caption-track
-          // miss — and treating it as one would silently misreport every post
-          // whose answer just hadn't finished yet. Poll it out under a bounded
-          // budget so one slow job can't hang the whole search; the first
-          // callTool above already spent this post's credit, and every retry
-          // below re-reads the same cached job rather than spending again.
-          let structured = structuredOf(await client.callTool("get_post_transcript", { url }));
+          // One call, one answer: the listening route is synchronous, so an
+          // available:false here is final and carries its reason.
+          const structured = structuredOf(await client.callTool("get_post_transcript", { url }));
           spend.record("get_post_transcript", structured);
-          const pollStartedAt = Date.now();
-          while (structured.transcribing && Date.now() - pollStartedAt < SPOKEN_TRANSCRIBE_BUDGET_MS) {
-            const waitMs = Math.min(Number(structured.retryAfterMs) || 1000, 5000);
-            await new Promise((r) => setTimeout(r, waitMs));
-            structured = structuredOf(await client.callTool("get_post_transcript", { url }));
-          }
-          if (structured.transcribing) {
-            unavailable.push({
-              postId: id,
-              url,
-              reason: "still listening to this post's audio — try again shortly",
-            });
-            continue;
-          }
+          speechToText.add(structured.speechToTextUsage);
           if (!structured.available) {
             unavailable.push({ postId: id, url, reason: String(structured.reason ?? "no caption track") });
             continue;
@@ -2425,9 +2439,9 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
               matchCount,
               // TikTok and YouTube both publish a timed caption track, and
               // those are the only two platforms this tool narrows to — so a
-              // hit here almost always knows the moment it was said. The
-              // speech-to-text fallback carries no clock, and an excerpt from
-              // one simply arrives without a timecode.
+              // hit here almost always knows the moment it was said. A
+              // transcript that carries no cues simply arrives without a
+              // timecode.
               excerpts: timeExcerpts(excerpts, structured.cues),
               wordCount: numberOf(structured.wordCount),
               language: structured.language ?? null,
@@ -2477,6 +2491,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
           unavailable,
           creditsCharged: spend.credits,
           mcpCredits: spend.payload,
+          ...speechToText.field,
         },
       );
     },
@@ -2513,14 +2528,14 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Find people describing a problem in their own words — prospects, early users, anyone " +
         "whose complaint your product answers. Say the problem the way a person would say it " +
         "(\"I spend hours checking competitors by hand\") and this searches for posts shaped like " +
-        "that complaint, not for the topic it is about. That difference is the point: searching " +
-        "the TOPIC finds marketing about it, which is what discover_social_posts is for. " +
+        "that complaint, not for the topic it is about. Searching the TOPIC returns marketing " +
+        "about it; discover_social_posts covers that. " +
         "Widens the query into the forms a complaint takes — the plain phrasing, the " +
         "does-anyone-else question, the is-there-a-tool ask — and merges what each returns. " +
-        "It is a wide cheap net and NOT a filter: the posts come back for you to judge, and " +
+        "It is a broad search and NOT a filter: the posts come back for you to judge, and " +
         "many will be off-target. Consumes 2 nooticr credits per search, and each platform is searched once per query shape — three by default, so 6 credits per platform. Defaults to " +
-        "reddit, where people describe workflow pain in sentences; add twitter for volume. Not searchable here: linkedin.",
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+        "reddit, where people describe workflow pain in sentences; add twitter for volume. Not searchable here: linkedin. Use to find prospects or early users by the way they describe a problem.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.find_people_with_problem,
       inputSchema: z
         .object({

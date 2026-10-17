@@ -46,13 +46,10 @@ const NOT_READ_ONLY = [
   "stop_brand_watch",
   // Rewrites a portfolio watch's stored terms.
   "update_watch_portfolio",
-  // Own-account generation: each spends the workspace's plan AI credits.
-  "draft_post",
-  "generate_captions",
+  // Saves the generated plan. Its siblings draft_post, generate_captions and
+  // growth_brief spend the same plan AI credits but store nothing, so they are
+  // read-only (#259): spending credits is billing, not a change to the user's data.
   "generate_content_plan",
-  // Same billing, same conclusion — this one was missed because it writes
-  // nothing of the user's, but the credits alone put it here.
-  "growth_brief",
   // Starts an async analysis job every call (a fresh jobId, spending plan AI
   // credits) — same conclusion as the generation tools above, for the same
   // reason connect_social_account is on this list: a retry is not a no-op.
@@ -116,7 +113,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(121);
+    expect(tools).toHaveLength(123);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -153,6 +150,8 @@ describe("tool annotations", () => {
       "crm_upsert_creator",
       "draft_comment_reply",
       "draft_post",
+      // Holds the caller's own draft up to a rubric; makes no request at all.
+      "evaluate_social_draft",
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.
       "fire_employee",
@@ -160,9 +159,13 @@ describe("tool annotations", () => {
       "generate_content_plan",
       "get_brand_playbook",
       "get_content_plan",
+      // AU1: reads the employee's audit rows inside nooticr.
+      "get_employee_audit",
       "get_google_analytics_data",
       "get_post_performance",
       "get_posthog_analytics",
+      // Reads stored marketplace observations back; fetches nothing.
+      "get_price_history",
       "get_scheduled_posts",
       "get_search_console_data",
       "get_tool_run",
@@ -228,6 +231,68 @@ describe("tool annotations", () => {
       "update_watch_portfolio",
       "watch_creator",
     ]);
+  });
+});
+
+/**
+ * What OpenAI's directory review rejected v1.0.0 for (#259): a hint left to a
+ * host's default reads as a claim nobody made, and a description that steers
+ * ("use this by default", "the cheap read", "the tool for all of those") is
+ * one the review will not pass, however accurate.
+ */
+describe("what a directory review reads", () => {
+  const HINTS = ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"] as const;
+
+  it("sets every hint on every tool, true or false", async () => {
+    const { tools } = await (await connect()).listTools();
+    const unset = tools.flatMap((t) =>
+      HINTS.filter((h) => typeof (t.annotations as Record<string, unknown> | undefined)?.[h] !== "boolean").map(
+        (h) => `${t.name}.${h}`,
+      ),
+    );
+    expect(unset, "a hint left to the host's default").toEqual([]);
+  });
+
+  /**
+   * Each paid call charges again, so a repeat is not a no-op. A paid tool
+   * marked idempotent tells a host it can retry for free.
+   */
+  it("marks no paid tool idempotent", async () => {
+    const { tools } = await (await connect()).listTools();
+    const priced = /\b(?:Costs|Consumes) [1-9]\d* nooticr credits?\b|nooticr credits? per\b/;
+    const wrong = tools.filter((t) => priced.test(t.description ?? "") && t.annotations?.idempotentHint === true);
+    expect(wrong.map((t) => t.name)).toEqual([]);
+  });
+
+  /**
+   * Comparative and preferential wording, listed as the review quoted it plus
+   * the variants this server had actually shipped. Naming another tool is
+   * fine ("analyze_post adds the frames"); ranking it is not.
+   */
+  const STEERING =
+    /\b(?:best|better|worse|cheaper|cheapest|faster|fastest|cheap|prefer|preferred|always use|instead of|sensible default|use this by default|start here|the tool for|no other tool|only way|superior|recommended|ideal|great|huge|free credits)\b/i;
+
+  it("describes tools without steering language", async () => {
+    const { tools } = await (await connect()).listTools();
+    const { TOOL_DEFINITIONS } = await import("../src/shared/tools-def.js");
+    const found = [
+      ...tools.map((t) => ["shipped", t.name, t.description ?? ""]),
+      ...(TOOL_DEFINITIONS as ReadonlyArray<{ name: string; description: string }>).map((t) => [
+        "declared",
+        t.name,
+        t.description,
+      ]),
+    ].flatMap(([where, name, text]) => {
+      const m = STEERING.exec(text);
+      return m ? [`${where} ${name}: "${m[0]}"`] : [];
+    });
+    expect(found).toEqual([]);
+  });
+
+  it("says when to use every tool", async () => {
+    const { tools } = await (await connect()).listTools();
+    const when = /\b(?:use|call)\b[^.]{0,40}\b(?:when|to|for|before|after|once|while)\b/i;
+    expect(tools.filter((t) => !when.test(t.description ?? "")).map((t) => t.name)).toEqual([]);
   });
 });
 

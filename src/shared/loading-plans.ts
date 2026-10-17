@@ -545,6 +545,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   },
   // Free: reads two stored scans, fetches nothing.
   marketplace_changes: { label: "Comparing the two scans", kind: "list", n: 6, steps: [], free: true },
+  get_price_history: { label: "Reading the stored price history", kind: "text", n: 1, steps: [], free: true },
   get_marketplace_product: {
     label: "Reading the product",
     kind: "text",
@@ -619,6 +620,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   crm_update_status: { label: "Updating the creator's status", kind: "text", n: 1, steps: [], free: true },
   crm_log_interaction: { label: "Logging the interaction", kind: "text", n: 1, steps: [], free: true },
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
+  get_employee_audit: { label: "Reading the audit trail", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },
   reject_action: { label: "Rejecting the action", kind: "text", n: 1, steps: [], free: true },
   // ─── Store connections (store-read.ts): a link, and a read of the store's own catalogue ───

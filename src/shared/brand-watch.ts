@@ -503,8 +503,8 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
     {
       title: "Create Brand Watch",
       description:
-        "Run a sweep on a schedule and email the user what is new, instead of them remembering to " +
-        "ask. Four kinds, chosen with kind: kind: \"mentions\" (the default — omit kind entirely for " +
+        "Run a sweep on a schedule and email the user what is new. Use when the user wants to be told " +
+        "about new mentions or posts without asking each time. Four kinds, chosen with kind: kind: \"mentions\" (the default — omit kind entirely for " +
         "this one) runs a brand-mentions sweep for term across platforms; kind: \"competitor\" runs " +
         "a get_user_posts sweep for one creator (handle + platform) and reports only the posts that " +
         "beat that creator's own recent median — a raw view count would just measure follower size, " +
@@ -673,10 +673,10 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
     {
       title: "List Brand Watches",
       description:
-        "Every scheduled brand-monitoring watch this user has: term, networks, cadence, cost per " +
+        "Every scheduled brand-monitoring watch in this workspace (every member's watches, not only yours): term, networks, cadence, cost per " +
         "run, credits spent so far, how many runs it has made, when the next one is due, and " +
         "whether it is stopped and why. Read this before creating a watch — a second watch on the " +
-        "same term is a second recurring charge for the same answer. No cost to call.",
+        "same term is a second recurring charge for the same answer. No cost to call. Use to see which scheduled watches exist and what they cost before creating, changing or stopping one.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),
       outputSchema: OUTPUT_SCHEMAS.list_brand_watches,
@@ -697,16 +697,15 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
       title: "Mention Trend",
       _meta: viewMeta("mention_trend"),
       description:
-        "What a watch has SEEN OVER TIME, which no other tool here can answer — every read on " +
-        "this surface answers about now, and until the backend started keeping run history each " +
-        "sweep threw its numbers away. Takes `watchId` (or `term`) and an optional `days`. " +
+        "What a brand watch has SEEN OVER TIME, from the history of its scheduled runs. Use when " +
+        "the question is how mentions or a competitor's median changed across runs, not what is " +
+        "being said now. Takes `watchId` (or `term`) and an optional `days`. " +
         "Returns one point per run: when it ran, how many mentions it found, how many were new, " +
         "and both counts per network — so \"which network is growing\" and \"did it go quiet, or " +
         "did we stop looking\" are separable. On a competitor watch each point also carries the " +
         "median that run measured, which is what turns \"they beat their own median\" into \"and " +
         "that median has doubled\". Also returns the mentions more than one run has seen. " +
-        "FREE: the sweeps were billed when they ran, and charging again to read what was already " +
-        "paid for is the thing this fixes. " +
+        "No cost to call: the sweeps were billed when they ran. " +
         "Read the series yourself and say what changed — this returns numbers, not a verdict.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -792,7 +791,7 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "budget more ways, so the response says which networks a run will still search. If it " +
         "names any in platformsSkipped, tell the user those networks are no longer searched and " +
         "offer to remove a term or recreate the watch with a larger budget. A change the budget " +
-        "cannot cover at all is refused and nothing changes. No cost to call: no credits are spent.",
+        "cannot cover at all is refused and nothing changes. No cost to call: no credits are spent. Use when the user wants to add or remove terms on an existing portfolio watch.",
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
@@ -849,7 +848,7 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "Stop a scheduled brand-monitoring watch, by watchId or by term. Takes effect immediately: " +
         "the run that was due does not happen and nothing further is charged. Free, and " +
         "deliberately still works at a zero balance — a user who has run out of credits is exactly " +
-        "the user who needs to turn off what is spending them. No cost to call.",
+        "the user who needs to turn off what is spending them. No cost to call. Use when the user wants a scheduled watch to stop running.",
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({

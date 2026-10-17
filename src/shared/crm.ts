@@ -59,12 +59,13 @@ export function registerCrmTools(server: McpServer, makeClient: MakeClient): voi
     {
       title: "Upsert Creator",
       description:
+        "Use when you want to track a creator or record new numbers for one already tracked. " +
         "Add a creator to this workspace's creator pipeline, or update the one already there " +
         "(matched by platform + handle, case-insensitive). Only the fields you pass change. New " +
         "creators start as 'prospect'; use crm_update_status to change that. Put every number you " +
         "cite in `evidence` as [{tool, url, metric, value, at}]. engagementRate is a fraction " +
         "(0.052 = 5.2%). No cost to call.",
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
           platform: z.string().describe("tiktok, instagram, youtube, ..."),
@@ -96,6 +97,7 @@ export function registerCrmTools(server: McpServer, makeClient: MakeClient): voi
     {
       title: "List Creators",
       description:
+        "Use when someone asks who is in their creator pipeline or which next steps are due. " +
         "List the workspace's creator pipeline, most recently updated first, each with its last " +
         "interaction. Filter by status, appId, query (handle or name) or dueBefore (next step due " +
         "on or before YYYY-MM-DD). limit is at most 100. No cost to call.",
@@ -119,10 +121,11 @@ export function registerCrmTools(server: McpServer, makeClient: MakeClient): voi
     {
       title: "Update Creator Status",
       description:
+        "Use when a creator moves forward or back in the pipeline, for example after a reply or a decision. " +
         "Move a creator to a new pipeline status and record why (writes a status_change entry). " +
         "A creator marked do_not_contact stays that way unless a person changes it. AI employees " +
         "may only use prospect, shortlisted or paused. No cost to call.",
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           creatorId: z.string().describe("Id from crm_list_creators."),
@@ -140,6 +143,7 @@ export function registerCrmTools(server: McpServer, makeClient: MakeClient): voi
     {
       title: "Log Creator Interaction",
       description:
+        "Use when something happens with a creator that the pipeline should remember. " +
         "Record something that happened with a creator: a note, vetting result, outreach draft " +
         "(put the message in body), reply or deliverable. AI employees cannot log outreach_sent: a " +
         "person sends outreach and logs it. No cost to call.",

@@ -292,6 +292,8 @@ after the product owner weighed in.
    rewriting, and `checkoutUrl` wasn't on it, so any URL-shaped string
    value got routed through `/media/proxy?url=...` regardless of key name.
    Fixed: `checkoutUrl` added to `RAW_URL_KEYS`; it now passes through raw.
+   *(The rewrite has since left this repo: nooticr-server signs every proxy
+   link itself and this worker passes URLs through untouched, #242.)*
 4. **`generate_captions` rendered "No transcript available" despite
    returning real cues** — its real output has no `available` field, and
    the transcript view's gate required one truthy before showing anything.

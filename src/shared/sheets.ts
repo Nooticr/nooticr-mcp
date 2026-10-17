@@ -46,6 +46,8 @@ const rows = z.array(z.array(cell));
 
 const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } as const;
+// Overwriting a range replaces whatever the cells held, which append and add-sheet never do.
+const OVERWRITE = { ...WRITE, destructiveHint: true } as const;
 
 export function registerSheetsTools(server: McpServer, makeClient: MakeClient): void {
   const passthrough = (name: string) => async (args: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
@@ -64,7 +66,7 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
       description:
         "Create a Google spreadsheet in the connected Google account, with the named sheets and a header row on each. " +
         "Returns its id and URL; Nooticr owns the file, so later writes need no approval. " +
-        "Requires the product's Google Sheets connection. Free.",
+        "Requires the product's Google Sheets connection. Free. Use when the user wants results written to a new Google spreadsheet.",
       annotations: WRITE,
       inputSchema: z
         .object({
@@ -87,7 +89,7 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
       title: "List Spreadsheets",
       description:
         "List the spreadsheets this connection can see: the ones Nooticr created and the ones the customer picked. " +
-        "Each says whether it was created or picked and whether the employee may edit it without approval. Free.",
+        "Each says whether it was created or picked and whether the employee may edit it without approval. Free. Use to find a spreadsheet's id before reading or writing it.",
       annotations: READ,
       inputSchema: z.object({ appId, limit: z.number().int().min(1).max(100).optional() }).strict(),
       outputSchema: OUTPUT_SCHEMAS.sheets_list,
@@ -102,8 +104,10 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
       description:
         'Read a range (A1 notation, e.g. "Ledger!A1:F200") of a spreadsheet. ' +
         "Numbers come back as numbers and dates as formatted text; at most 10000 cells, " +
-        'and a range open at the bottom ("A:F") or longer than the cap is cut to the rows that fit, ' +
-        "with truncated=true when more may remain: read further down with a range that starts after the last row. Free.",
+        'and a range open at the bottom ("A:F", "Ledger!$A:$F") or longer than the cap is cut to the rows that fit, ' +
+        "with truncated=true when more may remain: read further down with a range that starts after the last row. " +
+        'A bare name without quotes ("Expenses") is passed to Google as written, since it may be a named range, ' +
+        'so name a tab as "Ledger!A:F" or "\'My Tab\'" to have it bounded. Free. Use when the user asks about data held in one of their connected spreadsheets.',
       annotations: READ,
       inputSchema: z.object({ appId, id: spreadsheetId, range: z.string() }).strict(),
       outputSchema: OUTPUT_SCHEMAS.sheets_read,
@@ -118,7 +122,7 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
       description:
         "Append rows after the last row of a sheet (tab). Values are typed: numbers stay numbers and ISO dates become sheet dates. " +
         "At most 10000 cells per call. Free on a file Nooticr created or one the customer allowed you to edit; " +
-        "on any other file the customer picked it waits for their approval.",
+        "on any other file the customer picked it waits for their approval. Use to add new rows below the existing data in a sheet.",
       annotations: WRITE,
       inputSchema: z.object({ appId, id: spreadsheetId, sheet: z.string().describe("Tab name."), rows }).strict(),
       outputSchema: OUTPUT_SCHEMAS.sheets_append_rows,
@@ -132,8 +136,8 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
       title: "Update Spreadsheet Range",
       description:
         'Overwrite a range (A1 notation, e.g. "Ledger!B2:C3") with values. Typed like sheets_append_rows; ' +
-        "at most 10000 cells per call. Same approval rule as sheets_append_rows: free on a file Nooticr created or one the customer allowed you to edit, otherwise it waits for their approval.",
-      annotations: WRITE,
+        "at most 10000 cells per call. Same approval rule as sheets_append_rows: free on a file Nooticr created or one the customer allowed you to edit, otherwise it waits for their approval. Use to change values that are already in a sheet.",
+      annotations: OVERWRITE,
       inputSchema: z.object({ appId, id: spreadsheetId, range: z.string(), values: rows }).strict(),
       outputSchema: OUTPUT_SCHEMAS.sheets_update_range,
     },
@@ -144,7 +148,7 @@ export function registerSheetsTools(server: McpServer, makeClient: MakeClient): 
     "sheets_add_sheet",
     {
       title: "Add Spreadsheet Tab",
-      description: "Add an empty sheet (tab) to a spreadsheet. Same approval rule as sheets_append_rows: free on a file Nooticr created or one the customer allowed you to edit, otherwise it waits for their approval.",
+      description: "Add an empty sheet (tab) to a spreadsheet. Same approval rule as sheets_append_rows: free on a file Nooticr created or one the customer allowed you to edit, otherwise it waits for their approval. Use when a spreadsheet needs a new tab.",
       annotations: WRITE,
       inputSchema: z.object({ appId, id: spreadsheetId, name: z.string() }).strict(),
       outputSchema: OUTPUT_SCHEMAS.sheets_add_sheet,

@@ -66,4 +66,16 @@ describe("reply tools", () => {
     expect((await client.callTool({ name: "list_comments_to_answer", arguments: { limit: 101 } })).isError).toBe(true);
     expect((await client.callTool({ name: "list_comments_to_answer", arguments: { sinceDays: 7, limit: 30 } })).isError).toBeFalsy();
   });
+
+  it("list_comments_to_answer and draft_comment_reply forward the `account` connection id", async () => {
+    const { client, calls } = await connect();
+    const list = { platform: "youtube", account: 42 };
+    const draft = { platform: "youtube", commentId: "c1", postId: "p1", text: "Hi", account: "42" };
+    expect((await client.callTool({ name: "list_comments_to_answer", arguments: list })).isError).toBeFalsy();
+    expect((await client.callTool({ name: "draft_comment_reply", arguments: draft })).isError).toBeFalsy();
+    expect(calls).toEqual([
+      { name: "list_comments_to_answer", args: list },
+      { name: "draft_comment_reply", args: draft },
+    ]);
+  });
 });

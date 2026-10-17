@@ -101,18 +101,23 @@
     ],
     "source": "social_import.rs::fetch_post_transcript",
     "speechToText": {
-      "note": "same tool and same price as the caption route; asynchronous, and a poll is not billed",
+      "maxMinutes": 30,
+      "note": "same tool and same price as the caption route; synchronous, so the words come back on the first call; a call that returns no words is not billed",
       "platforms": [
         "instagram",
         "twitter",
         "xiaohongshu",
         "weibo",
-        "linkedin"
+        "linkedin",
+        "reddit",
+        "bilibili"
       ],
-      "requiresConfiguration": "WHISPER_MODEL",
-      "unreachable": {
-        "bilibili": "no videoUrl or mediaItems is emitted; needs the two-call DASH path",
-        "reddit": "videoUrl is an HLS/DASH manifest and the listening path byte-downloads it"
+      "requiresConfiguration": "ELEVENLABS_API_KEY",
+      "unverified": {
+        "bilibili": "its audio track is fetched through the provider with a Bilibili Referer, decoded and uploaded. Unmeasured live.",
+        "linkedin": "dms.licdn.com can serve HLS labelled video/mp4; the service refuses it and it is decoded here instead. Unmeasured live.",
+        "reddit": "its HLS/DASH manifest is decoded here and the audio uploaded. Unmeasured live.",
+        "youtube": "a video whose caption track is missing is handed to the service by permalink. Unmeasured live."
       }
     }
   },

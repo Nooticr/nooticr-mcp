@@ -99,6 +99,7 @@ NO_APP = {
     "pause_employee",  # pure state mutation: nothing to draw
     "fire_employee",  # view pending: the confirm step; otherwise a pure state mutation
     "list_pending_actions",  # view pending: a queue of previews awaiting approval
+    "get_employee_audit",  # view pending: a timeline of an employee's audited events
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
     # Creator CRM (crm.ts): the pipeline would be a table the design system has no card for;
@@ -108,6 +109,7 @@ NO_APP = {
     "crm_update_status",  # pure state mutation: nothing to draw
     "crm_log_interaction",  # pure state mutation: nothing to draw
     "marketplace_changes",
+    "get_price_history",  # view pending: a price line over time; the server lists it in NO_VIEW too
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"

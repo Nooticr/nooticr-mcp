@@ -581,7 +581,7 @@ export function registerWatchlist(
     {
       title: "Unwatch Creator",
       description:
-        "Remove a creator from your watchlist. Nothing is fetched, so there is no cost. No cost to call.",
+        "Remove a creator from your watchlist. Nothing is fetched, so there is no cost. No cost to call. Use when the user no longer wants a creator in their watchlist catch-ups.",
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
@@ -666,7 +666,7 @@ export function registerWatchlist(
         "posts and compares them against the snapshot taken at your last catch-up, then moves the " +
         "snapshot forward — so this answers 'what is new' rather than 'what exists'. The first run " +
         "for a creator has nothing to compare against and just records the baseline. " +
-        "Consumes 2 nooticr credits per creator checked.",
+        "Consumes 2 nooticr credits per creator checked. Use when the user asks what the creators they watch have posted since the last check.",
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({

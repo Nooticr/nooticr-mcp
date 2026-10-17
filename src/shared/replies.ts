@@ -51,13 +51,14 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         "connected with capabilities: [\"manage_comments\"] (see connect_social_account); networks " +
         "that cannot be answered come back under `unsupported` with the reason. Optional platform, " +
         "influencerId, postId, sinceDays (1-30, default 7), limit (1-100, default 30), " +
-        "includeAnswered. Read-only: it sends nothing. No cost to call.",
+        "includeAnswered. Read-only: it sends nothing. No cost to call. Use when the user wants to reply to comments on their own connected account.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.list_comments_to_answer,
       inputSchema: z
         .object({
           platform: platform.optional().describe("Only this network."),
           influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."),
+          account: z.union([z.number().int(), z.string()]).optional().describe("Connection id (`connectionId` from list_social_connections) when the profile has more than one account on the platform."),
           postId: z.string().optional().describe("Only comments on this video/media id."),
           sinceDays: z.number().int().min(1).max(30).optional().describe("How far back to look (default 7)."),
           limit: z.number().int().min(1).max(100).optional().describe("Most comments to return (default 30)."),
@@ -84,7 +85,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         "posted. Pass `text` to use the user's own wording (no cost), or omit it and nooticr " +
         "writes one (costs 1 nooticr credit); `guidance` steers the writing. Replies may not contain links, " +
         "emails, phone numbers or @-mentions of anyone but the commenter. Returns a draftId and a " +
-        "confirmationToken: show the reply to the user first, then post it with post_comment_reply.",
+        "confirmationToken: show the reply to the user first, then post it with post_comment_reply. Use when the user wants to answer one comment from list_comments_to_answer.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       outputSchema: OUTPUT_SCHEMAS.draft_comment_reply,
       inputSchema: z
@@ -94,6 +95,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
           postId: z.string().describe("Post id the comment is on."),
           text: z.string().optional().describe("The reply to store, in the user's words. Omit to have one written (1 credit)."),
           influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."),
+          account: z.union([z.number().int(), z.string()]).optional().describe("Connection id (`connectionId` from list_social_connections) when the profile has more than one account on the platform."),
           guidance: z.string().optional().describe("What the reply should say or avoid; a URL here is the only URL the reply may contain."),
         })
         .strict(),
@@ -117,7 +119,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         "has seen and agreed to the exact text: pass the draftId, confirm: true and the " +
         "confirmationToken from draft_comment_reply. Each comment is answered at most once and " +
         "daily limits apply. It writes to a third-party network and cannot be undone from here. " +
-        "No cost to call.",
+        "No cost to call. Use only once the user has approved a draft's exact text.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       outputSchema: OUTPUT_SCHEMAS.post_comment_reply,
       inputSchema: z

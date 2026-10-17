@@ -408,7 +408,7 @@ describe("the submission file against the server", () => {
     const wrong: string[] = [];
     for (const tool of tools) {
       const declared = doc.tools[tool.name]?.annotations ?? {};
-      for (const hint of ["readOnlyHint", "openWorldHint", "destructiveHint"] as const) {
+      for (const hint of ["readOnlyHint", "openWorldHint", "destructiveHint", "idempotentHint"] as const) {
         const live = tool.annotations?.[hint];
         if (declared[hint] !== live) wrong.push(`${tool.name}.${hint}: file=${declared[hint]} server=${live}`);
       }
@@ -426,6 +426,13 @@ describe("the submission file against the server", () => {
     }
     const distinct = new Set(readOnly.map(([, text]) => text));
     expect(distinct.size, "every tool needs its own read-only reason, not a shared line").toBe(readOnly.length);
+    // OpenAI's review asks for a reason behind every hint, idempotentHint
+    // included (#259), though the form's own schema only names three.
+    for (const [name, t] of Object.entries(doc.tools)) {
+      for (const key of ["open_world_justification", "destructive_justification", "idempotent_justification"]) {
+        expect(t.justifications[key], `${name} has no ${key}`).toMatch(/\S/);
+      }
+    }
   });
 });
 
@@ -718,9 +725,11 @@ describe("tool surface", () => {
     "crm_update_status",
     "crm_log_interaction",
     "list_pending_actions",
+    "get_employee_audit",
     "approve_action",
     "reject_action",
     "marketplace_changes",
+    "get_price_history",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -861,10 +870,13 @@ describe("tool surface", () => {
       "crm_update_status",
       "crm_log_interaction",
       "list_pending_actions",
+      "get_employee_audit",
       "approve_action",
       "reject_action",
       // Compares two stored scans; fetches nothing.
       "marketplace_changes",
+      // Reads stored observations back; fetches nothing.
+      "get_price_history",
       "nooticr_settings_read",
       "nooticr_settings_update",
     ];

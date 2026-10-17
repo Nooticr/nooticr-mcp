@@ -53,17 +53,17 @@ export const SEARCH_PLATFORMS = [
  * `TRANSCRIPT_CAPTION_PLATFORMS` in nooticr-server, mirrored here.
  *
  * This list is the *fast path*, not the boundary of what could be searched:
- * `get_post_transcript`'s `_` arm transcribes any other platform's audio with
- * whisper, behind the same tool at the same price. It stays a fast path rather
- * than the whole story for two reasons that are about the deployment, not the
- * network — speech-to-text is gated on a `WHISPER_MODEL` no environment sets
- * yet, and the listening path byte-downloads the media, so an HLS-only
- * platform (Reddit) and one that carries no media URL at all (Bilibili) cannot
- * be reached even once it is configured. Widening past these three waits on
- * nooticr-server#39 and #42; the earlier wording here claimed instead that
- * listening was "a different tool at a different price", which was wrong on
- * both halves and is why Douyin sat unreachable behind a two-network limit
- * despite reading captions exactly like the other two.
+ * `get_post_transcript`'s `_` arm transcribes any other platform's audio,
+ * behind the same tool at the same price, and since nooticr-server#870 it does
+ * so on the first call and reaches every importable platform, Reddit and
+ * Bilibili included. What keeps the sweep on these three is the deployment
+ * rather than the network: the listening route is gated on a speech-to-text
+ * key, and a sweep that widened to it would quote transcripts a server
+ * without one refuses. Widening is its own change, priced and tested as one.
+ * The earlier wording here claimed instead that listening was "a different
+ * tool at a different price", which was wrong on both halves and is why
+ * Douyin sat unreachable behind a two-network limit despite reading captions
+ * exactly like the other two.
  *
  * Named here rather than inline because three places have to agree on it — the
  * tool's own enum, the filter it puts every requested platform through, and the

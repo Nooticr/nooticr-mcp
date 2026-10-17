@@ -28,8 +28,19 @@
     "check": "npx playwright test tests/e2e/ui-template.e2e.ts -g 'brand sweep'",
     "mutant": {
       "file": "src/shared/ui-template.ts",
-      "find": "+mgroupMediaHtml(post,key,playing)",
+      "find": "+mgroupMediaHtml(o.mediaPost||post,o.key,!!expandedMedia[o.key],o.startMs)",
       "replace": "+\"\""
+    }
+  },
+  {
+    "id": "paid-tool-states-its-price",
+    "claim": "Every tool that spends credits says so in its description, so a host can quote before it charges.",
+    "source": "README.md — the price column is 'the contract this server promises hosts'",
+    "check": "npx vitest run --silent=true",
+    "mutant": {
+      "file": "src/shared/tools.ts",
+      "find": "\"who works. Consumes 2 nooticr credits (20 free credits included for new users).\",",
+      "replace": "\"who works.\","
     }
   }
 ]

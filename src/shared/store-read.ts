@@ -58,7 +58,7 @@ export function registerStoreReadTools(server: McpServer, makeClient: MakeClient
         "shop \"your-store.myshopify.com\"). Optionally appId ties the store to one product. The " +
         "owner approves at Amazon or Shopify; nothing is connected until they do, and no " +
         "credential passes through this tool. Nooticr only asks for access to listing copy and " +
-        "prices. Each call mints a fresh link. No cost to call.",
+        "prices. Each call mints a fresh link. No cost to call. Use when the user wants to connect their Amazon or Shopify store.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
@@ -84,7 +84,7 @@ export function registerStoreReadTools(server: McpServer, makeClient: MakeClient
         "exact SKU; Shopify: product search), limit (up to 50), cursor from nextCursor, " +
         "productRef to read one product by SKU or GID, includeIssues, includePricing (Amazon). " +
         "For Amazon, source \"report\" reads the whole catalogue through a report: it answers " +
-        "status in_progress with a reportId and poll arguments until done. Read-only. No cost to call.",
+        "status in_progress with a reportId and poll arguments until done. Read-only. No cost to call. Use when the user asks about the products in their connected store.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       inputSchema: z
         .object({

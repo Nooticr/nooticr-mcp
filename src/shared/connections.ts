@@ -62,8 +62,11 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "smaller set than the networks nooticr can read. \"Manage comments\" reports what the " +
         "platform granted, not something this tool does: this tool posts nothing, and a yes there " +
         "never means a drafted reply will be sent by itself. A reply goes out only through " +
-        "post_comment_reply, on a draft the user confirmed. Call this " +
-        "before promising that something can be posted or replied to. No cost to call.",
+        "post_comment_reply, on a draft the user confirmed. \"Publish\" is the grant an AI " +
+        "employee's posts use: no tool on this server publishes a post. A post goes out when a " +
+        "person approves that employee's schedule_post action in the Nooticr dashboard's Inbox, " +
+        "or on its own if the customer has turned on autopilot for publishing for that employee. " +
+        "Call this before telling the user that something can be posted or replied to. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),
       outputSchema: OUTPUT_SCHEMAS.list_social_connections,
@@ -90,7 +93,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "choices if there is more than one. The user approves at the provider; nothing is " +
         "connected until they do, and no credential ever passes through this tool. Each call " +
         "mints a fresh link, so do not reuse an old one. For YouTube, pass capabilities " +
-        "[\"manage_comments\"] to also ask for the comment-management grant. No cost to call.",
+        "[\"manage_comments\"] to also ask for the comment-management grant. No cost to call. Use when the user wants to connect a social account, or a tool reports that one is missing.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({

@@ -379,7 +379,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "repeating until the scan is done. Never conclude, or end your turn, on an incomplete " +
         "scan: a read of 4 of 10 listings presented as the category is wrong. " +
         "For Amazon specifically, scan_amazon_category returns the same shape plus Amazon's own " +
-        "review-aspect counts.",
+        "review-aspect counts. Use for a category or a competitive set on one of these marketplaces; get_marketplace_product reads one product.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -533,7 +533,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "of the same marketplace and `query`, so it fetches nothing and never re-scans — run " +
         "scan_marketplace_category first, and again later, to have two runs to compare. `new` and " +
         "`gone` mean entered or left the results, not listed or delisted. A category scanned only " +
-        "once has no earlier run and says so. Free.",
+        "once has no earlier run and says so. Free. Use when the user asks what changed in a category since an earlier scan.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -567,6 +567,57 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
   );
 
   server.registerTool(
+    "get_price_history",
+    {
+      title: "Get Price History",
+      description:
+        "One product's price over time — or its rating, review count or availability with `metric` — " +
+        "from the observations stored each time the product was scanned. Use when someone asks how a product's price, rating, review count or stock moved over time. `marketplace` and `id` name " +
+        "the product the same way get_marketplace_product does; `from` and `to` take dates (default: " +
+        "the last 30 days). Returns the points oldest first with min, max, first, last and the " +
+        "percentage change from first to last. A point is stored only when something changed, so the " +
+        "last value held until `lastSeenAt`. Reads stored data only: it never fetches, and a product " +
+        "nobody has scanned yet says so (`recorded: false`) — run get_marketplace_product once to " +
+        "start its record. Free.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      outputSchema: OUTPUT_SCHEMAS.get_price_history,
+      inputSchema: z
+        .object({
+          marketplace: marketplaceArg,
+          id: z.string().describe("The site's own product id, or a product URL from it."),
+          market: z.string().optional().describe("The storefront the product is on, if the site has several."),
+          from: z
+            .string()
+            .optional()
+            .describe("Start of the window, as a date (2026-09-01) or an ISO timestamp. Default: 30 days before `to`."),
+          to: z.string().optional().describe("End of the window, inclusive. Default: now."),
+          metric: z.enum(["price", "rating", "reviewCount", "availability"]).optional().describe("What to chart (default price)."),
+        })
+        .strict(),
+    },
+    async (args: Record<string, unknown>, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const m = marketOf(args.marketplace);
+      if (!m) return toolError("get_price_history failed", new Error(`unknown marketplace — one of ${SLUGS}`));
+      try {
+        const res = await client.callTool("get_price_history", args);
+        const payload = structured(res);
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(payload) }],
+          structuredContent: payload,
+        };
+      } catch (err) {
+        return toolError("get_price_history failed", err);
+      }
+    },
+  );
+
+  server.registerTool(
     "get_marketplace_product",
     {
       title: "Get Marketplace Product",
@@ -581,7 +632,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
-        idempotentHint: true,
+        idempotentHint: false,
         openWorldHint: true,
       },
       outputSchema: OUTPUT_SCHEMAS.get_marketplace_product,
@@ -636,7 +687,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         "cite that the scan does not contain is flagged. Without a scanId, listings you pass are " +
         "drawn marked as not checked against a scan. Free. Your read is attributed to you, never " +
         "presented as a nooticr rating of anyone's product. For Amazon scans use " +
-        "show_amazon_category_insights. Call this after you have read the reviews, not instead of reading them.",
+        "show_amazon_category_insights. Call this after you have read the reviews and written the read.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
