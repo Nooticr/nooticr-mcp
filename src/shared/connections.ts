@@ -93,7 +93,7 @@ export function registerConnectionTools(server: McpServer, makeClient: MakeClien
         "choices if there is more than one. The user approves at the provider; nothing is " +
         "connected until they do, and no credential ever passes through this tool. Each call " +
         "mints a fresh link, so do not reuse an old one. For YouTube, pass capabilities " +
-        "[\"manage_comments\"] to also ask for the comment-management grant. No cost to call.",
+        "[\"manage_comments\"] to also ask for the comment-management grant. No cost to call. Use when the user wants to connect a social account, or a tool reports that one is missing.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({

@@ -181,7 +181,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "Patch your own product's fields — omitted arguments leave their column unchanged. Takes " +
         "appId (optional when your workspace has only one product); every other field is " +
         "snake_case, the same names create_product takes and for the same reason — the backend " +
-        "reads them by exact key. Free — no AI call, just a row.",
+        "reads them by exact key. Free — no AI call, just a row. Use when the user wants to change details of a product that already exists.",
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
@@ -223,7 +223,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       description:
         "Your own scheduled and draft posts in the content pipeline — title, status, scheduled " +
         "time, approval status. What is queued to publish, not what already has (see " +
-        "get_post_performance for that). Does not publish or change anything. No cost to call.",
+        "get_post_performance for that). Does not publish or change anything. No cost to call. Use when the user asks what is queued or drafted in their content pipeline.",
       _meta: viewMeta("get_scheduled_posts"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -255,7 +255,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       description:
         "Your own already-published posts with their engagement counters — views, likes, " +
         "comments, shares, platform, post date. This is the raw performance history, not an " +
-        "interpretation of it; pair with growth_brief for that. No cost to call.",
+        "interpretation of it; pair with growth_brief for that. No cost to call. Use when the user asks how their own published posts performed.",
       _meta: viewMeta("get_post_performance"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -287,7 +287,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       description:
         "Your own most recently synced video performance stats across every connected creator — " +
         "views, likes, comments, shares, plus a running total. Reads the last sync; does not " +
-        "trigger a new one. No cost to call.",
+        "trigger a new one. No cost to call. Use when the user asks for their own synced video numbers.",
       _meta: viewMeta("get_video_stats"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -332,7 +332,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       description:
         "The saved weekly content plan for your own product, if one has been generated (see " +
         "generate_content_plan). Read-only and free even when a plan exists — generating a new " +
-        "one is the paid step. Returns plan: null when none has been made yet. No cost to call.",
+        "one is the paid step. Returns plan: null when none has been made yet. No cost to call. Use when the user asks to see the content plan already generated for their product.",
       _meta: viewMeta("get_content_plan"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -368,7 +368,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "Your own product's brand playbook — name, description and the playbook text — if one has " +
         "been configured, in the dashboard or by a previous analyze_product run. Read-only: never " +
         "creates or edits a playbook itself. Returns available: false when none exists yet. Takes " +
-        "appId (optional when your workspace has only one product). No cost to call.",
+        "appId (optional when your workspace has only one product). No cost to call. Use when a task needs the product's stored brand voice or positioning.",
       _meta: viewMeta("get_brand_playbook"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -456,7 +456,8 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       "themselves (installs, opens, purchases, revenue) feed get_post_performance and growth_brief " +
       "rather than being repeated here. Returns a message rather than an error when nothing has " +
       "ever been synced; connect GA4 in API Connections first. Takes appId (optional when your " +
-      "workspace has only one product). No cost to call.",
+      "workspace has only one product). No cost to call. Use to check whether GA4 data is synced " +
+      "and for which dates.",
   );
   connectorRead(
     "get_search_console_data",
@@ -494,7 +495,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "background: returns a jobId immediately rather than the finished analysis — poll it with " +
         "analyze_product_status. Billed like the dashboard's own analyze job: 10 of your " +
         "workspace's plan AI credits (first analysis free per workspace), a different balance from " +
-        "your personal MCP credits and not tracked by check_nooticr_credits.",
+        "your personal MCP credits and not tracked by check_nooticr_credits. Use when the user wants a brand playbook generated or refreshed for their product.",
       // Not view-less for lack of trying: the immediate reply is only a
       // jobId and state: "pending", nothing to draw yet. analyze_product_status,
       // which returns the finished playbook, is where the view belongs — see
@@ -528,7 +529,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       description:
         "Poll a job started by analyze_product. Takes jobId. Returns state (pending, thinking, " +
         "done, error) and, once done, the generated analysis/brand playbook. Free to poll — the " +
-        "cost was already charged when analyze_product started the job.",
+        "cost was already charged when analyze_product started the job. Use after analyze_product, until the job reports done or error.",
       _meta: viewMeta("analyze_product_status"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
@@ -560,13 +561,13 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "appId plus the draft fields to review something that only exists as arguments. Nothing is " +
         "published. If the AI reviewer is unavailable the result carries degraded: true and a " +
         "warning — treat those scores as generic placeholders, never as real feedback. Free — " +
-        "nothing is billed for this, same as the dashboard's own pre-publish review.",
+        "nothing is billed for this, same as the dashboard's own pre-publish review. Use when the user wants feedback on a post before publishing it.",
       _meta: viewMeta("review_post"),
       // Not read-only: given a postId the backend saves the review and score
       // onto that scheduled post (`save_ai_review`), overwriting whatever was
       // there. Free, which is not the same thing — a host that auto-approves
       // read-only tools would let this rewrite pipeline data unattended.
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           postId: z.number().int().optional().describe("A post already in your pipeline. Alternative to appId + draft fields."),
@@ -603,9 +604,9 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "schedule anything — this only returns the draft text for you to present, refine, or hand " +
         "to a tool that persists it. Billed like the dashboard's own Draft Post button: consumes " +
         "your workspace's plan AI credits, a different balance from your personal MCP credits and " +
-        "not tracked by check_nooticr_credits.",
+        "not tracked by check_nooticr_credits. Use when the user asks for a post written for their own product.",
       _meta: viewMeta("draft_post"),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
@@ -640,13 +641,13 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "plus whatever analytics (GA4, Search Console, PostHog) and fleet analysis you have " +
         "synced. It changes nothing of yours, but it is not free: billed like the dashboard's own " +
         "Growth Brief button, from your workspace's plan AI credits rather than your personal " +
-        "MCP credits.",
+        "MCP credits. Use when the user asks how their product's social presence is doing and what to do next.",
       _meta: viewMeta("growth_brief"),
       // Spending the workspace's plan AI credits (`CREDIT_GROWTH_BRIEF`) is
       // what puts this outside read-only, by the same rule that already
       // covers draft_post and generate_content_plan. It writes no content of
       // the user's, which is why the description says so in those words.
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
@@ -677,7 +678,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "a hook, caption, hashtags and a full production script for each, grounded in what already " +
         "worked in your post history. Saves the generated plan (fetch it later with the free " +
         "get_content_plan) but does not schedule or publish any post. Billed like the dashboard's " +
-        "own Content Plan button: your workspace's plan AI credits, not your personal MCP credits.",
+        "own Content Plan button: your workspace's plan AI credits, not your personal MCP credits. Use when the user asks for a week of planned posts for their product.",
       _meta: viewMeta("generate_content_plan"),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
       inputSchema: z
@@ -717,11 +718,11 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
         "Generate timed on-screen caption cues for a video on your own product — a transcript " +
         "plus start/end-timed lines. Does not burn captions onto any video or touch stored media; " +
         "only returns the cue data. If no AI provider is configured the result carries " +
-        "provider: \"mock\" placeholder captions instead of failing — check that field before " +
+        "provider: \"mock\" placeholder captions rather than an error — check that field before " +
         "treating the captions as real. Billed like the dashboard's own Generate Captions button: " +
-        "your workspace's plan AI credits, not your personal MCP credits.",
+        "your workspace's plan AI credits, not your personal MCP credits. Use when the user needs timed on-screen captions for one of their videos.",
       _meta: viewMeta("generate_captions"),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
           appId: z
