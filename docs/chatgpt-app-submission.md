@@ -63,7 +63,7 @@ Both were dropped for redundancy, not because they are wrong:
   tools draft but cannot send, is already the first negative case.
 
 The five kept cases are one per distinct widget, and together they trace the
-subtitle: `analyze_post_fast` → `search_mentions` → `search_spoken_mentions` →
+subtitle: `analyze_post_text` → `search_mentions` → `search_spoken_mentions` →
 `track_creator` → `generate_post_variants`. Listening, then create.
 
 ### The two negative cases that were cut

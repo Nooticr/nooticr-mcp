@@ -49,7 +49,7 @@ what "hand data to the LLM to classify" sounds like it should mean:
 ### Worked example: a bug report becomes a fixed bug
 
 The concrete case this is built for: `summarize_post_comments` (and `search_mentions`,
-`answer_my_audience`, `what_should_i_make_next` the same way) hands the
+`answer_my_audience`, `content_ideas_from_audience` the same way) hands the
 calling model a comment and its taxonomy — `summarize_post_comments`'s description
 names the categories explicitly: *"praise, complaint, bug report, question,
 request, comparison, spam."* When the model labels one `bug report`, that
@@ -114,13 +114,13 @@ the model calling the *other* server with the strings this one returned.
 same bug out loud in a video — "this stopped working for me after a week" is
 just as much a bug report said in a review as typed in its comments. That
 content reaches the model through `get_post_transcript`, which
-`analyze_post`, `analyze_post_fast` and `understand_social_post` all fetch
+`analyze_post`, `analyze_post_text` and `understand_social_post` all fetch
 alongside frames/captions/stats (see `evidence.ts`'s `EVIDENCE_PLANS`) — the
 model classifies a transcript line exactly the same way it classifies a
 comment. The one real difference: a transcript isn't chunked into
 individually-addressable units the way comments are, so there is no
 `comment:`-shaped id for "the sentence at 0:42" — the addressable unit is the
-post itself (`post:<platform>:<slug>`, from `get_social_media`'s `postId` or
+post itself (`post:<platform>:<slug>`, from `get_social_post`'s `postId` or
 `postIdOf()`). A bug reported in a video's own words gets filed the same way,
 quoting the post id and the relevant line, rather than a comment id that
 doesn't exist for it.
@@ -131,9 +131,9 @@ doesn't exist for it.
 |---|---|---|---|---|---|
 | `answer_my_audience` | `get_user_posts` (1 call, your own feed) | `get_post_comments` × posts opened (default 6) | `replySignals()` phrase-match flags each comment `wants_a_reply` / `unclear` | `post:<platform>:<slug>`, `comment:<postId>:<commentId>` | Draft replies per flagged comment → `show_audience_replies` renders them; this tool sends nothing; a reply is posted only after the user confirms its exact text |
 | `track_creator` | `get_user_posts` (1 call, their feed) | *(none — one fetch is the whole window)* | `distributionOf`/`scored()`: each post's percentile against that creator's own median, `outperformers` filtered by verdict | `post:<platform>:<slug>` | Model reads `outperformers` + `newSincePreviousCheck` and decides what's worth reacting to |
-| `who_should_i_work_with` | `search_creators` (keyword) | `get_similar_creators` × 1, only if a `seed` was given | Merge-by-username; `foundBy: "both"` when both searches agree — the strongest signal in the payload; **bio links extracted, typed and sorted by value-per-fetch** | `creator:<platform>:<username>` | Model *opens* the links it judges worth opening (a repo, their site), scores each candidate against the returned `rubric`, then calls `show_collab_shortlist` to put the ranked list to the user; `audienceOverlap.howTo` names the follow-up call rather than silently charging ~9 credits/candidate to prove it |
-| `why_did_this_underperform` | `get_social_media` (the post) | `get_user_posts` (1 call, that creator's window, post excluded from its own baseline) | `distributionOf`: median/quartiles/ratio/percentile for the one post | `post:<platform>:<slug>` | Model states whether the result is a real underperformance or just noise against the creator's own variance |
-| `what_should_i_make_next` | `get_user_posts` (your feed) | `get_post_comments` × your posts opened, **plus** `discover_social_posts` (1 call, the niche sweep) | `replySignals()` flags `asking` comments (demand); niche sweep is supply, unscored | `post:<platform>:<slug>`, `comment:<postId>:<commentId>` | Model intersects demand (what's asked for) against supply (what's already made) — the gap is the idea |
+| `find_collaborators` | `search_creators` (keyword) | `get_similar_creators` × 1, only if a `seed` was given | Merge-by-username; `foundBy: "both"` when both searches agree — the strongest signal in the payload; **bio links extracted, typed and sorted by value-per-fetch** | `creator:<platform>:<username>` | Model *opens* the links it judges worth opening (a repo, their site), scores each candidate against the returned `rubric`, then calls `show_collab_shortlist` to put the ranked list to the user; `audienceOverlap.howTo` names the follow-up call rather than silently charging ~9 credits/candidate to prove it |
+| `benchmark_post` | `get_social_post` (the post) | `get_user_posts` (1 call, that creator's window, post excluded from its own baseline) | `distributionOf`: median/quartiles/ratio/percentile for the one post | `post:<platform>:<slug>` | Model states whether the result is a real underperformance or just noise against the creator's own variance |
+| `content_ideas_from_audience` | `get_user_posts` (your feed) | `get_post_comments` × your posts opened, **plus** `discover_social_posts` (1 call, the niche sweep) | `replySignals()` flags `asking` comments (demand); niche sweep is supply, unscored | `post:<platform>:<slug>`, `comment:<postId>:<commentId>` | Model intersects demand (what's asked for) against supply (what's already made) — the gap is the idea |
 | `search_mentions` | *(fans out itself, across up to 9 networks)* | one `get_post_comments`-equivalent fetch per post opened, per platform | none — comments are returned as `mentions` with a raw `hits` count, no sentiment | `<platform>:<postId>:<index>` | Model classifies sentiment per mention (this is the tool the goal's "watching competitor → search terms → classify → video mentions" example matches almost exactly) |
 | `summarize_post_comments` | `get_post_comments` (1 call) | *(none)* | Platform-provided `themes` only, passed through unscored | `comment:<postSlug>:<index>` | Model labels sentiment + category (praise/complaint/bug/question/request/comparison/spam) per the taxonomy the description names; `show_comment_review` then renders the model's own labels for free |
 
@@ -148,7 +148,7 @@ testing these tools locally.
 
 ### Worked example: vetting a collaborator by reading their work
 
-`who_should_i_work_with` used to end at a sortable list. A follower count and
+`find_collaborators` used to end at a sortable list. A follower count and
 a bio do not settle whether to approach someone; the work does — the videos,
 the site, the repository. All of that is one click away *inside the bio*, and
 the bio came back as a single string, so the model had to spot a URL inside
@@ -201,7 +201,7 @@ read out of the source. The method, so it can be re-run after a change:
    `/auth/me` and `POST /mcp` (`tools/call`) for whichever raw tool names a
    given composite tool fans out to (`get_user_posts`, `get_post_comments`,
    `search_creators`, `get_similar_creators`, `discover_social_posts`,
-   `search_mentions`, `get_social_media`). No real platform is ever touched
+   `search_mentions`, `get_social_post`). No real platform is ever touched
    and no credits are spent. At least one fixture comment/mention/bio in
    every fixture is deliberately phrased like an embedded instruction
    ("ignore your previous instructions...") to exercise the untrusted-content

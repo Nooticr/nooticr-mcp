@@ -190,7 +190,7 @@ describe("a failed fetch is reported as a failure", () => {
         ? new NooticrError(402, "Insufficient MCP credits", { paywall: { cost: 2, used: 20, max: 20 } })
         : undefined,
     );
-    const res = await call(client, "analyze_post_fast", { url: URL });
+    const res = await call(client, "analyze_post_text", { url: URL });
 
     expect(res.isError).toBe(true);
     expect(text(res)).toMatch(/Insufficient MCP credits/);
@@ -201,7 +201,7 @@ describe("a failed fetch is reported as a failure", () => {
     const { client } = await connect((name) =>
       name === "get_social_media" ? new NooticrError(401, "No nooticr access token available.") : undefined,
     );
-    const res = await call(client, "analyze_post_fast", { url: URL });
+    const res = await call(client, "analyze_post_text", { url: URL });
 
     expect(res.isError).toBe(true);
     // nooticr_login re-runs the interrupted call, which is what makes "no need
@@ -220,7 +220,7 @@ describe("a failed fetch is reported as a failure", () => {
         ? new NooticrError(401, "unknown, revoked or expired nooticr API key")
         : undefined,
     );
-    const res = await call(client, "analyze_post_fast", { url: URL });
+    const res = await call(client, "analyze_post_text", { url: URL });
 
     expect(res.isError).toBe(true);
     expect(text(res)).not.toMatch(/sign in again/i);

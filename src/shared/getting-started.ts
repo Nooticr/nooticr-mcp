@@ -34,7 +34,7 @@ export const SERVER_INSTRUCTIONS = [
   "Before a paid call, explain its stated cost and get the user's consent; follow any tool's built-in " +
     "confirmation flow before proceeding.",
   "When the user asks what nooticr can do or how to start, call nooticr_getting_started: it is free, reads " +
-    "this account's state, and suggests next calls with their prices. Common first calls: get_social_media on a post URL " +
+    "this account's state, and suggests next calls with their prices. Common first calls: get_social_post on a post URL " +
     "(1 credit), discover_social_posts on a niche (2), summarize_post_comments on a post (2).",
   "Marketplace scans run in the background and usually come back unfinished (e.g. 4 of 10). When a result " +
     "says NOT FINISHED or carries a nextCall, make that call (it is free) and keep polling until it is " +
@@ -78,7 +78,7 @@ export function nextSteps(state: {
   }
   steps.push(
     {
-      tool: "get_social_media",
+      tool: "get_social_post",
       why: "Read one post: caption, stats and media. The cheapest way to see what nooticr returns.",
       credits: 1,
       example: { url: "<a TikTok, Instagram, YouTube or X post URL>" },

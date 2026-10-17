@@ -421,7 +421,7 @@ test("selecting posts and pressing Compare calls the tool", async ({ page }) => 
   });
 });
 
-// An analysis result, shaped the way analyze_post_fast returns one.
+// An analysis result, shaped the way analyze_post_text returns one.
 const ANALYSIS = {
   mode: "fast", analyzed: true,
   post: {
@@ -1704,7 +1704,7 @@ test.describe("collab shortlist", () => {
 });
 
 /**
- * track_creator and why_did_this_underperform both compute a post's ratio
+ * track_creator and benchmark_post both compute a post's ratio
  * to the creator's own baseline (see performance.ts's standing()) and attach
  * it to the post as `standing`. Before standingBadge() existed, postCard
  * rendered the same view/like/comment pills any gallery gets and the
@@ -1742,7 +1742,7 @@ test.describe("competitor standing badge", () => {
     await expect(cards.nth(2)).toContainText("Below baseline");
   });
 
-  test("a single-post view (why_did_this_underperform) shows the badge too", async ({ page }) => {
+  test("a single-post view (benchmark_post) shows the badge too", async ({ page }) => {
     await renderTemplate(page, {
       post: post({ value: 100, median: 2000, ratio: 0.05, percentile: 0, verdict: "flop" }),
     });
@@ -2553,7 +2553,7 @@ test("getting started draws its own view, with unknowns as unknown", async ({ pa
     connectedCount: null,
     watching: 0,
     nextSteps: [
-      { tool: "get_social_media", why: "Read one post.", credits: 1, example: { url: "<a post URL>" } },
+      { tool: "get_social_post", why: "Read one post.", credits: 1, example: { url: "<a post URL>" } },
       { tool: "watch_creator", why: "Keep a creator on a list.", credits: 0 },
     ],
   });

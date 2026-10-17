@@ -89,8 +89,8 @@ export type Capability = {
  */
 export const CAPABILITIES: Readonly<Record<string, Capability>> = {
   postDetail: {
-    enumerating: ["get_social_media", "understand_social_post"],
-    quiet: ["analyze_post", "analyze_post_fast", "compare_social_posts", "get_post_frames"],
+    enumerating: ["get_social_post", "understand_social_post"],
+    quiet: ["analyze_post", "analyze_post_text", "compare_social_posts", "get_post_frames"],
   },
   comments: {
     enumerating: ["get_post_comments"],
@@ -110,8 +110,8 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
       // argument and names none, so it stays out.
       "compare_creators",
       "catch_up_watchlist",
-      "what_should_i_make_next",
-      "why_did_this_underperform",
+      "content_ideas_from_audience",
+      "benchmark_post",
       "answer_my_audience",
     ],
   },
@@ -119,7 +119,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     // suggest_creator_identity runs creator search on each network it looks
     // on (CREATOR_SEARCH_PLATFORMS in nooticr-server), so it serves exactly
     // what search does.
-    enumerating: ["search_creators", "who_should_i_work_with", "suggest_creator_identity"],
+    enumerating: ["search_creators", "find_collaborators", "suggest_creator_identity"],
   },
   similarCreators: {
     enumerating: ["get_similar_creators"],

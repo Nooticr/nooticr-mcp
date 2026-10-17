@@ -73,8 +73,8 @@ async function main() {
     list.tools.some((t) => t.name === "list_own_apps")
   );
   check(
-    "advertises get_social_media",
-    list.tools.some((t) => t.name === "get_social_media")
+    "advertises get_social_post",
+    list.tools.some((t) => t.name === "get_social_post")
   );
 
   console.log("==> tools/call check_nooticr_credits");
@@ -97,8 +97,8 @@ async function main() {
     JSON.stringify(appsOut)
   );
 
-  console.log(`==> tools/call get_social_media on the E2E fixture URL (${STUB_URL})`);
-  const media = await client.callTool({ name: "get_social_media", arguments: { url: STUB_URL } });
+  console.log(`==> tools/call get_social_post on the E2E fixture URL (${STUB_URL})`);
+  const media = await client.callTool({ name: "get_social_post", arguments: { url: STUB_URL } });
   check("did not error", media.isError !== true, JSON.stringify(media.content));
   const mediaOut = structured(media);
   check("returned a contentType", typeof mediaOut?.contentType === "string", JSON.stringify(mediaOut));

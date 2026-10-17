@@ -5,7 +5,7 @@
  * direction only. `track_creator` scores each post against the median of
  * that creator's own window, "because a raw view count mostly measures
  * follower count — outperformance against themselves is the signal".
- * `why_did_this_underperform` does the same for a single post.
+ * `benchmark_post` does the same for a single post.
  *
  * Both were right, and both then discarded the comparison. A ratio to one's
  * own median is *exactly* the quantity that IS comparable across creators of

@@ -111,7 +111,7 @@ describe("loading plans", () => {
     expect(creditsFor("analyze_post")).toBe(3);
     expect(creditsFor("analyze_creator_profile")).toBe(2);
     expect(creditsFor("understand_social_post")).toBe(3);
-    expect(creditsFor("analyze_post_fast")).toBe(2);
+    expect(creditsFor("analyze_post_text")).toBe(2);
     expect(creditsFor("compare_social_posts")).toBe(1);
   });
 
@@ -128,10 +128,10 @@ describe("loading plans", () => {
   it("counts a per-item fan-out from the argument that sets it", () => {
     expect(creditsFor("answer_my_audience")).toBe(14);
     expect(creditsFor("answer_my_audience", { limit: 2 })).toBe(6);
-    expect(creditsFor("what_should_i_make_next")).toBe(12);
-    // A seed creator is the second call who_should_i_work_with only sometimes makes.
-    expect(creditsFor("who_should_i_work_with")).toBe(2);
-    expect(creditsFor("who_should_i_work_with", { seed: "@a" })).toBe(4);
+    expect(creditsFor("content_ideas_from_audience")).toBe(12);
+    // A seed creator is the second call find_collaborators only sometimes makes.
+    expect(creditsFor("find_collaborators")).toBe(2);
+    expect(creditsFor("find_collaborators", { seed: "@a" })).toBe(4);
   });
 
   it("prices a spoken sweep at the worst case the tool actually clamps to", () => {
