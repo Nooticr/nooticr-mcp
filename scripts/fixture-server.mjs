@@ -1463,6 +1463,25 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", instructions: "Show the user the quote, then confirm." },
       };
     }
+    case "crm_upsert_creator":
+    case "crm_update_status": {
+      return {
+        content: [{ type: "text", text: "Saved." }],
+        structuredContent: { creator: { id: "00000000-0000-0000-0000-0000000000c1", platform: "tiktok", handle: "maya.fit", status: "prospect" } },
+      };
+    }
+    case "crm_list_creators": {
+      return {
+        content: [{ type: "text", text: "1 creator." }],
+        structuredContent: { creators: [{ id: "00000000-0000-0000-0000-0000000000c1", platform: "tiktok", handle: "maya.fit", status: "prospect" }] },
+      };
+    }
+    case "crm_log_interaction": {
+      return {
+        content: [{ type: "text", text: "Logged." }],
+        structuredContent: { interaction: { id: "00000000-0000-0000-0000-0000000000d1", kind: "note", summary: "Fixture note" } },
+      };
+    }
     case "pause_employee":
     case "fire_employee":
     case "reject_action": {

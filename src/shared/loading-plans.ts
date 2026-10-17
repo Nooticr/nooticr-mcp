@@ -614,6 +614,11 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   list_employees: { label: "Reading your employees", kind: "list", n: 3, steps: [], free: true },
   pause_employee: { label: "Updating the employee", kind: "text", n: 1, steps: [], free: true },
   fire_employee: { label: "Letting the employee go", kind: "text", n: 1, steps: [], free: true },
+  // Creator CRM (crm.ts): free, and none of it fetches.
+  crm_upsert_creator: { label: "Saving the creator", kind: "text", n: 1, steps: [], free: true },
+  crm_list_creators: { label: "Reading your creator pipeline", kind: "list", n: 3, steps: [], free: true },
+  crm_update_status: { label: "Updating the creator's status", kind: "text", n: 1, steps: [], free: true },
+  crm_log_interaction: { label: "Logging the interaction", kind: "text", n: 1, steps: [], free: true },
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
   get_employee_audit: { label: "Reading the audit trail", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },

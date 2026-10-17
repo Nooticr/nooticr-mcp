@@ -84,6 +84,10 @@ const NOT_READ_ONLY = [
   "fire_employee",
   "approve_action",
   "reject_action",
+  // Creator CRM: upserting, re-statusing and logging write stored rows; the list only reads.
+  "crm_upsert_creator",
+  "crm_update_status",
+  "crm_log_interaction",
   // Google Sheets: the writes create or change cells in the customer's own spreadsheet.
   "sheets_create",
   "sheets_append_rows",
@@ -109,7 +113,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(119);
+    expect(tools).toHaveLength(123);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -139,6 +143,11 @@ describe("tool annotations", () => {
       "create_product",
       "creative_assets_list",
       "creative_job_status",
+      // Creator CRM: stored rows inside nooticr; nothing here contacts a creator.
+      "crm_list_creators",
+      "crm_log_interaction",
+      "crm_update_status",
+      "crm_upsert_creator",
       "draft_comment_reply",
       "draft_post",
       // Holds the caller's own draft up to a rubric; makes no request at all.

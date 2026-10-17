@@ -567,6 +567,30 @@ export const TOOLS: Tool[] = [
     when: "You are done with it; to stop it temporarily, pause it instead.",
   },
   {
+    name: "crm_upsert_creator", cost: 0, group: "own",
+    args: "platform, handle, ...fields",
+    desc: "Adds a creator to your creator pipeline, or updates the one already there (matched by platform and handle). Free.",
+    when: "You found a creator worth tracking, or learned more about one.",
+  },
+  {
+    name: "crm_list_creators", cost: 0, group: "own",
+    args: "status?, appId?, query?, limit?, dueBefore?",
+    desc: "Your creator pipeline, most recently updated first, each with its last interaction. Free.",
+    when: "Before adding a creator, or to see who is due a next step.",
+  },
+  {
+    name: "crm_update_status", cost: 0, group: "own",
+    args: "creatorId, status, note",
+    desc: "Moves a creator to a new pipeline status and records why. Free.",
+    when: "A creator's relationship with you changed.",
+  },
+  {
+    name: "crm_log_interaction", cost: 0, group: "own",
+    args: "creatorId, kind, summary, body?",
+    desc: "Records a note, vetting result, outreach draft, reply or deliverable against a creator. Free.",
+    when: "Something happened with a creator that the pipeline should remember.",
+  },
+  {
     name: "list_pending_actions", cost: 0, group: "own",
     args: "employeeId?, limit?",
     desc: "What your AI employees are waiting to do until you approve: a preview of what will be published, sent or changed. Free.",

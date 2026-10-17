@@ -1506,6 +1506,62 @@
         "idempotent_justification": "Idempotent: once an employee is let go, firing it again changes nothing."
       }
     },
+    "crm_upsert_creator": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds a creator to the workspace's pipeline or updates the one already there.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Destructive: on an existing creator, the fields passed overwrite the values stored before, and the old values are not kept.",
+        "idempotent_justification": "Idempotent: free, and repeating the call with the same arguments leaves the same row; nothing is added a second time."
+      }
+    },
+    "crm_list_creators": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's creator pipeline. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call returns the same pipeline and has no additional effect."
+      }
+    },
+    "crm_update_status": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it moves a creator to a new pipeline status and records a history entry.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: the status can be changed again and the history keeps every move.",
+        "idempotent_justification": "Not idempotent: every call writes a new status_change entry to the creator's history, even when the status is the same."
+      }
+    },
+    "crm_log_interaction": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it appends an interaction to a creator's history.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: it only adds an entry.",
+        "idempotent_justification": "Not idempotent: every call appends a new entry to the creator's history."
+      }
+    },
     "list_pending_actions": {
       "annotations": {
         "readOnlyHint": true,

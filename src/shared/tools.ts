@@ -59,6 +59,7 @@ import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerReplyTools } from "./replies.js";
 import { registerEmployeeTools } from "./employees.js";
+import { registerCrmTools } from "./crm.js";
 import { registerStoreReadTools } from "./store-read.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
@@ -3314,6 +3315,8 @@ const TOOL_NAMES = [
  registerReplyTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
  registerEmployeeTools(server, makeClient);
+ // Creator CRM (crm.ts): the workspace's creator pipeline.
+ registerCrmTools(server, makeClient);
  // Store connections (store-read.ts): the connect link and the catalogue read.
  registerStoreReadTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);

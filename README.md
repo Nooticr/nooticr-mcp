@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-119 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+123 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -204,6 +204,10 @@ a `scanId` for the rest.
 | `list_employees` | free | Your AI employees with status, schedule, next run and budget left; `includeFired: true` adds the ones let go. |
 | `pause_employee` | free | Pause an AI employee (it keeps its memory and thread) or resume it with `resume: true`. Only the person who hired it or a workspace admin can. |
 | `fire_employee` | free | Let an AI employee go for good: runs stop and actions awaiting approval are discarded. The first call only describes what will happen; confirm with `confirm: true`. |
+| `crm_upsert_creator` | free | Add a creator to your creator pipeline, or update the one already there (matched by `platform` + `handle`). Only the fields you pass change; new creators start as `prospect`. Every number cited goes in `evidence`. |
+| `crm_list_creators` | free | Your creator pipeline, most recently updated first, each with its last interaction. Filter by `status`, `appId`, `query` or `dueBefore`. |
+| `crm_update_status` | free | Move a creator to a new pipeline status and record why. `do_not_contact` stays unless a person changes it; AI employees may only use `prospect`, `shortlisted` or `paused`. |
+| `crm_log_interaction` | free | Record a note, vetting result, outreach draft, reply or deliverable against a creator. AI employees cannot log `outreach_sent`. |
 | `list_pending_actions` | free | What your AI employees are waiting to do until you approve, each with a preview of what will be published, sent or changed. Optionally one `employeeId`. |
 | `get_employee_audit` | free | One AI employee's audit trail, newest first: runs, model calls and their cost, tool calls (arguments redacted), sources read, approvals with the approver's edits, executed actions and their external ids, config changes, pauses and errors. Filter by `from`/`to`, `types`, `runId` or `actionId`; `verify: true` re-checks the tamper-evident hash chain. Workspace owners and admins only. |
 | `approve_action` | free | Approve one pending action by `actionId`. The first call returns the preview and a `confirmationToken` and runs nothing; after you confirm, the stored action runs exactly once. |

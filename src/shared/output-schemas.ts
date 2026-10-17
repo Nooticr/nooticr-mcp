@@ -1955,6 +1955,11 @@ export const OUTPUT_SCHEMAS = {
     action: anyObject().nullish(),
   }),
   reject_action: open({ rejected: scalar(), action: anyObject().nullish() }),
+  // Creator CRM (nooticr-server E1): the creator/interaction views are the server's own shapes.
+  crm_upsert_creator: open({ creator: anyObject().nullish() }),
+  crm_list_creators: open({ creators: listOf(open({ id: scalar(), platform: scalar(), handle: scalar(), status: scalar() })) }),
+  crm_update_status: open({ creator: anyObject().nullish() }),
+  crm_log_interaction: open({ interaction: anyObject().nullish() }),
   list_employees: open({ employees: listOf(open({ id: scalar(), name: scalar(), status: scalar() })) }),
   list_pending_actions: open({ actions: listOf(open({ id: scalar(), employeeId: scalar() })) }),
   // AU1 (nooticr-server employees/mcp.rs get_employee_audit; event shape from employee_audit_view::event_view).
