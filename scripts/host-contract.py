@@ -108,6 +108,12 @@ NO_APP = {
     "crm_list_creators",  # view pending: a table of creators with status and next step
     "crm_update_status",  # pure state mutation: nothing to draw
     "crm_log_interaction",  # pure state mutation: nothing to draw
+    # A product's own site in Google Search (growth.ts): the server lists all four with no card,
+    # and the design system has none for a query table, an index status or a vitals panel.
+    "get_search_performance",  # view pending: a query/page table with clicks, CTR and position
+    "inspect_url",  # view pending: one index-status row per URL
+    "get_sitemaps",  # view pending: a sitemap list with indexed counts
+    "get_page_speed",  # view pending: Core Web Vitals rated good / needs improvement / poor
     "marketplace_changes",
     "get_price_history",  # view pending: a price line over time; the server lists it in NO_VIEW too
 }

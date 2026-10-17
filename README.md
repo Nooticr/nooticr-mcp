@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-123 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+127 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -231,6 +231,10 @@ Everything above reads someone else's content. These read and generate for **you
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
 | `get_google_analytics_data` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
 | `get_search_console_data` | free | Search Console clicks, impressions and top queries, as of the last sync — whether people search for what your content is about. |
+| `get_search_performance` | free | Your product's own site in Google Search, **live** from its connected Search Console: clicks, impressions, CTR and position by query, page, country, device or date, with `filters` and `compare_to_previous`. Snake_case arguments, `app_id` required. |
+| `inspect_url` | free | Whether Google indexed pages of your own site: verdict, coverage, Google's canonical against yours, last crawl, robots and fetch state. Only URLs on the connected site; at most 20 per call and 20 per agent run (each spends the site's own daily inspection quota). |
+| `get_sitemaps` | free | The sitemaps submitted for your own site, with submitted and indexed counts, errors and warnings; `url` for one sitemap's detail. Read-only: it cannot submit one. |
+| `get_page_speed` | free | Core Web Vitals for a page of your own site: real-user field data (LCP, INP, CLS) when there is enough, plus lab scores and the biggest savings. `strategy` is `mobile` (default) or `desktop`. |
 | `get_posthog_analytics` | free | Your PostHog pageview trend, as of the last sync — line a post's date up against traffic to your site. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
 | `get_brand_playbook` | free | Your product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by `analyze_product`. Read-only; `available: false` when none exists. |
