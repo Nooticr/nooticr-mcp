@@ -129,7 +129,7 @@ extra keys. The rules behind the values:
 |---|---|---|
 | `true` / `true` / `false` / `false` | 34 | paid reads of public social or marketplace content |
 | `true` / `true` / `false` / `true` | 7 | free reads of a third party: scan polls, the caller's own store, sheets, comments, the voice library |
-| `true` / `false` / `false` / `true` | 41 | free reads of the caller's own workspace, and the `show_*` views that draw locally |
+| `true` / `false` / `false` / `true` | 42 | free reads of the caller's own workspace, and the `show_*` views that draw locally |
 | `false` / `true` / `false` / `false` | 12 | paid generation and collection, posting a reply, creating sheets, creating a watch |
 | `false` / `true` / `true` / `false` | 5 | fetch and overwrite a stored marker or playbook, run an approved action, overwrite sheet cells |
 | `true` / `false` / `false` / `false` | 3 | `growth_brief`, `draft_post`, `generate_captions`: generate from the caller's own data and store nothing, billed in plan AI credits |

@@ -2006,6 +2006,27 @@ export const OUTPUT_SCHEMAS = {
     ),
     note: scalar(),
   }),
+  // One product's stored observations as a series (nooticr-server marketplace_history.rs), drawn by no view yet.
+  // min/max/deltaPct are absent for availability; an unknown product answers recorded: false.
+  get_price_history: open({
+    recorded: scalar(),
+    metric: scalar(),
+    series: listOf(open({ t: scalar(), value: scalar(), currency: scalar(), priceText: scalar() })),
+    count: scalar(),
+    first: scalar(),
+    last: scalar(),
+    min: scalar(),
+    max: scalar(),
+    deltaPct: scalar(),
+    currency: scalar(),
+    mixedCurrencies: scalar(),
+    truncated: scalar(),
+    title: scalar(),
+    url: scalar(),
+    lastSeenAt: scalar(),
+    billable: scalar(),
+    note: scalar(),
+  }),
   get_marketplace_product: open({
     ...marketplaceScanShape,
     product: amazonProduct.nullish().describe("The single product, also present as products[0]."),
