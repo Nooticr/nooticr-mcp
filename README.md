@@ -75,7 +75,7 @@ them caps that fan-out with an argument.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
-| `analyze_post_text` | 2 | The post's transcript, caption and stats — everything but the pictures. Two fetches: `get_social_media` (1) and `get_post_transcript` (1). Use when the words and numbers answer the question. |
+| `analyze_post_text` | 2 | The post's transcript, caption and stats — everything but the pictures. Two fetches: the post itself (1, as `get_social_post`) and `get_post_transcript` (1). Use when the words and numbers answer the question. |
 | `analyze_post` | 3 | Frames sampled across the video, as **images your model can actually look at**, plus the transcript. Two fetches: `get_post_frames` (2) and `get_post_transcript` (1). Use when the visuals are the point — framing, editing, on-screen text. |
 | `understand_social_post` | 3 | The same two fetches, asked for a description of what physically happens on screen rather than why it works. Use when you need the events, not the strategy. |
 | `summarize_post_comments` | 2 | The comment section, every comment with a stable id, and the taxonomy to label them with — sentiment, and whether each is praise, a complaint, a bug report, a question, a request, a comparison or spam. The same `get_post_comments` call, at the same price as reading them directly. Pass `verbatim: true` to have every item rendered whole for quoting rather than clipped to fit; same price. |

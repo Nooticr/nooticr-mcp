@@ -70,7 +70,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "detect_spoken_mentions",
  title: "Detect Spoken Mentions",
- description: "The brands a creator names OUT LOUD in one video, for you to find: the spoken transcript and the written caption side by side. List each brand, product or company named with the verbatim sentence, the creator's framing, and mentionedIn spoken, caption or both. Give brands to focus the watch; others named are still reported. Waits for the audio to be transcribed. Costs 2 nooticr credits — 1 for get_post_transcript plus 1 for get_social_media — and nothing when no transcript can be made.",
+ description: "The brands a creator names OUT LOUD in one video, for you to find: the spoken transcript and the written caption side by side. List each brand, product or company named with the verbatim sentence, the creator's framing, and mentionedIn spoken, caption or both. Give brands to focus the watch; others named are still reported. Waits for the audio to be transcribed. Costs 2 nooticr credits — 1 for get_post_transcript plus 1 for the post fetch — and nothing when no transcript can be made.",
  inputSchema: z.object({ url: z.string(), brands: z.array(z.string()).max(20).optional(), language: z.string().optional() }).strict(),
  },
  {

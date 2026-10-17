@@ -50,4 +50,30 @@ describe("retired tool names (#262)", () => {
     // The backend's own tool keeps its name: only the public name moved.
     expect(backend).toEqual(["get_social_media", "get_social_media"]);
   });
+
+  it("still serves each retired name's view, both twins, without listing it", async () => {
+    const { client } = await connect();
+    const listed = (await client.listResources()).resources.map((r) => r.uri);
+    for (const [retired, current] of Object.entries(RETIRED_TOOL_NAMES)) {
+      for (const suffix of ["", ".html"]) {
+        const old = `ui://nooticr/${retired}${suffix}`;
+        const now = await client.readResource({ uri: `ui://nooticr/${current}${suffix}` });
+        const then = await client.readResource({ uri: old });
+        // A host matches the contents to what it asked for.
+        expect(then.contents[0].uri).toBe(old);
+        expect(then.contents[0].mimeType).toBe(now.contents[0].mimeType);
+        expect(then.contents[0].text).toBe(now.contents[0].text);
+        expect(listed, `${old} is not listed`).not.toContain(old);
+      }
+    }
+  });
+
+  it("no description or price sentence names a retired tool", async () => {
+    const { client } = await connect();
+    for (const tool of (await client.listTools()).tools) {
+      for (const retired of Object.keys(RETIRED_TOOL_NAMES)) {
+        expect(tool.description ?? "", `${tool.name} names ${retired}`).not.toContain(retired);
+      }
+    }
+  });
 });

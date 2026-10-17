@@ -582,6 +582,19 @@ export function planCost(tool: string): number {
 }
 
 /**
+ * Backend calls whose name is not a public tool name.
+ *
+ * `get_social_media` is still what the server bills, but #262 retired it as a
+ * public name: a sentence telling a caller "1 for get_social_media" names a
+ * tool they will stop being able to call once the alias goes.
+ */
+const PUBLIC_CALL: Readonly<Record<string, string>> = { get_social_media: "the post fetch" };
+
+function callName(call: string): string {
+  return PUBLIC_CALL[call] ?? call;
+}
+
+/**
  * The price sentence a tool description carries.
  *
  * It names the calls as well as the total because a tool that fans out spends
@@ -593,8 +606,11 @@ export function costSentence(tool: string): string {
   const calls = planCalls(tool);
   const total = planCost(tool);
   const credits = `${total} nooticr credit${total === 1 ? "" : "s"}`;
-  if (calls.length === 1) return `Costs ${credits}, for the one ${calls[0]} call it makes.`;
-  const each = calls.map((c) => `${BACKEND_CALL_CREDITS[c] ?? 0} for ${c}`).join(" plus ");
+  if (calls.length === 1) {
+    const one = calls[0];
+    return `Costs ${credits}, for the one ${PUBLIC_CALL[one] ? "post fetch" : `${one} call`} it makes.`;
+  }
+  const each = calls.map((c) => `${BACKEND_CALL_CREDITS[c] ?? 0} for ${callName(c)}`).join(" plus ");
   return `Costs ${credits} — ${each}.`;
 }
 
@@ -612,7 +628,7 @@ export function fetchBillingNote(tool: string): string {
   if (calls.length === 0) return "";
   const total = planCost(tool);
   return (
-    `Billed as the fetches that produced it: ${calls.join(" and ")}, ` +
+    `Billed as the fetches that produced it: ${calls.map(callName).join(" and ")}, ` +
     `${total} credit${total === 1 ? "" : "s"} in total, at the data price. Retrying this exact call does ` +
     "not charge again: the idempotency key is namespaced per tool, so a retry replays the " +
     "same debits."

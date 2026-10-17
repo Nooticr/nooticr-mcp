@@ -122,7 +122,7 @@ export const TOOLS: Tool[] = [
   {
     name: "analyze_post_text", cost: 2, group: "understand",
     args: "url",
-    desc: "The post's transcript, caption and stats — everything but the pictures. Two fetches: get_social_media and get_post_transcript.",
+    desc: "The post's transcript, caption and stats — everything but the pictures. Two fetches: the post itself and get_post_transcript.",
     when: "The words and numbers answer the question. 2 credits, without frames, and it carries everything the script and structure depend on.",
   },
   {

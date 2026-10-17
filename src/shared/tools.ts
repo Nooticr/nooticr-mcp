@@ -559,6 +559,39 @@ function keepRetiredNamesCallable(server: McpServer): void {
   if (!tool) throw new Error(`retired tool name ${retired} points at ${current}, which is not registered`);
   Object.defineProperty(registry, retired, { value: tool, enumerable: false });
  }
+ keepRetiredViewsResolving(server);
+}
+
+/**
+ * The same for each retired name's views, both twins.
+ *
+ * A host that cached the old `tools/list` also cached the old
+ * `ui://nooticr/<name>` pointer, and resolves it before it calls anything; a
+ * pointer that 404s leaves that host the text result and no widget until it
+ * re-lists. The alias serves the replacement's view at the URI that was asked
+ * for, unlisted for the same reason the tool name is.
+ */
+function keepRetiredViewsResolving(server: McpServer): void {
+ type Contents = { uri: string } & Record<string, unknown>;
+ type Registered = { readCallback: (uri: URL, extra: unknown) => Promise<{ contents: Contents[] }> };
+ const registry = (server as unknown as { _registeredResources: Record<string, Registered> })._registeredResources;
+ for (const [retired, current] of Object.entries(RETIRED_TOOL_NAMES)) {
+  for (const [from, to] of [
+   [uiResource(retired), uiResource(current)],
+   [appsSdkResource(retired), appsSdkResource(current)],
+  ]) {
+   const view = registry[to];
+   if (!view) throw new Error(`retired view ${from} points at ${to}, which is not registered`);
+   const alias: Registered = {
+    ...view,
+    readCallback: async (uri, extra) => {
+     const read = await view.readCallback(uri, extra);
+     return { ...read, contents: read.contents.map((c) => ({ ...c, uri: uri.toString() })) };
+    },
+   };
+   Object.defineProperty(registry, from, { value: alias, enumerable: false });
+  }
+ }
 }
 
 export function createMcpServer(
@@ -1655,7 +1688,7 @@ const TOOL_NAMES = [
     "spoken (only said), caption (only written) or both. Give `brands` to focus the watch; still " +
     "report any other brand named, because the unexpected one is the finding. The audio is " +
     "transcribed on the same call, so the answer is whole. Costs 2 nooticr credits — 1 for " +
-    "get_post_transcript plus 1 for get_social_media's caption — and nothing when no transcript " +
+    "get_post_transcript plus 1 for the post fetch's caption — and nothing when no transcript " +
     "can be made. Use for one video; search_spoken_mentions looks for one term across a " +
     "creator's recent posts.",
    _meta: {
