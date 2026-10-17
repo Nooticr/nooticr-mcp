@@ -1936,6 +1936,7 @@ export const OUTPUT_SCHEMAS = {
     confirmationToken: scalar(),
     message: scalar(),
     instructions: scalar(),
+    offer: anyObject().nullish(),
     employee: anyObject().nullish(),
   }),
   pause_employee: open({ employee: anyObject().nullish() }),

@@ -1460,7 +1460,8 @@ function handleMcpCall(name, args, workspaceId) {
     case "hire_employee": {
       return {
         content: [{ type: "text", text: "Quote ready; confirm to hire." }],
-        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", instructions: "Show the user the quote, then confirm." },
+        // The quote echoes the working language, `en` when none was sent (nooticr-server#1074).
+        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", offer: { language: args?.language ?? "en" }, instructions: "Show the user the quote, then confirm." },
       };
     }
     case "crm_upsert_creator":
