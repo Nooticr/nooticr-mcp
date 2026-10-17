@@ -4,13 +4,13 @@ export const TOOL_DEFINITIONS = [
  {
  name: "analyze_post",
  title: "Inspect Social Media Post",
- description: "Frames sampled evenly across a social post (video, image, carousel/slideshow), returned as real images you can look at, together with the post's transcript, caption and stats. It hands you the material rather than a verdict: read the frames and the words, then work out the hook, the structure, the visual style, the CTA and the audience yourself, citing the frame or line behind each claim. Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili and LinkedIn. Use when the visuals are the point — framing, editing, on-screen text; analyze_post_fast reads the same post without the frames for one credit less. Fans out to get_post_frames and get_post_transcript: 3 nooticr credits, 2 for the frames plus 1 for the transcript.",
+ description: "Frames sampled evenly across a social post (video, image, carousel/slideshow), returned as real images you can look at, together with the post's transcript, caption and stats. It hands you the material rather than a verdict: read the frames and the words, then work out the hook, the structure, the visual style, the CTA and the audience yourself, citing the frame or line behind each claim. Supports TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili and LinkedIn. Use when the visuals are the point — framing, editing, on-screen text; analyze_post_text reads the same post without the frames for one credit less. Fans out to get_post_frames and get_post_transcript: 3 nooticr credits, 2 for the frames plus 1 for the transcript.",
  inputSchema: z.object({ url: z.string().describe("Public post URL (TikTok/Instagram/YouTube/X/Reddit/Douyin/Xiaohongshu/Weibo/Bilibili/LinkedIn).") }).strict(),
  },
  {
- name: "get_social_media",
- title: "Get Social Media",
- description: "Fetch a social post's media from a TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili or LinkedIn URL: contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. Returns an inline thumbnail image. Use when you need the post's facts and media and nothing more; if you want it interpreted, use analyze_post_fast instead. Consumes 1 nooticr credit.",
+ name: "get_social_post",
+ title: "Get Social Post",
+ description: "Fetch a social post's media from a TikTok, Instagram, YouTube, X, Reddit, Douyin, Xiaohongshu, Weibo, Bilibili or LinkedIn URL: contentType (video/image/carousel/slideshow), title, caption, author, stats and direct media URLs. Returns an inline thumbnail image. Use when you need the post's facts and media and nothing more; if you want it interpreted, use analyze_post_text instead. Consumes 1 nooticr credit.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL.") }).strict(),
  },
  {
@@ -88,7 +88,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "compare_social_posts",
  title: "Compare Social Post Performance",
- description: "The first of 2-5 posts you want compared, fetched with its stats — and the comparison left to you. Call get_social_media on each remaining URL yourself (1 credit each), and get_post_transcript where the wording matters, then say which won, what actually differed (hook, format, length, caption, hashtags), what they share worth keeping, and the one experiment that would test your explanation. Use for 'why did this one work and that one not'. Costs 1 nooticr credit for this call, plus 1 per further post you fetch.",
+ description: "The first of 2-5 posts you want compared, fetched with its stats — and the comparison left to you. Call get_social_post on each remaining URL yourself (1 credit each), and get_post_transcript where the wording matters, then say which won, what actually differed (hook, format, length, caption, hashtags), what they share worth keeping, and the one experiment that would test your explanation. Use for 'why did this one work and that one not'. Costs 1 nooticr credit for this call, plus 1 per further post you fetch.",
  inputSchema: z.object({ urls: z.array(z.string()).describe("2-5 post URLs to compare.") }).strict(),
  },
  {
@@ -98,21 +98,21 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ platform: z.string().optional().describe("Network to tag for. Defaults to tiktok, the only one with a real trend board. Anything else counts tags across a sweep and needs `niche`. linkedin cannot be swept."), niche: z.string().optional().describe("Topic to sweep, required for every platform but tiktok — the tags are counted from the posts a search for this returns, so without it there is nothing to count."), country: z.string().optional().describe("2-letter country code (default US). TikTok only."), days: z.number().int().optional().describe("Window in days: 7, 30 or 120 (default 7). TikTok only."), count: z.number().int().optional().describe("Max hashtags (default 20)."), industryId: z.string().optional().describe("Optional TikTok industry id to filter by.") }).strict(),
  },
  {
- name: "analyze_post_fast",
- title: "Quick Social Post Analysis",
- description: "A post's transcript, caption and stats, with no frames. Work out the hook, the script structure, the CTA and the audience from the words and the numbers yourself, and say plainly that you have not seen the visuals. Use when the words and numbers are enough to answer; analyze_post adds the frames when a judgement needs the visuals. Fans out to get_social_media and get_post_transcript: 2 nooticr credits, 1 each.",
+ name: "analyze_post_text",
+ title: "Social Post Text Analysis",
+ description: "A post's transcript, caption and stats, with no frames. Work out the hook, the script structure, the CTA and the audience from the words and the numbers yourself, and say plainly that you have not seen the visuals. Use when the words and numbers are enough to answer; analyze_post adds the frames when a judgement needs the visuals. Fans out to get_social_post and get_post_transcript: 2 nooticr credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("Full public post URL.") }).strict(),
  },
  {
  name: "generate_hook_ideas",
  title: "Generate Hooks from a Post",
- description: "The source post, its transcript and its stats, so you can write the opening lines yourself — the first line said or shown on screen. Name the device each hook uses and who it stops; one that could open any video in the niche is not grounded in this one. Use when you know the subject and need openings to choose between. With a url it fetches get_social_media and get_post_transcript for 2 nooticr credits; with only a topic there is nothing to fetch and it costs nothing.",
+ description: "The source post, its transcript and its stats, so you can write the opening lines yourself — the first line said or shown on screen. Name the device each hook uses and who it stops; one that could open any video in the niche is not grounded in this one. Use when you know the subject and need openings to choose between. With a url it fetches get_social_post and get_post_transcript for 2 nooticr credits; with only a topic there is nothing to fetch and it costs nothing.",
  inputSchema: z.object({ url: z.string().optional().describe("Post to riff on (optional if topic given)."), topic: z.string().optional().describe("Subject to write hooks about (optional if url given)."), count: z.number().int().optional().describe("How many hooks (default 10, max 20)."), tone: z.string().optional().describe("Optional tone, e.g. 'blunt', 'contrarian'.") }).strict(),
  },
  {
  name: "generate_post_variants",
  title: "Generate Post Variants",
- description: "The post that worked, with its transcript and stats, so you can propose what to film next — same underlying mechanism, different execution. For each variant give the hook, the one angle that changes, the shot beats in order and the CTA, and say what made the original work. Use after reading a post to move from 'why it worked' to 'what to make'. Fans out to get_social_media and get_post_transcript: 2 nooticr credits, 1 each.",
+ description: "The post that worked, with its transcript and stats, so you can propose what to film next — same underlying mechanism, different execution. For each variant give the hook, the one angle that changes, the shot beats in order and the CTA, and say what made the original work. Use after reading a post to move from 'why it worked' to 'what to make'. Fans out to get_social_post and get_post_transcript: 2 nooticr credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("The post to make variants of."), count: z.number().int().optional().describe("How many variants (default 3, max 6)."), angle: z.string().optional().describe("Optional steer, e.g. 'for a beginner audience'.") }).strict(),
  },
  {
@@ -124,7 +124,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "adapt_post_for_platform",
  title: "Adapt a Post for Another Platform",
- description: "The source post, its transcript and its stats, for you to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube title/description, newsletter — keeping the argument and changing the shape to suit how each is read. The same paragraph with different line breaks is not a repurposing. Use when a post already worked and you want it on other surfaces. Fans out to get_social_media and get_post_transcript: 2 nooticr credits, 1 each.",
+ description: "The source post, its transcript and its stats, for you to rewrite for other surfaces — X thread, LinkedIn post, carousel slides, YouTube title/description, newsletter — keeping the argument and changing the shape to suit how each is read. The same paragraph with different line breaks is not a repurposing. Use when a post already worked and you want it on other surfaces. Fans out to get_social_post and get_post_transcript: 2 nooticr credits, 1 each.",
  inputSchema: z.object({ url: z.string().describe("The post to repurpose."), targets: z.array(z.string()).optional().describe("Which formats to produce (default all).") }).strict(),
  },
  {
@@ -160,7 +160,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "show_collab_shortlist",
  title: "Show Collab Shortlist",
- description: "Display the creators you scored after vetting them, ranked, so the user can pick who to approach. Free, and makes no requests — it only draws what you pass it, and the scores shown are attributed to you rather than presented as a nooticr rating. Use after who_should_i_work_with and after actually reading some of each candidate's links: pass the score, the reason, and what you read to reach it. A candidate you did not verify should say so in checked rather than carrying a confident number.",
+ description: "Display the creators you scored after vetting them, ranked, so the user can pick who to approach. Free, and makes no requests — it only draws what you pass it, and the scores shown are attributed to you rather than presented as a nooticr rating. Use after find_collaborators and after actually reading some of each candidate's links: pass the score, the reason, and what you read to reach it. A candidate you did not verify should say so in checked rather than carrying a confident number.",
  inputSchema: z.object({ niche: z.string(), platform: z.string().optional(), summary: z.string().optional(), candidates: z.array(z.object({ id: z.string(), username: z.string(), nickname: z.string().optional(), platform: z.string().optional(), followers: z.number().optional(), verified: z.boolean().optional(), avatarUrl: z.string().optional(), signature: z.string().optional(), score: z.number().min(0).max(100).optional(), verdict: z.enum(["approach", "maybe", "pass"]).optional(), why: z.string().optional(), checked: z.array(z.string()).optional(), concerns: z.array(z.string()).optional() })).min(1).max(50), recommended: z.string().optional(), question: z.string().optional() }).strict(),
  },
  {
@@ -178,7 +178,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "show_post_analysis",
  title: "Show Analysis",
- description: "Display an analysis you wrote after analyze_post, analyze_post_fast or understand_social_post handed you the material. Free, and makes no requests — it only draws what you pass it: hook strength, script structure, quotable lines, hashtags, target audience, viral triggers and more, whichever of these you actually produced. Call this after you have done the analysing.",
+ description: "Display an analysis you wrote after analyze_post, analyze_post_text or understand_social_post handed you the material. Free, and makes no requests — it only draws what you pass it: hook strength, script structure, quotable lines, hashtags, target audience, viral triggers and more, whichever of these you actually produced. Call this after you have done the analysing.",
  inputSchema: z.object({ url: z.string(), post: z.object({}).passthrough().optional(), analysis: z.object({}).passthrough() }).strict(),
  },
  {
@@ -554,20 +554,20 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ creators: z.array(z.object({}).passthrough()).min(1).max(25), metric: z.string().optional(), ranking: z.string().optional(), verdict: z.string().optional(), tooThin: z.array(z.string()).optional() }).strict(),
  },
  {
- name: "who_should_i_work_with",
- title: "Who Should I Work With",
+ name: "find_collaborators",
+ title: "Find Collaborators",
  description: "A shortlist of people to work with \u2014 collaborators, or anyone to hire or commission: designers, developers, photographers, editors. Searches creators by craft or keyword and, when you name someone who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. Every candidate carries the links pulled out of their bio, so vetting is reading the work. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist rather than guess. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",
  inputSchema: z.object({ niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."), platform: z.enum(["tiktok", "instagram", "xiaohongshu"]).optional().describe("Which platform (default tiktok)."), seed: z.string().optional().describe("A creator who already fits \u2014 their lookalikes are added. Costs 2 more credits."), count: z.number().int().optional().describe("Candidates from the keyword search (default 8, max 20).") }).strict(),
  },
  {
- name: "why_did_this_underperform",
- title: "Why Did This Underperform",
+ name: "benchmark_post",
+ title: "Benchmark Post",
  description: "One post measured against the creator's own recent median rather than against another post. Fetches the post and that creator's recent window, takes the post back out of its own baseline, and returns where it actually sits in the distribution \u2014 median, quartiles, ratio and percentile \u2014 so the answer can be 'this is an ordinary result, not a failure'. Use when you have one post and nothing to compare it with; compare_social_posts is for two URLs you already picked. Consumes 3 nooticr credits.",
  inputSchema: z.object({ url: z.string().describe("The post to explain."), username: z.string().optional().describe("Whose baseline to use, when the post does not name its creator."), platform: z.string().optional().describe("Platform of the creator's feed."), window: z.number().int().optional().describe("Posts in the comparison window (default 12, max 30)."), metric: z.enum(["views", "likes", "comments", "shares", "engagementRate"]).optional().describe("Which stat to compare (default views).") }).strict(),
  },
  {
- name: "what_should_i_make_next",
- title: "What Should I Make Next",
+ name: "content_ideas_from_audience",
+ title: "Content Ideas From Audience",
  description: "Demand and supply in one result. Reads the comments on a creator's own recent posts for what their audience explicitly asks for, sweeps the niche for what is already being made, and returns both with ids so an idea can be traced back to the comment that asked for it \u2014 a gap nobody asked for is noise, a request nobody serves is the opportunity. Names the niche from the creator's most-used hashtag when you do not give one. Use to decide what to film; niche_report covers the supply half alone. Consumes 2 nooticr credits for the post list, 2 per post read, and 2 for the sweep \u2014 12 at the default of 4 posts.",
  inputSchema: z.object({ username: z.string().describe("Your handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok)."), niche: z.string().optional().describe("Niche for the supply sweep. Defaults to your most frequent hashtag."), limit: z.number().int().optional().describe("Your posts to read comments on (default 4, max 8). This is the price."), commentsPerPost: z.number().int().optional().describe("Comments per post (default 25, max 50)."), supplyLimit: z.number().int().optional().describe("Posts in the niche sweep (default 12, max 30).") }).strict(),
  },

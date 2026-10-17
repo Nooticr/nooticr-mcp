@@ -35,7 +35,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     analyze_post:"Analyze Post",
     discover_social_posts:"Discover Social Posts",
     get_user_posts:"Get User Posts",
-    get_social_media:"Get Social Media",
+    get_social_post:"Get Social Post",
     analyze_creator_profile:"Analyze Creator Profile",
     get_post_comments:"Get Post Comments",
     search_creators:"Search Creators",
@@ -73,7 +73,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     analyze_post:"Frames from the post plus its transcript, for you to read yourself.",
     discover_social_posts:"Trending posts from any platform for a given niche.",
     get_user_posts:"Recent posts from a specific creator handle.",
-    get_social_media:"Get post data from any social media URL.",
+    get_social_post:"Get post data from any social media URL.",
     analyze_creator_profile:"Full creator profile analysis — engagement, audience, content style.",
     get_post_comments:"Top comments on a post — sentiment, themes, viral threads.",
     search_creators:"Find creators in a niche by engagement, followers, and content.",
@@ -1109,7 +1109,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // headline fetch: analyze_post and understand_social_post pay 2 for the
   // frames and 1 more for the transcript. evaluate_social_draft fetches nothing, so it
   // has no badge — the || 0 below already hides it.
-  var AI_PRICE={analyze_post_fast:2,generate_hook_ideas:2,generate_post_variants:2,
+  var AI_PRICE={analyze_post_text:2,generate_hook_ideas:2,generate_post_variants:2,
     adapt_post_for_platform:2,niche_report:2,find_hook_pattern:2,analyze_post:3,
     summarize_post_comments:2,compare_social_posts:1,understand_social_post:3,analyze_creator_profile:2};
 
@@ -3086,7 +3086,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   /**
    * The one line a competitor sweep or an underperformance check actually
    * exists to produce — ratio to the creator's own median, and the verdict
-   * that ratio earns. track_creator and why_did_this_underperform attach
+   * that ratio earns. track_creator and benchmark_post attach
    * "standing" to every post they score (see performance.ts), and until this
    * existed postCard rendered the same view/like/comment pills any gallery
    * gets, so the computed comparison a person paid for never reached the
@@ -3537,7 +3537,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
   // ─── Vetting strip ───
   //
   // Only show_collab_shortlist sends these fields, so every other creator card
-  // — search_creators, get_similar_creators, who_should_i_work_with — renders
+  // — search_creators, get_similar_creators, find_collaborators — renders
   // exactly as it did before. The score is the calling model's, never ours,
   // and the card says so on its face: a number next to a real person's name
   // that reads as a nooticr rating would be a claim we have not made and

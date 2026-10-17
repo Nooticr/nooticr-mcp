@@ -96,7 +96,7 @@ async function result(page: Page, d: unknown) {
 
 test("loading: inline mark under 6 credits", async ({ page }) => {
   const errs = await boot(page);
-  await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-input", params: { name: "get_social_media", arguments: { url: "https://tiktok.com/x" } } }, "*"));
+  await page.evaluate(() => window.postMessage({ method: "ui/notifications/tool-input", params: { name: "get_social_post", arguments: { url: "https://tiktok.com/x" } } }, "*"));
   await page.waitForTimeout(400);
   await expect(page.locator("svg.mk.is-scanning .sq").first()).toBeVisible();
   expect(await page.locator(".load-price").textContent()).toBe("1 credit");
@@ -459,7 +459,7 @@ test("the wait shows the facts the arguments already carry", async ({ page }) =>
 
 test("a url's platform is known before the post is", async ({ page }) => {
   const errs = await boot(page);
-  await loading(page, "get_social_media", { url: "https://www.youtube.com/watch?v=a" });
+  await loading(page, "get_social_post", { url: "https://www.youtube.com/watch?v=a" });
   expect(await page.locator(".load-fact").first().textContent()).toContain("YouTube");
   expect(await page.locator(".load-price").textContent()).toBe("1 credit");
   // One call is not a fan-out worth itemising.

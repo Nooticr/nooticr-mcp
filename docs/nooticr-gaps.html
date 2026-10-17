@@ -445,7 +445,7 @@
 
     <div class="callout">
       <h3>We bill for fetches that cannot succeed</h3>
-      <p><code>analyze_post</code>, <code>analyze_post_fast</code> and <code>understand_social_post</code> each advertise nine-platform support and each unconditionally fan out to <code>get_post_transcript</code> — which the same repo documents as TikTok/YouTube-only. The call fails non-fatally, so nothing broke and nobody noticed. <strong>On seven of the nine advertised platforms, a credit is charged for a call that is structurally impossible.</strong> Gate the transcript leg on platform, or drop its cost from the quote.</p>
+      <p><code>analyze_post</code>, <code>analyze_post_text</code> and <code>understand_social_post</code> each advertise nine-platform support and each unconditionally fan out to <code>get_post_transcript</code> — which the same repo documents as TikTok/YouTube-only. The call fails non-fatally, so nothing broke and nobody noticed. <strong>On seven of the nine advertised platforms, a credit is charged for a call that is structurally impossible.</strong> Gate the transcript leg on platform, or drop its cost from the quote.</p>
     </div>
 
     <div class="items">
@@ -609,7 +609,7 @@
       <div class="item next">
         <div class="item-head"><h3>Audience quality / fake-follower scoring</h3><span class="pill build">real build</span></div>
         <p class="why">The core of the influencer-vetting market — HypeAuditor models 53 behavioural signals, Modash checks 1,200 fraud factors — and it’s built entirely from follower-growth curves, engagement timing and comment quality. No special access required, just statistical modelling on data we fetch today.</p>
-        <p class="why">This also closes a gap the product currently admits: <code>who_should_i_work_with</code> explicitly declines to measure audience overlap because it would cost ~9 credits per candidate. Honest, and a hole a competitor fills.</p>
+        <p class="why">This also closes a gap the product currently admits: <code>find_collaborators</code> explicitly declines to measure audience overlap because it would cost ~9 credits per candidate. Honest, and a hole a competitor fills.</p>
       </div>
 
       <div class="item next">

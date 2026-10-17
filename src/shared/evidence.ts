@@ -278,7 +278,7 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     },
   },
 
-  analyze_post_fast: {
+  analyze_post_text: {
     via: "get_social_media",
     args: (a) => ({ url: url(a) }),
     also: { via: "get_post_transcript", args: (a) => ({ url: url(a) }) },
@@ -305,13 +305,13 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
     guidance: (a) =>
       [
         `The first of ${(a.urls as string[])?.length ?? 0} posts to compare.`,
-        "Call get_social_media on each remaining URL (1 credit each), and",
+        "Call get_social_post on each remaining URL (1 credit each), and",
         "get_post_transcript where you need the words, then compare them yourself:",
         "which performed better, what actually differed, and the single test",
         "worth running next. Ground every difference in a number or a quote.",
         "",
         "When you are done, call show_compared_posts with all the posts (same shape",
-        "get_social_media returned for each) and your comparison — it draws a",
+        "get_social_post returned for each) and your comparison — it draws a",
         "scoreboard with the winner marked, so the comparison is visible, not",
         "only said in chat.",
         ownIt,

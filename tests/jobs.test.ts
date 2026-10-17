@@ -289,14 +289,14 @@ describe("the fan-out cap", () => {
     expect(calls[0].args.limit).toBe(12);
   });
 
-  it("caps what_should_i_make_next at eight of your own posts", async () => {
+  it("caps content_ideas_from_audience at eight of your own posts", async () => {
     const { client, calls } = await connect({
       get_user_posts: () => twentyPosts(),
       get_post_comments: () => commentsOf([{ text: "make a part 2 please", author: "@z" }]),
       discover_social_posts: () => feed([{ id: "n", platform: "tiktok", views: 1 }]),
     });
     await client.callTool({
-      name: "what_should_i_make_next",
+      name: "content_ideas_from_audience",
       arguments: { username: "a", niche: "gym", limit: 99 },
     });
     expect(calls.filter((c) => c.name === "get_post_comments")).toHaveLength(8);
@@ -376,7 +376,7 @@ describe("asking before a fan-out spends", () => {
       search_creators: () => ({ creators: [{ username: "x", followers: 10 }], mcpCredits: { cost: 2 } }),
     });
     await client.callTool({ name: "track_creator", arguments: { username: "a" } });
-    await client.callTool({ name: "who_should_i_work_with", arguments: { niche: "gym" } });
+    await client.callTool({ name: "find_collaborators", arguments: { niche: "gym" } });
     expect(asked).toEqual([]);
   });
 });
@@ -580,7 +580,7 @@ describe("track_creator", () => {
   });
 });
 
-describe("why_did_this_underperform", () => {
+describe("benchmark_post", () => {
   const url = "https://www.tiktok.com/@a/video/100";
   const backend: Backend = {
     get_social_media: () => ({
@@ -605,7 +605,7 @@ describe("why_did_this_underperform", () => {
     // returns does not, and a string comparison of the two would leave the
     // post inside its own baseline.
     const res = await client.callTool({
-      name: "why_did_this_underperform",
+      name: "benchmark_post",
       arguments: { url: `${url}?is_from_webapp=1&sender_device=pc` },
     });
     expect(calls.map((c) => c.name)).toEqual(["get_social_media", "get_user_posts"]);
@@ -634,7 +634,7 @@ describe("why_did_this_underperform", () => {
     };
     const { client } = await connect(near);
     const res = await client.callTool({
-      name: "why_did_this_underperform",
+      name: "benchmark_post",
       arguments: { url: "https://www.tiktok.com/@a/video/x" },
     });
     const out = res.structuredContent as { standing: { verdict: string } };
@@ -648,7 +648,7 @@ describe("why_did_this_underperform", () => {
     };
     const { client, calls } = await connect(anonymous);
     const res = await client.callTool({
-      name: "why_did_this_underperform",
+      name: "benchmark_post",
       arguments: { url: "https://www.tiktok.com/@?/video/1" },
     });
     expect(res.isError).toBeFalsy();
@@ -667,7 +667,7 @@ describe("why_did_this_underperform", () => {
         throw new Error("this account is private");
       },
     });
-    const res = await client.callTool({ name: "why_did_this_underperform", arguments: { url } });
+    const res = await client.callTool({ name: "benchmark_post", arguments: { url } });
     expect(res.isError).toBeFalsy();
     const out = res.structuredContent as { post: Row; baseline: null; unavailable: Array<{ reason: string }> };
     expect(out.post.id).toBeTruthy();
@@ -676,7 +676,7 @@ describe("why_did_this_underperform", () => {
   });
 });
 
-describe("who_should_i_work_with", () => {
+describe("find_collaborators", () => {
   const backend: Backend = {
     search_creators: () => ({
       creators: [
@@ -697,7 +697,7 @@ describe("who_should_i_work_with", () => {
   it("merges the two searches and records which found each candidate", async () => {
     const { client, calls } = await connect(backend);
     const res = await client.callTool({
-      name: "who_should_i_work_with",
+      name: "find_collaborators",
       arguments: { niche: "home gym", seed: "@anchor" },
     });
     expect(calls.map((c) => c.name)).toEqual(["search_creators", "get_similar_creators"]);
@@ -716,7 +716,7 @@ describe("who_should_i_work_with", () => {
 
   it("says plainly that it did not measure audience overlap", async () => {
     const { client } = await connect(backend);
-    const res = await client.callTool({ name: "who_should_i_work_with", arguments: { niche: "gym" } });
+    const res = await client.callTool({ name: "find_collaborators", arguments: { niche: "gym" } });
     const out = res.structuredContent as { audienceOverlap: { attempted: boolean; howTo: string } };
     // The differentiating signal is not affordable at this budget, and a faked
     // one would be worse than an absent one.
@@ -735,7 +735,7 @@ describe("who_should_i_work_with", () => {
       },
     });
     const res = await client.callTool({
-      name: "who_should_i_work_with",
+      name: "find_collaborators",
       arguments: { niche: "gym", seed: "anchor" },
     });
     expect(res.isError).toBeFalsy();
@@ -745,7 +745,7 @@ describe("who_should_i_work_with", () => {
   });
 });
 
-describe("what_should_i_make_next", () => {
+describe("content_ideas_from_audience", () => {
   const backend: Backend = {
     get_user_posts: () =>
       feed([
@@ -773,7 +773,7 @@ describe("what_should_i_make_next", () => {
   it("returns demand and supply together, each traceable to its source", async () => {
     const { client, calls } = await connect(backend);
     const res = await client.callTool({
-      name: "what_should_i_make_next",
+      name: "content_ideas_from_audience",
       arguments: { username: "a", niche: "home gym" },
     });
     expect(calls.map((c) => c.name)).toEqual([
@@ -805,7 +805,7 @@ describe("what_should_i_make_next", () => {
 
   it("names the niche from the creator's own hashtags when nobody gave one", async () => {
     const { client, calls } = await connect(backend);
-    const res = await client.callTool({ name: "what_should_i_make_next", arguments: { username: "a" } });
+    const res = await client.callTool({ name: "content_ideas_from_audience", arguments: { username: "a" } });
     const out = res.structuredContent as { niche: string; nicheSource: string };
     expect(out.niche).toBe("homegym");
     expect(out.nicheSource).toBe("hashtags");
@@ -819,7 +819,7 @@ describe("what_should_i_make_next", () => {
       ...backend,
       get_user_posts: () => feed([{ id: "1", platform: "tiktok", externalUrl: "https://www.tiktok.com/@a/video/1" }]),
     });
-    const res = await client.callTool({ name: "what_should_i_make_next", arguments: { username: "a" } });
+    const res = await client.callTool({ name: "content_ideas_from_audience", arguments: { username: "a" } });
     expect(calls.some((c) => c.name === "discover_social_posts")).toBe(false);
     const out = res.structuredContent as { niche: null; unavailable: Array<{ via: string }> };
     expect(out.niche).toBeNull();
@@ -834,7 +834,7 @@ describe("what_should_i_make_next", () => {
       },
     });
     const res = await client.callTool({
-      name: "what_should_i_make_next",
+      name: "content_ideas_from_audience",
       arguments: { username: "a", niche: "gym" },
     });
     expect(res.isError).toBeFalsy();

@@ -26,7 +26,7 @@ and ask what it means.
    talking about you" when in fact nobody was asked.
 3. **Fetch with the narrowest tool that answers the question.** Prefer a
    transcript over a full analysis when the question is about wording; prefer
-   `analyze_post_fast` over `analyze_post` unless the answer genuinely depends
+   `analyze_post_text` over `analyze_post` unless the answer genuinely depends
    on the visuals.
 4. **Read what came back and say what it shows.** Quote the line, name the post,
    give the number. An assertion with no fetched thing behind it does not belong

@@ -12,7 +12,7 @@
  * views. Several tests here fixed real product bugs this exercise
  * surfaced — no existing test (hand-crafted-fixture or real-call-but-never-
  * rendered) had caught them, since they only show up when a real tool
- * call's actual shape meets the widget. Two (compare_social_posts/analyze_post_fast
+ * call's actual shape meets the widget. Two (compare_social_posts/analyze_post_text
  * never producing the shapes their dead comparison/analysis views need)
  * were left as documented, deliberate non-fixes: see this repo's
  * docs/testing/agentic-e2e-testing.md for why. Each test's comment says
@@ -50,7 +50,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
   }: {
     page: Page;
   }) => {
-    const result = await session.client.callTool({ name: "get_social_media", arguments: { url: STUB_URL } });
+    const result = await session.client.callTool({ name: "get_social_post", arguments: { url: STUB_URL } });
     expect(result.isError).not.toBe(true);
 
     await renderRealResult(page, result.structuredContent);
@@ -98,7 +98,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
 
   // BUG (product, not test): compare_social_posts's real evidence plan
   // (src/shared/evidence.ts's compare_social_posts entry) only ever fetches
-  // urls[0] via get_social_media — it never sets `.comparison` and never
+  // urls[0] via get_social_post — it never sets `.comparison` and never
   // returns a `posts` array. The dedicated comparison scoreboard
   // (ui-template.ts:2375, `d.comparison!==undefined && Array.isArray(d.posts)`)
   // is therefore unreachable: a real compare_social_posts call, including one
@@ -137,7 +137,7 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
   });
 
   // BUG (product, not test), same family as the compare_social_posts one above:
-  // analyze_post_fast (and analyze_post, understand_social_post) all run
+  // analyze_post_text (and analyze_post, understand_social_post) all run
   // through runEvidence() (tools.ts:362-427), which builds
   // {mode:"evidence", tool, evidenceFrom, ...} from a cheap "via" fetch and
   // never sets `.analysis`. The dedicated analysisCard view
@@ -146,17 +146,17 @@ test.describe.serial("every reachable widget view, driven by a real tool call", 
   // chips — is therefore unreachable by any tool call in this repo today.
   // tests/e2e/ui-template.e2e.ts's own analysisCard tests only exist by
   // injecting synthetic `analysis`-shaped data no real call produces.
-  test("analyze_post_fast never actually produces an .analysis (documents the same dead-view bug for analysisCard)", async ({
+  test("analyze_post_text never actually produces an .analysis (documents the same dead-view bug for analysisCard)", async ({
     page,
   }: {
     page: Page;
   }) => {
-    const result = await session.client.callTool({ name: "analyze_post_fast", arguments: { url: STUB_URL } });
+    const result = await session.client.callTool({ name: "analyze_post_text", arguments: { url: STUB_URL } });
     expect(result.isError).not.toBe(true);
     const structured = result.structuredContent as Record<string, unknown>;
 
     expect(structured.mode).toBe("evidence");
-    expect(structured.analysis, "analyze_post_fast should not (yet) set .analysis — see comment above").toBeUndefined();
+    expect(structured.analysis, "analyze_post_text should not (yet) set .analysis — see comment above").toBeUndefined();
 
     await renderRealResult(page, structured);
     await page.screenshot({ path: "test-results/visual-e2e/full-app-14-analyze-post-fast-not-analysis-card.png" });

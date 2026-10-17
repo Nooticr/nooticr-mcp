@@ -33,7 +33,7 @@ clients, but ones that check tool metadata, resource shapes and dual-mime
 UI resources, not whether calling a tool actually does the right thing.
 Nothing anywhere boots this server and has an LLM decide which tool to call,
 with what arguments, and checks the outcome — the failure mode that matters
-most (an agent calls `analyze_post` when it meant `analyze_post_fast`, or
+most (an agent calls `analyze_post` when it meant `analyze_post_text`, or
 passes another workspace's `appId`) is invisible to all of the above.
 
 This doc adds that missing layer: **agentic E2E testing** — a real LLM,
@@ -307,7 +307,7 @@ after the product owner weighed in.
 5. **`compare_social_posts` only ever fetches `urls[0]`**, never sets
    `.comparison`, never returns `.posts` — the dedicated comparison
    scoreboard view was unreachable by any real call.
-6. **`analyze_post`/`analyze_post_fast`/`understand_social_post` never
+6. **`analyze_post`/`analyze_post_text`/`understand_social_post` never
    set `.analysis`** — same root cause: both run through `runEvidence()`,
    which returns evidence and a guidance instruction, never a verdict. The
    `analysisCard` view (an AI verdict, meters, quotable lines, hashtag
@@ -326,7 +326,7 @@ surface. Confirmed directly with the product owner: **the host LLM (the
 one the person is already talking to) should do all the writing/analysis,
 never a second model on the server.** What *was* genuinely missing wasn't
 server-side generation — it was somewhere for the host LLM's own writing
-to land. So instead of making `compare_social_posts`/`analyze_post_fast`/etc. call
+to land. So instead of making `compare_social_posts`/`analyze_post_text`/etc. call
 real AI generation (which would reverse the documented design and its
 pricing model — these are priced at fetch-cost, not generation-cost), five
 new free, no-request tools close the loop the same way `show_comment_review`
@@ -334,10 +334,10 @@ already did for `summarize_post_comments`:
 
 - **`show_compared_posts`** renders the (previously unreachable) comparison
   scoreboard — the model does the actual comparing across
-  `get_social_media` calls, then calls this with the real posts + its
+  `get_social_post` calls, then calls this with the real posts + its
   comparison.
 - **`show_post_analysis`** renders the (previously unreachable) `analysisCard` —
-  same idea, for `analyze_post`/`analyze_post_fast`/`understand_social_post`.
+  same idea, for `analyze_post`/`analyze_post_text`/`understand_social_post`.
 - **`show_hooks`**, **`show_variants`**, **`show_repurposed_post`** are new
   view code (this repo had no existing branch for a hooks list, a variants
   list, or per-surface rewritten copy) for `generate_hook_ideas`, `generate_post_variants`

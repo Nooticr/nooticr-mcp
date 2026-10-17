@@ -52,7 +52,7 @@ async function callThrough(structured: Row, apiUrl = API) {
     const server = createMcpServer(async () => nooticr, { watchStore: new MemoryWatchStore() });
     const [a, b] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(a), server.connect(b)]);
-    return await client.callTool({ name: "get_social_media", arguments: { url: String(structured.externalUrl ?? "") } });
+    return await client.callTool({ name: "get_social_post", arguments: { url: String(structured.externalUrl ?? "") } });
   } finally {
     if (saved === undefined) delete process.env.NOOTICR_API_URL;
     else process.env.NOOTICR_API_URL = saved;

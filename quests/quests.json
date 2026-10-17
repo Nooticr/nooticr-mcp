@@ -25,13 +25,13 @@
     },
     {
       "id": "quick-read-picks-fast-and-shows-it",
-      "title": "A quick read picks analyze_post_fast, and still ends up drawn",
-      "why": "Two edges at once: the selection edge (analyze_post_fast's description exists to keep frame-heavy analyze_post out of a cheap request) and the guidance edge analyze_post_fast -> show_post_analysis.",
+      "title": "A quick read picks analyze_post_text, and still ends up drawn",
+      "why": "Two edges at once: the selection edge (analyze_post_text's description exists to keep frame-heavy analyze_post out of a cheap request) and the guidance edge analyze_post_text -> show_post_analysis.",
       "prompt": "Give me a quick read on this post's hook — no need for the actual video frames: {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "analyze_post_fast",
+          "analyze_post_text",
           "show_post_analysis"
         ],
         "forbid": [
@@ -42,7 +42,7 @@
     {
       "id": "any-analysis-tool-ends-in-show-analysis",
       "title": "Whichever analysis tool a host picks, the result gets drawn",
-      "why": "analyze_post, analyze_post_fast and understand_social_post all point at show_post_analysis. This quest deliberately does not care which one a host chooses — it cares that the loop closes. The report records which was picked, which is how the three descriptions' relative pull gets measured.",
+      "why": "analyze_post, analyze_post_text and understand_social_post all point at show_post_analysis. This quest deliberately does not care which one a host chooses — it cares that the loop closes. The report records which was picked, which is how the three descriptions' relative pull gets measured.",
       "prompt": "Help me understand what is actually going on in this post and why it works: {STUB}",
       "runs": 3,
       "expect": {
@@ -131,12 +131,12 @@
     {
       "id": "collab-shortlist-is-shown",
       "title": "A collab shortlist ends up drawn",
-      "why": "chain-map edge who_should_i_work_with -> show_collab_shortlist.",
+      "why": "chain-map edge find_collaborators -> show_collab_shortlist.",
       "prompt": "Who should I work with in the morning routines niche on TikTok?",
       "runs": 3,
       "expect": {
         "chain": [
-          "who_should_i_work_with",
+          "find_collaborators",
           "show_collab_shortlist"
         ]
       }
@@ -170,12 +170,12 @@
     {
       "id": "underperformance-digs-into-the-post",
       "title": "A why-did-this-flop question digs into the post itself",
-      "why": "chain-map edges why_did_this_underperform -> analyze_post and -> get_post_transcript: the tool returns the standing of a post against its own baseline and then asks for the material to explain it. Stopping at the number is the failure this defends against.",
+      "why": "chain-map edges benchmark_post -> analyze_post and -> get_post_transcript: the tool returns the standing of a post against its own baseline and then asks for the material to explain it. Stopping at the number is the failure this defends against.",
       "prompt": "Why did this post underperform? {STUB}",
       "runs": 3,
       "expect": {
         "chain": [
-          "why_did_this_underperform"
+          "benchmark_post"
         ],
         "maxCalls": 8
       }

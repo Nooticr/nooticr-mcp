@@ -13,7 +13,7 @@
 // each catch a different way it can be broken:
 //
 //   1. SELECTION edges — a tool DESCRIPTION naming another tool ("use
-//      analyze_post_fast instead when ..."). These steer before any call.
+//      analyze_post_text instead when ..."). These steer before any call.
 //   2. GUIDANCE edges — the real text a real tools/call returns, read by
 //      calling every tool for real against the fixture backend. A guidance
 //      string that names a tool that does not exist, or that no longer
