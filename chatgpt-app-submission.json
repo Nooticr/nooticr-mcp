@@ -416,6 +416,18 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
       }
     },
+    "get_price_history": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads back the price, rating, review count or availability already stored for one product. Nothing is written.",
+        "open_world_justification": "Stays inside nooticr: it fetches nothing from any marketplace, only reads observations already stored.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy."
+      }
+    },
     "get_marketplace_product": {
       "annotations": {
         "readOnlyHint": true,

@@ -680,6 +680,12 @@ export const TOOL_DEFINITIONS = [
   inputSchema: z.object({ marketplace: z.string().describe("Which site the scan read."), query: z.string().describe("The category search to compare, exactly as it was scanned."), market: z.string().optional().describe("The storefront the scan read, if the site has several.") }).strict(),
  },
  {
+  name: "get_price_history",
+  title: "Get Price History",
+  description: "One product's price over time — or its rating, review count or availability with `metric` — from the observations stored each time the product was scanned. `marketplace` and `id` name the product the same way get_marketplace_product does; `from` and `to` take dates (default: the last 30 days). Returns the points oldest first with min, max, first, last and the percentage change from first to last. A point is stored only when something changed, so the last value held until `lastSeenAt`. Reads stored data only: it never fetches, and a product nobody has scanned yet says so (`recorded: false`) — run get_marketplace_product once to start its record. Free.",
+  inputSchema: z.object({ marketplace: z.string().describe("Which site the product is on."), id: z.string().describe("The site's own product id, or a product URL from it."), market: z.string().optional().describe("The storefront the product is on, if the site has several."), from: z.string().optional().describe("Start of the window, as a date (2026-09-01) or an ISO timestamp. Default: 30 days before `to`."), to: z.string().optional().describe("End of the window, inclusive. Default: now."), metric: z.enum(["price", "rating", "reviewCount", "availability"]).optional().describe("What to chart (default price).") }).strict(),
+ },
+ {
   name: "get_marketplace_product",
   title: "Get Marketplace Product",
   description: "Fetch one product from any of twelve marketplaces by id or URL: price, rating, the full star histogram, specs, and the review text. marketplace picks the site — one of amazon, aliexpress, cdiscount, flipkart, mercadolibre, lazada, otto, rakuten, trendyol, jumia, vinted, temu. Use for a single product; for a category or a competitive set, scan_marketplace_category collects many in one job and rolls them up. Consumes 3 nooticr credits.",
