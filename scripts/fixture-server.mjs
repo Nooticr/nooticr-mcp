@@ -1582,6 +1582,30 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: scan,
       };
     }
+    case "get_price_history": {
+      // An unknown product is a normal answer, not an error (nooticr-server#831).
+      if (String(args.id || "").toLowerCase().includes("never")) {
+        return {
+          content: [{ type: "text", text: "No stored record for that product yet." }],
+          structuredContent: { recorded: false, billable: false, note: "Nothing stored for this product yet; a get_marketplace_product read records its first point." },
+        };
+      }
+      const metric = args.metric || "price";
+      return {
+        content: [{ type: "text", text: "2 points." }],
+        structuredContent: {
+          recorded: true, metric, billable: false, count: 2,
+          series: [
+            { t: "2026-09-20T09:00:00Z", value: 24.99, currency: "USD", priceText: "$24.99" },
+            { t: "2026-10-10T09:00:00Z", value: 21.99, currency: "USD", priceText: "$21.99" },
+          ],
+          first: 24.99, last: 21.99, min: 21.99, max: 24.99, deltaPct: -12.0, currency: "USD",
+          title: "Collapsible silicone water bottle, 600 ml", url: "https://www.amazon.com/dp/B0FIXTURE1",
+          lastSeenAt: "2026-10-14T09:00:00Z",
+          note: "A point is stored only when something changed; the last value held until lastSeenAt.",
+        },
+      };
+    }
     default:
       // Not a failure: keeps other tool calls from hard-crashing the
       // fixture if a future test case exercises one this stand-in doesn't

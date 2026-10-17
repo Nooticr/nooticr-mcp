@@ -103,6 +103,7 @@ NO_APP = {
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
     "marketplace_changes",
+    "get_price_history",  # view pending: a price line over time; the server lists it in NO_VIEW too
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"
