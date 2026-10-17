@@ -1960,6 +1960,11 @@ export const OUTPUT_SCHEMAS = {
   crm_list_creators: open({ creators: listOf(open({ id: scalar(), platform: scalar(), handle: scalar(), status: scalar() })) }),
   crm_update_status: open({ creator: anyObject().nullish() }),
   crm_log_interaction: open({ interaction: anyObject().nullish() }),
+  // A product's own site in Google Search (nooticr-server growth/customer.rs over gsc.rs and pagespeed.rs).
+  get_search_performance: open({ rows: listOf(open({ keys: listOf(z.string()), clicks: scalar(), impressions: scalar() })), totals: anyObject().nullish(), window: anyObject().nullish() }),
+  inspect_url: open({ cached: scalar(), results: listOf(open({ url: scalar(), verdict: scalar() })) }),
+  get_sitemaps: open({ sitemaps: listOf(open({ path: scalar(), errors: scalar(), warnings: scalar() })) }),
+  get_page_speed: open({ url: scalar(), strategy: scalar(), field: anyObject().nullish(), lab: anyObject().nullish() }),
   list_employees: open({ employees: listOf(open({ id: scalar(), name: scalar(), status: scalar() })) }),
   list_pending_actions: open({ actions: listOf(open({ id: scalar(), employeeId: scalar() })) }),
   // AU1 (nooticr-server employees/mcp.rs get_employee_audit; event shape from employee_audit_view::event_view).

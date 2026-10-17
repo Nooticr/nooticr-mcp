@@ -1562,6 +1562,62 @@
         "idempotent_justification": "Not idempotent: every call appends a new entry to the creator's history."
       }
     },
+    "get_search_performance": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads search clicks, impressions, CTR and position for the product's own site. Nothing is written.",
+        "open_world_justification": "Open world. The server reads Google Search Console (or PageSpeed Insights) live for the product's own site, through the workspace's own connection.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing; the same arguments return the same window (cached), with no additional effect."
+      }
+    },
+    "inspect_url": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads Google's index status for pages of the product's own site. Nothing in the account or on the site changes.",
+        "open_world_justification": "Open world. The server reads Google Search Console (or PageSpeed Insights) live for the product's own site, through the workspace's own connection.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free; inspecting the same URL again returns the same status and changes nothing. Each live inspection counts against the site's own daily inspection quota, which is why calls are capped."
+      }
+    },
+    "get_sitemaps": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the sitemaps submitted for the product's own site. It cannot submit one.",
+        "open_world_justification": "Open world. The server reads Google Search Console (or PageSpeed Insights) live for the product's own site, through the workspace's own connection.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call returns the same list."
+      }
+    },
+    "get_page_speed": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it measures a page of the product's own site. Nothing is written.",
+        "open_world_justification": "Open world. The server reads Google PageSpeed Insights live, for a page of the product's own site only.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing; repeating the call measures the same page again with no additional effect."
+      }
+    },
     "list_pending_actions": {
       "annotations": {
         "readOnlyHint": true,

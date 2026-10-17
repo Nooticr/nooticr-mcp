@@ -60,6 +60,7 @@ import { registerConnectionTools } from "./connections.js";
 import { registerReplyTools } from "./replies.js";
 import { registerEmployeeTools } from "./employees.js";
 import { registerCrmTools } from "./crm.js";
+import { registerGrowthTools } from "./growth.js";
 import { registerStoreReadTools } from "./store-read.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
@@ -3317,6 +3318,8 @@ const TOOL_NAMES = [
  registerEmployeeTools(server, makeClient);
  // Creator CRM (crm.ts): the workspace's creator pipeline.
  registerCrmTools(server, makeClient);
+ // A product's own site in Google Search (growth.ts): performance, inspection, sitemaps, page speed.
+ registerGrowthTools(server, makeClient);
  // Store connections (store-read.ts): the connect link and the catalogue read.
  registerStoreReadTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);

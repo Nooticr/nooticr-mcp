@@ -787,6 +787,30 @@ export const TOOLS: Tool[] = [
     when: "Whether people search for what your content is about.",
   },
   {
+    name: "get_search_performance", cost: 0, group: "own",
+    args: "app_id, start_date?, end_date?, dimensions?, filters?, compare_to_previous?, ...",
+    desc: "Your own site's clicks, impressions, CTR and position in Google Search, live from its connected Search Console. Free.",
+    when: "Which queries and pages bring people to your site, and what changed.",
+  },
+  {
+    name: "inspect_url", cost: 0, group: "own",
+    args: "app_id, url, urls?",
+    desc: "Whether Google indexed pages of your own site, the canonical it chose and the last crawl. At most 20 per call. Free.",
+    when: "A page of yours does not show up in Google.",
+  },
+  {
+    name: "get_sitemaps", cost: 0, group: "own",
+    args: "app_id, url?",
+    desc: "Your own site's submitted sitemaps with indexed counts, errors and warnings. Read-only. Free.",
+    when: "Whether Google read your sitemap and how much of it is indexed.",
+  },
+  {
+    name: "get_page_speed", cost: 0, group: "own",
+    args: "app_id, url, strategy?",
+    desc: "Core Web Vitals for a page of your own site: field data when there is enough, and lab scores. Free.",
+    when: "Whether a page of yours is fast enough, and what would make it faster.",
+  },
+  {
     name: "get_posthog_analytics", cost: 0, group: "own",
     args: "appId?",
     desc: "Your PostHog pageview trend as of the last sync.",
