@@ -317,7 +317,7 @@ export const TOOL_DEFINITIONS = [
  name: "creative_brief_create",
  title: "Create Creative Brief",
  description: "File a creative brief: ask for short videos, images or voice-overs for one product. The workspace's Creative Producer employee works the queue; when none is hired, a teammate picks the brief up in Creatives. pick: \"human\" (default) waits for a person to choose the winning drafts; \"producer\" lets the producer choose. No cost to call. Use when the user wants creative made for a product rather than generating it themselves.",
- inputSchema: z.object({ appId: z.number().int(), brief: z.string().min(1).max(6000), platforms: z.array(z.string()), audience: z.string().optional(), hook: z.string().optional(), voiceNotes: z.string().optional(), variants: z.number().int().min(1).max(4).optional(), pick: z.enum(["human", "producer"]).optional(), budgetCredits: z.number().int().min(1).max(2000).optional(), slotAt: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
+ inputSchema: z.object({ appId: z.number().int(), brief: z.string().min(1).max(6000), platforms: z.array(z.string()).min(1).max(8), audience: z.string().optional(), hook: z.string().optional(), voiceNotes: z.string().optional(), variants: z.number().int().min(1).max(4).optional(), pick: z.enum(["human", "producer"]).optional(), budgetCredits: z.number().int().min(1).max(2000).optional(), slotAt: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
  },
  {
  name: "creative_brief_list",
@@ -329,7 +329,7 @@ export const TOOL_DEFINITIONS = [
  name: "creative_brief_update",
  title: "Update Creative Brief",
  description: "Move a creative brief along and attach what was made: open -> in_progress -> awaiting_pick, delivered or failed; picked -> in_progress -> delivered; canceled by a person or by whoever asked for the brief. The asset and action id lists replace what the brief held. Winners are picked by a person in the dashboard, never here. No cost to call. Use when work on a brief moves on or produces drafts.",
- inputSchema: z.object({ briefId: z.string(), status: z.enum(["in_progress", "awaiting_pick", "delivered", "failed", "canceled"]).optional(), notes: z.string().optional(), draftAssetIds: z.array(z.string()).optional(), deliveredAssetIds: z.array(z.string()).optional(), actionIds: z.array(z.string()).optional(), creditsSpent: z.number().int().min(0).optional() }).strict(),
+ inputSchema: z.object({ briefId: z.string(), status: z.enum(["in_progress", "awaiting_pick", "delivered", "failed", "canceled"]).optional(), notes: z.string().optional(), draftAssetIds: z.array(z.string()).max(12).optional(), deliveredAssetIds: z.array(z.string()).max(12).optional(), actionIds: z.array(z.string()).max(12).optional(), creditsSpent: z.number().int().min(0).optional() }).strict(),
  },
  {
  name: "creative_image",

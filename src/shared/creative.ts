@@ -385,7 +385,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         .object({
           appId: z.number().int().describe("The product the creative is for."),
           brief: z.string().min(1).max(6000).describe("What to make and why (1-6000 characters)."),
-          platforms: z.array(z.string()).describe("Where it will be posted, e.g. tiktok, instagram, youtube."),
+          platforms: z.array(z.string()).min(1).max(8).describe("Where it will be posted, 1 to 8, e.g. tiktok, instagram, youtube."),
           audience: z.string().optional(),
           hook: z.string().optional().describe("The hook or angle to lead with."),
           voiceNotes: z.string().optional().describe("Brand-voice notes."),
@@ -437,9 +437,9 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
           briefId: z.string().describe("Id from creative_brief_list or creative_brief_create."),
           status: z.enum(["in_progress", "awaiting_pick", "delivered", "failed", "canceled"]).optional(),
           notes: z.string().optional(),
-          draftAssetIds: z.array(z.string()).optional(),
-          deliveredAssetIds: z.array(z.string()).optional(),
-          actionIds: z.array(z.string()).optional(),
+          draftAssetIds: z.array(z.string()).max(12).optional(),
+          deliveredAssetIds: z.array(z.string()).max(12).optional(),
+          actionIds: z.array(z.string()).max(12).optional(),
           creditsSpent: z.number().int().min(0).optional(),
         })
         .strict(),
