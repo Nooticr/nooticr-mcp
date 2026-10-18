@@ -302,6 +302,36 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ appId: z.number().int(), prompt: z.string().min(1).max(2000), durationSeconds: z.number().int().min(3).max(30).optional().describe("Length to aim for; default 6. Rendered at the nearest length the model offers."), aspect: z.enum(["9:16", "16:9"]).optional().describe("Default 9:16 (vertical)."), firstFrameAssetId: z.string().optional().describe("An image asset to start the clip from."), referenceAssetIds: z.array(z.string()).min(1).max(3).optional().describe("Up to 3 image assets to stay consistent with."), audio: z.enum(["ambient", "none"]).optional().describe("Default ambient. Never dialogue or music."), briefId: z.string().optional(), confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."), confirmationToken: z.string().optional().describe("The token the quote returned.") }).strict(),
  },
  {
+ name: "creative_compose",
+ title: "Compose Video",
+ description: "Assemble this workspace's creative assets (clips, stills, a voice-over, music, sound effects) into one finished vertical video (9:16, 4:5 or 1:1) or a feed still: voice-synced captions inside the platform's safe zone, the product's brand colours and font, music under the voice, SFX on the cuts and an optional end card. Up to 12 segments, 60 seconds and 6 SFX; every asset must belong to the same product. Set draft: true for a lower-priced 540-wide preview. music may be {assetId} or {source: \"stock\", query} for free stock music. The first call is a free price quote in credits for one flat render; nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken, then poll creative_job_status. The result is a composite asset; it never publishes. Use when the user has generated clips, images or audio and wants them cut into one post.",
+ inputSchema: z.object({ appId: z.number().int(), aspect: z.enum(["9:16", "4:5", "1:1"]).optional(), draft: z.boolean().optional().describe("A lower-priced 540-wide preview."), segments: z.array(z.object({ assetId: z.string(), start: z.number().min(0).optional(), end: z.number().min(0).optional(), motion: z.enum(["zoom_in", "zoom_out", "pan_left", "pan_right", "none"]).optional(), overlayText: z.string().max(120).optional() }).strict()).min(1).max(12), voiceoverAssetId: z.string().optional(), captions: z.union([z.enum(["voiceover", "none"]), z.array(z.object({ text: z.string(), start: z.number(), end: z.number() }).strict())]).optional(), music: z.union([z.object({ assetId: z.string() }).strict(), z.object({ source: z.literal("stock"), query: z.string() }).strict(), z.null()]).optional(), sfx: z.array(z.object({ assetId: z.string(), at: z.number().min(0) }).strict()).max(6).optional(), safeZone: z.enum(["tiktok", "reels", "shorts", "feed"]).optional(), brandKit: z.boolean().optional(), endCard: z.object({ text: z.string().max(60), seconds: z.number().min(0.5).max(5).optional() }).strict().optional(), output: z.enum(["video", "image"]).optional(), briefId: z.string().optional(), confirm: z.boolean().optional(), confirmationToken: z.string().optional() }).strict(),
+ },
+ {
+ name: "creative_settings_get",
+ title: "Creative Spend Limits",
+ description: "This workspace's limits on creative spend: the daily and monthly credit caps in force, the per-call cap, whether generated music is on, and what has been spent in the last 24 hours and this calendar month. Only a workspace owner or admin can change these, in the dashboard settings; no tool here can. No cost to call. Use to explain a creative call refused for a cap.",
+ inputSchema: z.object({ appId: z.number().int().optional().describe("Optional: the workspace of this product.") }).strict(),
+ },
+ {
+ name: "creative_brief_create",
+ title: "Create Creative Brief",
+ description: "File a creative brief: ask for short videos, images or voice-overs for one product. The workspace's Creative Producer employee works the queue; when none is hired, a teammate picks the brief up in Creatives. pick: \"human\" (default) waits for a person to choose the winning drafts; \"producer\" lets the producer choose. No cost to call. Use when the user wants creative made for a product rather than generating it themselves.",
+ inputSchema: z.object({ appId: z.number().int(), brief: z.string().min(1).max(6000), platforms: z.array(z.string()), audience: z.string().optional(), hook: z.string().optional(), voiceNotes: z.string().optional(), variants: z.number().int().min(1).max(4).optional(), pick: z.enum(["human", "producer"]).optional(), budgetCredits: z.number().int().min(1).max(2000).optional(), slotAt: z.string().optional(), influencerId: z.number().int().optional() }).strict(),
+ },
+ {
+ name: "creative_brief_list",
+ title: "List Creative Briefs",
+ description: "This workspace's creative briefs with their draft, picked and delivered assets. Filtered by status they come oldest first (the order the queue is worked in); unfiltered, newest first. limit is at most 50. No cost to call. Use to see what creative is queued, waiting for a pick, or delivered.",
+ inputSchema: z.object({ status: z.enum(["open", "in_progress", "awaiting_pick", "picked", "delivered", "canceled", "failed"]).optional(), appId: z.number().int().optional(), limit: z.number().int().min(1).max(50).optional() }).strict(),
+ },
+ {
+ name: "creative_brief_update",
+ title: "Update Creative Brief",
+ description: "Move a creative brief along and attach what was made: open -> in_progress -> awaiting_pick, delivered or failed; picked -> in_progress -> delivered; canceled by a person or by whoever asked for the brief. The asset and action id lists replace what the brief held. Winners are picked by a person in the dashboard, never here. No cost to call. Use when work on a brief moves on or produces drafts.",
+ inputSchema: z.object({ briefId: z.string(), status: z.enum(["in_progress", "awaiting_pick", "delivered", "failed", "canceled"]).optional(), notes: z.string().optional(), draftAssetIds: z.array(z.string()).optional(), deliveredAssetIds: z.array(z.string()).optional(), actionIds: z.array(z.string()).optional(), creditsSpent: z.number().int().min(0).optional() }).strict(),
+ },
+ {
  name: "creative_image",
  title: "Create Images",
  description: "Generate 1-4 still images with GPT Image (low quality setting) and store them as creative assets. The prompt is up to 4000 characters; do not put long text in it (put long text in a caption overlay) and do not ask for real named people. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken. Settles to the real usage, never above the quote. Returns assets and creativeCredits.",

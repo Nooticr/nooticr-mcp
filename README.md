@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-128 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+133 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -111,6 +111,11 @@ them caps that fan-out with an argument.
 | `creative_video` | quoted first | One short video clip (3-30 s, draft quality) from a `prompt`, generated as a job: confirm the quote, then poll `creative_job_status`. Optional `firstFrameAssetId` or up to 3 `referenceAssetIds` (image assets), `aspect` 9:16 or 16:9, `audio` ambient or none. The clip is rendered at the nearest length the video model offers; the quote is for that length and the call settles at it. Generates only; it does not edit an uploaded video. |
 | `creative_image` | quoted first | 1-4 still images from a `prompt` with GPT Image (low quality), at a `size` (default portrait 1024x1536), optionally `transparent`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. Returns the new `assets` and `creativeCredits`. Keep long text out of the prompt and ask for invented people, not real ones. |
 | `creative_image_edit` | quoted first | Edit or combine 1-4 existing image assets (`imageAssetIds`) with a `prompt`, with an optional `maskAssetId`. Same quote-then-confirm handshake as `creative_image`; returns a new asset and `creativeCredits`. |
+| `creative_compose` | quoted first | Cut your creative assets (clips, stills, a voice-over, music, sound effects) into one finished 9:16, 4:5 or 1:1 video or a feed still: voice-synced captions in the platform's safe zone, the product's brand colours, music under the voice, an optional end card. Up to 12 segments, 60 seconds and 6 SFX; `draft: true` for a lower-priced preview. One flat render: confirm the quote, then poll `creative_job_status`. Never publishes. |
+| `creative_settings_get` | free | Your workspace's creative spend limits (daily, monthly and per-call caps, whether music is on) and what was spent in the last 24 hours and this month. Read-only: an owner or admin changes them in the dashboard. |
+| `creative_brief_create` | free | File a creative brief for one product (`brief`, `platforms`, optional `hook`, `audience`, `variants`, `budgetCredits`, `slotAt`). Your Creative Producer employee works the queue, or a teammate picks it up in Creatives. |
+| `creative_brief_list` | free | Your creative briefs with their draft, picked and delivered assets. Filter by `status` (oldest first, the order the queue is worked) or `appId`. |
+| `creative_brief_update` | free | Move a brief along (`in_progress`, `awaiting_pick`, `delivered`, `failed`, `canceled`) and attach drafts and deliveries; the id lists replace what the brief held. Winners are picked by a person in the dashboard. |
 | `creative_job_status` | free | Where an asynchronous creative job stands by `jobId`: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after `pollAfterSeconds`. |
 | `sheets_create` | free | Create a Google spreadsheet in the connected Google account, with named tabs and a header row on each. Returns its id and URL; Nooticr owns the file, so later writes need no approval. Needs the product's Google Sheets connection. |
 | `sheets_list` | free | The spreadsheets the connection can see (created by Nooticr or picked by the customer) and whether each may be edited without approval. |

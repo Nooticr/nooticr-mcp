@@ -820,6 +820,76 @@
         "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new video job."
       }
     },
+    "creative_compose": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it starts a render job that stores a composite asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Open world: when music is {source: \"stock\"} it fetches a stock track from a third-party library; the render itself runs on Nooticr's servers.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data.",
+        "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new render job."
+      }
+    },
+    "creative_settings_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reports the workspace's creative spend caps and usage. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call has no additional effect."
+      }
+    },
+    "creative_brief_create": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it files a new creative brief in the workspace's queue.",
+        "open_world_justification": "Closed domain. It writes only to the caller's own nooticr workspace; nothing is generated or posted.",
+        "destructive_justification": "Not destructive: it only adds a brief.",
+        "idempotent_justification": "Not idempotent: every call files a new brief."
+      }
+    },
+    "creative_brief_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's creative briefs. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call returns the same queue."
+      }
+    },
+    "creative_brief_update": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it changes a brief's status and the assets attached to it.",
+        "open_world_justification": "Closed domain. It writes only to the caller's own nooticr workspace; nothing is published.",
+        "destructive_justification": "Destructive: the asset and action id lists passed replace the ones the brief held, and the old lists are not kept.",
+        "idempotent_justification": "Idempotent: free, and repeating the call with the same arguments leaves the brief in the same state."
+      }
+    },
     "creative_job_status": {
       "annotations": {
         "readOnlyHint": true,

@@ -76,6 +76,11 @@ NO_APP = {
     "creative_image",
     "creative_image_edit",
     "creative_video",
+    "creative_compose",  # a job id and a status line, like the rest of the family
+    "creative_settings_get",  # view pending: caps and spend, a meter the design system has no card for
+    "creative_brief_create",  # pure state mutation: nothing to draw
+    "creative_brief_list",  # view pending: a queue of briefs with their drafts
+    "creative_brief_update",  # pure state mutation: nothing to draw
     # Google Sheets (sheets.ts): sheet contents are a grid the design system has no card for.
     "sheets_create",
     "sheets_list",
