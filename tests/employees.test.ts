@@ -92,6 +92,18 @@ describe("employee tools", () => {
     expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", notify } }]);
   });
 
+  it("documents language as a BCP-47 tag and forwards it unchanged (#264)", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const hire = tools.find((t) => t.name === "hire_employee")!;
+    const language = (hire.inputSchema.properties as Record<string, { description?: string }>).language;
+    expect(language?.description).toContain("BCP-47");
+    expect(hire.inputSchema.required ?? []).not.toContain("language");
+    const ok = await client.callTool({ name: "hire_employee", arguments: { template: "t", language: "pt-BR" } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", language: "pt-BR" } }]);
+  });
+
   it("rejects arguments the server does not know", async () => {
     const { client, calls } = await connect();
     const res = await client.callTool({ name: "list_employees", arguments: { bogus: 1 } });
