@@ -38,11 +38,11 @@ describe("own-site growth tools", () => {
     const { client, calls } = await connect();
     const args: Record<string, Record<string, unknown>> = {
       get_search_performance: {
-        app_id: 3, start_date: "2026-09-01", end_date: "2026-09-28", dimensions: ["query", "page"],
+        app_id: 3, site: "sc-domain:example.com", start_date: "2026-09-01", end_date: "2026-09-28", dimensions: ["query", "page"],
         filters: [{ dimension: "country", operator: "equals", expression: "fra" }], row_limit: 50, search_type: "web", compare_to_previous: true,
       },
-      inspect_url: { app_id: 3, url: "https://example.com/a", urls: ["https://example.com/b"], fresh: true },
-      get_sitemaps: { app_id: 3, url: "https://example.com/sitemap.xml" },
+      inspect_url: { app_id: 3, site: "https://www.example.com/", url: "https://example.com/a", urls: ["https://example.com/b"], fresh: true },
+      get_sitemaps: { app_id: 3, site: "sc-domain:example.com", url: "https://example.com/sitemap.xml" },
       get_page_speed: { app_id: 3, url: "https://example.com/", strategy: "desktop" },
     };
     for (const name of NAMES) {
@@ -63,6 +63,10 @@ describe("own-site growth tools", () => {
       ["inspect_url", { app_id: 3 }],
       ["inspect_url", { app_id: 3, url: "https://example.com/", urls: many }],
       ["get_sitemaps", { app_id: 3, action: "submit" }],
+      ["get_sitemaps", { app_id: 3, site: 7 }],
+      ["get_search_performance", { app_id: 3, site: "x".repeat(501) }],
+      // get_page_speed has no site on the server: a strict schema refuses it.
+      ["get_page_speed", { app_id: 3, url: "https://example.com/", site: "sc-domain:example.com" }],
       ["get_page_speed", { app_id: 3, url: "https://example.com/", strategy: "tablet" }],
     ];
     for (const [name, arguments_] of bad) {
