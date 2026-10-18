@@ -613,6 +613,11 @@ describe("tool surface", () => {
     "creative_image",
     "creative_image_edit",
     "creative_video",
+    "creative_compose",
+    "creative_settings_get",
+    "creative_brief_create",
+    "creative_brief_list",
+    "creative_brief_update",
     // Google Sheets (sheets.ts).
     "sheets_create",
     "sheets_list",
@@ -796,6 +801,11 @@ describe("tool surface", () => {
       "creative_assets_list",
       "creative_job_status",
       "creative_voices_search",
+      // Creative briefs and limits: free; what a brief makes is billed by the paid tools.
+      "creative_settings_get",
+      "creative_brief_create",
+      "creative_brief_list",
+      "creative_brief_update",
       // Google Sheets: no credits are charged; approval for picked files is the customer's, not a price.
       "sheets_create",
       "sheets_list",

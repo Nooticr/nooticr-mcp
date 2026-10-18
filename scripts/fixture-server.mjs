@@ -1415,16 +1415,41 @@ function handleMcpCall(name, args, workspaceId) {
     case "creative_voiceover":
     case "creative_sfx":
     case "creative_music":
-    case "creative_video": {
+    case "creative_video":
+    case "creative_compose": {
       if (args.confirm === true && args.confirmationToken) {
         return {
           content: [{ type: "text", text: "Generated." }],
-          structuredContent: name === "creative_music" || name === "creative_video" ? { jobId: "fixture-job", status: "queued", pollAfterSeconds: name === "creative_video" ? 20 : 10 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
+          structuredContent: name === "creative_music" || name === "creative_video" || name === "creative_compose" ? { jobId: "fixture-job", status: "queued", pollAfterSeconds: name === "creative_music" ? 10 : 20 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
         };
       }
       return {
         content: [{ type: "text", text: "Quote: 5 credits." }],
-        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", creditsQuoted: 5 },
+        structuredContent: { quote: { credits: 5 }, confirmationToken: "fixture-token", expiresAt: "2030-01-01T00:00:00Z" },
+      };
+    }
+    case "creative_settings_get": {
+      return {
+        content: [{ type: "text", text: "Creative limits." }],
+        structuredContent: { dailyCapCredits: null, monthlyCapCredits: null, musicEnabled: null, effective: { dailyCapCredits: 200, monthlyCapCredits: null, perCallCapCredits: 60, musicEnabled: true }, usage: { last24h: 12, thisMonth: 40 }, defaults: { dailyCapCredits: 200, monthlyCapCredits: null, musicEnabled: true, maxDailyCapCredits: 1000 } },
+      };
+    }
+    case "creative_brief_create": {
+      return {
+        content: [{ type: "text", text: "Brief filed." }],
+        structuredContent: { briefId: "00000000-0000-0000-0000-0000000000b1", status: "open", producer: null, note: "No Creative Producer is hired; a teammate picks it up in Creatives." },
+      };
+    }
+    case "creative_brief_list": {
+      return {
+        content: [{ type: "text", text: "1 brief." }],
+        structuredContent: { briefs: [{ id: "00000000-0000-0000-0000-0000000000b1", appId: 1, appName: "Fixture", status: "open", platforms: ["tiktok"], brief: "Three 15 s clips on the morning routine." }] },
+      };
+    }
+    case "creative_brief_update": {
+      return {
+        content: [{ type: "text", text: "Brief updated." }],
+        structuredContent: { brief: { id: args?.briefId ?? "00000000-0000-0000-0000-0000000000b1", status: args?.status ?? "open" } },
       };
     }
     case "creative_job_status": {

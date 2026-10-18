@@ -6,8 +6,10 @@ import { registerCreativeTools } from "../src/shared/creative.js";
 import { OUTPUT_SCHEMAS } from "../src/shared/output-schemas.js";
 import { BACKEND_ONLY_TOOLS } from "../src/shared/backend-only.js";
 
-const FREE = ["creative_assets_list", "creative_job_status", "creative_voices_search"];
-const PAID = ["creative_image", "creative_image_edit", "creative_music", "creative_sfx", "creative_video", "creative_voiceover"];
+const READ_ONLY = ["creative_assets_list", "creative_brief_list", "creative_job_status", "creative_settings_get", "creative_voices_search"];
+const FREE_WRITES = ["creative_brief_create", "creative_brief_update"];
+const FREE = [...READ_ONLY, ...FREE_WRITES];
+const PAID = ["creative_compose", "creative_image", "creative_image_edit", "creative_music", "creative_sfx", "creative_video", "creative_voiceover"];
 const NAMES = [...FREE, ...PAID].sort();
 
 async function connect() {
@@ -32,7 +34,7 @@ describe("creative tools", () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(NAMES);
     expect(tools.map((t) => t.name)).not.toContain("creative_test_render");
-    for (const t of tools) expect(t.annotations?.readOnlyHint, t.name).toBe(FREE.includes(t.name));
+    for (const t of tools) expect(t.annotations?.readOnlyHint, t.name).toBe(READ_ONLY.includes(t.name));
     for (const t of tools.filter((t) => PAID.includes(t.name))) {
       expect(t.annotations?.destructiveHint, t.name).toBe(false);
       expect(t.description, t.name).toMatch(/confirm: true/);
@@ -52,6 +54,17 @@ describe("creative tools", () => {
       creative_image: { appId: 3, prompt: "a red bicycle", size: "1088x1920", n: 2, transparent: true, confirm: true, confirmationToken: "tok" },
       creative_image_edit: { appId: 3, prompt: "add snow", imageAssetIds: ["33333333-3333-4333-8333-333333333333"], maskAssetId: "44444444-4444-4444-8444-444444444444", size: "1024x1024" },
       creative_video: { appId: 3, prompt: "waves at dusk", durationSeconds: 8, aspect: "16:9", referenceAssetIds: ["55555555-5555-4555-8555-555555555555"], audio: "none", briefId: "b", confirm: true, confirmationToken: "tok" },
+      creative_compose: {
+        appId: 3, aspect: "4:5", draft: true,
+        segments: [{ assetId: "s1", start: 0, end: 4, motion: "zoom_in", overlayText: "Day 1" }, { assetId: "s2" }],
+        voiceoverAssetId: "vo", captions: [{ text: "Hi", start: 0, end: 1 }], music: { source: "stock", query: "lofi" },
+        sfx: [{ assetId: "fx", at: 4 }], safeZone: "reels", brandKit: true, endCard: { text: "Try it", seconds: 2 }, output: "video",
+        briefId: "b", confirm: true, confirmationToken: "tok",
+      },
+      creative_settings_get: { appId: 3 },
+      creative_brief_create: { appId: 3, brief: "Three 15 s clips", platforms: ["tiktok"], hook: "before/after", variants: 3, pick: "producer", budgetCredits: 200, slotAt: "2026-11-01T09:00:00Z", influencerId: 7 },
+      creative_brief_list: { status: "awaiting_pick", appId: 3, limit: 20 },
+      creative_brief_update: { briefId: "b1", status: "awaiting_pick", notes: "3 drafts", draftAssetIds: ["d1", "d2"], creditsSpent: 42 },
     };
     for (const name of NAMES) {
       const res = await client.callTool({ name, arguments: args[name] });
@@ -84,6 +97,19 @@ describe("creative tools", () => {
       ["creative_video", { appId: 3, prompt: "p", referenceAssetIds: ["a", "b", "c", "d"] }],
       ["creative_video", { appId: 3, prompt: "p", audio: "music" }],
       ["creative_video", { prompt: "no app" }],
+      ["creative_compose", { appId: 3, segments: [] }],
+      ["creative_compose", { appId: 3, segments: Array.from({ length: 13 }, (_, i) => ({ assetId: `a${i}` })) }],
+      ["creative_compose", { appId: 3, segments: [{ assetId: "a" }], aspect: "16:9" }],
+      ["creative_compose", { appId: 3, segments: [{ assetId: "a" }], music: { source: "spotify", query: "x" } }],
+      ["creative_compose", { appId: 3, segments: [{ assetId: "a" }], endCard: { text: "x".repeat(61) } }],
+      ["creative_compose", { segments: [{ assetId: "a" }] }],
+      ["creative_brief_create", { appId: 3, brief: "b" }],
+      ["creative_brief_create", { appId: 3, brief: "b", platforms: ["tiktok"], variants: 5 }],
+      ["creative_brief_list", { status: "archived" }],
+      ["creative_brief_list", { limit: 51 }],
+      ["creative_brief_update", { status: "delivered" }],
+      ["creative_brief_update", { briefId: "b1", status: "picked" }],
+      ["creative_settings_get", { workspaceId: "w" }],
     ] as const) {
       const res = await client.callTool({ name, arguments: arguments_ });
       expect(res.isError, name).toBe(true);

@@ -449,6 +449,36 @@ export const TOOLS: Tool[] = [
     when: "You need a short clip, optionally from a first-frame image; add voice-over and music with the audio tools. Poll creative_job_status for the result.",
   },
   {
+    name: "creative_compose", cost: 0, group: "own", billing: "quote",
+    args: "appId, segments, aspect?, draft?, voiceoverAssetId?, captions?, music?, sfx?, safeZone?, brandKit?, endCard?, output?, confirm?, confirmationToken?",
+    desc: "Cuts your creative assets into one finished vertical video or still, with captions, brand colours, music and an end card. One flat render, quoted first. Never publishes.",
+    when: "You have clips, images or audio and want them assembled into one post. Poll creative_job_status for the result.",
+  },
+  {
+    name: "creative_settings_get", cost: 0, group: "own",
+    args: "appId?",
+    desc: "Your workspace's creative spend caps and what was spent in the last 24 hours and this month. Free.",
+    when: "A creative call was refused for a cap, or before a large batch.",
+  },
+  {
+    name: "creative_brief_create", cost: 0, group: "own",
+    args: "appId, brief, platforms, audience?, hook?, voiceNotes?, variants?, pick?, budgetCredits?, slotAt?, influencerId?",
+    desc: "Files a creative brief for one product; your Creative Producer employee or a teammate works it. Free.",
+    when: "You want creative made for a product rather than generating it yourself.",
+  },
+  {
+    name: "creative_brief_list", cost: 0, group: "own",
+    args: "status?, appId?, limit?",
+    desc: "Your creative briefs with their drafts, picks and deliveries. Free.",
+    when: "To see what is queued, waiting for a pick or delivered.",
+  },
+  {
+    name: "creative_brief_update", cost: 0, group: "own",
+    args: "briefId, status?, notes?, draftAssetIds?, deliveredAssetIds?, actionIds?, creditsSpent?",
+    desc: "Moves a creative brief along and attaches what was made. Free.",
+    when: "Work on a brief started, produced drafts, or finished.",
+  },
+  {
     name: "creative_image", cost: 0, group: "own", billing: "quote",
     args: "appId, prompt, size?, n?, transparent?, confirm?, confirmationToken?",
     desc: "1-4 still images with GPT Image (low quality). The first call returns a credit quote; nothing is charged until you confirm.",

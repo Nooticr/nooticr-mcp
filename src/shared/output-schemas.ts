@@ -1470,6 +1470,26 @@ export const OUTPUT_SCHEMAS = {
     pollAfterSeconds: scalar(),
     creativeCredits: open({}).nullish(),
   }),
+  // CR6: one flat-priced render; a quote first, then a job to poll (crates/server/src/creative/compose.rs).
+  creative_compose: open({
+    quote: open({ credits: scalar() }).nullish().describe("First call: what the render will cost. Nothing was rendered or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to start the render."),
+    expiresAt: scalar(),
+    jobId: scalar().describe("Poll creative_job_status with this."),
+    status: scalar(),
+    pollAfterSeconds: scalar(),
+    creativeCredits: open({}).nullish(),
+  }),
+  // CR8 (crates/server/src/creative/settings.rs view()).
+  creative_settings_get: open({
+    effective: open({ dailyCapCredits: scalar(), monthlyCapCredits: scalar(), perCallCapCredits: scalar(), musicEnabled: scalar() }).nullish(),
+    usage: open({ last24h: scalar(), thisMonth: scalar() }).nullish(),
+    defaults: anyObject().nullish(),
+  }),
+  // CR7 (crates/server/src/creative/briefs.rs).
+  creative_brief_create: open({ briefId: scalar(), status: scalar(), producer: anyObject().nullish(), note: scalar() }),
+  creative_brief_list: open({ briefs: listOf(open({ id: scalar(), appId: scalar(), status: scalar(), brief: scalar() })) }),
+  creative_brief_update: open({ brief: open({ id: scalar(), status: scalar() }).nullish() }),
   // The paid image tools answer a quote first (`quote`, a token, an expiry), then the generated assets
   // with the credits settled. Keys are the server's (crates/server/src/creative/billing.rs, tools.rs).
   creative_image: open({

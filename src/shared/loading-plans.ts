@@ -599,6 +599,11 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   creative_image: { label: "Quoting the images", kind: "text", n: 1, steps: [] },
   creative_image_edit: { label: "Quoting the image edit", kind: "text", n: 1, steps: [] },
   creative_video: { label: "Quoting the video clip", kind: "text", n: 1, steps: [] },
+  creative_compose: { label: "Quoting the render", kind: "text", n: 1, steps: [] },
+  creative_settings_get: { label: "Reading your creative limits", kind: "text", n: 1, steps: [], free: true },
+  creative_brief_create: { label: "Filing the brief", kind: "text", n: 1, steps: [], free: true },
+  creative_brief_list: { label: "Reading the brief queue", kind: "list", n: 3, steps: [], free: true },
+  creative_brief_update: { label: "Updating the brief", kind: "text", n: 1, steps: [], free: true },
   // Google Sheets (sheets.ts): reads are free; writes are free too (approval waits on the server side).
   sheets_create: { label: "Creating the spreadsheet", kind: "text", n: 1, steps: [], free: true },
   sheets_list: { label: "Listing your spreadsheets", kind: "list", n: 3, steps: [], free: true },

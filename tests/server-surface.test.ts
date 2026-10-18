@@ -65,6 +65,10 @@ const NOT_READ_ONLY = [
   "creative_image",
   "creative_image_edit",
   "creative_video",
+  "creative_compose",
+  // Creative briefs: filing and moving a brief write stored rows.
+  "creative_brief_create",
+  "creative_brief_update",
   // The exception to the billing rule: free, and still not read-only.
   // Given a postId it saves the review and score onto that scheduled post,
   // overwriting the previous one.
@@ -114,7 +118,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(128);
+    expect(tools).toHaveLength(133);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -143,7 +147,12 @@ describe("tool annotations", () => {
       "connect_store",
       "create_product",
       "creative_assets_list",
+      // Creative briefs and limits: rows inside nooticr.
+      "creative_brief_create",
+      "creative_brief_list",
+      "creative_brief_update",
       "creative_job_status",
+      "creative_settings_get",
       // Creator CRM: stored rows inside nooticr; nothing here contacts a creator.
       "crm_list_creators",
       "crm_log_interaction",
