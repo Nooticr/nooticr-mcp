@@ -1483,6 +1483,57 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: { interaction: { id: "00000000-0000-0000-0000-0000000000d1", kind: "note", summary: "Fixture note" } },
       };
     }
+    case "get_search_performance": {
+      const prev = args?.compare_to_previous === true;
+      return {
+        content: [{ type: "text", text: "2 rows." }],
+        structuredContent: {
+          source: "google_search_console",
+          rows: [
+            { keys: ["ugc video ads"], clicks: 41, impressions: 1220, ctr: 0.0336, position: 7.4, ...(prev ? { prev: { clicks: 30 }, delta: { clicks: 11 } } : {}) },
+            { keys: ["tiktok creator pricing"], clicks: 12, impressions: 860, ctr: 0.014, position: 11.2, ...(prev ? { prev: { clicks: 15 }, delta: { clicks: -3 } } : {}) },
+          ],
+          totals: { clicks: 53, impressions: 2080, ctr: 0.0255, position: 8.9 },
+          window: { start: args?.start_date ?? "2026-09-18", end: args?.end_date ?? "2026-10-15" },
+          ...(prev ? { prev_window: { start: "2026-08-21", end: "2026-09-17" } } : {}),
+          data_state: "all",
+        },
+      };
+    }
+    case "inspect_url": {
+      const urls = [args?.url, ...(Array.isArray(args?.urls) ? args.urls : [])].filter(Boolean);
+      return {
+        content: [{ type: "text", text: `${urls.length} inspected.` }],
+        structuredContent: {
+          source: "search_console",
+          cached: false,
+          results: urls.map((url, i) => ({
+            url, path: new URL(url).pathname, verdict: i === 0 ? "PASS" : "NEUTRAL",
+            coverage_state: i === 0 ? "Submitted and indexed" : "Discovered - currently not indexed",
+            last_crawl_time: "2026-10-12T08:14:00Z", google_canonical: url, user_canonical: url, canonical_mismatch: false, rich_results: [],
+          })),
+        },
+      };
+    }
+    case "get_sitemaps": {
+      return {
+        content: [{ type: "text", text: "1 sitemap." }],
+        structuredContent: {
+          source: "google_search_console",
+          sitemaps: [{ path: args?.url ?? "https://example.com/sitemap.xml", last_submitted: "2026-10-01T09:00:00Z", last_downloaded: "2026-10-15T03:12:00Z", is_pending: false, is_sitemaps_index: false, errors: 0, warnings: 1, contents: [{ type: "web", submitted: 142, indexed: 118 }] }],
+        },
+      };
+    }
+    case "get_page_speed": {
+      return {
+        content: [{ type: "text", text: "Measured." }],
+        structuredContent: {
+          source: "page_speed", url: args?.url ?? "https://example.com/", strategy: args?.strategy ?? "mobile",
+          field: { source: "url", lcp_p75_ms: 2900, inp_p75_ms: 180, cls_p75: 0.04, fcp_p75_ms: 1700, ttfb_p75_ms: 620, overall: "needs_improvement" },
+          lab: { scores: { performance: 71, seo: 92, accessibility: 88, best_practices: 96 }, lcp_ms: 3400, tbt_ms: 210, cls: 0.03, speed_index_ms: 3900, opportunities: [{ id: "render-blocking-resources", title: "Eliminate render-blocking resources", savings_ms: 640 }] },
+        },
+      };
+    }
     case "pause_employee":
     case "fire_employee":
     case "reject_action": {

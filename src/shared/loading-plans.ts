@@ -619,6 +619,11 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   crm_list_creators: { label: "Reading your creator pipeline", kind: "list", n: 3, steps: [], free: true },
   crm_update_status: { label: "Updating the creator's status", kind: "text", n: 1, steps: [], free: true },
   crm_log_interaction: { label: "Logging the interaction", kind: "text", n: 1, steps: [], free: true },
+  // A product's own site in Google Search (growth.ts): free, read live from Search Console.
+  get_search_performance: { label: "Reading your search performance", kind: "list", n: 3, steps: [], free: true },
+  inspect_url: { label: "Inspecting your pages", kind: "list", n: 3, steps: [], free: true },
+  get_sitemaps: { label: "Reading your sitemaps", kind: "list", n: 3, steps: [], free: true },
+  get_page_speed: { label: "Measuring the page", kind: "text", n: 1, steps: [], free: true },
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
   get_employee_audit: { label: "Reading the audit trail", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },
