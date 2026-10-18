@@ -58,7 +58,7 @@ describe("nooticr_getting_started", () => {
     const { client } = await connect({});
     const t = (await client.listTools()).tools.find((x) => x.name === "nooticr_getting_started")!;
     expect(t.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
-    expect(t.description).toMatch(/Start here/);
+    expect(t.description).toMatch(/\bstart\b/);
     expect(t.description).toMatch(/help/);
     expect(t.description).toMatch(/No cost to call/);
   });

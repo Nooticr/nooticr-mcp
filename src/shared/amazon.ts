@@ -526,7 +526,7 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "until it is done — that is free, and repeating it is how a scan gets more time. Never " +
         "conclude, or end your turn, on an incomplete scan: a read of 4 of 10 listings presented as " +
         "the category is wrong. " +
-        "Use for a category or a competitive set; for one listing, get_amazon_product is cheaper.",
+        "Use for a category or a competitive set; get_amazon_product reads one listing.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -666,7 +666,7 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
-        idempotentHint: true,
+        idempotentHint: false,
         openWorldHint: true,
       },
       outputSchema: OUTPUT_SCHEMAS.get_amazon_product,
@@ -713,7 +713,7 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         "cite that the scan does not contain is flagged on the card. Without a scanId, listings " +
         "you pass are drawn marked as not checked against a scan. Free. Your read is attributed " +
         "to you rather than presented as a nooticr rating of anyone's product. " +
-        "Call this after you have read the reviews, not instead of reading them.",
+        "Call this after you have read the reviews and written the read.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

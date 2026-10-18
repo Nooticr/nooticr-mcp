@@ -52,6 +52,10 @@ export type ServedCapability = {
     readonly requiresConfiguration?: string;
     /** Platform → why the fallback cannot reach it, whatever the config. */
     readonly unreachable?: Readonly<Record<string, string>>;
+    /** Platform → how it is reached, for a route that exists but is unmeasured live. */
+    readonly unverified?: Readonly<Record<string, string>>;
+    /** The longest post the route transcribes; a longer one is refused before any spend. */
+    readonly maxMinutes?: number;
     readonly note?: string;
   };
 };
@@ -162,7 +166,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     ],
     listIsCeiling: true,
     enumerating: [],
-    quiet: ["evaluate_social_draft", "adapt_post_for_platform", "generate_hook_ideas", "generate_post_variants", "draft_post"],
+    quiet: ["evaluate_social_draft", "adapt_post_for_platform", "generate_hook_ideas", "generate_post_variants", "draft_post", "crm_upsert_creator"],
   },
 
   /**

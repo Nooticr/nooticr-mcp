@@ -77,7 +77,7 @@ describe("creative tools", () => {
       ["creative_image_edit", { appId: 3, prompt: "p", imageAssetIds: [] }],
       ["creative_image_edit", { appId: 3, prompt: "p", imageAssetIds: ["a", "b", "c", "d", "e"] }],
       ["creative_image_edit", { appId: 3, prompt: "p" }],
-      ["creative_video", { appId: 3, prompt: "p", durationSeconds: 11 }],
+      ["creative_video", { appId: 3, prompt: "p", durationSeconds: 31 }],
       ["creative_video", { appId: 3, prompt: "p", durationSeconds: 2 }],
       ["creative_video", { appId: 3, prompt: "p", aspect: "1:1" }],
       ["creative_video", { appId: 3, prompt: "x".repeat(2001) }],

@@ -108,8 +108,8 @@ export const TOOLS: Tool[] = [
   {
     name: "get_post_transcript", cost: 1, group: "read",
     args: "url, language?",
-    desc: "The words actually spoken, read from the post's caption track (TikTok, YouTube).",
-    when: "The exact wording matters — a hook, a claim, a CTA. Cheaper and more literal than any AI tool.",
+    desc: "The words actually spoken: read from the caption track where a platform publishes one (TikTok, Douyin, YouTube), heard from the audio everywhere else.",
+    when: "The exact wording matters — a hook, a claim, a CTA.",
   },
   {
     name: "get_post_comments", cost: 2, group: "read",
@@ -123,7 +123,7 @@ export const TOOLS: Tool[] = [
     name: "analyze_post_fast", cost: 2, group: "understand",
     args: "url",
     desc: "The post's transcript, caption and stats — everything but the pictures. Two fetches: get_social_media and get_post_transcript.",
-    when: "The default. A credit less than analyze_post, and it carries everything the script and structure depend on.",
+    when: "The words and numbers answer the question. 2 credits, without frames, and it carries everything the script and structure depend on.",
   },
   {
     name: "analyze_post", cost: 3, group: "understand",
@@ -223,7 +223,7 @@ export const TOOLS: Tool[] = [
     name: "evaluate_social_draft", cost: 0, group: "create",
     args: "draft, platform?",
     desc: "Your draft back with the rubric to hold it to — hook, clarity, payoff, specificity and fit, each scored 1-10, plus the fixes worth making. Free: the text is already yours, so there is nothing to fetch.",
-    when: "Before filming, while changing it is still cheap. The only tool that runs before the content exists.",
+    when: "Before filming, while the draft can still be changed.",
   },
   {
     name: "adapt_post_for_platform", cost: 2, group: "create",
@@ -271,7 +271,7 @@ export const TOOLS: Tool[] = [
     name: "catch_up_watchlist", cost: 2, group: "research",
     args: "limit?, platform?",
     desc: "What everyone you watch has posted since your last catch-up \u2014 2 credits per creator checked, not per call.",
-    when: "Following a set of creators over time instead of re-reading each one.",
+    when: "Following a set of creators over time.",
   },
 
 
@@ -294,7 +294,7 @@ export const TOOLS: Tool[] = [
     name: "show_post_analysis", cost: 0, group: "understand",
     args: "the analysis you wrote",
     desc: "Draws the analysis you wrote after analyze_post or analyze_post_fast handed you the material. Fetches nothing.",
-    when: "After you have read the frames and the transcript \u2014 not instead of reading them.",
+    when: "After you have read the frames and the transcript.",
   },
   {
     name: "show_comment_review", cost: 0, group: "understand",
@@ -356,7 +356,7 @@ export const TOOLS: Tool[] = [
     name: "show_audience_replies", cost: 0, group: "research",
     args: "your drafted replies",
     desc: "Draws the replies you drafted, grouped under the post each comment was left on. Sends nothing.",
-    when: "After drafting, not instead of drafting.",
+    when: "After drafting.",
   },
   {
     name: "track_creator", cost: 2, group: "research",
@@ -368,7 +368,7 @@ export const TOOLS: Tool[] = [
     name: "compare_creators", cost: 2, group: "research",
     args: "usernames[] (2\u20135), platform?",
     desc: "Several creators on one window, each against their own median \u2014 one post list per creator, so 2 credits each and 4\u201310 in total.",
-    when: "\u201cIs their hit rate better than mine\u201d; track_creator is one creator alone.",
+    when: "Comparing hit rates between two to five creators; track_creator covers one creator.",
   },
   {
     name: "watchlist_standings", cost: 2, group: "research",
@@ -445,7 +445,7 @@ export const TOOLS: Tool[] = [
   {
     name: "creative_video", cost: 0, group: "own", billing: "quote",
     args: "appId, prompt, durationSeconds?, aspect?, firstFrameAssetId?, referenceAssetIds?, audio?, confirm?, confirmationToken?",
-    desc: "One short 360p draft video clip (3-10 s), generated as a job. The first call returns a credit quote; nothing is charged until you confirm.",
+    desc: "One short draft video clip (3-30 s), generated as a job. The first call returns a credit quote; nothing is charged until you confirm.",
     when: "You need a short clip, optionally from a first-frame image; add voice-over and music with the audio tools. Poll creative_job_status for the result.",
   },
   {
@@ -573,10 +573,40 @@ export const TOOLS: Tool[] = [
     when: "You are done with it; to stop it temporarily, pause it instead.",
   },
   {
+    name: "crm_upsert_creator", cost: 0, group: "own",
+    args: "platform, handle, ...fields",
+    desc: "Adds a creator to your creator pipeline, or updates the one already there (matched by platform and handle). Free.",
+    when: "You found a creator worth tracking, or learned more about one.",
+  },
+  {
+    name: "crm_list_creators", cost: 0, group: "own",
+    args: "status?, appId?, query?, limit?, dueBefore?",
+    desc: "Your creator pipeline, most recently updated first, each with its last interaction. Free.",
+    when: "Before adding a creator, or to see who is due a next step.",
+  },
+  {
+    name: "crm_update_status", cost: 0, group: "own",
+    args: "creatorId, status, note",
+    desc: "Moves a creator to a new pipeline status and records why. Free.",
+    when: "A creator's relationship with you changed.",
+  },
+  {
+    name: "crm_log_interaction", cost: 0, group: "own",
+    args: "creatorId, kind, summary, body?",
+    desc: "Records a note, vetting result, outreach draft, reply or deliverable against a creator. Free.",
+    when: "Something happened with a creator that the pipeline should remember.",
+  },
+  {
     name: "list_pending_actions", cost: 0, group: "own",
     args: "employeeId?, limit?",
     desc: "What your AI employees are waiting to do until you approve: a preview of what will be published, sent or changed. Free.",
     when: "Before approving or rejecting anything.",
+  },
+  {
+    name: "get_employee_audit", cost: 0, group: "own",
+    args: "employeeId, from?, to?, types?, runId?, actionId?, limit?, verify?",
+    desc: "One AI employee's tamper-evident audit trail: runs, calls and their cost, approvals, executed actions, config changes. Owners and admins only. Free.",
+    when: "You need to know what an employee did, why an action went out, or that the record is intact.",
   },
   {
     name: "approve_action", cost: 0, group: "own",
@@ -595,6 +625,12 @@ export const TOOLS: Tool[] = [
     args: "marketplace, query, market?",
     desc: "What moved in a category since the run before: products that entered or left a search's results, and ones whose price or place changed. Compared from stored scans, so it fetches nothing. Free.",
     when: "A category was scanned before and you want to know what changed; scan it again first to have a second run.",
+  },
+  {
+    name: "get_price_history", cost: 0, group: "market",
+    args: "marketplace, id, market?, from?, to?, metric?",
+    desc: "One product's price, rating, review count or availability over time, from the observations stored each time it was scanned. Fetches nothing. Free.",
+    when: "You want to know whether a product got cheaper or better rated; read it once with get_marketplace_product to start its record.",
   },
   {
     name: "get_marketplace_product", cost: 3, group: "market",
@@ -757,6 +793,30 @@ export const TOOLS: Tool[] = [
     when: "Whether people search for what your content is about.",
   },
   {
+    name: "get_search_performance", cost: 0, group: "own",
+    args: "app_id, start_date?, end_date?, dimensions?, filters?, compare_to_previous?, ...",
+    desc: "Your own site's clicks, impressions, CTR and position in Google Search, live from its connected Search Console. Free.",
+    when: "Which queries and pages bring people to your site, and what changed.",
+  },
+  {
+    name: "inspect_url", cost: 0, group: "own",
+    args: "app_id, url, urls?",
+    desc: "Whether Google indexed pages of your own site, the canonical it chose and the last crawl. At most 20 per call. Free.",
+    when: "A page of yours does not show up in Google.",
+  },
+  {
+    name: "get_sitemaps", cost: 0, group: "own",
+    args: "app_id, url?",
+    desc: "Your own site's submitted sitemaps with indexed counts, errors and warnings. Read-only. Free.",
+    when: "Whether Google read your sitemap and how much of it is indexed.",
+  },
+  {
+    name: "get_page_speed", cost: 0, group: "own",
+    args: "app_id, url, strategy?",
+    desc: "Core Web Vitals for a page of your own site: field data when there is enough, and lab scores. Free.",
+    when: "Whether a page of yours is fast enough, and what would make it faster.",
+  },
+  {
     name: "get_posthog_analytics", cost: 0, group: "own",
     args: "appId?",
     desc: "Your PostHog pageview trend as of the last sync.",
@@ -765,7 +825,7 @@ export const TOOLS: Tool[] = [
   {
     name: "list_social_connections", cost: 0, group: "own",
     args: "\u2014",
-    desc: "Which social accounts your workspace has connected and what each one is allowed to do \u2014 read, publish, manage comments \u2014 plus which platforms can be connected at all.",
+    desc: "Which social accounts your workspace has connected and what each one is allowed to do \u2014 read, publish, manage comments \u2014 plus which platforms can be connected at all. Publishing happens through an AI employee, when you approve its post in the dashboard, or on its own if you turned on autopilot for publishing for that employee; not from here.",
     when: "Before anything that needs an account linked.",
   },
   {

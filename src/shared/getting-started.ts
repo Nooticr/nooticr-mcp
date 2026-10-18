@@ -33,14 +33,14 @@ export const SERVER_INSTRUCTIONS = [
     "and every show_* view, which only draws what you pass it.",
   "Before a paid call, explain its stated cost and get the user's consent; follow any tool's built-in " +
     "confirmation flow before proceeding.",
-  "Not sure where to start? Call nooticr_getting_started: it is free, reads this account's state, and names " +
-    "the next calls worth making with their prices. Good first calls: get_social_media on a post URL " +
+  "When the user asks what nooticr can do or how to start, call nooticr_getting_started: it is free, reads " +
+    "this account's state, and suggests next calls with their prices. Common first calls: get_social_media on a post URL " +
     "(1 credit), discover_social_posts on a niche (2), summarize_post_comments on a post (2).",
   "Marketplace scans run in the background and usually come back unfinished (e.g. 4 of 10). When a result " +
     "says NOT FINISHED or carries a nextCall, make that call (it is free) and keep polling until it is " +
     "complete before concluding anything or ending your turn.",
-  "nooticr posts nothing anywhere and sells nothing here: when credits run out, say so and that topping up " +
-    "happens on the nooticr website.",
+  "nooticr posts nothing on its own: post_comment_reply sends one reply, and only the exact text the user " +
+    "confirmed. It sells nothing here: when credits run out, say so and that topping up happens on the nooticr website.",
 ].join("\n");
 
 interface MakeClient {
@@ -158,9 +158,9 @@ export function registerGettingStarted(server: McpServer, makeClient: MakeClient
       _meta: viewMeta("nooticr_getting_started"),
       title: "Getting Started with nooticr",
       description:
-        "Start here: help on what nooticr can do and what to try first. Free, and makes no paid call. " +
-        "Reads this account's state (credit balance, connected accounts, watchlist) and returns the next " +
-        "calls worth making, each with its price and an example. Use when the user asks what you can do " +
+        "Help on what nooticr can do and what to try first. Free, and makes no paid call. " +
+        "Reads this account's state (credit balance, connected accounts, watchlist) and suggests next " +
+        "calls, each with its price and an example. Use when the user asks what you can do " +
         "with nooticr, how to start, or for help, and before a first paid call when you do not know " +
         "where this account stands. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },

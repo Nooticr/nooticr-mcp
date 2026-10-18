@@ -191,11 +191,19 @@ export class NooticrClient {
       if (accessToken) {
         headers.authorization = `Bearer ${accessToken}`;
       }
-      return fetch(`${this.baseUrl}${path}`, {
-        method,
-        headers,
-        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      });
+      try {
+        return await fetch(`${this.baseUrl}${path}`, {
+          method,
+          headers,
+          body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+        });
+      } catch (err) {
+        // The one case with no reason to pass on: nothing came back. Say that
+        // plainly rather than "fetch failed", and never as a configuration
+        // problem, which it is not (#257).
+        const cause = err instanceof Error ? err.message : String(err);
+        throw new NooticrError(0, `${UNREACHABLE} (${path}: ${cause})`);
+      }
     };
 
     let token: string | undefined = opts.token;
@@ -231,9 +239,10 @@ export class NooticrClient {
     // body when it is plainly a sentence — dropping it leaves a headless
     // caller with a number and no cause.
     const detail = plainTextDetail(text);
+    const said = serverMessage(json);
     const errorMessage =
-      typeof json.error === "string"
-        ? json.error
+      said !== undefined
+        ? said
         : detail
           ? `nooticr API error (${res.status}) from ${path}: ${detail}`
           : `nooticr API error (${res.status}) from ${path}`;
@@ -292,7 +301,9 @@ export class NooticrClient {
       const err = rpc.error as { code?: unknown; message?: unknown };
       const message = typeof err.message === "string" ? err.message : "nooticr MCP tool call failed";
       if (err.code === -32002) throw new NooticrError(402, outOfCreditsMessage(message));
-      throw new NooticrError(400, message);
+      throw new NooticrError(400, message, {
+        code: err.code !== undefined && err.code !== null ? String(err.code) : undefined,
+      });
     }
 
     const result = (rpc.result ?? {}) as {
@@ -445,6 +456,29 @@ export class NooticrClient {
  * the only thing anyone will see. Use the body when it is plainly a sentence:
  * short, one line, and not the start of a document.
  */
+/**
+ * What the worker says when the API sent nothing back at all. The only generic
+ * error text left: every failure that has a response body carries the
+ * server's own reason instead (#257).
+ */
+export const UNREACHABLE = "the nooticr API could not be reached: no response came back";
+
+/**
+ * The reason the server gave, in whichever shape it gave it: `{error: "..."}`,
+ * `{error: {message}}` (JSON-RPC behind a non-2xx), or `{message: "..."}`.
+ * Dropping any of these left the host a status code where the server had
+ * written the cause — a truncated output budget, a timeout and a missing key
+ * all read the same (#257). The server strips supplier names and keys from
+ * these before sending them, so they pass through as written.
+ */
+function serverMessage(json: Record<string, unknown>): string | undefined {
+  const nested = json.error && typeof json.error === "object" ? (json.error as Record<string, unknown>) : undefined;
+  for (const said of [json.error, nested?.message, json.message]) {
+    if (typeof said === "string" && said.trim()) return said;
+  }
+  return undefined;
+}
+
 function plainTextDetail(text: string): string | undefined {
   const trimmed = text.trim();
   if (!trimmed || trimmed.length > 300 || trimmed.includes("\n")) return undefined;

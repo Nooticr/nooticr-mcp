@@ -545,6 +545,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   },
   // Free: reads two stored scans, fetches nothing.
   marketplace_changes: { label: "Comparing the two scans", kind: "list", n: 6, steps: [], free: true },
+  get_price_history: { label: "Reading the stored price history", kind: "text", n: 1, steps: [], free: true },
   get_marketplace_product: {
     label: "Reading the product",
     kind: "text",
@@ -614,7 +615,18 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   list_employees: { label: "Reading your employees", kind: "list", n: 3, steps: [], free: true },
   pause_employee: { label: "Updating the employee", kind: "text", n: 1, steps: [], free: true },
   fire_employee: { label: "Letting the employee go", kind: "text", n: 1, steps: [], free: true },
+  // Creator CRM (crm.ts): free, and none of it fetches.
+  crm_upsert_creator: { label: "Saving the creator", kind: "text", n: 1, steps: [], free: true },
+  crm_list_creators: { label: "Reading your creator pipeline", kind: "list", n: 3, steps: [], free: true },
+  crm_update_status: { label: "Updating the creator's status", kind: "text", n: 1, steps: [], free: true },
+  crm_log_interaction: { label: "Logging the interaction", kind: "text", n: 1, steps: [], free: true },
+  // A product's own site in Google Search (growth.ts): free, read live from Search Console.
+  get_search_performance: { label: "Reading your search performance", kind: "list", n: 3, steps: [], free: true },
+  inspect_url: { label: "Inspecting your pages", kind: "list", n: 3, steps: [], free: true },
+  get_sitemaps: { label: "Reading your sitemaps", kind: "list", n: 3, steps: [], free: true },
+  get_page_speed: { label: "Measuring the page", kind: "text", n: 1, steps: [], free: true },
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
+  get_employee_audit: { label: "Reading the audit trail", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },
   reject_action: { label: "Rejecting the action", kind: "text", n: 1, steps: [], free: true },
   // ─── Store connections (store-read.ts): a link, and a read of the store's own catalogue ───

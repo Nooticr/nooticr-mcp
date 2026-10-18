@@ -61,7 +61,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       description:
         "List the creative assets (voice-overs, sound effects, music, images, videos, composites) " +
         "generated in this workspace, newest first. Optional filters: appId, kind, briefId, since " +
-        "(ISO timestamp). Pass the returned nextCursor as cursor for the next page. No cost to call.",
+        "(ISO timestamp). Pass the returned nextCursor as cursor for the next page. No cost to call. Use to find assets generated earlier, for example to pass their ids to creative_image_edit.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
@@ -85,7 +85,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Status of an asynchronous creative job by jobId: queued, running, done, failed or " +
         "canceled, with the finished assets and the credits quoted, charged and refunded. Poll " +
-        "after pollAfterSeconds. No cost to call.",
+        "after pollAfterSeconds. No cost to call. Use after a creative tool returns a jobId, until the job is done or failed.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({ jobId: z.string().uuid().describe("jobId returned when the job was started.") }).strict(),
       outputSchema: OUTPUT_SCHEMAS.creative_job_status,
@@ -114,13 +114,13 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
     {
       title: "Create Images",
       description:
-        "Generate 1-4 still images with GPT Image (low quality, fast and cheap) and store them as " +
+        "Generate 1-4 still images with GPT Image (low quality setting) and store them as " +
         "creative assets. The prompt is up to 4000 characters; do not put long text in it (put " +
         "long text in a caption overlay) and do not ask for real named people. The first call is a free " +
         "price quote in credits; nothing is charged until you confirm. Show the user the credits and " +
         "ask before calling again with the same arguments plus confirm: true and the " +
         "confirmationToken. Settles to the real usage, never above the quote. Returns assets and " +
-        "creativeCredits.",
+        "creativeCredits. Use when the user asks for new still images for a post or campaign.",
       annotations: paidAnnotations,
       inputSchema: z
         .object({
@@ -146,7 +146,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         "or a previous creative_image) with GPT Image (low quality), with an optional maskAssetId, and " +
         "store the result as a new asset. The first call is a free price quote in credits; nothing is " +
         "charged until you confirm. Show the user the credits and ask before calling again with " +
-        "confirm: true and the confirmationToken. Returns assets and creativeCredits.",
+        "confirm: true and the confirmationToken. Returns assets and creativeCredits. Use when the user wants to change or combine images already generated in this workspace.",
       annotations: paidAnnotations,
       inputSchema: z
         .object({
@@ -170,7 +170,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Search ElevenLabs' voice library for a voice to use in creative_voiceover. Library voices " +
         "only, never a real person's cloned voice. Returns voiceRef, name, labels, language, accent " +
-        "and previewUrl. No cost to call.",
+        "and previewUrl. No cost to call. Use before creative_voiceover to pick a voice.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       inputSchema: z
         .object({
@@ -195,10 +195,10 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Voice-over with word timings (for burned-in captions); the text is spoken verbatim, up to 2500 " +
         "characters. Pass a voiceRef (or voiceId) from creative_voices_search; library voices only, no " +
-        "cloning. quality: final (default) or draft (cheaper, faster). The first call is a free price " +
+        "cloning. quality: final (default) or draft (lower price, shorter render time). The first call is a free price " +
         "quote in credits (vendor cost plus markup, never above the quote); nothing is charged until " +
         "you confirm. Show the user the credits and ask before calling again with confirm: true and " +
-        "the confirmationToken." + NO_LIKENESS,
+        "the confirmationToken." + NO_LIKENESS + " Use when the user needs spoken narration for a video.",
       annotations: paidAnnotations,
       inputSchema: z
         .object({
@@ -225,7 +225,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Generate a short sound effect (0.5-10 s) from a description of up to 300 characters; the text " +
         "is a prompt, not spoken. The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the " +
-        "credits and ask before calling again with confirm: true and the confirmationToken." + NO_LIKENESS,
+        "credits and ask before calling again with confirm: true and the confirmationToken." + NO_LIKENESS + " Use when the user needs a short sound effect for a video.",
       annotations: paidAnnotations,
       inputSchema: z
         .object({
@@ -249,7 +249,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         "instruments, not artists or songs. May be switched off on this deployment (it then says so " +
         "and offers stock music). The first call is a free price quote in credits; nothing is charged until you confirm. Show the user the " +
         "credits and ask before calling again with confirm: true and the confirmationToken, then poll " +
-        "creative_job_status every 10-20 s." + NO_LIKENESS,
+        "creative_job_status every 10-20 s." + NO_LIKENESS + " Use when the user needs background music for a video.",
       annotations: paidAnnotations,
       inputSchema: z
         .object({
@@ -268,21 +268,13 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
     {
       title: "Create Video Clip",
       description:
-        "Generate one short video clip (3-10 s, 360p draft quality) and store it as a creative asset, " +
-        "as an asynchronous job. Optional firstFrameAssetId (an image asset to start from) or up to 3 " +
-        "referenceAssetIds (images to stay consistent with), not both. Audio is ambient sound only; " +
-        "voice-over and music come from creative_voiceover and creative_music. Generates only: it " +
-        "cannot edit an uploaded video. The first call is a free price quote in credits for the " +
-        "10-second worst case; nothing is charged until you confirm. Show the user the credits and " +
-        "ask before calling again with the same arguments plus confirm: true and the " +
-        "confirmationToken, then poll creative_job_status every 10-20 s. Settles to the clip's real " +
-        "length, usually below the quote." + NO_LIKENESS,
+        "Generate one short video clip (3-30 s, draft quality) and store it as a creative asset, as an asynchronous job. Optional firstFrameAssetId (an image asset to start from) or up to 3 referenceAssetIds (images to stay consistent with), not both. Audio is ambient sound only; voice-over and music come from creative_voiceover and creative_music. Generates only: it cannot edit an uploaded video. The clip is rendered at the nearest length the video model offers; the first call is a free price quote in credits for that length, and says which length. Nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken, then poll creative_job_status every 10-20 s." + NO_LIKENESS + " Use when the user needs a short generated video clip.",
       annotations: paidAnnotations,
       inputSchema: z
         .object({
           appId: z.number().int(),
           prompt: z.string().min(1).max(2000),
-          durationSeconds: z.number().int().min(3).max(10).optional().describe("Length to aim for; default 6. The model decides the exact length."),
+          durationSeconds: z.number().int().min(3).max(30).optional().describe("Length to aim for; default 6. Rendered at the nearest length the model offers."),
           aspect: z.enum(["9:16", "16:9"]).optional().describe("Default 9:16 (vertical)."),
           firstFrameAssetId: z.string().optional().describe("An image asset to start the clip from."),
           referenceAssetIds: z.array(z.string()).min(1).max(3).optional().describe("Up to 3 image assets to stay consistent with."),
