@@ -92,6 +92,19 @@ describe("employee tools", () => {
     expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", notify } }]);
   });
 
+  it("documents notInFrance as ask-first and forwards it unchanged (#268)", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const hire = tools.find((t) => t.name === "hire_employee")!;
+    const field = (hire.inputSchema.properties as Record<string, { type?: string; description?: string }>).notInFrance;
+    expect(field?.type).toBe("boolean");
+    expect(field?.description).toContain("Never set it without asking them");
+    expect(hire.inputSchema.required ?? []).not.toContain("notInFrance");
+    const ok = await client.callTool({ name: "hire_employee", arguments: { template: "bookkeeper", notInFrance: true } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "hire_employee", args: { template: "bookkeeper", notInFrance: true } }]);
+  });
+
   it("rejects arguments the server does not know", async () => {
     const { client, calls } = await connect();
     const res = await client.callTool({ name: "list_employees", arguments: { bogus: 1 } });

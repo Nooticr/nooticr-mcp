@@ -93,6 +93,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
           model: z.string().optional().describe("Optional model."),
           effort: z.string().optional().describe("low | medium | high."),
+          notInFrance: z.boolean().optional().describe("Only for a template that is not offered in France (the Bookkeeper) while the workspace has no country set: true once the user has confirmed their business is not based in France. Never set it without asking them."),
           confirm,
           confirmationToken: z.string().optional().describe("Token returned in the quote."),
         })
