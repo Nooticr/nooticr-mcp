@@ -1414,11 +1414,12 @@ function handleMcpCall(name, args, workspaceId) {
     case "creative_image_edit":
     case "creative_voiceover":
     case "creative_sfx":
-    case "creative_music": {
+    case "creative_music":
+    case "creative_video": {
       if (args.confirm === true && args.confirmationToken) {
         return {
           content: [{ type: "text", text: "Generated." }],
-          structuredContent: name === "creative_music" ? { jobId: "fixture-job", pollAfterSeconds: 10 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
+          structuredContent: name === "creative_music" || name === "creative_video" ? { jobId: "fixture-job", status: "queued", pollAfterSeconds: name === "creative_video" ? 20 : 10 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
         };
       }
       return {

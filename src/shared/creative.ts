@@ -6,7 +6,7 @@
  *
  * The paid creative tools register here when they ship. The ElevenLabs half (CR2):
  * `creative_voices_search` is free; `creative_voiceover`, `creative_sfx` and `creative_music` are paid.
- * `creative_image` and `creative_image_edit` (CR3) are paid. All paid tools use the server's
+ * `creative_image` and `creative_image_edit` (CR3) and `creative_video` (CR4) are paid. All paid tools use the server's
  * quote-then-confirm handshake. `creative_test_render` is a server test fixture and is never registered.
  * Neither tool has a view yet: the asset list would be a gallery, which the
  * design system has no card for.
@@ -262,5 +262,28 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       outputSchema: OUTPUT_SCHEMAS.creative_music,
     },
     passthrough("creative_music"),
+  );
+  server.registerTool(
+    "creative_video",
+    {
+      title: "Create Video Clip",
+      description:
+        "Generate one short video clip (3-30 s, draft quality) and store it as a creative asset, as an asynchronous job. Optional firstFrameAssetId (an image asset to start from) or up to 3 referenceAssetIds (images to stay consistent with), not both. Audio is ambient sound only; voice-over and music come from creative_voiceover and creative_music. Generates only: it cannot edit an uploaded video. The clip is rendered at the nearest length the video model offers; the first call is a free price quote in credits for that length, and says which length. Nothing is charged until you confirm. Show the user the credits and ask before calling again with the same arguments plus confirm: true and the confirmationToken, then poll creative_job_status every 10-20 s." + NO_LIKENESS + " Use when the user needs a short generated video clip.",
+      annotations: paidAnnotations,
+      inputSchema: z
+        .object({
+          appId: z.number().int(),
+          prompt: z.string().min(1).max(2000),
+          durationSeconds: z.number().int().min(3).max(30).optional().describe("Length to aim for; default 6. Rendered at the nearest length the model offers."),
+          aspect: z.enum(["9:16", "16:9"]).optional().describe("Default 9:16 (vertical)."),
+          firstFrameAssetId: z.string().optional().describe("An image asset to start the clip from."),
+          referenceAssetIds: z.array(z.string()).min(1).max(3).optional().describe("Up to 3 image assets to stay consistent with."),
+          audio: z.enum(["ambient", "none"]).optional().describe("Default ambient. Never dialogue or music."),
+          ...handshake,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.creative_video,
+    },
+    passthrough("creative_video"),
   );
 }

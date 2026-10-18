@@ -598,6 +598,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // Paid, but the first call only quotes; the charge waits for the confirmed second call.
   creative_image: { label: "Quoting the images", kind: "text", n: 1, steps: [] },
   creative_image_edit: { label: "Quoting the image edit", kind: "text", n: 1, steps: [] },
+  creative_video: { label: "Quoting the video clip", kind: "text", n: 1, steps: [] },
   // Google Sheets (sheets.ts): reads are free; writes are free too (approval waits on the server side).
   sheets_create: { label: "Creating the spreadsheet", kind: "text", n: 1, steps: [], free: true },
   sheets_list: { label: "Listing your spreadsheets", kind: "list", n: 3, steps: [], free: true },

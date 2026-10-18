@@ -806,6 +806,20 @@
         "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new music job."
       }
     },
+    "creative_video": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it starts a video-generation job that stores an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the prompt (and any chosen image assets) to a third-party video model to generate the clip.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data.",
+        "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new video job."
+      }
+    },
     "creative_job_status": {
       "annotations": {
         "readOnlyHint": true,

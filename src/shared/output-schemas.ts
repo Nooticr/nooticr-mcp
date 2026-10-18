@@ -1459,6 +1459,17 @@ export const OUTPUT_SCHEMAS = {
     refused: scalar().describe("not_enabled when music generation is switched off for this account."),
     alternative: scalar(),
   }),
+  // A quote for the length the model will render first, then a job to poll (crates/server/src/creative/tools.rs, CR4).
+  creative_video: open({
+    quote: open({ credits: scalar() }).nullish().describe("First call: what generating will cost. Nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to start the job."),
+    expiresAt: scalar(),
+    next: scalar(),
+    jobId: scalar().describe("Poll creative_job_status with this."),
+    status: scalar(),
+    pollAfterSeconds: scalar(),
+    creativeCredits: open({}).nullish(),
+  }),
   // The paid image tools answer a quote first (`quote`, a token, an expiry), then the generated assets
   // with the credits settled. Keys are the server's (crates/server/src/creative/billing.rs, tools.rs).
   creative_image: open({
