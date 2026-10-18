@@ -94,6 +94,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           model: z.string().optional().describe("Optional model."),
           effort: z.string().optional().describe("low | medium | high."),
           notInFrance: z.boolean().optional().describe("Only for a template that is not offered in France (the Bookkeeper) while the workspace has no country set: true once the user has confirmed their business is not based in France. Never set it without asking them."),
+          language: z.string().optional().describe("BCP-47 tag of the language the employee works and writes in, e.g. fr or pt-BR. Defaults to en. Ask the user rather than guess."),
           confirm,
           confirmationToken: z.string().optional().describe("Token returned in the quote."),
         })
