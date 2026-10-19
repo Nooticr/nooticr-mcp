@@ -1548,7 +1548,13 @@ export const OUTPUT_SCHEMAS = {
         stoppedBecause: scalar(),
         nextRun: scalar(),
         lastRun: scalar(),
+        identity: anyObject()
+          .nullish()
+          .describe("Set only for a competitor watch: {identityId, name} of the saved creator identity its account belongs to, or null."),
       }),
+    ),
+    byIdentity: listOf(open({ identityId: scalar(), name: scalar(), watchIds: listOf(z.string()) })).describe(
+      "Competitor watches grouped per saved creator identity: one person followed on several networks.",
     ),
     activeCount: scalar(),
     creditsPerDayAcrossAllWatches: scalar().describe("What every enabled watch together will cost per day if nothing changes."),
@@ -1992,6 +1998,25 @@ export const OUTPUT_SCHEMAS = {
   crm_list_creators: open({ creators: listOf(open({ id: scalar(), platform: scalar(), handle: scalar(), status: scalar() })) }),
   crm_update_status: open({ creator: anyObject().nullish() }),
   crm_log_interaction: open({ interaction: anyObject().nullish() }),
+
+  // Creator identities (nooticr-server #36, identities.ts): the server's own shapes.
+  save_creator_identity: open({ saved: anyObject().nullish(), cost: scalar() }),
+  list_creator_identities: open({
+    identities: listOf(
+      open({
+        identityId: scalar(),
+        name: scalar(),
+        note: scalar(),
+        accounts: listOf(open({ platform: scalar(), handle: scalar() })),
+      }),
+    ),
+    count: scalar(),
+    cost: scalar(),
+  }),
+  update_creator_identity: open({ saved: anyObject().nullish(), cost: scalar() }),
+  delete_creator_identity: open({ deleted: scalar(), identityId: scalar(), cost: scalar() }),
+  watch_creator_identity: open({ identityId: scalar(), name: scalar(), watched: listOf(z.string()), cost: scalar() }),
+  unwatch_creator_identity: open({ identityId: scalar(), removed: listOf(z.string()), cost: scalar() }),
   // A product's own site in Google Search (nooticr-server growth/customer.rs over gsc.rs and pagespeed.rs).
   get_search_performance: open({ rows: listOf(open({ keys: listOf(z.string()), clicks: scalar(), impressions: scalar() })), totals: anyObject().nullish(), window: anyObject().nullish() }),
   inspect_url: open({ cached: scalar(), results: listOf(open({ url: scalar(), verdict: scalar() })) }),

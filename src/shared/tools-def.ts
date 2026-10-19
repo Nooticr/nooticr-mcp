@@ -254,6 +254,42 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ username: z.string().describe("Creator handle, with or without @."), platform: z.string().optional().describe("Platform (default tiktok).") }).strict(),
  },
  {
+ name: "save_creator_identity",
+ title: "Save Creator Identity",
+ description: "Use once the user has confirmed that several accounts on different networks are one person, for instance from suggest_creator_identity's evidence. Save them as one creator identity: name, accounts (each {platform, handle, evidence?}) and an optional note. Stores exactly the accounts given; an account already in another identity is refused, never moved. Never save a suggestion nobody confirmed. No cost to call.",
+ inputSchema: z.object({ name: z.string().describe("Who these accounts are."), accounts: z.array(z.object({ platform: z.string().describe("Social network: tiktok, instagram, youtube, ..."), handle: z.string().describe("Account handle, with or without @."), evidence: z.array(z.object({}).passthrough()).optional().describe("What showed these are one person, e.g. suggest_creator_identity's evidence.") }).strict()).min(1).max(20), note: z.string().optional().describe("Optional note.") }).strict(),
+ },
+ {
+ name: "list_creator_identities",
+ title: "List Creator Identities",
+ description: "Use to find a saved creator identity's id, or to answer which accounts are known to be the same person. Every creator identity this workspace has saved, with its accounts and their evidence. Read-only. No cost to call.",
+ inputSchema: z.object({}).strict(),
+ },
+ {
+ name: "update_creator_identity",
+ title: "Update Creator Identity",
+ description: "Use when a saved creator identity is wrong or incomplete: rename it, change or clear its note, add accounts or remove them. An added account already in another identity is refused. To drop the last account, use delete_creator_identity. No cost to call.",
+ inputSchema: z.object({ identityId: z.string().describe("Id from list_creator_identities."), name: z.string().optional().describe("New name."), note: z.string().optional().describe("New note; an empty string clears it."), addAccounts: z.array(z.object({ platform: z.string().describe("Social network: tiktok, instagram, youtube, ..."), handle: z.string().describe("Account handle, with or without @."), evidence: z.array(z.object({}).passthrough()).optional().describe("What showed these are one person, e.g. suggest_creator_identity's evidence.") }).strict()).min(1).max(20).optional(), removeAccounts: z.array(z.object({ platform: z.string().describe("Social network: tiktok, instagram, youtube, ..."), handle: z.string().describe("Account handle, with or without @."), evidence: z.array(z.object({}).passthrough()).optional().describe("What showed these are one person, e.g. suggest_creator_identity's evidence.") }).strict()).min(1).max(20).optional() }).strict(),
+ },
+ {
+ name: "delete_creator_identity",
+ title: "Delete Creator Identity",
+ description: "Use when a saved creator identity groups accounts that are not one person, or is no longer wanted. Only the grouping goes: the accounts and their watchlist entries are untouched. No cost to call.",
+ inputSchema: z.object({ identityId: z.string().describe("Id from list_creator_identities.") }).strict(),
+ },
+ {
+ name: "watch_creator_identity",
+ title: "Watch Creator Identity",
+ description: "Use to watch a person rather than one account: every account of a saved creator identity goes on your watchlist as its own entry, and list_watchlist groups them under the identity. Nothing is fetched. No cost to call.",
+ inputSchema: z.object({ identityId: z.string().describe("Id from list_creator_identities."), note: z.string().optional().describe("Optional note for each entry.") }).strict(),
+ },
+ {
+ name: "unwatch_creator_identity",
+ title: "Unwatch Creator Identity",
+ description: "Use when the user no longer wants a person on their watchlist: every account of a saved creator identity comes off it, with their baselines. Accounts watched on their own stay. No cost to call.",
+ inputSchema: z.object({ identityId: z.string().describe("Id from list_creator_identities.") }).strict(),
+ },
+ {
  name: "catch_up_watchlist",
  title: "Catch Up On Watchlist",
  description: "What the creators you watch have posted since you last checked. Fetches each one's recent posts and compares them against the snapshot taken at your last catch-up, then moves the snapshot forward \u2014 so it answers 'what is new' rather than 'what exists'. The first run for a creator records the baseline and has nothing to compare against. Use to follow a set of creators over time without re-reading each one. Consumes 2 nooticr credits per creator checked.",

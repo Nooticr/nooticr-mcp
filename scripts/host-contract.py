@@ -114,6 +114,13 @@ NO_APP = {
     "crm_list_creators",  # view pending: a table of creators with status and next step
     "crm_update_status",  # pure state mutation: nothing to draw
     "crm_log_interaction",  # pure state mutation: nothing to draw
+    # Creator identities (identities.ts, nooticr-server #36).
+    "save_creator_identity",  # pure state mutation: nothing to draw
+    "list_creator_identities",  # view pending: a table of people with their accounts and evidence
+    "update_creator_identity",  # pure state mutation: nothing to draw
+    "delete_creator_identity",  # pure state mutation: nothing to draw
+    "watch_creator_identity",  # pure state mutation, like watch_creator
+    "unwatch_creator_identity",  # pure state mutation, like unwatch_creator
     # A product's own site in Google Search (growth.ts): the server lists all four with no card,
     # and the design system has none for a query table, an index status or a vitals panel.
     "get_search_performance",  # view pending: a query/page table with clicks, CTR and position

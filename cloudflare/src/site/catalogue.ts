@@ -268,6 +268,42 @@ export const TOOLS: Tool[] = [
     when: "Before paying for a catch-up, or to find the exact handle to unwatch.",
   },
   {
+    name: "save_creator_identity", cost: 0, group: "research",
+    args: "name, accounts, note?",
+    desc: "Saves accounts on different networks as one person, once that is confirmed. An account already in another identity is refused, never moved.",
+    when: "suggest_creator_identity found the same person elsewhere and you confirmed it.",
+  },
+  {
+    name: "list_creator_identities", cost: 0, group: "research",
+    args: "\u2014",
+    desc: "Every saved creator identity, with its accounts and the evidence for each.",
+    when: "To find an identity's id, or which accounts are one person.",
+  },
+  {
+    name: "update_creator_identity", cost: 0, group: "research",
+    args: "identityId, name?, note?, addAccounts?, removeAccounts?",
+    desc: "Renames a saved identity, or adds or removes accounts.",
+    when: "A saved identity is wrong or incomplete.",
+  },
+  {
+    name: "delete_creator_identity", cost: 0, group: "research",
+    args: "identityId",
+    desc: "Deletes a saved identity. The accounts and their watchlist entries stay.",
+    when: "The accounts turned out not to be one person.",
+  },
+  {
+    name: "watch_creator_identity", cost: 0, group: "research",
+    args: "identityId, note?",
+    desc: "Puts every account of a saved identity on your watchlist, grouped as one person.",
+    when: "You want to follow a person across networks, not one account.",
+  },
+  {
+    name: "unwatch_creator_identity", cost: 0, group: "research",
+    args: "identityId",
+    desc: "Takes every account of a saved identity off your watchlist.",
+    when: "That person should no longer appear in the catch-up.",
+  },
+  {
     name: "catch_up_watchlist", cost: 2, group: "research",
     args: "limit?, platform?",
     desc: "What everyone you watch has posted since your last catch-up \u2014 2 credits per creator checked, not per call.",

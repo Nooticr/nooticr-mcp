@@ -23,6 +23,15 @@ export const STUB_URL = "https://www.tiktok.com/@lena.mornings/video/7318842211"
 
 /** Hand-written arguments where a synthesised value would be rejected or meaningless. */
 export const ARG_OVERRIDES = {
+  // A confirmed pair, as suggest_creator_identity's fixture suggests it; the
+  // other identity tools then probe the "identity-1" this saves.
+  save_creator_identity: {
+    name: "Lena Park",
+    accounts: [
+      { platform: "tiktok", handle: "lena.mornings" },
+      { platform: "instagram", handle: "lena.mornings", evidence: [{ signal: "shared_bio_link", strength: "strong" }] },
+    ],
+  },
   show_post_analysis: {
     url: STUB_URL,
     analysis: {

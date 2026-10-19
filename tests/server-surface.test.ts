@@ -93,6 +93,13 @@ const NOT_READ_ONLY = [
   "crm_upsert_creator",
   "crm_update_status",
   "crm_log_interaction",
+  // Creator identities: saving, changing and deleting an identity write stored rows, and
+  // the two watch tools write the watchlist; the list only reads.
+  "save_creator_identity",
+  "update_creator_identity",
+  "delete_creator_identity",
+  "watch_creator_identity",
+  "unwatch_creator_identity",
   // Google Sheets: the writes create or change cells in the customer's own spreadsheet.
   "sheets_create",
   "sheets_append_rows",
@@ -118,7 +125,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(133);
+    expect(tools).toHaveLength(139);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -158,6 +165,8 @@ describe("tool annotations", () => {
       "crm_log_interaction",
       "crm_update_status",
       "crm_upsert_creator",
+      // Creator identities: stored rows inside nooticr, and the account's own watchlist.
+      "delete_creator_identity",
       "draft_comment_reply",
       "draft_post",
       // Holds the caller's own draft up to a rubric; makes no request at all.
@@ -184,6 +193,7 @@ describe("tool annotations", () => {
       "growth_brief",
       "hire_employee",
       "list_brand_watches",
+      "list_creator_identities",
       "list_employees",
       "list_own_apps",
       "list_pending_actions",
@@ -205,6 +215,7 @@ describe("tool annotations", () => {
       "prepare_handoff",
       "reject_action",
       "review_post",
+      "save_creator_identity",
       // The show_* family: each draws what the caller already wrote/fetched
       // and reaches nothing. Sorted, so the renames in #45 moved two of them.
       //
@@ -237,9 +248,12 @@ describe("tool annotations", () => {
       "show_variants",
       "stop_brand_watch",
       "unwatch_creator",
+      "unwatch_creator_identity",
+      "update_creator_identity",
       "update_product",
       "update_watch_portfolio",
       "watch_creator",
+      "watch_creator_identity",
     ]);
   });
 });
