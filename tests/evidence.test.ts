@@ -67,7 +67,7 @@ async function connect() {
 const ARGS: Record<string, Record<string, unknown>> = {
   analyze_post: { url: "https://www.youtube.com/watch?v=abc" },
   understand_social_post: { url: "https://www.youtube.com/watch?v=abc" },
-  analyze_post_fast: { url: "https://www.youtube.com/watch?v=abc" },
+  analyze_post_text: { url: "https://www.youtube.com/watch?v=abc" },
   compare_social_posts: { urls: ["https://x/1", "https://x/2"] },
   analyze_creator_profile: { username: "nike" },
   find_hook_pattern: { username: "nike" },

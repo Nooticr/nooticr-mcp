@@ -959,7 +959,7 @@ function handleMcpCall(name, args, workspaceId) {
       // Worth having here rather than only in a unit test: a fixture that
       // always sends a bio cannot tell a consumer that handles the absent case
       // from one that collapses it, and collapsing it is exactly what
-      // who_should_i_work_with did (Nooticr/nooticr-server#82) — an empty
+      // find_collaborators did (Nooticr/nooticr-server#82) — an empty
       // `links` array for every candidate, reading as "published nothing".
       creators.push({
         platform: "tiktok",

@@ -224,7 +224,7 @@ export function registerPrompts(server: McpServer): void {
           `Work in this order:\n` +
           `1. get_post_transcript — the exact words, cheaply. Do this first: an analysis that quotes the ` +
           `real script beats one that paraphrases an interpretation of it.\n` +
-          `2. analyze_post_fast — hook, structure, CTA and audience, built from that transcript.\n` +
+          `2. analyze_post_text — hook, structure, CTA and audience, built from that transcript.\n` +
           (visuals === "yes"
             ? `3. analyze_post — the visual pass, since the framing and editing are the point here.\n`
             : `3. Skip analyze_post unless the fast pass leaves the visuals genuinely unexplained. It ` +
@@ -249,7 +249,7 @@ export function registerPrompts(server: McpServer): void {
     ({ urls }) =>
       userMessage(
         `Compare these posts and explain the performance gap:\n${urls}\n\n` +
-          `Start with compare_social_posts, then fetch the remaining URLs it names with get_social_media — it ` +
+          `Start with compare_social_posts, then fetch the remaining URLs it names with get_social_post — it ` +
           `pulls the first post and leaves the comparison, which is the part you should be doing.\n\n` +
           `Then tell me: which won, what actually differed (hook, format, length, caption, tags), what ` +
           `they share that I should keep, and one concrete experiment that would test your explanation. ` +

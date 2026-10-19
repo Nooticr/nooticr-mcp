@@ -34,7 +34,7 @@ const API = "https://api.nooticr.com";
  * pages came to advertise prices the server had stopped charging.
  */
 const DATA_PRICING: Record<string, number> = {
-  get_social_media: 1,
+  get_social_post: 1,
   discover_social_posts: 2,
   get_user_posts: 2,
   get_post_comments: 2,
@@ -649,7 +649,7 @@ describe("tool surface", () => {
     "post_comment_reply",
     "connect_store",
     "list_store_products",
-    "get_social_media",
+    "get_social_post",
     "get_post_transcript",
     "discover_social_posts",
     "get_user_posts",
@@ -664,7 +664,7 @@ describe("tool surface", () => {
     "understand_social_post",
     "analyze_creator_profile",
     "compare_social_posts",
-    "analyze_post_fast",
+    "analyze_post_text",
     "generate_hook_ideas",
     "generate_post_variants",
     "evaluate_social_draft",
@@ -696,9 +696,9 @@ describe("tool surface", () => {
     "compare_creators",
     "watchlist_standings",
     "show_standings",
-    "who_should_i_work_with",
-    "why_did_this_underperform",
-    "what_should_i_make_next",
+    "find_collaborators",
+    "benchmark_post",
+    "content_ideas_from_audience",
     "search_spoken_mentions",
     // The prospect search: the same keyword call as discover_social_posts,
     // widened into the shapes a complaint takes rather than the topic.

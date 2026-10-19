@@ -389,11 +389,11 @@ const checkedAgainstSession = open({
 
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
-  analyze_post_fast: open({ ...evidence, ...analyzed }),
+  analyze_post_text: open({ ...evidence, ...analyzed }),
   understand_social_post: open({ ...analyzed, ...evidence }),
   // No `provider`: the field named the upstream supplier and is no longer
   // returned. Documenting a field that does not exist is worse than omitting it.
-  get_social_media: open({ ...singlePost, fetchedAt: scalar() }),
+  get_social_post: open({ ...singlePost, fetchedAt: scalar() }),
 
   discover_social_posts: open(feed),
   /**
@@ -659,7 +659,7 @@ export const OUTPUT_SCHEMAS = {
   show_post_analysis: open({
     verification: checkedAgainstSession,
     url: scalar(),
-    post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
+    post: post.nullish().describe("The post analyze_post/analyze_post_text/understand_social_post handed back."),
     analysis: open({}).passthrough().nullish().describe(
       "Your own analysis, any of the fields analyze_post's guidance asked for — summary, " +
         "hookStrength, scriptStructure, whyItWorks, suggestedHook, keyQuotes, suggestedHashtags, " +
@@ -834,7 +834,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  who_should_i_work_with: open({
+  find_collaborators: open({
     ...evidence,
     niche: scalar(),
     platform: scalar(),
@@ -868,7 +868,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  why_did_this_underperform: open({
+  benchmark_post: open({
     ...evidence,
     url: scalar(),
     username: scalar(),
@@ -891,7 +891,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  what_should_i_make_next: open({
+  content_ideas_from_audience: open({
     ...evidence,
     username: scalar(),
     platform: scalar(),

@@ -100,7 +100,7 @@ whenever you touch a tool's guidance text, a `show_*` view, or anything in
 `understand_social_post`'s `focus` argument, `generate_post_variants`' `count`/
 `angle`, and `generate_hook_ideas`' `topic`/`count`/`tone` all being accepted by
 the zod schema and silently dropped by the guidance builder, and
-`track_creator`/`why_did_this_underperform` computing a real
+`track_creator`/`benchmark_post` computing a real
 ratio-to-baseline verdict per post that `postCard()` never rendered.
 
 **The rule, stated plainly: never mock the reasoning step.** A tool whose

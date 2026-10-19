@@ -375,7 +375,7 @@ describe("prompts", () => {
     const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
     // The transcript is the cheap exact evidence, so it must come before the
     // analysis that would otherwise paraphrase it.
-    expect(text.indexOf("get_post_transcript")).toBeLessThan(text.indexOf("analyze_post_fast"));
+    expect(text.indexOf("get_post_transcript")).toBeLessThan(text.indexOf("analyze_post_text"));
     expect(text).toContain("https://www.tiktok.com/@a/video/1");
   });
 

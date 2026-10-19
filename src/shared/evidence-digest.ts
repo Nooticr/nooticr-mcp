@@ -261,7 +261,7 @@ const SHAPES: Array<{ key: string; label: string; line: (row: Row, b: Budget) =>
   { key: "products", label: "listing", line: productLine },
   // The baseline a post is scored against, and the asks a niche sweep found.
   // Both are posts in all but name, and both are the material their tool's
-  // guidance reasons over — `why_did_this_underperform` cannot say "this is an
+  // guidance reasons over — `benchmark_post` cannot say "this is an
   // ordinary result" without the distribution it is ordinary against.
   { key: "window", label: "post in the baseline window", line: postLine },
   { key: "demand", label: "thing the audience asked for", line: postLine },

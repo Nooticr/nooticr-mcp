@@ -167,7 +167,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   nooticr_settings_read: { label: "Reading your research defaults", kind: "text", n: 0, steps: [], free: true },
   nooticr_settings_update: { label: "Saving your research defaults", kind: "text", n: 0, steps: [], free: true },
   // ─── Read a post ───
-  get_social_media: { label: "Fetching the post", kind: "post", n: 1, steps: [step("get_social_media")] },
+  get_social_post: { label: "Fetching the post", kind: "post", n: 1, steps: [step("get_social_media")] },
   get_post_transcript: {
     label: "Reading the caption track",
     kind: "text",
@@ -192,11 +192,11 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     n: 1,
     steps: evidenceSteps("understand_social_post"),
   },
-  analyze_post_fast: {
+  analyze_post_text: {
     label: "Reading the post",
     kind: "text",
     n: 1,
-    steps: evidenceSteps("analyze_post_fast"),
+    steps: evidenceSteps("analyze_post_text"),
   },
   summarize_post_comments: {
     label: "Reading the comment section",
@@ -395,7 +395,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
     perUnit: [CREATOR_UNIT],
     note: "Priced per creator on the watchlist.",
   },
-  who_should_i_work_with: {
+  find_collaborators: {
     label: "Building a shortlist",
     kind: "list",
     n: 5,
@@ -410,13 +410,13 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
       },
     ],
   },
-  why_did_this_underperform: {
+  benchmark_post: {
     label: "Measuring it against their own median",
     kind: "text",
     n: 1,
     steps: [step("get_social_media"), step("get_user_posts")],
   },
-  what_should_i_make_next: {
+  content_ideas_from_audience: {
     label: "Reading demand against supply",
     kind: "list",
     n: 6,

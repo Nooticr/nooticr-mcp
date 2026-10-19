@@ -78,12 +78,12 @@ describe("nooticr_getting_started", () => {
       signedIn: true, balance: 12, connectedCount: 1, connectedPlatforms: ["tiktok"], watching: 0,
     });
     const tools = res.structuredContent.nextSteps.map((s) => s.tool);
-    expect(tools).toContain("get_social_media");
+    expect(tools).toContain("get_social_post");
     expect(tools).toContain("answer_my_audience");
     expect(tools).toContain("watch_creator");
     // Both channels carry the guidance naming those tools.
-    expect(res.content[0].text).toContain("get_social_media (1 credit)");
-    expect(String(res.structuredContent.guidance)).toContain("get_social_media");
+    expect(res.content[0].text).toContain("get_social_post (1 credit)");
+    expect(String(res.structuredContent.guidance)).toContain("get_social_post");
     expect(res.content[0].text).toContain("First use still free: analyze_post");
   });
 

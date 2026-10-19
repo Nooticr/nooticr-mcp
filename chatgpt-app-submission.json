@@ -64,7 +64,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (3 nooticr credits), and it fetches live data that can change between calls."
       }
     },
-    "analyze_post_fast": {
+    "analyze_post_text": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -666,7 +666,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits per network searched plus 2 to find the handle: 6 by default, 4 with one network in `platforms`), and it fetches live data that can change between calls."
       }
     },
-    "get_social_media": {
+    "get_social_post": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1408,7 +1408,7 @@
         "idempotent_justification": "Not idempotent: every confirmed call is charged again (2 nooticr credits per watched creator), and each creator's recent posts can change between calls."
       }
     },
-    "what_should_i_make_next": {
+    "content_ideas_from_audience": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1422,7 +1422,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits for the post list, 2 per post read for comments, and 2 for the niche sweep), and it fetches live data that can change between calls."
       }
     },
-    "who_should_i_work_with": {
+    "find_collaborators": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1436,7 +1436,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits, or 4 with a seed creator), and search results change between calls."
       }
     },
-    "why_did_this_underperform": {
+    "benchmark_post": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1987,7 +1987,7 @@
     {
       "description": "The default read. A single public post URL, analysed from its transcript, caption and stats without paying for frames, then drawn as a card.",
       "user_prompt": "What makes this TikTok work? https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
-      "tools_triggered": "analyze_post_fast, show_post_analysis",
+      "tools_triggered": "analyze_post_text, show_post_analysis",
       "expected_output": "The hook, script structure, CTA and target audience, each cited to a line of the transcript or a stat, with an explicit note that the visuals were not seen. Ends with a rendered analysis card."
     },
     {

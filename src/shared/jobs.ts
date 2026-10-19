@@ -1454,13 +1454,13 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 3. who_should_i_work_with
+  // 3. find_collaborators
   // ───────────────────────────────────────────────────────────────────────────
   server.registerTool(
-    "who_should_i_work_with",
+    "find_collaborators",
     {
-      title: "Who Should I Work With",
-      _meta: viewMeta("who_should_i_work_with"),
+      title: "Find Collaborators",
+      _meta: viewMeta("find_collaborators"),
       description:
         "A shortlist of people to work with — collaborators, or anyone you are looking to hire or " +
         "commission: designers, developers, photographers, editors. Searches creators by craft or " +
@@ -1478,7 +1478,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Consumes 2 nooticr credits, or 4 with a seed creator. Use to build a list to vet; " +
         "get_similar_creators is the raw lookalike call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-      outputSchema: OUTPUT_SCHEMAS.who_should_i_work_with,
+      outputSchema: OUTPUT_SCHEMAS.find_collaborators,
       inputSchema: z
         .object({
           niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."),
@@ -1595,7 +1595,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         ].join("\n"),
         {
           mode: "evidence",
-          tool: "who_should_i_work_with",
+          tool: "find_collaborators",
           rubric: COLLAB_RUBRIC,
           withLinks,
           bioUnread,
@@ -1624,17 +1624,17 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 4. why_did_this_underperform
+  // 4. benchmark_post
   //
   // Not compare_social_posts. That answers "why did A beat B" from two URLs a person
   // already suspects; this answers "is this even bad, and against what", which
   // needs the creator's own distribution rather than a second post.
   // ───────────────────────────────────────────────────────────────────────────
   server.registerTool(
-    "why_did_this_underperform",
+    "benchmark_post",
     {
-      title: "Why Did This Underperform",
-      _meta: viewMeta("why_did_this_underperform"),
+      title: "Benchmark Post",
+      _meta: viewMeta("benchmark_post"),
       description:
         "One post measured against the creator's own recent median rather than against another " +
         "post. Fetches the post, fetches that creator's recent window, excludes the post from its " +
@@ -1643,7 +1643,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "failure'. Consumes 3 nooticr credits (1 for the post, 2 for the window). Use when you " +
         "have one post and no comparison; compare_social_posts is for two URLs you already picked.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-      outputSchema: OUTPUT_SCHEMAS.why_did_this_underperform,
+      outputSchema: OUTPUT_SCHEMAS.benchmark_post,
       inputSchema: z
         .object({
           url: z.string().describe("The post to explain."),
@@ -1673,7 +1673,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         spend.record("get_social_media", structured);
         post = (structured.post ?? structured) as Row;
       } catch (err) {
-        return failed("why_did_this_underperform could not fetch the post", err);
+        return failed("benchmark_post could not fetch the post", err);
       }
 
       const handle = normaliseHandle(
@@ -1693,7 +1693,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
             `whether that is good for this account.\n${ownIt}`,
           {
             mode: "evidence",
-            tool: "why_did_this_underperform",
+            tool: "benchmark_post",
             url: args.url,
             post,
             metric,
@@ -1739,7 +1739,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         underperformGuidance({ metric, where, baseline, window: window.length }),
         {
           mode: "evidence",
-          tool: "why_did_this_underperform",
+          tool: "benchmark_post",
           evidenceFrom: ["get_social_media", "get_user_posts"],
           url: args.url,
           username: handle,
@@ -1763,7 +1763,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 5. what_should_i_make_next — demand against supply.
+  // 5. content_ideas_from_audience — demand against supply.
   //
   // Either half alone is the familiar failure. A niche sweep produces "gaps"
   // that are gaps because nobody wants them; a comment read produces requests
@@ -1771,10 +1771,10 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
   // intersection, and the intersection needs both fetches in one result.
   // ───────────────────────────────────────────────────────────────────────────
   server.registerTool(
-    "what_should_i_make_next",
+    "content_ideas_from_audience",
     {
-      title: "What Should I Make Next",
-      _meta: viewMeta("what_should_i_make_next"),
+      title: "Content Ideas From Audience",
+      _meta: viewMeta("content_ideas_from_audience"),
       description:
         "Demand and supply in one result. Reads the comments on a creator's own recent posts for " +
         "what their audience explicitly asks for, sweeps the niche for what is already being " +
@@ -1785,7 +1785,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "niche sweep — 12 at the default of 4 posts. Use to decide what to film; niche_report " +
         "covers the supply half alone.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-      outputSchema: OUTPUT_SCHEMAS.what_should_i_make_next,
+      outputSchema: OUTPUT_SCHEMAS.content_ideas_from_audience,
       inputSchema: z
         .object({
           username: z.string().describe("Your handle, with or without @."),
@@ -1827,7 +1827,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         spend.record("get_user_posts", structured);
         feed = rowsOf(structured.posts);
       } catch (err) {
-        return failed("what_should_i_make_next could not list your posts", err);
+        return failed("content_ideas_from_audience could not list your posts", err);
       }
 
       const mine = feed.slice(0, cap);
@@ -1950,7 +1950,7 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         }),
         {
           mode: "evidence",
-          tool: "what_should_i_make_next",
+          tool: "content_ideas_from_audience",
           evidenceFrom: ["get_user_posts", "get_post_comments", "discover_social_posts"],
           username: handle,
           platform,
