@@ -663,6 +663,18 @@ export const TOOLS: Tool[] = [
     when: "You want to know whether a product got cheaper or better rated; read it once with get_marketplace_product to start its record.",
   },
   {
+    name: "track_price", cost: 0, group: "market",
+    args: "marketplace, id, market?, productLine?, competitorOf?",
+    desc: "Follows a listing already read here on the workspace's Price history page, optionally drawn against one of its own listings as a competitor. Fetches nothing. Free.",
+    when: "Someone wants a product's price followed, or a competitor's offer charted against theirs; read it once with get_marketplace_product first.",
+  },
+  {
+    name: "untrack_price", cost: 0, group: "market",
+    args: "marketplace, id, market?",
+    desc: "Stops following a tracked listing. One the workspace's scans still return stays on the page. Free.",
+    when: "A listing no longer needs following.",
+  },
+  {
     name: "get_marketplace_product", cost: 3, group: "market",
     args: "marketplace, item, market?",
     desc: "One product by id or URL: price, rating, the full star histogram, specs and the review text.",

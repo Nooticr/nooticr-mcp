@@ -2070,6 +2070,20 @@ export const OUTPUT_SCHEMAS = {
     billable: scalar(),
     note: scalar(),
   }),
+  // A Price history page row (nooticr-server prices.rs row_json), as track_price and untrack_price answer it.
+  track_price: open({
+    tracked: scalar(),
+    alreadyTracked: scalar(),
+    listing: open({ id: scalar(), title: scalar(), productId: scalar(), marketplace: scalar(), url: scalar(), productLine: scalar(), source: scalar(), currency: scalar(), last: scalar(), changePct: scalar() }).nullish(),
+    note: scalar(),
+  }),
+  untrack_price: open({
+    tracked: scalar(),
+    changed: scalar(),
+    removed: scalar(),
+    listing: open({ id: scalar(), title: scalar(), productId: scalar(), marketplace: scalar(), source: scalar() }).nullish(),
+    note: scalar(),
+  }),
   get_marketplace_product: open({
     ...marketplaceScanShape,
     product: amazonProduct.nullish().describe("The single product, also present as products[0]."),

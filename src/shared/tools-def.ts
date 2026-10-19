@@ -770,6 +770,18 @@ export const TOOL_DEFINITIONS = [
   inputSchema: z.object({ marketplace: z.string().describe("Which site the product is on."), id: z.string().describe("The site's own product id, or a product URL from it."), market: z.string().optional().describe("The storefront the product is on, if the site has several."), from: z.string().optional().describe("Start of the window, as a date (2026-09-01) or an ISO timestamp. Default: 30 days before `to`."), to: z.string().optional().describe("End of the window, inclusive. Default: now."), metric: z.enum(["price", "rating", "reviewCount", "availability"]).optional().describe("What to chart (default price).") }).strict(),
  },
  {
+  name: "track_price",
+  title: "Track Price",
+  description: "Follow one marketplace listing on the workspace's Price history page. Use when someone wants a product's price followed over time, or a competitor's offer drawn against one of their own listings. `marketplace` and `id` name the listing the same way get_marketplace_product does. `competitorOf` names one of the workspace's own tracked listings, the same way, to draw this one against it on the chart; that listing has to be tracked first. `productLine` groups listings on the page. Tracking a listing again changes only the fields given (`alreadyTracked: true`). Fetches nothing: the listing must have been read before, by get_marketplace_product or scan_marketplace_category, and one never read is refused with that step named. Free.",
+  inputSchema: z.object({ marketplace: z.string().describe("Which site the listing is on."), id: z.string().describe("The site's own product id, or a product URL from it."), market: z.string().optional().describe("The storefront the listing is on, if the site has several."), productLine: z.string().max(120).optional().describe("A group for the page's filter, e.g. the product's name."), competitorOf: z.object({ marketplace: z.string().optional(), id: z.string(), market: z.string().optional() }).strict().optional().describe("One of the workspace's own tracked listings to draw this one against.") }).strict(),
+ },
+ {
+  name: "untrack_price",
+  title: "Untrack Price",
+  description: "Use when a listing no longer needs following: stops following one tracked with track_price or from the Price history page, named the same way. A listing the workspace's own scans keep returning stays on the page as seen in a scan; one that was only tracked is removed (`removed: true`). Untracking a listing that was not tracked changes nothing (`changed: false`). Free.",
+  inputSchema: z.object({ marketplace: z.string().describe("Which site the listing is on."), id: z.string().describe("The site's own product id, or a product URL from it."), market: z.string().optional().describe("The storefront the listing is on, if the site has several.") }).strict(),
+ },
+ {
   name: "get_marketplace_product",
   title: "Get Marketplace Product",
   description: "Fetch one product from any of twelve marketplaces by id or URL: price, rating, the full star histogram, specs, and the review text. marketplace picks the site — one of amazon, aliexpress, cdiscount, flipkart, mercadolibre, lazada, otto, rakuten, trendyol, jumia, vinted, temu. Use for a single product; for a category or a competitive set, scan_marketplace_category collects many in one job and rolls them up. Consumes 3 nooticr credits.",
