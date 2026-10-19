@@ -342,8 +342,8 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "draft_comment_reply", cost: 0, costNote: "Free with your text, else 1 cr", group: "own",
-    args: "platform, commentId, postId, text?, guidance?",
-    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it. Returns a draftId and confirmationToken.",
+    args: "platform, commentId, postId, text?, guidance?, appId?",
+    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it in your brand voice, with its rationale; refused at no cost when there is no brand voice, product or guidance to write from. Returns a draftId and confirmationToken.",
     when: "After list_comments_to_answer, to have a reply ready for the user to read.",
   },
   {
