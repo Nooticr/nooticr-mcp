@@ -546,6 +546,9 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // Free: reads two stored scans, fetches nothing.
   marketplace_changes: { label: "Comparing the two scans", kind: "list", n: 6, steps: [], free: true },
   get_price_history: { label: "Reading the stored price history", kind: "text", n: 1, steps: [], free: true },
+  // Free: one row in the workspace's price listings; nothing is fetched.
+  track_price: { label: "Tracking the listing", kind: "text", n: 1, steps: [], free: true },
+  untrack_price: { label: "Untracking the listing", kind: "text", n: 1, steps: [], free: true },
   get_marketplace_product: {
     label: "Reading the product",
     kind: "text",

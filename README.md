@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-133 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+135 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -176,6 +176,8 @@ a `scanId` for the rest.
 | `marketplace_scan_status` | free | Picks a running marketplace collection back up by `scanId` and the same `marketplace`. Free, for the same reason `amazon_scan_status` is. |
 | `get_price_history` | free | One product's `price` over time, or its `rating`, `reviewCount` or `availability` with `metric`, from the observations stored each time it was scanned. `marketplace` and `id` name it as `get_marketplace_product` does; `from`/`to` default to the last 30 days. Returns the points oldest first with min, max, first, last and the change from first to last. Reads stored data only; a product never scanned answers `recorded: false`. |
 | `marketplace_changes` | free | What moved in a category since the previous scan of the same `marketplace` and `query`: products that entered or left the results and ones whose price or place changed. Read from the two latest stored scans, so it fetches nothing; a category scanned once says it has no earlier run. |
+| `track_price` | free | Follows a listing already read here (by `marketplace` and `id`, as `get_marketplace_product` names it) on the workspace's Price history page. `competitorOf` draws it against one of the workspace's own tracked listings; `productLine` groups listings. Tracking again changes only the fields given. Fetches nothing, so a product never read is refused with the read that records it. |
+| `untrack_price` | free | Stops following a tracked listing. One the workspace's own scans still return stays on the page as seen in a scan; one that was only tracked is removed. A listing that was not tracked is a no-op. |
 | `get_marketplace_product` | 3 | One product from any of the twelve sites, by id or URL: price, rating, the full star histogram, specs and the reviews. |
 | `show_amazon_category_insights` | free | Draws the read **your model** wrote — purchase drivers, barriers, what each brand does well, the gaps, the positioning angles — beside the listings and their reviews, so a person can click a product and check any claim against the text it came from. The conclusions are attributed to your model, never presented as a nooticr rating of anyone's product. Given the `scanId`, it re-reads the listings from the scan itself (free) instead of drawing whatever the model re-sends, and flags any ASIN the read cites that the scan does not contain; without one, the card says its listings were not checked. |
 | `show_marketplace_category_insights` | free | The same card for the other eleven marketplaces: your read beside that site's listings and reviews, labelled with the right site, re-read from the scan by `scanId` and `marketplace` so nothing is re-typed. |

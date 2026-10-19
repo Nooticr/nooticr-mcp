@@ -498,6 +498,34 @@
         "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call with the same arguments returns the same series and has no additional effect."
       }
     },
+    "track_price": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds or updates one row in the workspace's own list of products it follows on its Price history page.",
+        "open_world_justification": "Stays inside nooticr: it looks the product up among listings already stored and fetches nothing from any marketplace.",
+        "destructive_justification": "Not destructive: it only adds a followed listing or sets the fields given; nothing that was there is removed.",
+        "idempotent_justification": "Idempotent: tracking the same listing again with the same arguments leaves the same single row and reports alreadyTracked."
+      }
+    },
+    "untrack_price": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stops the workspace following one listing on its Price history page.",
+        "open_world_justification": "Stays inside nooticr: it changes one stored row and contacts no marketplace.",
+        "destructive_justification": "Destructive: a listing that was only tracked, and that the workspace's own scans do not return, is removed from the page.",
+        "idempotent_justification": "Idempotent: a second call finds nothing tracked and changes nothing (changed: false)."
+      }
+    },
     "get_marketplace_product": {
       "annotations": {
         "readOnlyHint": true,

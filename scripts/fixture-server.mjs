@@ -1693,6 +1693,26 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: scan,
       };
     }
+    case "track_price": {
+      // The server refuses a listing its mirror never stored (nooticr-server#1372).
+      if (String(args.id || "").toLowerCase().includes("never")) {
+        return { error: { code: -32602, message: "Amazon product B0NEVER has not been read here yet, so there is no listing to track. A get_marketplace_product call for it (3 credits) records it; track it after that." } };
+      }
+      const listing = {
+        id: "4101", title: "Collapsible silicone water bottle, 600 ml", productId: String(args.id), marketplace: String(args.marketplace),
+        url: "https://www.amazon.com/dp/B0FIXTURE1", productLine: args.productLine ?? null, source: "tracked",
+        currency: "USD", last: 21.99, changePct: -12.0,
+      };
+      const payload = {
+        tracked: true, alreadyTracked: false, listing,
+        note: "On the Price history page now. Tracking fetches nothing: its history grows each time a scan or get_marketplace_product reads it.",
+      };
+      return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+    }
+    case "untrack_price": {
+      const payload = { tracked: false, changed: true, removed: true };
+      return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+    }
     case "get_price_history": {
       // An unknown product is a normal answer, not an error (nooticr-server#831).
       if (String(args.id || "").toLowerCase().includes("never")) {

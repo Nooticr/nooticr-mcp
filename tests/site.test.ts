@@ -740,6 +740,8 @@ describe("tool surface", () => {
     "reject_action",
     "marketplace_changes",
     "get_price_history",
+    "track_price",
+    "untrack_price",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -897,6 +899,9 @@ describe("tool surface", () => {
       "marketplace_changes",
       // Reads stored observations back; fetches nothing.
       "get_price_history",
+      // A row in the workspace's own price listings; fetches nothing.
+      "track_price",
+      "untrack_price",
       "nooticr_settings_read",
       "nooticr_settings_update",
     ];

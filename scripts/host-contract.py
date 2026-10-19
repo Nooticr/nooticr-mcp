@@ -122,6 +122,10 @@ NO_APP = {
     "get_page_speed",  # view pending: Core Web Vitals rated good / needs improvement / poor
     "marketplace_changes",
     "get_price_history",  # view pending: a price line over time; the server lists it in NO_VIEW too
+    # Price history page rows (nooticr-server#1372): the answer is a row of the
+    # dashboard's Price history page, which is where it is looked at.
+    "track_price",  # pure state mutation: one stored listing row
+    "untrack_price",  # pure state mutation: removes or demotes that row
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"
