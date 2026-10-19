@@ -598,6 +598,12 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // Paid, but the first call only quotes; the charge waits for the confirmed second call.
   creative_image: { label: "Quoting the images", kind: "text", n: 1, steps: [] },
   creative_image_edit: { label: "Quoting the image edit", kind: "text", n: 1, steps: [] },
+  creative_video: { label: "Quoting the video clip", kind: "text", n: 1, steps: [] },
+  creative_compose: { label: "Quoting the render", kind: "text", n: 1, steps: [] },
+  creative_settings_get: { label: "Reading your creative limits", kind: "text", n: 1, steps: [], free: true },
+  creative_brief_create: { label: "Filing the brief", kind: "text", n: 1, steps: [], free: true },
+  creative_brief_list: { label: "Reading the brief queue", kind: "list", n: 3, steps: [], free: true },
+  creative_brief_update: { label: "Updating the brief", kind: "text", n: 1, steps: [], free: true },
   // Google Sheets (sheets.ts): reads are free; writes are free too (approval waits on the server side).
   sheets_create: { label: "Creating the spreadsheet", kind: "text", n: 1, steps: [], free: true },
   sheets_list: { label: "Listing your spreadsheets", kind: "list", n: 3, steps: [], free: true },
@@ -614,6 +620,16 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   list_employees: { label: "Reading your employees", kind: "list", n: 3, steps: [], free: true },
   pause_employee: { label: "Updating the employee", kind: "text", n: 1, steps: [], free: true },
   fire_employee: { label: "Letting the employee go", kind: "text", n: 1, steps: [], free: true },
+  // Creator CRM (crm.ts): free, and none of it fetches.
+  crm_upsert_creator: { label: "Saving the creator", kind: "text", n: 1, steps: [], free: true },
+  crm_list_creators: { label: "Reading your creator pipeline", kind: "list", n: 3, steps: [], free: true },
+  crm_update_status: { label: "Updating the creator's status", kind: "text", n: 1, steps: [], free: true },
+  crm_log_interaction: { label: "Logging the interaction", kind: "text", n: 1, steps: [], free: true },
+  // A product's own site in Google Search (growth.ts): free, read live from Search Console.
+  get_search_performance: { label: "Reading your search performance", kind: "list", n: 3, steps: [], free: true },
+  inspect_url: { label: "Inspecting your pages", kind: "list", n: 3, steps: [], free: true },
+  get_sitemaps: { label: "Reading your sitemaps", kind: "list", n: 3, steps: [], free: true },
+  get_page_speed: { label: "Measuring the page", kind: "text", n: 1, steps: [], free: true },
   list_pending_actions: { label: "Reading what awaits approval", kind: "list", n: 3, steps: [], free: true },
   get_employee_audit: { label: "Reading the audit trail", kind: "list", n: 3, steps: [], free: true },
   approve_action: { label: "Approving the action", kind: "text", n: 1, steps: [], free: true },

@@ -806,6 +806,90 @@
         "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new music job."
       }
     },
+    "creative_video": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it starts a video-generation job that stores an asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Sends the prompt (and any chosen image assets) to a third-party video model to generate the clip.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data.",
+        "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new video job."
+      }
+    },
+    "creative_compose": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: on confirmation it starts a render job that stores a composite asset in the caller's workspace and spends the caller's credits. The first call only returns a quote.",
+        "open_world_justification": "Open world: when music is {source: \"stock\"} it fetches a stock track from a third-party library; the render itself runs on Nooticr's servers.",
+        "destructive_justification": "Not destructive. The write is additive: it creates a new asset and removes no existing data.",
+        "idempotent_justification": "Not idempotent: each confirmed call charges credits and starts a new render job."
+      }
+    },
+    "creative_settings_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reports the workspace's creative spend caps and usage. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call has no additional effect."
+      }
+    },
+    "creative_brief_create": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it files a new creative brief in the workspace's queue.",
+        "open_world_justification": "Closed domain. It writes only to the caller's own nooticr workspace; nothing is generated or posted.",
+        "destructive_justification": "Not destructive: it only adds a brief.",
+        "idempotent_justification": "Not idempotent: every call files a new brief."
+      }
+    },
+    "creative_brief_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's creative briefs. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call returns the same queue."
+      }
+    },
+    "creative_brief_update": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it changes a brief's status and the assets attached to it.",
+        "open_world_justification": "Closed domain. It writes only to the caller's own nooticr workspace; nothing is published.",
+        "destructive_justification": "Destructive: the asset and action id lists passed replace the ones the brief held, and the old lists are not kept.",
+        "idempotent_justification": "Idempotent: free, and repeating the call with the same arguments leaves the brief in the same state."
+      }
+    },
     "creative_job_status": {
       "annotations": {
         "readOnlyHint": true,
@@ -1504,6 +1588,118 @@
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace.",
         "destructive_justification": "Destructive: runs stop for good and actions waiting for approval are discarded; the user must confirm explicitly.",
         "idempotent_justification": "Idempotent: once an employee is let go, firing it again changes nothing."
+      }
+    },
+    "crm_upsert_creator": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds a creator to the workspace's pipeline or updates the one already there.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Destructive: on an existing creator, the fields passed overwrite the values stored before, and the old values are not kept.",
+        "idempotent_justification": "Idempotent: free, and repeating the call with the same arguments leaves the same row; nothing is added a second time."
+      }
+    },
+    "crm_list_creators": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's creator pipeline. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call returns the same pipeline and has no additional effect."
+      }
+    },
+    "crm_update_status": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it moves a creator to a new pipeline status and records a history entry.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: the status can be changed again and the history keeps every move.",
+        "idempotent_justification": "Not idempotent: every call writes a new status_change entry to the creator's history, even when the status is the same."
+      }
+    },
+    "crm_log_interaction": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it appends an interaction to a creator's history.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no creator is contacted.",
+        "destructive_justification": "Not destructive: it only adds an entry.",
+        "idempotent_justification": "Not idempotent: every call appends a new entry to the creator's history."
+      }
+    },
+    "get_search_performance": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads search clicks, impressions, CTR and position for the product's own site. Nothing is written.",
+        "open_world_justification": "Open world. The server reads Google Search Console (or PageSpeed Insights) live for the product's own site, through the workspace's own connection.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing; the same arguments return the same window (cached), with no additional effect."
+      }
+    },
+    "inspect_url": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads Google's index status for pages of the product's own site. Nothing in the account or on the site changes.",
+        "open_world_justification": "Open world. The server reads Google Search Console (or PageSpeed Insights) live for the product's own site, through the workspace's own connection.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free; inspecting the same URL again returns the same status and changes nothing. Each live inspection counts against the site's own daily inspection quota, which is why calls are capped."
+      }
+    },
+    "get_sitemaps": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the sitemaps submitted for the product's own site. It cannot submit one.",
+        "open_world_justification": "Open world. The server reads Google Search Console (or PageSpeed Insights) live for the product's own site, through the workspace's own connection.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call returns the same list."
+      }
+    },
+    "get_page_speed": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it measures a page of the product's own site. Nothing is written.",
+        "open_world_justification": "Open world. The server reads Google PageSpeed Insights live, for a page of the product's own site only.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing; repeating the call measures the same page again with no additional effect."
       }
     },
     "list_pending_actions": {

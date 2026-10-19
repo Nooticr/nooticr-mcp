@@ -1459,6 +1459,37 @@ export const OUTPUT_SCHEMAS = {
     refused: scalar().describe("not_enabled when music generation is switched off for this account."),
     alternative: scalar(),
   }),
+  // A quote for the length the model will render first, then a job to poll (crates/server/src/creative/tools.rs, CR4).
+  creative_video: open({
+    quote: open({ credits: scalar() }).nullish().describe("First call: what generating will cost. Nothing was generated or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to start the job."),
+    expiresAt: scalar(),
+    next: scalar(),
+    jobId: scalar().describe("Poll creative_job_status with this."),
+    status: scalar(),
+    pollAfterSeconds: scalar(),
+    creativeCredits: open({}).nullish(),
+  }),
+  // CR6: one flat-priced render; a quote first, then a job to poll (crates/server/src/creative/compose.rs).
+  creative_compose: open({
+    quote: open({ credits: scalar() }).nullish().describe("First call: what the render will cost. Nothing was rendered or charged yet."),
+    confirmationToken: scalar().describe("Pass this back with confirm: true to start the render."),
+    expiresAt: scalar(),
+    jobId: scalar().describe("Poll creative_job_status with this."),
+    status: scalar(),
+    pollAfterSeconds: scalar(),
+    creativeCredits: open({}).nullish(),
+  }),
+  // CR8 (crates/server/src/creative/settings.rs view()).
+  creative_settings_get: open({
+    effective: open({ dailyCapCredits: scalar(), monthlyCapCredits: scalar(), perCallCapCredits: scalar(), musicEnabled: scalar() }).nullish(),
+    usage: open({ last24h: scalar(), thisMonth: scalar() }).nullish(),
+    defaults: anyObject().nullish(),
+  }),
+  // CR7 (crates/server/src/creative/briefs.rs).
+  creative_brief_create: open({ briefId: scalar(), status: scalar(), producer: anyObject().nullish(), note: scalar() }),
+  creative_brief_list: open({ briefs: listOf(open({ id: scalar(), appId: scalar(), status: scalar(), brief: scalar() })) }),
+  creative_brief_update: open({ brief: open({ id: scalar(), status: scalar() }).nullish() }),
   // The paid image tools answer a quote first (`quote`, a token, an expiry), then the generated assets
   // with the credits settled. Keys are the server's (crates/server/src/creative/billing.rs, tools.rs).
   creative_image: open({
@@ -1936,6 +1967,7 @@ export const OUTPUT_SCHEMAS = {
     confirmationToken: scalar(),
     message: scalar(),
     instructions: scalar(),
+    offer: anyObject().nullish(),
     employee: anyObject().nullish(),
   }),
   pause_employee: open({ employee: anyObject().nullish() }),
@@ -1955,6 +1987,16 @@ export const OUTPUT_SCHEMAS = {
     action: anyObject().nullish(),
   }),
   reject_action: open({ rejected: scalar(), action: anyObject().nullish() }),
+  // Creator CRM (nooticr-server E1): the creator/interaction views are the server's own shapes.
+  crm_upsert_creator: open({ creator: anyObject().nullish() }),
+  crm_list_creators: open({ creators: listOf(open({ id: scalar(), platform: scalar(), handle: scalar(), status: scalar() })) }),
+  crm_update_status: open({ creator: anyObject().nullish() }),
+  crm_log_interaction: open({ interaction: anyObject().nullish() }),
+  // A product's own site in Google Search (nooticr-server growth/customer.rs over gsc.rs and pagespeed.rs).
+  get_search_performance: open({ rows: listOf(open({ keys: listOf(z.string()), clicks: scalar(), impressions: scalar() })), totals: anyObject().nullish(), window: anyObject().nullish() }),
+  inspect_url: open({ cached: scalar(), results: listOf(open({ url: scalar(), verdict: scalar() })) }),
+  get_sitemaps: open({ sitemaps: listOf(open({ path: scalar(), errors: scalar(), warnings: scalar() })) }),
+  get_page_speed: open({ url: scalar(), strategy: scalar(), field: anyObject().nullish(), lab: anyObject().nullish() }),
   list_employees: open({ employees: listOf(open({ id: scalar(), name: scalar(), status: scalar() })) }),
   list_pending_actions: open({ actions: listOf(open({ id: scalar(), employeeId: scalar() })) }),
   // AU1 (nooticr-server employees/mcp.rs get_employee_audit; event shape from employee_audit_view::event_view).

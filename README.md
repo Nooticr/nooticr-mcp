@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-119 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+133 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -108,8 +108,14 @@ them caps that fan-out with an argument.
 | `creative_voiceover` | quoted first | A voice-over of up to 2500 characters with word timings for burned-in captions, in a voice from `creative_voices_search`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. |
 | `creative_sfx` | quoted first | A short sound effect (0.5-10 s) from a description. Same quote-then-confirm handshake as `creative_voiceover`. |
 | `creative_music` | quoted first | An instrumental music bed of 5-60 seconds, generated as a job: confirm the quote, then poll `creative_job_status`. May be switched off on a deployment, in which case it says so. Describe mood, tempo and instruments, not artists or songs. |
+| `creative_video` | quoted first | One short video clip (3-30 s, draft quality) from a `prompt`, generated as a job: confirm the quote, then poll `creative_job_status`. Optional `firstFrameAssetId` or up to 3 `referenceAssetIds` (image assets), `aspect` 9:16 or 16:9, `audio` ambient or none. The clip is rendered at the nearest length the video model offers; the quote is for that length and the call settles at it. Generates only; it does not edit an uploaded video. |
 | `creative_image` | quoted first | 1-4 still images from a `prompt` with GPT Image (low quality), at a `size` (default portrait 1024x1536), optionally `transparent`. The first call returns a quote in credits and charges nothing; call again with `confirm: true` and the `confirmationToken` to generate. Settled to actual usage, never above the quote. Returns the new `assets` and `creativeCredits`. Keep long text out of the prompt and ask for invented people, not real ones. |
 | `creative_image_edit` | quoted first | Edit or combine 1-4 existing image assets (`imageAssetIds`) with a `prompt`, with an optional `maskAssetId`. Same quote-then-confirm handshake as `creative_image`; returns a new asset and `creativeCredits`. |
+| `creative_compose` | quoted first | Cut your creative assets (clips, stills, a voice-over, music, sound effects) into one finished 9:16, 4:5 or 1:1 video or a feed still: voice-synced captions in the platform's safe zone, the product's brand colours, music under the voice, an optional end card. Up to 12 segments, 60 seconds and 6 SFX; `draft: true` for a lower-priced preview. One flat render: confirm the quote, then poll `creative_job_status`. Never publishes. |
+| `creative_settings_get` | free | Your workspace's creative spend limits (daily, monthly and per-call caps, whether music is on) and what was spent in the last 24 hours and this month. Read-only: an owner or admin changes them in the dashboard. |
+| `creative_brief_create` | free | File a creative brief for one product (`brief`, `platforms`, optional `hook`, `audience`, `variants`, `budgetCredits`, `slotAt`). Your Creative Producer employee works the queue, or a teammate picks it up in Creatives. |
+| `creative_brief_list` | free | Your creative briefs with their draft, picked and delivered assets. Filter by `status` (oldest first, the order the queue is worked) or `appId`. |
+| `creative_brief_update` | free | Move a brief along (`in_progress`, `awaiting_pick`, `delivered`, `failed`, `canceled`) and attach drafts and deliveries; the id lists replace what the brief held. Winners are picked by a person in the dashboard. |
 | `creative_job_status` | free | Where an asynchronous creative job stands by `jobId`: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after `pollAfterSeconds`. |
 | `sheets_create` | free | Create a Google spreadsheet in the connected Google account, with named tabs and a header row on each. Returns its id and URL; Nooticr owns the file, so later writes need no approval. Needs the product's Google Sheets connection. |
 | `sheets_list` | free | The spreadsheets the connection can see (created by Nooticr or picked by the customer) and whether each may be edited without approval. |
@@ -204,6 +210,10 @@ a `scanId` for the rest.
 | `list_employees` | free | Your AI employees with status, schedule, next run and budget left; `includeFired: true` adds the ones let go. |
 | `pause_employee` | free | Pause an AI employee (it keeps its memory and thread) or resume it with `resume: true`. Only the person who hired it or a workspace admin can. |
 | `fire_employee` | free | Let an AI employee go for good: runs stop and actions awaiting approval are discarded. The first call only describes what will happen; confirm with `confirm: true`. |
+| `crm_upsert_creator` | free | Add a creator to your creator pipeline, or update the one already there (matched by `platform` + `handle`). Only the fields you pass change; new creators start as `prospect`. Every number cited goes in `evidence`. |
+| `crm_list_creators` | free | Your creator pipeline, most recently updated first, each with its last interaction. Filter by `status`, `appId`, `query` or `dueBefore`. |
+| `crm_update_status` | free | Move a creator to a new pipeline status and record why. `do_not_contact` stays unless a person changes it; AI employees may only use `prospect`, `shortlisted` or `paused`. |
+| `crm_log_interaction` | free | Record a note, vetting result, outreach draft, reply or deliverable against a creator. AI employees cannot log `outreach_sent`. |
 | `list_pending_actions` | free | What your AI employees are waiting to do until you approve, each with a preview of what will be published, sent or changed. Optionally one `employeeId`. |
 | `get_employee_audit` | free | One AI employee's audit trail, newest first: runs, model calls and their cost, tool calls (arguments redacted), sources read, approvals with the approver's edits, executed actions and their external ids, config changes, pauses and errors. Filter by `from`/`to`, `types`, `runId` or `actionId`; `verify: true` re-checks the tamper-evident hash chain. Workspace owners and admins only. |
 | `approve_action` | free | Approve one pending action by `actionId`. The first call returns the preview and a `confirmationToken` and runs nothing; after you confirm, the stored action runs exactly once. |
@@ -227,6 +237,10 @@ Everything above reads someone else's content. These read and generate for **you
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
 | `get_google_analytics_data` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
 | `get_search_console_data` | free | Search Console clicks, impressions and top queries, as of the last sync — whether people search for what your content is about. |
+| `get_search_performance` | free | Your product's own site in Google Search, **live** from its connected Search Console: clicks, impressions, CTR and position by query, page, country, device or date, with `filters` and `compare_to_previous`. Snake_case arguments, `app_id` required. `site` reads another Search Console property of the same site (a domain property beside a URL-prefix one) when the connected account can open it; it also applies to `inspect_url` and `get_sitemaps`. |
+| `inspect_url` | free | Whether Google indexed pages of your own site: verdict, coverage, Google's canonical against yours, last crawl, robots and fetch state. Only URLs on the connected site; at most 20 per call and 20 per agent run (each spends the site's own daily inspection quota). |
+| `get_sitemaps` | free | The sitemaps submitted for your own site, with submitted and indexed counts, errors and warnings; `url` for one sitemap's detail. Read-only: it cannot submit one. |
+| `get_page_speed` | free | Core Web Vitals for a page of your own site: real-user field data (LCP, INP, CLS) when there is enough, plus lab scores and the biggest savings. `strategy` is `mobile` (default) or `desktop`. |
 | `get_posthog_analytics` | free | Your PostHog pageview trend, as of the last sync — line a post's date up against traffic to your site. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
 | `get_brand_playbook` | free | Your product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by `analyze_product`. Read-only; `available: false` when none exists. |

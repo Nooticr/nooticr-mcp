@@ -59,6 +59,8 @@ import { registerOwnAccountTools } from "./own-account.js";
 import { registerConnectionTools } from "./connections.js";
 import { registerReplyTools } from "./replies.js";
 import { registerEmployeeTools } from "./employees.js";
+import { registerCrmTools } from "./crm.js";
+import { registerGrowthTools } from "./growth.js";
 import { registerStoreReadTools } from "./store-read.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
@@ -78,7 +80,7 @@ import {
 } from "./settings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.80";
+export const MCP_SERVER_VERSION = "1.26.88";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -3380,6 +3382,10 @@ const TOOL_NAMES = [
  registerReplyTools(server, makeClient);
  // AI employees (employees.ts): hire, list, pause, fire, and approve or reject what they queue.
  registerEmployeeTools(server, makeClient);
+ // Creator CRM (crm.ts): the workspace's creator pipeline.
+ registerCrmTools(server, makeClient);
+ // A product's own site in Google Search (growth.ts): performance, inspection, sitemaps, page speed.
+ registerGrowthTools(server, makeClient);
  // Store connections (store-read.ts): the connect link and the catalogue read.
  registerStoreReadTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);

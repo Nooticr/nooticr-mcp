@@ -42,6 +42,33 @@ function failed(prefix: string, err: unknown) {
   };
 }
 
+/**
+ * What a hire's confirm may not carry to a host. Once nooticr-server's
+ * subscription hires are on (BM3), its confirm answers with a Stripe Checkout
+ * link for the dashboard's own copilot. A plugin handing one over is an in-app
+ * purchase of a digital good, which the hosts' commerce policies forbid
+ * (site.test.ts, "nothing on the tool surface sells anything"), so the edge
+ * drops it, as check_nooticr_credits drops billingUrl, and the hire is
+ * finished on the dashboard.
+ */
+const PURCHASE_FIELDS = ["checkoutUrl", "checkoutExpiresAt"] as const;
+
+export const FINISH_ON_DASHBOARD =
+  "The employee is set up and waiting for payment; nothing starts until payment is confirmed. " +
+  "Tell the user to finish the hire from the Employees page of their Nooticr dashboard. Never take payment details in chat.";
+
+/** `proxy` with any purchase link removed, and the model told where the hire is finished. */
+export function withoutPurchaseLink(proxy: McpProxyResult): McpProxyResult {
+  const structured = proxy.structured as Record<string, unknown> | undefined;
+  if (!structured || !PURCHASE_FIELDS.some((k) => k in structured)) return proxy;
+  const rest: Record<string, unknown> = { ...structured };
+  for (const k of PURCHASE_FIELDS) delete rest[k];
+  if (rest.billingState === "awaiting_payment") rest.instructions = FINISH_ON_DASHBOARD;
+  // The backend's own text block may repeat the link, so it is not passed on:
+  // toResult writes the text from the cleaned payload.
+  return { ...proxy, structured: rest, contentBlocks: [] };
+}
+
 /** The sentence every two-step employee tool carries. A test pins it. */
 export const TWO_STEP_RULE =
   "The first call changes nothing and returns a preview and a confirmationToken; show it to the " +
@@ -93,13 +120,22 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
           model: z.string().optional().describe("Optional model."),
           effort: z.string().optional().describe("low | medium | high."),
+          notInFrance: z.boolean().optional().describe("Only for a template that is not offered in France (the Bookkeeper) while the workspace has no country set: true once the user has confirmed their business is not based in France. Never set it without asking them."),
+          language: z.string().optional().describe("BCP-47 tag of the language the employee works and writes in, e.g. fr or pt-BR. Defaults to en. Ask the user rather than guess."),
           confirm,
           confirmationToken: z.string().optional().describe("Token returned in the quote."),
         })
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.hire_employee,
     },
-    passthrough("hire_employee"),
+    async (args: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      try {
+        return toResult(withoutPurchaseLink(await client.callTool("hire_employee", args)));
+      } catch (err) {
+        return failed("hire_employee failed", err);
+      }
+    },
   );
 
   server.registerTool(

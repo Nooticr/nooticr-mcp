@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerEmployeeTools } from "../src/shared/employees.js";
+import { FINISH_ON_DASHBOARD, registerEmployeeTools } from "../src/shared/employees.js";
 
 const NAMES = [
   "hire_employee",
@@ -90,6 +90,77 @@ describe("employee tools", () => {
     const ok = await client.callTool({ name: "hire_employee", arguments: { template: "t", notify } });
     expect(ok.isError).toBeFalsy();
     expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", notify } }]);
+  });
+
+  it("documents notInFrance as ask-first and forwards it unchanged (#268)", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const hire = tools.find((t) => t.name === "hire_employee")!;
+    const field = (hire.inputSchema.properties as Record<string, { type?: string; description?: string }>).notInFrance;
+    expect(field?.type).toBe("boolean");
+    expect(field?.description).toContain("Never set it without asking them");
+    expect(hire.inputSchema.required ?? []).not.toContain("notInFrance");
+    const ok = await client.callTool({ name: "hire_employee", arguments: { template: "bookkeeper", notInFrance: true } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "hire_employee", args: { template: "bookkeeper", notInFrance: true } }]);
+  });
+
+  it("documents language as a BCP-47 tag and forwards it unchanged (#264)", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const hire = tools.find((t) => t.name === "hire_employee")!;
+    const language = (hire.inputSchema.properties as Record<string, { description?: string }>).language;
+    expect(language?.description).toContain("BCP-47");
+    expect(hire.inputSchema.required ?? []).not.toContain("language");
+    const ok = await client.callTool({ name: "hire_employee", arguments: { template: "t", language: "pt-BR" } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "hire_employee", args: { template: "t", language: "pt-BR" } }]);
+  });
+
+  // nooticr-server BM3's confirm carries a Stripe Checkout link for the
+  // dashboard's own copilot. Handing it to a host is an in-app purchase of a
+  // digital good (site.test.ts, "nothing on the tool surface sells anything"),
+  // so the edge drops it and sends the user to the dashboard.
+  it("drops the backend's payment link from a subscription confirm", async () => {
+    const link = "https://checkout.stripe.com/c/pay/cs_should_not_pass_through";
+    const stub = {
+      callTool: async () => ({
+        contentBlocks: [{ type: "text", text: `Pay here: ${link}` }],
+        structured: {
+          created: true,
+          hireId: "h1",
+          billingState: "awaiting_payment",
+          checkoutUrl: link,
+          checkoutExpiresAt: "2026-10-20T09:00:00Z",
+          employee: { id: "h1", billingState: "awaiting_payment" },
+          instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+        },
+      }),
+    };
+    const server = new McpServer({ name: "t", version: "0" });
+    registerEmployeeTools(server, (() => stub) as never);
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "c", version: "0" });
+    await Promise.all([client.connect(a), server.connect(b)]);
+    const res = await client.callTool({
+      name: "hire_employee",
+      arguments: { template: "t", confirm: true, confirmationToken: "tok" },
+    });
+    expect(res.isError).toBeFalsy();
+    const sc = res.structuredContent as Record<string, unknown>;
+    expect(sc.created).toBe(true);
+    expect(sc.hireId).toBe("h1");
+    expect(sc.billingState).toBe("awaiting_payment");
+    expect(sc).not.toHaveProperty("checkoutUrl");
+    expect(sc).not.toHaveProperty("checkoutExpiresAt");
+    expect(sc.instructions).toBe(FINISH_ON_DASHBOARD);
+    expect(JSON.stringify(res)).not.toContain("stripe.com");
+  });
+
+  it("leaves a result with no payment link untouched", async () => {
+    const { client } = await connect();
+    const res = await client.callTool({ name: "hire_employee", arguments: { template: "t" } });
+    expect(res.structuredContent).toEqual({ ok: true });
   });
 
   it("rejects arguments the server does not know", async () => {

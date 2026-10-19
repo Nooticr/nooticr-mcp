@@ -1414,16 +1414,42 @@ function handleMcpCall(name, args, workspaceId) {
     case "creative_image_edit":
     case "creative_voiceover":
     case "creative_sfx":
-    case "creative_music": {
+    case "creative_music":
+    case "creative_video":
+    case "creative_compose": {
       if (args.confirm === true && args.confirmationToken) {
         return {
           content: [{ type: "text", text: "Generated." }],
-          structuredContent: name === "creative_music" ? { jobId: "fixture-job", pollAfterSeconds: 10 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
+          structuredContent: name === "creative_music" || name === "creative_video" || name === "creative_compose" ? { jobId: "fixture-job", status: "queued", pollAfterSeconds: name === "creative_music" ? 10 : 20 } : { assets: [{ id: "00000000-0000-0000-0000-0000000000c2", kind: name === "creative_sfx" ? "sfx" : "voiceover", url: "https://example.test/c2.mp3" }] },
         };
       }
       return {
         content: [{ type: "text", text: "Quote: 5 credits." }],
-        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", creditsQuoted: 5 },
+        structuredContent: { quote: { credits: 5 }, confirmationToken: "fixture-token", expiresAt: "2030-01-01T00:00:00Z" },
+      };
+    }
+    case "creative_settings_get": {
+      return {
+        content: [{ type: "text", text: "Creative limits." }],
+        structuredContent: { dailyCapCredits: null, monthlyCapCredits: null, musicEnabled: null, effective: { dailyCapCredits: 200, monthlyCapCredits: null, perCallCapCredits: 60, musicEnabled: true }, usage: { last24h: 12, thisMonth: 40 }, defaults: { dailyCapCredits: 200, monthlyCapCredits: null, musicEnabled: true, maxDailyCapCredits: 1000 } },
+      };
+    }
+    case "creative_brief_create": {
+      return {
+        content: [{ type: "text", text: "Brief filed." }],
+        structuredContent: { briefId: "00000000-0000-0000-0000-0000000000b1", status: "open", producer: null, note: "No Creative Producer is hired; a teammate picks it up in Creatives." },
+      };
+    }
+    case "creative_brief_list": {
+      return {
+        content: [{ type: "text", text: "1 brief." }],
+        structuredContent: { briefs: [{ id: "00000000-0000-0000-0000-0000000000b1", appId: 1, appName: "Fixture", status: "open", platforms: ["tiktok"], brief: "Three 15 s clips on the morning routine." }] },
+      };
+    }
+    case "creative_brief_update": {
+      return {
+        content: [{ type: "text", text: "Brief updated." }],
+        structuredContent: { brief: { id: args?.briefId ?? "00000000-0000-0000-0000-0000000000b1", status: args?.status ?? "open" } },
       };
     }
     case "creative_job_status": {
@@ -1458,9 +1484,94 @@ function handleMcpCall(name, args, workspaceId) {
       return { content: [{ type: "text", text: "2 audit events." }], structuredContent: sc };
     }
     case "hire_employee": {
+      // A subscription hire's confirm (nooticr-server BM3) answers with a Stripe
+      // Checkout link meant for the dashboard; the edge must drop it.
+      if (args?.confirm === true && args?.confirmationToken === "fixture-subscription-token") {
+        return {
+          content: [{ type: "text", text: "Hired; pay at https://checkout.stripe.com/c/pay/cs_fixture" }],
+          structuredContent: {
+            created: true, hireId: "00000000-0000-0000-0000-0000000000a7", billingState: "awaiting_payment",
+            checkoutUrl: "https://checkout.stripe.com/c/pay/cs_fixture",
+            checkoutExpiresAt: "2026-10-20T09:00:00Z",
+            employee: { id: "00000000-0000-0000-0000-0000000000a7", name: "Maya", status: "paused", billingState: "awaiting_payment" },
+            instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+          },
+        };
+      }
       return {
         content: [{ type: "text", text: "Quote ready; confirm to hire." }],
-        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", instructions: "Show the user the quote, then confirm." },
+        // The quote echoes the working language, `en` when none was sent (nooticr-server#1074).
+        structuredContent: { requiresConfirmation: true, confirmationToken: "fixture-token", offer: { language: args?.language ?? "en" }, instructions: "Show the user the quote, then confirm." },
+      };
+    }
+    case "crm_upsert_creator":
+    case "crm_update_status": {
+      return {
+        content: [{ type: "text", text: "Saved." }],
+        structuredContent: { creator: { id: "00000000-0000-0000-0000-0000000000c1", platform: "tiktok", handle: "maya.fit", status: "prospect" } },
+      };
+    }
+    case "crm_list_creators": {
+      return {
+        content: [{ type: "text", text: "1 creator." }],
+        structuredContent: { creators: [{ id: "00000000-0000-0000-0000-0000000000c1", platform: "tiktok", handle: "maya.fit", status: "prospect" }] },
+      };
+    }
+    case "crm_log_interaction": {
+      return {
+        content: [{ type: "text", text: "Logged." }],
+        structuredContent: { interaction: { id: "00000000-0000-0000-0000-0000000000d1", kind: "note", summary: "Fixture note" } },
+      };
+    }
+    case "get_search_performance": {
+      const prev = args?.compare_to_previous === true;
+      return {
+        content: [{ type: "text", text: "2 rows." }],
+        structuredContent: {
+          source: "google_search_console",
+          rows: [
+            { keys: ["ugc video ads"], clicks: 41, impressions: 1220, ctr: 0.0336, position: 7.4, ...(prev ? { prev: { clicks: 30 }, delta: { clicks: 11 } } : {}) },
+            { keys: ["tiktok creator pricing"], clicks: 12, impressions: 860, ctr: 0.014, position: 11.2, ...(prev ? { prev: { clicks: 15 }, delta: { clicks: -3 } } : {}) },
+          ],
+          totals: { clicks: 53, impressions: 2080, ctr: 0.0255, position: 8.9 },
+          window: { start: args?.start_date ?? "2026-09-18", end: args?.end_date ?? "2026-10-15" },
+          ...(prev ? { prev_window: { start: "2026-08-21", end: "2026-09-17" } } : {}),
+          data_state: "all",
+        },
+      };
+    }
+    case "inspect_url": {
+      const urls = [args?.url, ...(Array.isArray(args?.urls) ? args.urls : [])].filter(Boolean);
+      return {
+        content: [{ type: "text", text: `${urls.length} inspected.` }],
+        structuredContent: {
+          source: "search_console",
+          cached: false,
+          results: urls.map((url, i) => ({
+            url, path: new URL(url).pathname, verdict: i === 0 ? "PASS" : "NEUTRAL",
+            coverage_state: i === 0 ? "Submitted and indexed" : "Discovered - currently not indexed",
+            last_crawl_time: "2026-10-12T08:14:00Z", google_canonical: url, user_canonical: url, canonical_mismatch: false, rich_results: [],
+          })),
+        },
+      };
+    }
+    case "get_sitemaps": {
+      return {
+        content: [{ type: "text", text: "1 sitemap." }],
+        structuredContent: {
+          source: "google_search_console",
+          sitemaps: [{ path: args?.url ?? "https://example.com/sitemap.xml", last_submitted: "2026-10-01T09:00:00Z", last_downloaded: "2026-10-15T03:12:00Z", is_pending: false, is_sitemaps_index: false, errors: 0, warnings: 1, contents: [{ type: "web", submitted: 142, indexed: 118 }] }],
+        },
+      };
+    }
+    case "get_page_speed": {
+      return {
+        content: [{ type: "text", text: "Measured." }],
+        structuredContent: {
+          source: "page_speed", url: args?.url ?? "https://example.com/", strategy: args?.strategy ?? "mobile",
+          field: { source: "url", lcp_p75_ms: 2900, inp_p75_ms: 180, cls_p75: 0.04, fcp_p75_ms: 1700, ttfb_p75_ms: 620, overall: "needs_improvement" },
+          lab: { scores: { performance: 71, seo: 92, accessibility: 88, best_practices: 96 }, lcp_ms: 3400, tbt_ms: 210, cls: 0.03, speed_index_ms: 3900, opportunities: [{ id: "render-blocking-resources", title: "Eliminate render-blocking resources", savings_ms: 640 }] },
+        },
       };
     }
     case "pause_employee":

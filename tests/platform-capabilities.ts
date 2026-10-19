@@ -166,7 +166,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
     ],
     listIsCeiling: true,
     enumerating: [],
-    quiet: ["evaluate_social_draft", "adapt_post_for_platform", "generate_hook_ideas", "generate_post_variants", "draft_post"],
+    quiet: ["evaluate_social_draft", "adapt_post_for_platform", "generate_hook_ideas", "generate_post_variants", "draft_post", "crm_upsert_creator", "creative_brief_create"],
   },
 
   /**

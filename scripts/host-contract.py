@@ -75,6 +75,12 @@ NO_APP = {
     "creative_music",
     "creative_image",
     "creative_image_edit",
+    "creative_video",
+    "creative_compose",  # a job id and a status line, like the rest of the family
+    "creative_settings_get",  # view pending: caps and spend, a meter the design system has no card for
+    "creative_brief_create",  # pure state mutation: nothing to draw
+    "creative_brief_list",  # view pending: a queue of briefs with their drafts
+    "creative_brief_update",  # pure state mutation: nothing to draw
     # Google Sheets (sheets.ts): sheet contents are a grid the design system has no card for.
     "sheets_create",
     "sheets_list",
@@ -102,6 +108,18 @@ NO_APP = {
     "get_employee_audit",  # view pending: a timeline of an employee's audited events
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
+    # Creator CRM (crm.ts): the pipeline would be a table the design system has no card for;
+    # the other three are pure state mutations.
+    "crm_upsert_creator",  # pure state mutation: nothing to draw
+    "crm_list_creators",  # view pending: a table of creators with status and next step
+    "crm_update_status",  # pure state mutation: nothing to draw
+    "crm_log_interaction",  # pure state mutation: nothing to draw
+    # A product's own site in Google Search (growth.ts): the server lists all four with no card,
+    # and the design system has none for a query table, an index status or a vitals panel.
+    "get_search_performance",  # view pending: a query/page table with clicks, CTR and position
+    "inspect_url",  # view pending: one index-status row per URL
+    "get_sitemaps",  # view pending: a sitemap list with indexed counts
+    "get_page_speed",  # view pending: Core Web Vitals rated good / needs improvement / poor
     "marketplace_changes",
     "get_price_history",  # view pending: a price line over time; the server lists it in NO_VIEW too
 }
