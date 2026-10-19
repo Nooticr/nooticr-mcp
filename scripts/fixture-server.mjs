@@ -1484,6 +1484,20 @@ function handleMcpCall(name, args, workspaceId) {
       return { content: [{ type: "text", text: "2 audit events." }], structuredContent: sc };
     }
     case "hire_employee": {
+      // A subscription hire's confirm (nooticr-server BM3) answers with a Stripe
+      // Checkout link meant for the dashboard; the edge must drop it.
+      if (args?.confirm === true && args?.confirmationToken === "fixture-subscription-token") {
+        return {
+          content: [{ type: "text", text: "Hired; pay at https://checkout.stripe.com/c/pay/cs_fixture" }],
+          structuredContent: {
+            created: true, hireId: "00000000-0000-0000-0000-0000000000a7", billingState: "awaiting_payment",
+            checkoutUrl: "https://checkout.stripe.com/c/pay/cs_fixture",
+            checkoutExpiresAt: "2026-10-20T09:00:00Z",
+            employee: { id: "00000000-0000-0000-0000-0000000000a7", name: "Maya", status: "paused", billingState: "awaiting_payment" },
+            instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+          },
+        };
+      }
       return {
         content: [{ type: "text", text: "Quote ready; confirm to hire." }],
         // The quote echoes the working language, `en` when none was sent (nooticr-server#1074).
