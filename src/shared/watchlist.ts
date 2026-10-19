@@ -86,6 +86,13 @@ export interface WatchEntry {
     capturedAt: string;
     postIds: string[];
   };
+  /**
+   * The saved creator identity this account belongs to (nooticr-server #36),
+   * as the account's watchlist reports it. Read-only here: identities live in
+   * the account, so only BackendWatchStore ever sets it, and a local store's
+   * entries have none.
+   */
+  identity?: { identityId: string; name: string };
 }
 
 export interface WatchStore {
@@ -288,6 +295,7 @@ export class BackendWatchStore implements WatchStore {
     if (!platform || !handle) return null;
     const baseline = r.baseline as WatchEntry["baseline"] | null | undefined;
     const competitor = r.competitorBaseline as WatchEntry["competitorBaseline"] | null | undefined;
+    const identity = r.identity as { identityId?: unknown; name?: unknown } | null | undefined;
     return {
       id: String(r.id ?? watchEntryId(platform, handle)),
       platform,
@@ -296,6 +304,9 @@ export class BackendWatchStore implements WatchStore {
       addedAt: String(r.addedAt ?? new Date().toISOString()),
       ...(baseline ? { baseline } : {}),
       ...(competitor ? { competitorBaseline: competitor } : {}),
+      ...(identity?.identityId
+        ? { identity: { identityId: String(identity.identityId), name: String(identity.name ?? "") } }
+        : {}),
     };
   }
 
@@ -483,6 +494,24 @@ function snapshot(posts: Array<Record<string, unknown>>) {
   };
 }
 
+/**
+ * The entries grouped per saved creator identity, in first-seen order: one
+ * person watched on several networks reads as one person with several feeds.
+ * The same shape as the server's own `byIdentity`.
+ */
+function byIdentity(
+  entries: Array<{ id: string; identity: { identityId: string; name: string } | null }>,
+): Array<{ identityId: string; name: string; entryIds: string[] }> {
+  const groups = new Map<string, { identityId: string; name: string; entryIds: string[] }>();
+  for (const e of entries) {
+    if (!e.identity) continue;
+    const g = groups.get(e.identity.identityId);
+    if (g) g.entryIds.push(e.id);
+    else groups.set(e.identity.identityId, { ...e.identity, entryIds: [e.id] });
+  }
+  return [...groups.values()];
+}
+
 export function registerWatchlist(
   server: McpServer,
   makeClient: (ctx: {
@@ -623,8 +652,9 @@ export function registerWatchlist(
       },
       description:
         "The creators on your watchlist: handle, platform, your note, when you added them and when " +
-        "you last caught up on them. Reads the stored list only — nothing is fetched, so there is no " +
-        "cost. Use it to answer 'who am I watching?', or to find the exact handle and platform " +
+        "you last caught up on them, and which saved creator identity (one person's accounts) each " +
+        "belongs to, grouped in `byIdentity`. Reads the stored list only — nothing is fetched, so there " +
+        "is no cost. Use it to answer 'who am I watching?', or to find the exact handle and platform " +
         "unwatch_creator needs, before paying for catch_up_watchlist. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),
@@ -632,6 +662,7 @@ export function registerWatchlist(
         .object({
           watching: orNull(z.number()),
           entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
+          byIdentity: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
         })
         .passthrough(),
     },
@@ -647,8 +678,9 @@ export function registerWatchlist(
         // The baseline's post ids stay out: they are the store's bookkeeping,
         // and a long list of them is context spent on nothing.
         lastCaughtUpAt: e.baseline?.capturedAt ?? null,
+        identity: e.identity ?? null,
       }));
-      return text({ watching: entries.length, entries });
+      return text({ watching: entries.length, entries, byIdentity: byIdentity(entries) });
     },
   );
 

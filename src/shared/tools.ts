@@ -60,6 +60,7 @@ import { registerConnectionTools } from "./connections.js";
 import { registerReplyTools } from "./replies.js";
 import { registerEmployeeTools } from "./employees.js";
 import { registerCrmTools } from "./crm.js";
+import { registerIdentityTools } from "./identities.js";
 import { registerGrowthTools } from "./growth.js";
 import { registerStoreReadTools } from "./store-read.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
@@ -312,6 +313,22 @@ function withSource(
  * guidance string in one place only reaches roughly half the hosts, which is
  * the failure #44/#51 were and the reason chain:map gates on it.
  */
+/**
+ * suggest_creator_identity's guidance, plus the step after a human confirms:
+ * saving the accounts as one identity. Appended to the backend's own
+ * `guidance` rather than a second field, so the sentence travels wherever the
+ * guidance does. A payload with no guidance string is left as it came.
+ */
+function withSaveStep(proxy: McpProxyResult): McpProxyResult {
+  const structured = proxy.structured as Record<string, unknown> | undefined;
+  if (!structured || typeof structured.guidance !== "string") return proxy;
+  const step =
+    "Once the user confirms which of these accounts are the same person, save them with " +
+    "save_creator_identity (name, and the confirmed accounts with their evidence); never save one " +
+    "nobody confirmed. watch_creator_identity then watches every account of that person.";
+  return { ...proxy, structured: { ...structured, guidance: `${structured.guidance}\n\n${step}` } };
+}
+
 async function toToolResult(proxy: McpProxyResult, guidance?: string): Promise<{ content: ToolContent[]; structuredContent?: Record<string, unknown> }> {
  // MCP Apps views (ChatGPT & Claude) render the interactive HTML card, which
  // already embeds all thumbnails/videos. Claude's Apps bridge rejects a tool
@@ -1442,9 +1459,11 @@ const TOOL_NAMES = [
   }
  );
 
- // A passthrough with nothing added: the backend already returns evidence,
- // not a decision, and puts its own do-not-merge guidance in the payload,
- // which toToolResult carries into the text block as well (#102).
+ // A passthrough but for one sentence: the backend returns evidence, not a
+ // decision, and puts its own do-not-merge guidance in the payload, which
+ // toToolResult carries into the text block as well (#102). withSaveStep
+ // adds where a confirmed answer goes (save_creator_identity, #36), in that
+ // same field, so it reaches a host that reads either channel.
  server.registerTool(
   "suggest_creator_identity",
   {
@@ -1487,7 +1506,7 @@ const TOOL_NAMES = [
   ) => {
    const client = await makeClient({ ...extra, arguments: args });
    try {
-    return await toToolResult(await client.callTool("suggest_creator_identity", { ...args }));
+    return await toToolResult(withSaveStep(await client.callTool("suggest_creator_identity", { ...args })));
    } catch (err) {
     return toolError("suggest_creator_identity failed", err);
    }
@@ -3318,6 +3337,8 @@ const TOOL_NAMES = [
  registerEmployeeTools(server, makeClient);
  // Creator CRM (crm.ts): the workspace's creator pipeline.
  registerCrmTools(server, makeClient);
+ // Creator identities (identities.ts): one person's accounts, saved and watched together.
+ registerIdentityTools(server, makeClient);
  // A product's own site in Google Search (growth.ts): performance, inspection, sitemaps, page speed.
  registerGrowthTools(server, makeClient);
  // Store connections (store-read.ts): the connect link and the catalogue read.

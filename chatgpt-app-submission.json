@@ -1897,6 +1897,90 @@
         "destructive_justification": "Not destructive. The write is additive: it adds an empty tab and removes nothing.",
         "idempotent_justification": "Not idempotent: each call adds another tab, or fails on a name already taken."
       }
+    },
+    "save_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a new creator identity, a name and the accounts a person confirmed are one, in the caller's workspace.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it only adds an identity. An account already in another identity is refused rather than moved, so no saved grouping is changed.",
+        "idempotent_justification": "Not idempotent: each call creates a new identity, and repeating it with the same accounts is refused because those accounts are then taken."
+      }
+    },
+    "list_creator_identities": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the creator identities the workspace has saved, with their accounts and evidence, and writes nothing.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it only reads stored identities.",
+        "idempotent_justification": "Idempotent: listing changes nothing, so repeating it returns the same identities."
+      }
+    },
+    "update_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it renames a saved creator identity, changes its note, or adds and removes its accounts.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: removing an account, or clearing the note, drops what was stored with it, including the evidence recorded when the account was added.",
+        "idempotent_justification": "Not idempotent: adding an account a second time is refused, and each change moves the identity's updatedAt."
+      }
+    },
+    "delete_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it deletes a saved creator identity from the caller's workspace.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: the grouping, its note and the evidence recorded for each account are gone. The accounts and their watchlist entries are untouched, and the identity can be saved again.",
+        "idempotent_justification": "Idempotent: once the identity is deleted, deleting it again changes nothing."
+      }
+    },
+    "watch_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds every account of a saved creator identity to the caller's watchlist.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it only adds watchlist entries, and an account already watched keeps its baselines.",
+        "idempotent_justification": "Idempotent: watching the same identity again leaves the same entries on the watchlist."
+      }
+    },
+    "unwatch_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it removes every account of a saved creator identity from the caller's watchlist.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: each removed entry loses the snapshot behind it, which is not recoverable through this surface. The accounts can be watched again, but their baselines restart.",
+        "idempotent_justification": "Idempotent: once the accounts are off the watchlist, removing them again changes nothing."
+      }
     }
   },
   "test_cases": [

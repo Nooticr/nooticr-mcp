@@ -652,14 +652,110 @@ function watchlistOf(workspaceId) {
   return fixtureWatchlists.get(key);
 }
 
+// Saved creator identities per workspace (nooticr-server #36): an account
+// belongs to at most one, as on the server.
+const fixtureIdentities = new Map();
+function identitiesOf(workspaceId) {
+  const key = workspaceId || "none";
+  if (!fixtureIdentities.has(key)) fixtureIdentities.set(key, new Map());
+  return fixtureIdentities.get(key);
+}
+const accountKey = (a) => `${String(a?.platform ?? "").toLowerCase()}:${String(a?.handle ?? "").replace(/^@/, "").toLowerCase()}`;
+function identityOfAccount(workspaceId, platform, handle) {
+  const key = accountKey({ platform, handle });
+  for (const i of identitiesOf(workspaceId).values()) {
+    if (i.accounts.some((a) => accountKey(a) === key)) return { identityId: i.identityId, name: i.name };
+  }
+  return null;
+}
+function groupByIdentity(rows, idKey, groupKey) {
+  const groups = new Map();
+  for (const r of rows) {
+    if (!r.identity) continue;
+    const g = groups.get(r.identity.identityId) ?? { ...r.identity, [groupKey]: [] };
+    g[groupKey].push(r[idKey]);
+    groups.set(r.identity.identityId, g);
+  }
+  return [...groups.values()];
+}
+function identityResult(text, structured) {
+  return { content: [{ type: "text", text }], structuredContent: { ...structured, cost: 0 } };
+}
+
 function handleMcpCall(name, args, workspaceId) {
   switch (name) {
     case "list_watchlist": {
-      const entries = [...watchlistOf(workspaceId).values()];
+      const entries = [...watchlistOf(workspaceId).values()].map((e) => ({
+        ...e,
+        identity: identityOfAccount(workspaceId, e.platform, e.handle),
+      }));
       return {
         content: [{ type: "text", text: `Watching ${entries.length} (fixture).` }],
-        structuredContent: { watching: entries.length, entries, cost: 0 },
+        structuredContent: {
+          watching: entries.length,
+          entries,
+          byIdentity: groupByIdentity(entries, "id", "entryIds"),
+          cost: 0,
+        },
       };
+    }
+    case "save_creator_identity": {
+      const ids = identitiesOf(workspaceId);
+      const accounts = (Array.isArray(args?.accounts) ? args.accounts : []).map((a) => ({
+        platform: String(a.platform).toLowerCase(),
+        handle: String(a.handle).replace(/^@/, "").toLowerCase(),
+        evidence: a.evidence ?? [],
+        addedAt: new Date().toISOString(),
+      }));
+      for (const a of accounts) {
+        const taken = identityOfAccount(workspaceId, a.platform, a.handle);
+        if (taken) return { error: { code: -32602, message: `${a.platform}:${a.handle} is already in the identity "${taken.name}"` } };
+      }
+      const now = new Date().toISOString();
+      const identity = { identityId: `identity-${ids.size + 1}`, name: String(args?.name ?? ""), note: args?.note ?? null, accounts, createdAt: now, updatedAt: now };
+      ids.set(identity.identityId, identity);
+      return identityResult(`Saved ${identity.name} (fixture).`, { saved: identity });
+    }
+    case "list_creator_identities": {
+      const identities = [...identitiesOf(workspaceId).values()];
+      return identityResult(`${identities.length} identities (fixture).`, { identities, count: identities.length });
+    }
+    case "update_creator_identity": {
+      const identity = identitiesOf(workspaceId).get(String(args?.identityId));
+      if (!identity) return { error: { code: -32602, message: "no such identity in this workspace" } };
+      if (typeof args?.name === "string") identity.name = args.name;
+      if (args && "note" in args) identity.note = args.note ?? null;
+      const remove = new Set((args?.removeAccounts ?? []).map(accountKey));
+      identity.accounts = identity.accounts.filter((a) => !remove.has(accountKey(a)));
+      for (const a of args?.addAccounts ?? []) {
+        identity.accounts.push({ platform: String(a.platform).toLowerCase(), handle: String(a.handle).replace(/^@/, "").toLowerCase(), evidence: a.evidence ?? [], addedAt: new Date().toISOString() });
+      }
+      identity.updatedAt = new Date().toISOString();
+      return identityResult(`Updated ${identity.name} (fixture).`, { saved: identity });
+    }
+    case "delete_creator_identity": {
+      const deleted = identitiesOf(workspaceId).delete(String(args?.identityId));
+      return identityResult(deleted ? "Deleted (fixture)." : "Nothing to delete (fixture).", { deleted, identityId: args?.identityId ?? null });
+    }
+    case "watch_creator_identity": {
+      const identity = identitiesOf(workspaceId).get(String(args?.identityId));
+      if (!identity) return { error: { code: -32602, message: "no such identity in this workspace" } };
+      const list = watchlistOf(workspaceId);
+      const watched = [];
+      for (const a of identity.accounts) {
+        const id = `${a.platform}:${a.handle}`;
+        const prior = list.get(id);
+        list.set(id, { id, platform: a.platform, handle: a.handle, note: args?.note ?? prior?.note ?? null, addedAt: prior?.addedAt ?? new Date().toISOString(), baseline: prior?.baseline ?? null });
+        watched.push(id);
+      }
+      return identityResult(`Watching ${identity.name} (fixture).`, { identityId: identity.identityId, name: identity.name, watched });
+    }
+    case "unwatch_creator_identity": {
+      const identity = identitiesOf(workspaceId).get(String(args?.identityId));
+      if (!identity) return { error: { code: -32602, message: "no such identity in this workspace" } };
+      const list = watchlistOf(workspaceId);
+      const removed = identity.accounts.map((a) => `${a.platform}:${a.handle}`).filter((id) => list.delete(id));
+      return identityResult(`Unwatched ${identity.name} (fixture).`, { identityId: identity.identityId, removed });
     }
     case "watch_creator": {
       const list = watchlistOf(workspaceId);
@@ -1607,8 +1703,10 @@ function handleMcpCall(name, args, workspaceId) {
               stoppedBecause: null,
               nextRun: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
               lastRun: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
+              identity: null,
             },
           ],
+          byIdentity: [],
           activeCount: 1,
           creditsPerDayAcrossAllWatches: 4,
         },
