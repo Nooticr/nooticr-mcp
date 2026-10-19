@@ -298,11 +298,14 @@ export class NooticrClient {
     });
 
     if (rpc && typeof rpc === "object" && rpc.error !== undefined && rpc.error !== null) {
-      const err = rpc.error as { code?: unknown; message?: unknown };
+      const err = rpc.error as { code?: unknown; message?: unknown; data?: unknown };
       const message = typeof err.message === "string" ? err.message : "nooticr MCP tool call failed";
       if (err.code === -32002) throw new NooticrError(402, outOfCreditsMessage(message));
+      // `data` is where the backend names a refusal a caller can act on
+      // (`{ code: "no_brand_grounding" }`); the message alone is prose.
       throw new NooticrError(400, message, {
         code: err.code !== undefined && err.code !== null ? String(err.code) : undefined,
+        body: err.data ?? undefined,
       });
     }
 

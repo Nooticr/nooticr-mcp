@@ -1928,6 +1928,7 @@ export const OUTPUT_SCHEMAS = {
   draft_comment_reply: open({
     draftId: scalar(),
     reply: scalar().describe("The stored reply text. Show it to the user before posting."),
+    rationale: scalar().describe("Why a written reply says what it says; absent when the user gave the text."),
     comment: open({ author: scalar(), snippet: scalar() }).nullish(),
     postUrl: scalar(),
     status: scalar(),
