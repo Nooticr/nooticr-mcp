@@ -389,11 +389,11 @@ const checkedAgainstSession = open({
 
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
-  analyze_post_fast: open({ ...evidence, ...analyzed }),
+  analyze_post_text: open({ ...evidence, ...analyzed }),
   understand_social_post: open({ ...analyzed, ...evidence }),
   // No `provider`: the field named the upstream supplier and is no longer
   // returned. Documenting a field that does not exist is worse than omitting it.
-  get_social_media: open({ ...singlePost, fetchedAt: scalar() }),
+  get_social_post: open({ ...singlePost, fetchedAt: scalar() }),
 
   discover_social_posts: open(feed),
   /**
@@ -659,7 +659,7 @@ export const OUTPUT_SCHEMAS = {
   show_post_analysis: open({
     verification: checkedAgainstSession,
     url: scalar(),
-    post: post.nullish().describe("The post analyze_post/analyze_post_fast/understand_social_post handed back."),
+    post: post.nullish().describe("The post analyze_post/analyze_post_text/understand_social_post handed back."),
     analysis: open({}).passthrough().nullish().describe(
       "Your own analysis, any of the fields analyze_post's guidance asked for — summary, " +
         "hookStrength, scriptStructure, whyItWorks, suggestedHook, keyQuotes, suggestedHashtags, " +
@@ -834,7 +834,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  who_should_i_work_with: open({
+  find_collaborators: open({
     ...evidence,
     niche: scalar(),
     platform: scalar(),
@@ -868,7 +868,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  why_did_this_underperform: open({
+  benchmark_post: open({
     ...evidence,
     url: scalar(),
     username: scalar(),
@@ -891,7 +891,7 @@ export const OUTPUT_SCHEMAS = {
     mcpCredits,
   }),
 
-  what_should_i_make_next: open({
+  content_ideas_from_audience: open({
     ...evidence,
     username: scalar(),
     platform: scalar(),
@@ -1548,7 +1548,13 @@ export const OUTPUT_SCHEMAS = {
         stoppedBecause: scalar(),
         nextRun: scalar(),
         lastRun: scalar(),
+        identity: anyObject()
+          .nullish()
+          .describe("Set only for a competitor watch: {identityId, name} of the saved creator identity its account belongs to, or null."),
       }),
+    ),
+    byIdentity: listOf(open({ identityId: scalar(), name: scalar(), watchIds: listOf(z.string()) })).describe(
+      "Competitor watches grouped per saved creator identity: one person followed on several networks.",
     ),
     activeCount: scalar(),
     creditsPerDayAcrossAllWatches: scalar().describe("What every enabled watch together will cost per day if nothing changes."),
@@ -1928,6 +1934,7 @@ export const OUTPUT_SCHEMAS = {
   draft_comment_reply: open({
     draftId: scalar(),
     reply: scalar().describe("The stored reply text. Show it to the user before posting."),
+    rationale: scalar().describe("Why a written reply says what it says; absent when the user gave the text."),
     comment: open({ author: scalar(), snippet: scalar() }).nullish(),
     postUrl: scalar(),
     status: scalar(),
@@ -1992,6 +1999,25 @@ export const OUTPUT_SCHEMAS = {
   crm_list_creators: open({ creators: listOf(open({ id: scalar(), platform: scalar(), handle: scalar(), status: scalar() })) }),
   crm_update_status: open({ creator: anyObject().nullish() }),
   crm_log_interaction: open({ interaction: anyObject().nullish() }),
+
+  // Creator identities (nooticr-server #36, identities.ts): the server's own shapes.
+  save_creator_identity: open({ saved: anyObject().nullish(), cost: scalar() }),
+  list_creator_identities: open({
+    identities: listOf(
+      open({
+        identityId: scalar(),
+        name: scalar(),
+        note: scalar(),
+        accounts: listOf(open({ platform: scalar(), handle: scalar() })),
+      }),
+    ),
+    count: scalar(),
+    cost: scalar(),
+  }),
+  update_creator_identity: open({ saved: anyObject().nullish(), cost: scalar() }),
+  delete_creator_identity: open({ deleted: scalar(), identityId: scalar(), cost: scalar() }),
+  watch_creator_identity: open({ identityId: scalar(), name: scalar(), watched: listOf(z.string()), cost: scalar() }),
+  unwatch_creator_identity: open({ identityId: scalar(), removed: listOf(z.string()), cost: scalar() }),
   // A product's own site in Google Search (nooticr-server growth/customer.rs over gsc.rs and pagespeed.rs).
   get_search_performance: open({ rows: listOf(open({ keys: listOf(z.string()), clicks: scalar(), impressions: scalar() })), totals: anyObject().nullish(), window: anyObject().nullish() }),
   inspect_url: open({ cached: scalar(), results: listOf(open({ url: scalar(), verdict: scalar() })) }),
@@ -2067,6 +2093,20 @@ export const OUTPUT_SCHEMAS = {
     url: scalar(),
     lastSeenAt: scalar(),
     billable: scalar(),
+    note: scalar(),
+  }),
+  // A Price history page row (nooticr-server prices.rs row_json), as track_price and untrack_price answer it.
+  track_price: open({
+    tracked: scalar(),
+    alreadyTracked: scalar(),
+    listing: open({ id: scalar(), title: scalar(), productId: scalar(), marketplace: scalar(), url: scalar(), productLine: scalar(), source: scalar(), currency: scalar(), last: scalar(), changePct: scalar() }).nullish(),
+    note: scalar(),
+  }),
+  untrack_price: open({
+    tracked: scalar(),
+    changed: scalar(),
+    removed: scalar(),
+    listing: open({ id: scalar(), title: scalar(), productId: scalar(), marketplace: scalar(), source: scalar() }).nullish(),
     note: scalar(),
   }),
   get_marketplace_product: open({

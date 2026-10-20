@@ -64,7 +64,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (3 nooticr credits), and it fetches live data that can change between calls."
       }
     },
-    "analyze_post_fast": {
+    "analyze_post_text": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -498,6 +498,34 @@
         "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call with the same arguments returns the same series and has no additional effect."
       }
     },
+    "track_price": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds or updates one row in the workspace's own list of products it follows on its Price history page.",
+        "open_world_justification": "Stays inside nooticr: it looks the product up among listings already stored and fetches nothing from any marketplace.",
+        "destructive_justification": "Not destructive: it only adds a followed listing or sets the fields given; nothing that was there is removed.",
+        "idempotent_justification": "Idempotent: tracking the same listing again with the same arguments leaves the same single row and reports alreadyTracked."
+      }
+    },
+    "untrack_price": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stops the workspace following one listing on its Price history page.",
+        "open_world_justification": "Stays inside nooticr: it changes one stored row and contacts no marketplace.",
+        "destructive_justification": "Destructive: a listing that was only tracked, and that the workspace's own scans do not return, is removed from the page.",
+        "idempotent_justification": "Idempotent: a second call finds nothing tracked and changes nothing (changed: false)."
+      }
+    },
     "get_marketplace_product": {
       "annotations": {
         "readOnlyHint": true,
@@ -638,7 +666,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits per network searched plus 2 to find the handle: 6 by default, 4 with one network in `platforms`), and it fetches live data that can change between calls."
       }
     },
-    "get_social_media": {
+    "get_social_post": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1380,7 +1408,7 @@
         "idempotent_justification": "Not idempotent: every confirmed call is charged again (2 nooticr credits per watched creator), and each creator's recent posts can change between calls."
       }
     },
-    "what_should_i_make_next": {
+    "content_ideas_from_audience": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1394,7 +1422,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits for the post list, 2 per post read for comments, and 2 for the niche sweep), and it fetches live data that can change between calls."
       }
     },
-    "who_should_i_work_with": {
+    "find_collaborators": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1408,7 +1436,7 @@
         "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits, or 4 with a seed creator), and search results change between calls."
       }
     },
-    "why_did_this_underperform": {
+    "benchmark_post": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": true,
@@ -1869,13 +1897,97 @@
         "destructive_justification": "Not destructive. The write is additive: it adds an empty tab and removes nothing.",
         "idempotent_justification": "Not idempotent: each call adds another tab, or fails on a name already taken."
       }
+    },
+    "save_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a new creator identity, a name and the accounts a person confirmed are one, in the caller's workspace.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it only adds an identity. An account already in another identity is refused rather than moved, so no saved grouping is changed.",
+        "idempotent_justification": "Not idempotent: each call creates a new identity, and repeating it with the same accounts is refused because those accounts are then taken."
+      }
+    },
+    "list_creator_identities": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the creator identities the workspace has saved, with their accounts and evidence, and writes nothing.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it only reads stored identities.",
+        "idempotent_justification": "Idempotent: listing changes nothing, so repeating it returns the same identities."
+      }
+    },
+    "update_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it renames a saved creator identity, changes its note, or adds and removes its accounts.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: removing an account, or clearing the note, drops what was stored with it, including the evidence recorded when the account was added.",
+        "idempotent_justification": "Not idempotent: adding an account a second time is refused, and each change moves the identity's updatedAt."
+      }
+    },
+    "delete_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it deletes a saved creator identity from the caller's workspace.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: the grouping, its note and the evidence recorded for each account are gone. The accounts and their watchlist entries are untouched, and the identity can be saved again.",
+        "idempotent_justification": "Idempotent: once the identity is deleted, deleting it again changes nothing."
+      }
+    },
+    "watch_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it adds every account of a saved creator identity to the caller's watchlist.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Not destructive: it only adds watchlist entries, and an account already watched keeps its baselines.",
+        "idempotent_justification": "Idempotent: watching the same identity again leaves the same entries on the watchlist."
+      }
+    },
+    "unwatch_creator_identity": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it removes every account of a saved creator identity from the caller's watchlist.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
+        "destructive_justification": "Destructive: each removed entry loses the snapshot behind it, which is not recoverable through this surface. The accounts can be watched again, but their baselines restart.",
+        "idempotent_justification": "Idempotent: once the accounts are off the watchlist, removing them again changes nothing."
+      }
     }
   },
   "test_cases": [
     {
       "description": "The default read. A single public post URL, analysed from its transcript, caption and stats without paying for frames, then drawn as a card.",
       "user_prompt": "What makes this TikTok work? https://www.tiktok.com/@zoundsapp/video/7395827364512378902",
-      "tools_triggered": "analyze_post_fast, show_post_analysis",
+      "tools_triggered": "analyze_post_text, show_post_analysis",
       "expected_output": "The hook, script structure, CTA and target audience, each cited to a line of the transcript or a stat, with an explicit note that the visuals were not seen. Ends with a rendered analysis card."
     },
     {

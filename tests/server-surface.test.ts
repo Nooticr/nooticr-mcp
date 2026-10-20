@@ -93,11 +93,21 @@ const NOT_READ_ONLY = [
   "crm_upsert_creator",
   "crm_update_status",
   "crm_log_interaction",
+  // Creator identities: saving, changing and deleting an identity write stored rows, and
+  // the two watch tools write the watchlist; the list only reads.
+  "save_creator_identity",
+  "update_creator_identity",
+  "delete_creator_identity",
+  "watch_creator_identity",
+  "unwatch_creator_identity",
   // Google Sheets: the writes create or change cells in the customer's own spreadsheet.
   "sheets_create",
   "sheets_append_rows",
   "sheets_update_range",
   "sheets_add_sheet",
+  // Price history: following and unfollowing a listing write a stored row.
+  "track_price",
+  "untrack_price",
 ];
 
 describe("tool annotations", () => {
@@ -118,7 +128,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(133);
+    expect(tools).toHaveLength(141);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -158,6 +168,8 @@ describe("tool annotations", () => {
       "crm_log_interaction",
       "crm_update_status",
       "crm_upsert_creator",
+      // Creator identities: stored rows inside nooticr, and the account's own watchlist.
+      "delete_creator_identity",
       "draft_comment_reply",
       "draft_post",
       // Holds the caller's own draft up to a rubric; makes no request at all.
@@ -184,6 +196,7 @@ describe("tool annotations", () => {
       "growth_brief",
       "hire_employee",
       "list_brand_watches",
+      "list_creator_identities",
       "list_employees",
       "list_own_apps",
       "list_pending_actions",
@@ -205,6 +218,7 @@ describe("tool annotations", () => {
       "prepare_handoff",
       "reject_action",
       "review_post",
+      "save_creator_identity",
       // The show_* family: each draws what the caller already wrote/fetched
       // and reaches nothing. Sorted, so the renames in #45 moved two of them.
       //
@@ -236,10 +250,16 @@ describe("tool annotations", () => {
       "show_trend",
       "show_variants",
       "stop_brand_watch",
+      // A row in the workspace's own price listings, resolved from stored scans.
+      "track_price",
+      "untrack_price",
       "unwatch_creator",
+      "unwatch_creator_identity",
+      "update_creator_identity",
       "update_product",
       "update_watch_portfolio",
       "watch_creator",
+      "watch_creator_identity",
     ]);
   });
 });
@@ -355,7 +375,7 @@ describe("prompts", () => {
     const text = got.messages.map((m) => (m.content as { text: string }).text).join("\n");
     // The transcript is the cheap exact evidence, so it must come before the
     // analysis that would otherwise paraphrase it.
-    expect(text.indexOf("get_post_transcript")).toBeLessThan(text.indexOf("analyze_post_fast"));
+    expect(text.indexOf("get_post_transcript")).toBeLessThan(text.indexOf("analyze_post_text"));
     expect(text).toContain("https://www.tiktok.com/@a/video/1");
   });
 

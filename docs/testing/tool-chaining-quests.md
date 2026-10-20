@@ -76,7 +76,7 @@ naming either. Every other check was green for both.
 
 Say it precisely, because the absolute version is wrong: *text-block* guidance
 never arrives. Prose that lives **inside** `structuredContent` does — e.g.
-`who_should_i_work_with` ships a whole `rubric` array of instructions and the
+`find_collaborators` ships a whole `rubric` array of instructions and the
 model reads it. That is the same channel the fix below relies on.
 
 Reproduced four ways, all run rather than reasoned about:
@@ -118,7 +118,7 @@ Chaining is not uniformly dead: `adapt_post_for_platform → show_repurposed_pos
 show_comment_review` 2/3. The tempting conclusion is that their **descriptions**
 carried them. That does not survive contact with the descriptions themselves:
 `show_analysis` (1/12) says *"Display an analysis you wrote after analyze_post,
-analyze_post_fast or understand_social_post handed you the material… Call this
+analyze_post_text or understand_social_post handed you the material… Call this
 after you have done the analysing, not instead of it"* — the same template as
 `show_repurposed_post`'s, naming three predecessors instead of one.
 `show_comparison` and `show_collab_shortlist` (both 0/3) name theirs too.
@@ -217,7 +217,7 @@ corpus says about each:
 
 - **Carry the guidance inside `structuredContent`** (e.g. a `guidance` field on
   the evidence payload). Verified to work in reproduction 3, and
-  `who_should_i_work_with`'s `rubric` shows the channel already carrying prose
+  `find_collaborators`'s `rubric` shows the channel already carrying prose
   today. Costs an `OUTPUT_SCHEMAS` entry per tool and a check that
   `ui-template.ts`'s generic fallback view does not start drawing a wall of
   prose.
@@ -452,7 +452,7 @@ them makes the pattern sharper than "a distinctive stem":
 | `summarize_post_comments` | `show_comment_review` | `comment` | 3/3 |
 | `analyze_post` | `show_analysis` | — (`analyze`/`analysis`) | 4/12 |
 | `compare_social_posts` | `show_comparison` | — (`compare`/`comparison`) | 0/3 |
-| `who_should_i_work_with` | `show_collab_shortlist` | — (nothing) | 0/3 |
+| `find_collaborators` | `show_collab_shortlist` | — (nothing) | 0/3 |
 
 `analyze`/`analysis` and `compare`/`comparison` are morphological relatives and
 both fail. Every tool that shares a whole token with its predecessor is
@@ -480,14 +480,14 @@ it is well supported elsewhere and the old name violated it, not because this
 measurement defends it.
 
 The comparison quest also fails for a visibly different reason: all three runs
-walk `compare_social_posts -> get_social_media`, so the model is fetching the posts
+walk `compare_social_posts -> get_social_post`, so the model is fetching the posts
 rather than reaching a view at all. That is a guidance question, not a
 retrieval one, and it is not what a rename can fix.
 
 ### Not renamed
 
 `show_collab_shortlist` (0/3 retrieved). Its predecessor is
-`who_should_i_work_with`, which has no distinctive token to share — renaming
+`find_collaborators`, which has no distinctive token to share — renaming
 only the view cannot create one. Fixing it means renaming the pair, which is a
 bigger decision than this measurement supports.
 

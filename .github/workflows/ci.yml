@@ -18,8 +18,8 @@ name: CI
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  # Main only (founder, 2026-10-19): pull requests run no checks here; a change
+  # is tested when it merges to main. workflow_dispatch runs it by hand.
   workflow_dispatch:
 
 concurrency:

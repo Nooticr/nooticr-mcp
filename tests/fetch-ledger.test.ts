@@ -48,7 +48,7 @@ describe("postKey", () => {
 describe("show_compared_posts against the session", () => {
   it("draws nooticr's view count over a mis-copied one, and says it was checked", async () => {
     const client = await connect();
-    await client.callTool({ name: "get_social_media", arguments: { url: POST.externalUrl } });
+    await client.callTool({ name: "get_social_post", arguments: { url: POST.externalUrl } });
     const res = await client.callTool({
       name: "show_compared_posts",
       arguments: {
@@ -81,7 +81,7 @@ describe("show_compared_posts against the session", () => {
 describe("show_post_analysis against the session", () => {
   it("fills the post from what nooticr fetched when only the URL is sent", async () => {
     const client = await connect();
-    await client.callTool({ name: "get_social_media", arguments: { url: POST.externalUrl } });
+    await client.callTool({ name: "get_social_post", arguments: { url: POST.externalUrl } });
     const res = await client.callTool({
       name: "show_post_analysis",
       arguments: { url: POST.externalUrl, analysis: { summary: "A tight 60s tutorial." } },

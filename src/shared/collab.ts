@@ -3,7 +3,7 @@
  *
  * ## The step that was missing
  *
- * `who_should_i_work_with` returns candidates with a follower count, a bio and
+ * `find_collaborators` returns candidates with a follower count, a bio and
  * whether both searches agreed. That is enough to sort a list and not nearly
  * enough to decide. What actually settles it is the work: the videos they
  * make, the site they run, the repository they maintain. All of that is one
@@ -350,7 +350,7 @@ export function registerCollabTools(server: McpServer): void {
         "Display the creators you scored after vetting them, ranked, so the user can pick who to " +
         "approach. Free, and makes no requests — it only draws what you pass it, and the scores " +
         "shown are attributed to you rather than presented as a nooticr rating. " +
-        "Use after who_should_i_work_with and after actually reading some of each candidate's " +
+        "Use after find_collaborators and after actually reading some of each candidate's " +
         "links: pass the score, the reason, and what you read to reach it. A candidate you did " +
         "not verify should say so in `checked` rather than carrying a confident number. Ends " +
         "with the question of who to approach, and names what it would cost to measure audience " +
@@ -376,7 +376,7 @@ export function registerCollabTools(server: McpServer): void {
               z.object({
                 id: z
                   .string()
-                  .describe("The id who_should_i_work_with issued — creator:<platform>:<handle>."),
+                  .describe("The id find_collaborators issued — creator:<platform>:<handle>."),
                 username: z.string(),
                 nickname: z.string().optional(),
                 platform: z.string().optional(),

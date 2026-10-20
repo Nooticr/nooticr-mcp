@@ -40,7 +40,7 @@ async function callTool(name: string, args: Record<string, unknown>) {
   return { isError: res.isError, text: (res.content as Array<{ text?: string }>).map((c) => c.text ?? "").join("\n") };
 }
 
-const call = () => callTool("get_social_media", { url: "https://example.com/p/1" });
+const call = () => callTool("get_social_post", { url: "https://example.com/p/1" });
 
 afterEach(() => vi.unstubAllGlobals());
 

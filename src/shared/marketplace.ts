@@ -357,6 +357,26 @@ const marketplaceArg = z
   .enum(MARKETS.map((m) => m.slug) as [string, ...string[]])
   .describe(`Which site to read. One of: ${SLUGS}.`);
 
+/** track_price / untrack_price: one stored row, both channels carrying the same payload. */
+async function priceListingCall(
+  makeClient: MakeClient,
+  name: "track_price" | "untrack_price",
+  args: Record<string, unknown>,
+  extra: Parameters<MakeClient>[0],
+) {
+  const client = await makeClient({ ...extra, arguments: args });
+  try {
+    const res = await client.callTool(name, args);
+    const payload = structured(res);
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(payload) }],
+      structuredContent: payload,
+    };
+  } catch (err) {
+    return toolError(`${name} failed`, err);
+  }
+}
+
 export function registerMarketplaceTools(server: McpServer, makeClient: MakeClient): void {
   server.registerTool(
     "scan_marketplace_category",
@@ -615,6 +635,64 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         return toolError("get_price_history failed", err);
       }
     },
+  );
+
+  // #1169 (nooticr-server#1372): a row in the workspace's own price listings,
+  // resolved from the stored mirror. Both fetch nothing, so both are free and
+  // closed-world; untrack_price can remove a row, so it is the destructive one.
+  const listingShape = {
+    marketplace: marketplaceArg,
+    id: z.string().describe("The site's own product id, or a product URL from it."),
+    market: z.string().optional().describe("The storefront the listing is on, if the site has several."),
+  };
+  server.registerTool(
+    "track_price",
+    {
+      title: "Track Price",
+      description:
+        "Follow one marketplace listing on the workspace's Price history page. Use when someone wants a product's price followed over time, or a competitor's offer drawn against one of their own listings. `marketplace` and `id` name the listing the same way get_marketplace_product does. `competitorOf` names one of the workspace's own tracked listings, the same way, to draw this one against it on the chart; that listing has to be tracked first. `productLine` groups listings on the page. Tracking a listing again changes only the fields given (`alreadyTracked: true`). Fetches nothing: the listing must have been read before, by get_marketplace_product or scan_marketplace_category, and one never read is refused with that step named. Free.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      outputSchema: OUTPUT_SCHEMAS.track_price,
+      inputSchema: z
+        .object({
+          ...listingShape,
+          productLine: z.string().max(120).optional().describe("A group for the page's filter, e.g. the product's name."),
+          competitorOf: z
+            .object({
+              marketplace: marketplaceArg.optional().describe("Defaults to this listing's site."),
+              id: z.string().describe("The site's own product id, or a product URL from it."),
+              market: z.string().optional().describe("Defaults to this listing's storefront when the site is the same."),
+            })
+            .strict()
+            .optional()
+            .describe("One of the workspace's own tracked listings to draw this one against."),
+        })
+        .strict(),
+    },
+    async (args: Record<string, unknown>, extra) => priceListingCall(makeClient, "track_price", args, extra),
+  );
+
+  server.registerTool(
+    "untrack_price",
+    {
+      title: "Untrack Price",
+      description:
+        "Use when a listing no longer needs following: stops following one tracked with track_price or from the Price history page, named the same way. A listing the workspace's own scans keep returning stays on the page as seen in a scan; one that was only tracked is removed (`removed: true`). Untracking a listing that was not tracked changes nothing (`changed: false`). Free.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      outputSchema: OUTPUT_SCHEMAS.untrack_price,
+      inputSchema: z.object(listingShape).strict(),
+    },
+    async (args: Record<string, unknown>, extra) => priceListingCall(makeClient, "untrack_price", args, extra),
   );
 
   server.registerTool(

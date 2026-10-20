@@ -100,7 +100,7 @@ export const GROUPS: { id: Group; title: string; blurb: string }[] = [
 export const TOOLS: Tool[] = [
   // ── read ──
   {
-    name: "get_social_media", cost: 1, group: "read",
+    name: "get_social_post", cost: 1, group: "read",
     args: "url",
     desc: "A post's media, caption, author and engagement counts.",
     when: "You want the post itself, not an interpretation of it.",
@@ -120,9 +120,9 @@ export const TOOLS: Tool[] = [
 
   // ── understand ──
   {
-    name: "analyze_post_fast", cost: 2, group: "understand",
+    name: "analyze_post_text", cost: 2, group: "understand",
     args: "url",
-    desc: "The post's transcript, caption and stats — everything but the pictures. Two fetches: get_social_media and get_post_transcript.",
+    desc: "The post's transcript, caption and stats — everything but the pictures. Two fetches: the post itself and get_post_transcript.",
     when: "The words and numbers answer the question. 2 credits, without frames, and it carries everything the script and structure depend on.",
   },
   {
@@ -146,7 +146,7 @@ export const TOOLS: Tool[] = [
   {
     name: "compare_social_posts", cost: 1, group: "understand",
     args: "urls[] (2–5)",
-    desc: "The first post with its stats, and the comparison left to you — fetch the rest with get_social_media at 1 credit each.",
+    desc: "The first post with its stats, and the comparison left to you — fetch the rest with get_social_post at 1 credit each.",
     when: "Performance differs and you need to know why.",
   },
 
@@ -268,6 +268,42 @@ export const TOOLS: Tool[] = [
     when: "Before paying for a catch-up, or to find the exact handle to unwatch.",
   },
   {
+    name: "save_creator_identity", cost: 0, group: "research",
+    args: "name, accounts, note?",
+    desc: "Saves accounts on different networks as one person, once that is confirmed. An account already in another identity is refused, never moved.",
+    when: "suggest_creator_identity found the same person elsewhere and you confirmed it.",
+  },
+  {
+    name: "list_creator_identities", cost: 0, group: "research",
+    args: "\u2014",
+    desc: "Every saved creator identity, with its accounts and the evidence for each.",
+    when: "To find an identity's id, or which accounts are one person.",
+  },
+  {
+    name: "update_creator_identity", cost: 0, group: "research",
+    args: "identityId, name?, note?, addAccounts?, removeAccounts?",
+    desc: "Renames a saved identity, or adds or removes accounts.",
+    when: "A saved identity is wrong or incomplete.",
+  },
+  {
+    name: "delete_creator_identity", cost: 0, group: "research",
+    args: "identityId",
+    desc: "Deletes a saved identity. The accounts and their watchlist entries stay.",
+    when: "The accounts turned out not to be one person.",
+  },
+  {
+    name: "watch_creator_identity", cost: 0, group: "research",
+    args: "identityId, note?",
+    desc: "Puts every account of a saved identity on your watchlist, grouped as one person.",
+    when: "You want to follow a person across networks, not one account.",
+  },
+  {
+    name: "unwatch_creator_identity", cost: 0, group: "research",
+    args: "identityId",
+    desc: "Takes every account of a saved identity off your watchlist.",
+    when: "That person should no longer appear in the catch-up.",
+  },
+  {
     name: "catch_up_watchlist", cost: 2, group: "research",
     args: "limit?, platform?",
     desc: "What everyone you watch has posted since your last catch-up \u2014 2 credits per creator checked, not per call.",
@@ -285,7 +321,7 @@ export const TOOLS: Tool[] = [
 
   // ── understand ──
   {
-    name: "why_did_this_underperform", cost: 3, group: "understand",
+    name: "benchmark_post", cost: 3, group: "understand",
     args: "url",
     desc: "One post read against the creator's own recent median, so the answer can be \u201cthis is an ordinary result, not a failure\u201d.",
     when: "You have one post and nothing to compare it with; compare_social_posts is for two URLs you already picked.",
@@ -293,7 +329,7 @@ export const TOOLS: Tool[] = [
   {
     name: "show_post_analysis", cost: 0, group: "understand",
     args: "the analysis you wrote",
-    desc: "Draws the analysis you wrote after analyze_post or analyze_post_fast handed you the material. Fetches nothing.",
+    desc: "Draws the analysis you wrote after analyze_post or analyze_post_text handed you the material. Fetches nothing.",
     when: "After you have read the frames and the transcript.",
   },
   {
@@ -342,8 +378,8 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "draft_comment_reply", cost: 0, costNote: "Free with your text, else 1 cr", group: "own",
-    args: "platform, commentId, postId, text?, guidance?",
-    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it. Returns a draftId and confirmationToken.",
+    args: "platform, commentId, postId, text?, guidance?, appId?",
+    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it in your brand voice, with its rationale; refused at no cost when there is no brand voice, product or guidance to write from. Returns a draftId and confirmationToken.",
     when: "After list_comments_to_answer, to have a reply ready for the user to read.",
   },
   {
@@ -383,7 +419,7 @@ export const TOOLS: Tool[] = [
     when: "After you have read the numbers.",
   },
   {
-    name: "who_should_i_work_with", cost: 2, group: "research",
+    name: "find_collaborators", cost: 2, group: "research",
     args: "niche, platform?, seed?",
     desc: "A shortlist of creators worth approaching, with what to check before you do. 4 credits with a seed creator.",
     when: "Building a list to vet. It says what a full vet would cost rather than faking one.",
@@ -392,10 +428,10 @@ export const TOOLS: Tool[] = [
     name: "show_collab_shortlist", cost: 0, group: "research",
     args: "your scored creators",
     desc: "Draws the creators you scored after vetting, ranked, with the scores attributed to you rather than to nooticr.",
-    when: "After who_should_i_work_with and your own vetting.",
+    when: "After find_collaborators and your own vetting.",
   },
   {
-    name: "what_should_i_make_next", cost: 2, group: "research",
+    name: "content_ideas_from_audience", cost: 2, group: "research",
     args: "niche, platform?, limit?",
     desc: "The supply side and the demand side together \u2014 2 credits for the post list, 2 per post read and 2 for the sweep, 12 at the default of 4.",
     when: "Deciding what to film; niche_report covers the supply half alone.",
@@ -661,6 +697,18 @@ export const TOOLS: Tool[] = [
     args: "marketplace, id, market?, from?, to?, metric?",
     desc: "One product's price, rating, review count or availability over time, from the observations stored each time it was scanned. Fetches nothing. Free.",
     when: "You want to know whether a product got cheaper or better rated; read it once with get_marketplace_product to start its record.",
+  },
+  {
+    name: "track_price", cost: 0, group: "market",
+    args: "marketplace, id, market?, productLine?, competitorOf?",
+    desc: "Follows a listing already read here on the workspace's Price history page, optionally drawn against one of its own listings as a competitor. Fetches nothing. Free.",
+    when: "Someone wants a product's price followed, or a competitor's offer charted against theirs; read it once with get_marketplace_product first.",
+  },
+  {
+    name: "untrack_price", cost: 0, group: "market",
+    args: "marketplace, id, market?",
+    desc: "Stops following a tracked listing. One the workspace's scans still return stays on the page. Free.",
+    when: "A listing no longer needs following.",
   },
   {
     name: "get_marketplace_product", cost: 3, group: "market",

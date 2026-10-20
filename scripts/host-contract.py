@@ -114,6 +114,13 @@ NO_APP = {
     "crm_list_creators",  # view pending: a table of creators with status and next step
     "crm_update_status",  # pure state mutation: nothing to draw
     "crm_log_interaction",  # pure state mutation: nothing to draw
+    # Creator identities (identities.ts, nooticr-server #36).
+    "save_creator_identity",  # pure state mutation: nothing to draw
+    "list_creator_identities",  # view pending: a table of people with their accounts and evidence
+    "update_creator_identity",  # pure state mutation: nothing to draw
+    "delete_creator_identity",  # pure state mutation: nothing to draw
+    "watch_creator_identity",  # pure state mutation, like watch_creator
+    "unwatch_creator_identity",  # pure state mutation, like unwatch_creator
     # A product's own site in Google Search (growth.ts): the server lists all four with no card,
     # and the design system has none for a query table, an index status or a vitals panel.
     "get_search_performance",  # view pending: a query/page table with clicks, CTR and position
@@ -122,6 +129,10 @@ NO_APP = {
     "get_page_speed",  # view pending: Core Web Vitals rated good / needs improvement / poor
     "marketplace_changes",
     "get_price_history",  # view pending: a price line over time; the server lists it in NO_VIEW too
+    # Price history page rows (nooticr-server#1372): the answer is a row of the
+    # dashboard's Price history page, which is where it is looked at.
+    "track_price",  # pure state mutation: one stored listing row
+    "untrack_price",  # pure state mutation: removes or demotes that row
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"
