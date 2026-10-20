@@ -602,6 +602,7 @@ describe("tool surface", () => {
     "list_brand_watches",
     "stop_brand_watch",
     "update_watch_portfolio",
+    "set_brand_watch_alerts",
     "list_own_apps",
     // Creative assets (creative.ts).
     "creative_assets_list",

@@ -575,6 +575,12 @@ export const TOOLS: Tool[] = [
     when: "Works at a zero balance, because someone out of credits is exactly who needs to turn off what is spending them.",
   },
   {
+    name: "set_brand_watch_alerts", cost: 0, group: "research",
+    args: "watchId, email, slack, minNew",
+    desc: "Turns a watch's email and Slack alerts on or off, and sets how many new items a run must find before it alerts. Every run still posts to the watch's thread.",
+    when: "When findings should reach the team's Slack rather than one inbox, or a watch is too noisy.",
+  },
+  {
     name: "update_watch_portfolio", cost: 0, group: "research",
     args: "watchId, add, remove",
     desc: "Adds terms to a portfolio watch or takes them out. The per-run budget you agreed to does not move, so no new confirmation is needed.",

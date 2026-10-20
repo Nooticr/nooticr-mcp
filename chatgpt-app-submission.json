@@ -1310,6 +1310,20 @@
         "idempotent_justification": "Idempotent: stopping a watch that is already stopped changes nothing."
       }
     },
+    "set_brand_watch_alerts": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it changes whether a scheduled watch alerts by email or Slack, and how many new items a run must find first.",
+        "open_world_justification": "Closed domain. It edits one row of the caller's own nooticr workspace over nooticr's API; it takes no address or URL, and nothing is fetched when it runs.",
+        "destructive_justification": "Not destructive: it flips three settings that can be flipped back, and every run's note is still kept in the watch's thread.",
+        "idempotent_justification": "Idempotent: the same switches set twice leave the watch as the first call did."
+      }
+    },
     "update_watch_portfolio": {
       "annotations": {
         "readOnlyHint": false,

@@ -1574,6 +1574,15 @@ export const OUTPUT_SCHEMAS = {
     message: scalar(),
     cost: scalar(),
   }),
+  // #103: the alert switches the dashboard's PATCH /ai/watches/{id} answers with.
+  set_brand_watch_alerts: open({
+    guidance: scalar(),
+    updated: scalar(),
+    watchId: scalar(),
+    term: scalar(),
+    alerts: open({ minNew: scalar(), email: scalar(), slack: scalar() }).nullish(),
+    enabled: scalar(),
+  }),
   stop_brand_watch: open({
     stopped: scalar(),
     alreadyStopped: scalar(),

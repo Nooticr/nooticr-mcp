@@ -1894,6 +1894,27 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, handleGraphql(body));
     }
 
+    // set_brand_watch_alerts (#103) goes through the dashboard's own route,
+    // as nooticr-server's routes/watches.rs answers it: the watch, alerts included.
+    const watchPatch = req.method === "PATCH" && /^\/ai\/watches\/([^/?]+)$/.exec(req.url ?? "");
+    if (watchPatch) {
+      const body = await readJson(req);
+      return sendJson(res, 200, {
+        ok: true,
+        watch: {
+          id: decodeURIComponent(watchPatch[1]),
+          term: "fixture-brand",
+          kind: "brand_watch",
+          enabled: true,
+          alerts: {
+            minNew: body.alertMinNew ?? 1,
+            email: body.alertEmail ?? true,
+            slack: body.alertSlack ?? false,
+          },
+        },
+      });
+    }
+
     if (req.method === "POST" && req.url === "/mcp") {
       const body = await readJson(req);
       if (body.method !== "tools/call") {

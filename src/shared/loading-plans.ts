@@ -616,6 +616,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   sheets_add_sheet: { label: "Adding a tab to the spreadsheet", kind: "text", n: 1, steps: [], free: true },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
+  set_brand_watch_alerts: { label: "Updating the watch's alerts", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
 
   // ─── AI employees (employees.ts): managing one is free; its runs are billed when they happen ───

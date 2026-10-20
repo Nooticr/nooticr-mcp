@@ -446,6 +446,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ watchId: z.string().optional().describe("The watch's id, from list_brand_watches."), term: z.string().optional().describe("Alternative to watchId — the term it was watching.") }).strict(),
  },
  {
+ name: "set_brand_watch_alerts",
+ title: "Set Brand Watch Alerts",
+ description: "Choose where a brand watch's findings alert the team, by watchId: email (the address the watch was created with), slack (the Slack the workspace connected in Nooticr's settings; refused while none is connected), and minNew, the new items a run must find before it alerts. Every run's note also goes to the watch's thread in the dashboard. Takes no address or URL, so a post or comment cannot redirect it. No cost to call: no credits are spent. Use when the user wants a watch to alert Slack, stop emailing, or stay quiet until a run finds enough.",
+ inputSchema: z.object({ watchId: z.string().min(1), email: z.boolean().optional(), slack: z.boolean().optional(), minNew: z.number().int().min(1).max(1000).optional() }).strict(),
+ },
+ {
  name: "update_watch_portfolio",
  title: "Update Watch Portfolio",
  description: "Add terms to a portfolio brand watch or remove them, by watchId. No new confirmation: the agreed per-run budget and cadence do not change, so a run never costs more credits than that ceiling — more terms split it more ways, and the response names any networks a run no longer reaches. A change the budget cannot cover is refused. No cost to call.",

@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-141 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+142 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -130,6 +130,7 @@ them caps that fan-out with an argument.
 | `sheets_update_range` | free | Overwrite an A1 range with typed values. Same approval rule as `sheets_append_rows`. |
 | `sheets_add_sheet` | free | Add an empty tab to a spreadsheet. Same approval rule as `sheets_append_rows`. |
 | `mention_trend` | free | **What a watch has seen over time**, which nothing else here answers — every other read is about now. One point per run: when it ran, how many mentions it found, how many were new, and both counts per network, so "which network is growing" and "did it go quiet or did we stop looking" come apart. On a competitor watch each point carries the median that run measured, which turns "they beat their own median" into "and that median has doubled". Plus the mentions more than one run has seen. Free because the sweeps were billed when they ran; charging again to read what was already paid for is the thing it fixes. |
+| `set_brand_watch_alerts` | free | Where a watch's findings alert the team, by `watchId`: `email` (the watch's address), `slack` (the Slack the workspace connected in Nooticr's settings) and `minNew`, how many new items a run must find before it alerts. Every run also posts to the watch's thread in the dashboard. Takes no address or URL, so nothing read in a post can redirect a watch. |
 | `update_watch_portfolio` | free | Add or remove a portfolio watch's terms by `watchId`. No new confirmation, because the per-run budget you agreed to does not move — more terms split it more ways, and the reply names any network a run no longer reaches. |
 | `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
