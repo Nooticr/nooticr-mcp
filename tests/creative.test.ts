@@ -144,6 +144,12 @@ describe("creative tools", () => {
     for (const name of NAMES) expect(BACKEND_ONLY_TOOLS).not.toHaveProperty(name);
   });
 
+  it("accounts for every creative tool nooticr-server main serves: registered or backend-only with a reason", () => {
+    // crates/server/src/creative/mod.rs CREATIVE_TOOLS on main, minus the cfg(test) creative_test_render.
+    const served = [...NAMES, "creative_allowance_status"];
+    for (const name of served) expect(NAMES.includes(name) || name in BACKEND_ONLY_TOOLS, name).toBe(true);
+  });
+
   it("declares the keys the image producer sends, so a host can read them", () => {
     const quote = { quote: { credits: 5 }, confirmationToken: "t", expiresAt: "2026-01-01T00:00:00Z" };
     const result = { assets: [{ assetId: "a", url: "u", key: "k", width: 1024, height: 1536 }] };

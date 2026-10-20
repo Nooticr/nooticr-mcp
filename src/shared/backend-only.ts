@@ -37,6 +37,8 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "Commerce writes (nooticr-server C1 3/4) stay in the dashboard until exposing store writes to hosts is a product decision; applying a change edits the merchant's live prices.",
   brand_watch_history:
     "Not a deliberate exclusion: a candidate for the public surface once it has a trend view to draw. Listed so it reads as pending, not forgotten.",
+  creative_allowance_status:
+    "Reports an AI employee's remaining included work, keyed to the employee's run on the server (#333 BM5); employees reach it through the server's own /mcp. From a Claude or ChatGPT host there is no employee, so it could only answer that creative tools are paid in credits, which every creative tool's quote and creative_settings_get already say.",
   bank_list_accounts:
     "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
   bank_list_transactions:
