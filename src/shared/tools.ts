@@ -893,6 +893,8 @@ const TOOL_NAMES = [
   // the three that return posts render as a gallery, and the two shaped like
   // a search_mentions result render in the monitoring view.
   "answer_my_audience",
+  // Two accounts' commenters side by side (#31), drawn by its own table.
+  "measure_audience_overlap",
   "show_audience_replies",
   "track_creator",
   // The comparison track_creator computes per creator and never puts side

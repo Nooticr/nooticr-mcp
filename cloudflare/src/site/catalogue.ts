@@ -365,6 +365,12 @@ export const TOOLS: Tool[] = [
     when: "Demand research: who has the pain, in what words. Not searchable here: LinkedIn.",
   },
   {
+    name: "measure_audience_overlap", cost: 4, group: "research",
+    args: "usernames, platform?, postsPerCreator?",
+    desc: "The commenters two accounts share, and the overlap in each direction \u2014 4 credits for the two post lists plus 2 per post opened, 16 at the default of 3 each.",
+    when: "Deciding between collaboration finalists: commenters, not followers, so it says how thin the sample is.",
+  },
+  {
     name: "answer_my_audience", cost: 2, group: "research",
     args: "username, platform?, limit?",
     desc: "Your own recent posts and the comments under them, so you can write the replies \u2014 2 credits for the post list plus 2 per post opened, 14 at the default of 6.",

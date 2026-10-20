@@ -460,9 +460,9 @@ export function registerCollabTools(server: McpServer): void {
                   `marks those as unverified so the user is not reading an inference as a finding.`
                 : "") +
               `\n\n${question}\n\nAudience overlap is still unmeasured: whether the same people ` +
-              `follow both accounts costs roughly 9 credits a candidate to check with ` +
-              `answer_my_audience, so offer it for the one they pick rather than running it on ` +
-              `the whole list.`,
+              `comment under both accounts costs about 16 credits to check with ` +
+              `measure_audience_overlap (the finalist and the user's own handle), so offer it for ` +
+              `the one they pick rather than running it on the whole list.`,
           },
         ],
         // Renders through the creator gallery: `creators` is what that branch
@@ -487,7 +487,7 @@ export function registerCollabTools(server: McpServer): void {
           audienceOverlap: {
             attempted: false,
             reason: "Not measurable from a shortlist — it needs comment fetches per candidate.",
-            howTo: `answer_my_audience on the finalist, then intersect the commenter handles.`,
+            howTo: `measure_audience_overlap with the finalist and the user's own handle.`,
           },
         },
       };

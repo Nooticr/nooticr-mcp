@@ -690,6 +690,7 @@ describe("tool surface", () => {
     // The job tools (jobs.ts): compositions of the calls above, named after
     // the question rather than the endpoint.
     "answer_my_audience",
+    "measure_audience_overlap",
     "show_audience_replies",
     "track_creator",
     // The comparison track_creator computes and discards: two fetching

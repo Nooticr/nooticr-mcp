@@ -2628,3 +2628,41 @@ test("a view with unchecked rows says so, and a checked one stays quiet", async 
   });
   await expect(page.locator('[data-verification="unverified"]')).toHaveCount(0);
 });
+
+// #31: measure_audience_overlap draws both directions and the shared
+// commenters, not the creator gallery its `creators` array would otherwise hit.
+test("an audience overlap draws both directions and who commented under both", async ({ page }) => {
+  await renderTemplate(page, {
+    mode: "evidence", tool: "measure_audience_overlap", measures: "engaged_commenters", platform: "tiktok",
+    creators: [
+      { username: "lena.mornings", postsOpened: 3, comments: 120, commenters: 80 },
+      { username: "brewlab", postsOpened: 3, comments: 60, commenters: 40 },
+    ],
+    shared: [
+      { username: "priya_makes", commentsUnderFirst: 3, commentsUnderSecond: 1 },
+      { username: "sam.h", commentsUnderFirst: 1, commentsUnderSecond: 2 },
+    ],
+    sharedCount: 2,
+    overlap: [
+      { from: "lena.mornings", to: "brewlab", commenters: 80, alsoUnderOther: 2, share: 0.025 },
+      { from: "brewlab", to: "lena.mornings", commenters: 40, alsoUnderOther: 2, share: 0.05 },
+    ],
+    thinSample: false,
+  });
+  await expect(page.locator(".nt-view-title")).toContainText("@lena.mornings × @brewlab");
+  await expect(page.locator(".nt-overlap-dirs tbody tr")).toHaveCount(2);
+  await expect(page.locator(".nt-overlap-dirs")).toContainText("2.5%");
+  await expect(page.locator(".nt-overlap-dirs")).toContainText("5%");
+  await expect(page.locator("[data-overlap-user]")).toHaveCount(2);
+  await expect(page.locator(".nt-view-foot")).toContainText("not followers");
+  await expect(page.locator("body")).not.toContainText("Thin sample");
+
+  await renderTemplate(page, {
+    tool: "measure_audience_overlap", platform: "tiktok", thinSample: true,
+    creators: [{ username: "a", postsOpened: 1, commenters: 3 }, { username: "b", postsOpened: 1, commenters: 2 }],
+    shared: [], sharedCount: 0,
+    overlap: [{ from: "a", to: "b", commenters: 3, alsoUnderOther: 0, share: 0 }, { from: "b", to: "a", commenters: 2, alsoUnderOther: 0, share: 0 }],
+  });
+  await expect(page.locator("body")).toContainText("Nobody commented under both");
+  await expect(page.locator("body")).toContainText("Thin sample");
+});

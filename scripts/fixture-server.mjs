@@ -1204,6 +1204,11 @@ function handleMcpCall(name, args, workspaceId) {
             { text: "this stopped working for me after the last update, the timer just never fires now", author: "d_almeida", likes: 88 },
             { text: "does this work if you have kids though", author: "sam.h", likes: 47 },
             { text: "first", author: "throwaway_2291", likes: 0 },
+            // A creator's own posts (get_user_posts' URLs) also draw that
+            // creator's regulars, and every other post a shared club account,
+            // so measure_audience_overlap sees two sets that partly meet rather
+            // than four identical comments under everything.
+            ...regularsFor(args?.url),
           ],
         },
       };
@@ -1874,6 +1879,19 @@ function handleMcpCall(name, args, workspaceId) {
         structuredContent: {},
       };
   }
+}
+
+/** Commenters that depend on whose post this is: `/@<handle>/video/<n>` with a small n, as get_user_posts builds. */
+function regularsFor(url) {
+  const m = /\/@([\w.]+)\/video\/(\d{1,2})$/.exec(String(url ?? ""));
+  if (!m) return [];
+  const [, handle, n] = m;
+  const out = [
+    { text: "saving this for tomorrow morning", author: `${handle.replace(/\W/g, "_")}_regular`, likes: 12 },
+    { text: "the second tip is the one nobody talks about", author: `${handle.replace(/\W/g, "_")}_since_day_one`, likes: 5 },
+  ];
+  if (Number(n) % 2 === 0) out.push({ text: "posting this in our group chat", author: "morning_pages_club", likes: 21 });
+  return out;
 }
 
 const server = http.createServer(async (req, res) => {

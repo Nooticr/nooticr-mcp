@@ -721,7 +721,7 @@ describe("find_collaborators", () => {
     // The differentiating signal is not affordable at this budget, and a faked
     // one would be worse than an absent one.
     expect(out.audienceOverlap.attempted).toBe(false);
-    expect(out.audienceOverlap.howTo).toContain("answer_my_audience");
+    expect(out.audienceOverlap.howTo).toContain("measure_audience_overlap");
     const guidance = String((res.content as Array<{ text: string }>)[0].text);
     expect(guidance).toMatch(/overlap/i);
     expect(guidance).toMatch(/not here/i);

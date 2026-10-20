@@ -712,6 +712,21 @@ export const OUTPUT_SCHEMAS = {
    * Same rule as everywhere else in this file — the keys and their
    * descriptions are the contract, the types are as wide as the data can be.
    */
+  // #31: commenter overlap between two accounts.
+  measure_audience_overlap: open({
+    ...evidence,
+    measures: scalar().describe("Always \"engaged_commenters\": commenters on a few recent posts, not followers."),
+    platform: scalar(),
+    creators: listOf(open({ username: scalar(), postsOpened: scalar(), comments: scalar(), commenters: scalar() })),
+    shared: listOf(open({ username: scalar(), commentsUnderFirst: scalar(), commentsUnderSecond: scalar() })).describe(
+      "Commenters found under both accounts, most active first.",
+    ),
+    sharedCount: scalar(),
+    overlap: listOf(
+      open({ from: scalar(), to: scalar(), commenters: scalar(), alsoUnderOther: scalar(), share: scalar() }),
+    ).describe("Both directions: the share of `from`'s commenters who also commented under `to`."),
+    thinSample: scalar().describe("True when either side has too few commenters for the share to mean much."),
+  }),
   answer_my_audience: open({
     ...evidence,
     /** term + threads is the search_mentions shape, so one view draws both. */
