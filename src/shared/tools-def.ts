@@ -596,6 +596,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ connectionId: z.string().optional().describe("Store connection id; optional when one store is connected."), platform: z.enum(["amazon", "shopify"]).optional(), query: z.string().optional().describe("Amazon: exact SKU. Shopify: product search query."), limit: z.number().int().min(1).max(50).optional(), cursor: z.string().optional().describe("nextCursor from the previous page."), includeIssues: z.boolean().optional(), includePricing: z.boolean().optional(), productRef: z.string().optional().describe("Amazon SKU or Shopify product GID to read one product."), marketplaceId: z.string().optional().describe("Amazon marketplace id; defaults to the first."), source: z.enum(["live", "report"]).optional(), reportId: z.string().optional().describe("Report id from an in_progress answer.") }).strict(),
  },
  {
+ name: "export_report",
+ title: "Export Report",
+ description: "Turn what this session found into a report to paste into a document: the posts, comments and listings exactly as the Nooticr tools returned them, as cards with their images, links and figures, between your own analysis. Returns markdown, plus a standalone HTML document as an embedded resource. Sections are kind posts, comments or products with the items, or kind analysis with your text. Fetches nothing and sends nothing. No cost to call: no credits are spent. Use when the user asks for a report, a brief or a document built from these results.",
+ inputSchema: z.object({ title: z.string().min(1).max(200), summary: z.string().max(20000).optional(), sections: z.array(z.object({ kind: z.enum(["posts", "comments", "products", "analysis"]), heading: z.string().max(200).optional(), note: z.string().max(1000).optional(), text: z.string().max(20000).optional(), items: z.array(z.object({}).passthrough()).max(50).optional() }).strict()).min(1).max(20) }).strict(),
+ },
+ {
  name: "measure_audience_overlap",
  title: "Measure Audience Overlap",
  description: "Whether two accounts on one network reach the same people: reads the commenters under each one's recent posts and returns both sets' sizes, the commenters under both, and the overlap in each direction. It measures engaged commenters on a few posts, not followers. Costs 4 nooticr credits for the two post lists plus 2 per post opened, 16 at the default of 3 posts each. Use when deciding between one or two finalists of a collaboration shortlist, before approaching them.",

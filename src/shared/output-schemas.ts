@@ -712,6 +712,17 @@ export const OUTPUT_SCHEMAS = {
    * Same rule as everywhere else in this file — the keys and their
    * descriptions are the contract, the types are as wide as the data can be.
    */
+  // #90: a report built from the session's results.
+  export_report: open({
+    guidance,
+    tool: scalar(),
+    reportUri: scalar().describe("nooticr://report/<id>: the URI of the embedded HTML resource."),
+    title: scalar(),
+    sectionCount: scalar(),
+    itemCount: scalar(),
+    markdown: scalar().describe("The report as markdown."),
+    html: scalar().describe("The report as a standalone HTML document."),
+  }),
   // #31: commenter overlap between two accounts.
   measure_audience_overlap: open({
     ...evidence,

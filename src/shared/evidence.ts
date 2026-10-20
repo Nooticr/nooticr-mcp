@@ -36,6 +36,7 @@
  */
 import { BACKEND_CALL_CREDITS, costOf } from "./spend.js";
 import { numberOf } from "./performance.js";
+import { REPORT_POINTER } from "./report.js";
 
 /**
  * Every fan-out is capped; the cap is an argument, and the argument is clamped.
@@ -394,6 +395,8 @@ export const EVIDENCE_PLANS: Record<string, EvidencePlan> = {
         "what over- and under-performs, and the gaps nobody is filling. The",
         "gaps are the valuable part and the easiest to invent — only name one",
         "if its absence is visible in this set.",
+        "",
+        REPORT_POINTER,
         ownIt,
       ].join("\n"),
   },

@@ -106,6 +106,20 @@
         "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call has no additional effect."
       }
     },
+    "export_report": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lays out the posts, comments and listings it is passed as a report and returns it. Nothing is stored or sent.",
+        "open_world_justification": "Closed domain. It makes no request at all; it formats what the caller passes.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: the same sections produce the same report, under the same URI."
+      }
+    },
     "measure_audience_overlap": {
       "annotations": {
         "readOnlyHint": true,

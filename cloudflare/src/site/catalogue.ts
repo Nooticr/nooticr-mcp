@@ -365,6 +365,12 @@ export const TOOLS: Tool[] = [
     when: "Demand research: who has the pain, in what words. Not searchable here: LinkedIn.",
   },
   {
+    name: "export_report", cost: 0, group: "research",
+    args: "title, summary?, sections",
+    desc: "The posts, comments and listings a session found, as cards between your own analysis \u2014 markdown plus a standalone HTML document to paste into a report.",
+    when: "Writing up what you found for someone else, with the real posts quoted rather than summarised.",
+  },
+  {
     name: "measure_audience_overlap", cost: 4, group: "research",
     args: "usernames, platform?, postsPerCreator?",
     desc: "The commenters two accounts share, and the overlap in each direction \u2014 4 credits for the two post lists plus 2 per post opened, 16 at the default of 3 each.",

@@ -691,6 +691,7 @@ describe("tool surface", () => {
     // the question rather than the endpoint.
     "answer_my_audience",
     "measure_audience_overlap",
+    "export_report",
     "show_audience_replies",
     "track_creator",
     // The comparison track_creator computes and discards: two fetching
@@ -912,6 +913,8 @@ describe("tool surface", () => {
       "reject_action",
       // Compares two stored scans; fetches nothing.
       "marketplace_changes",
+      // Lays out what the caller passes; fetches nothing (#90).
+      "export_report",
       // Reads stored observations back; fetches nothing.
       "get_price_history",
       // A row in the workspace's own price listings; fetches nothing.

@@ -361,6 +361,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
       },
     ],
   },
+  export_report: { label: "Laying out the report", kind: "text", n: 1, steps: [], free: true },
   measure_audience_overlap: {
     label: "Comparing who comments",
     kind: "list",

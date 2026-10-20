@@ -130,7 +130,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(143);
+    expect(tools).toHaveLength(144);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -176,6 +176,8 @@ describe("tool annotations", () => {
       "draft_post",
       // Holds the caller's own draft up to a rubric; makes no request at all.
       "evaluate_social_draft",
+      // Lays out what the caller passes as a report; makes no request (#90).
+      "export_report",
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.
       "fire_employee",

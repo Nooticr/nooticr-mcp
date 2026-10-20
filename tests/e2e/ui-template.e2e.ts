@@ -2666,3 +2666,25 @@ test("an audience overlap draws both directions and who commented under both", a
   await expect(page.locator("body")).toContainText("Nobody commented under both");
   await expect(page.locator("body")).toContainText("Thin sample");
 });
+
+// #90: export_report's view draws the same report the tool hands the model.
+test("an exported report draws its cards, escaped, in the view", async ({ page }) => {
+  const { buildReport } = await import("../../src/shared/report.js");
+  const report = buildReport({
+    title: "Morning routines",
+    summary: "- One habit per post.",
+    sections: [
+      { kind: "posts", items: [{ platform: "tiktok", caption: "<b>not bold</b>", creatorHandle: "lena", externalUrl: "https://www.tiktok.com/@lena/video/1", views: 15400 }] },
+      { kind: "comments", items: [{ text: "does this work with kids", author: "sam.h", likes: 47 }] },
+    ],
+  });
+  await renderTemplate(page, { tool: "export_report", reportUri: report.uri, html: report.html, markdown: report.markdown, _html: report.fragment });
+  await expect(page.locator(".nt-report h1")).toHaveText("Morning routines");
+  await expect(page.locator(".nt-report-post")).toHaveCount(1);
+  await expect(page.locator(".nt-report-post")).toContainText("<b>not bold</b>");
+  await expect(page.locator(".nt-report-post b", { hasText: "not bold" })).toHaveCount(0);
+  await expect(page.locator(".nt-report-comment")).toContainText("@sam.h");
+  await expect(page.locator(".nt-report-list li")).toHaveCount(1);
+  const listStyle = await page.locator(".nt-report-list").evaluate((el) => getComputedStyle(el).listStyleType);
+  expect(listStyle).toBe("disc");
+});

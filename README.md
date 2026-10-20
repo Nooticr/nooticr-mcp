@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-143 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+144 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -140,6 +140,7 @@ them caps that fan-out with an argument.
 
 | Tool | Credits | What it is for |
 |------|---------|----------------|
+| `export_report` | free | A report to paste into a document, built from what the session found: the posts, comments and listings exactly as the tools returned them, as cards with their images, links and figures, between your own analysis. Returns markdown, a standalone HTML document as an embedded resource (`nooticr://report/<id>`), and both again in the structured result. Fetches nothing. |
 | `measure_audience_overlap` | 4 + 2 per post opened (16 by default) | Whether two accounts on one network talk to the same people: the commenters under each one's recent posts, the ones under both, and the overlap in each direction (their commenters who already comment under you is a different number from yours under them). Measures engaged commenters on a few posts, not followers, and says so. `postsPerCreator` is the price. |
 | `answer_my_audience` | 2 + 2 per post opened (14 by default) | **The mirror of `search_mentions`.** The questions waiting under your *own* posts: recent posts fetched, comments read on each, grouped under the post they were left on, every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. It finds and drafts — it cannot post a reply itself: the drafts are for a person to paste in, or to send through `draft_comment_reply` and `post_comment_reply` once the text is confirmed. `limit` caps how many posts are opened, which is the price. |
 | `prepare_handoff` | free | **The hand-off to your tracker.** Turns items you classified — a bug report in a comment, a complaint said out loud in a video — into the exact `title`, `body` and `labels` to file through whichever GitHub, Jira or Linear MCP server the host also has connected. nooticr files nothing and holds no tracker credential. The body carries the quote fenced and framed as a third-party report rather than as instructions, because the issue is read next by a coding agent; contact details are redacted, `@handles` and `#numbers` are defanged so filing notifies nobody by accident, and a `searchFirst` string dedupes a second sweep against the first. Makes no requests. |
