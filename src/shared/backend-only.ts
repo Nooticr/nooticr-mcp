@@ -47,4 +47,10 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
   bank_sync_status:
     "Bank feed (nooticr-server BK1) stays on the backend /mcp and the dashboard chat until exposing a merchant's bank accounts and transactions to Claude or ChatGPT hosts is a product decision.",
+  care_lookup_order:
+    "Employee-internal (nooticr-server E3b): it looks up the order a customer wrote about, and only inside a Customer Care employee's run tied to that support thread, which is what scopes a buyer's order details to the person asking. A Claude or ChatGPT host has no support thread, so there is nothing for it to look up against.",
+  add_team_member:
+    "The confirmed call adds a paid seat to a team and charges the workspace's card on the spot (Stripe's prorated amount due now). That is a purchase of a digital good made from the host, which the public surface does not offer (#100) and which, unlike hire_team, has no payment page to hand off to the dashboard; seats are added on the team's page.",
+  change_member_level:
+    "An upgrade's confirmed call charges the workspace's card on the spot for the difference, a purchase of a digital good made from the host, which the public surface does not offer (#100); levels are changed on the team's page.",
 };

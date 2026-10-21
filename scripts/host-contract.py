@@ -134,6 +134,21 @@ NO_APP = {
     # dashboard's Price history page, which is where it is looked at.
     "track_price",  # pure state mutation: one stored listing row
     "untrack_price",  # pure state mutation: removes or demotes that row
+    # AI employee teams (teams.ts). list_teams, get_team_status and
+    # list_team_templates draw; these do not, for the reasons hire_employee's
+    # family does not.
+    "get_team_draft",  # the Build-my-team page's own form state; its `link` opens the page that draws it
+    "update_team_draft",  # pure state mutation: saves answers to that form
+    "hire_team",  # a quote read back and confirmed in the host's chat, then a team finished on the dashboard
+    "update_team_brief",  # pure state mutation: a new brief version and who picks it up
+    "pause_team",  # pure state mutation: the team's status flips
+    "fire_team",  # the confirm step, read back in chat; otherwise a pure state mutation
+    # Reply drafts and posting (sources.ts), as with draft_comment_reply and
+    # post_comment_reply: a stored draft and its token, confirmed by the user in
+    # the host's chat, then a post receipt. Nothing for a widget to draw.
+    "draft_review_reply",
+    "draft_discord_reply",
+    "post_drafted_reply",
 }
 
 MCP_APPS_MIME = "text/html;profile=mcp-app"

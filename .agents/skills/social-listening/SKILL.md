@@ -94,7 +94,9 @@ carry on with the user's actual question.
   `answer_my_audience`, `list_social_connections` and the other reply and
   audience tools never post: they *draft* text for a person to confirm or paste
   in. It cannot DM or schedule. Never say or imply that something was sent
-  unless `post_comment_reply` returned success.
+  unless `post_comment_reply` returned success. Off the social networks,
+  `post_drafted_reply` posts the business's reply to a review or a Discord
+  message on the same terms: only a draft the user confirmed.
 - **It reads public data only.** No private messages, no follower emails, no
   account analytics, no ad data.
 - When asked for any of that, say plainly that it is out of scope and offer the

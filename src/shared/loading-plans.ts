@@ -661,6 +661,38 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   // ─── Store connections (store-read.ts): a link, and a read of the store's own catalogue ───
   connect_store: { label: "Minting a store link", kind: "text", n: 1, steps: [], free: true },
   list_store_products: { label: "Reading your store's catalogue", kind: "list", n: 3, steps: [], free: true },
+  // The connected Amazon store's scorecard: free, on the merchant's own account.
+  get_sales_and_traffic: { label: "Reading your sales and traffic report", kind: "list", n: 3, steps: [], free: true },
+  get_account_health: { label: "Reading your account health", kind: "list", n: 3, steps: [], free: true },
+  get_fba_inventory: { label: "Reading your FBA stock", kind: "list", n: 3, steps: [], free: true },
+
+  // ─── AI employee teams (teams.ts): managing one is free; a team is paid on the dashboard ───
+  list_teams: { label: "Reading your teams", kind: "list", n: 3, steps: [], free: true },
+  get_team_status: { label: "Reading the team", kind: "list", n: 3, steps: [], free: true },
+  list_team_templates: { label: "Reading the teams you can build", kind: "list", n: 3, steps: [], free: true },
+  get_team_draft: { label: "Reading your team draft", kind: "text", n: 1, steps: [], free: true },
+  update_team_draft: { label: "Saving your team draft", kind: "text", n: 1, steps: [], free: true },
+  hire_team: { label: "Preparing the team", kind: "text", n: 1, steps: [], free: true },
+  update_team_brief: { label: "Updating the team's brief", kind: "text", n: 1, steps: [], free: true },
+  pause_team: { label: "Updating the team", kind: "text", n: 1, steps: [], free: true },
+  fire_team: { label: "Letting the team go", kind: "text", n: 1, steps: [], free: true },
+
+  // ─── Free data sources (sources.ts): public series, and the workspace's own accounts ───
+  get_wikipedia_pageviews: { label: "Reading Wikipedia attention", kind: "list", n: 3, steps: [], free: true },
+  get_news_volume: { label: "Counting news coverage", kind: "list", n: 3, steps: [], free: true },
+  get_search_trends: { label: "Reading search interest", kind: "list", n: 3, steps: [], free: true },
+  list_connected_reviews: { label: "Reading your reviews", kind: "list", n: 4, steps: [], free: true },
+  draft_review_reply: { label: "Storing the reply draft", kind: "text", n: 1, steps: [], free: true },
+  discord_list_channels: { label: "Reading your Discord channels", kind: "list", n: 4, steps: [], free: true },
+  discord_read_messages: { label: "Reading the channel", kind: "list", n: 4, steps: [], free: true },
+  draft_discord_reply: { label: "Storing the reply draft", kind: "text", n: 1, steps: [], free: true },
+  post_drafted_reply: { label: "Posting the approved reply", kind: "text", n: 1, steps: [], free: true },
+
+  // ─── research.ts: stored rows and a pure check, none of it fetched now ───
+  list_watch_mentions: { label: "Reading what your watches found", kind: "list", n: 4, steps: [], free: true },
+  list_app_reviews: { label: "Reading your app reviews", kind: "list", n: 4, steps: [], free: true },
+  check_disclosure: { label: "Checking the disclosure", kind: "text", n: 1, steps: [], free: true },
+  get_tracked_conversions: { label: "Counting tracked events", kind: "list", n: 3, steps: [], free: true },
 
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },

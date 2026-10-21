@@ -126,6 +126,21 @@ export const ARG_OVERRIDES = {
   // Needs at least one switch, or it refuses before reaching the backend.
   set_brand_watch_alerts: { watchId: "watch-fixture-1", slack: true, minNew: 3 },
   compare_creators: { usernames: ["fixture_creator_1", "fixture_creator_2"], platform: "tiktok" },
+  // The team the fixture workspace has (scripts/fixture-server.mjs FIXTURE_TEAM).
+  get_team_status: { teamId: "7d3f8a52-1b9e-4c2a-9a51-3f0e6b2d8c41" },
+  update_team_brief: { teamId: "7d3f8a52-1b9e-4c2a-9a51-3f0e6b2d8c41", patch: { audience: { markets: ["FR"] } } },
+  pause_team: { teamId: "7d3f8a52-1b9e-4c2a-9a51-3f0e6b2d8c41" },
+  fire_team: { teamId: "7d3f8a52-1b9e-4c2a-9a51-3f0e6b2d8c41" },
+  // A list the schema needs at least one of.
+  get_wikipedia_pageviews: { articles: ["Houseplant"] },
+  get_search_trends: { terms: ["self watering pot"] },
+  // Ids the fixture's own reads hand out.
+  discord_read_messages: { channelId: "1100000000000000002" },
+  draft_review_reply: { source: "trustpilot", reviewId: "tp-r-301", text: "Sorry the reservoir cracked, Maya. A replacement is on its way." },
+  draft_discord_reply: { channelId: "1100000000000000002", messageId: "msg-9001", text: "Sorry about that. Send us a photo and we will replace the reservoir." },
+  check_disclosure: { text: "Mon nouveau pot Fernleaf #collab", market: "FR" },
+  list_app_reviews: { appId: 1 },
+  get_tracked_conversions: { appId: 1 },
 };
 
 const NAME_HINTS = [
