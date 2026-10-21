@@ -19,6 +19,7 @@ import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sd
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { failed } from "./passthrough.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -42,14 +43,6 @@ function toResult(proxy: McpProxyResult, note?: string) {
   const body = structured ? JSON.stringify(structured) : String(textBlock?.text ?? "");
   const text = note ? `${note}\n\n${body}` : body;
   return { content: [{ type: "text" as const, text }], structuredContent: structured };
-}
-
-function failed(prefix: string, err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
-  return {
-    content: [{ type: "text" as const, text: `${prefix}: ${msg}` }],
-    isError: true as const,
-  };
 }
 
 /** As the server's gsc DIMENSIONS, OPERATORS and SEARCH_TYPES. */

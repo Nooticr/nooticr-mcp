@@ -15,6 +15,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { NooticrError, type NooticrClient, type McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { failed } from "./passthrough.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -27,14 +28,6 @@ function toResult(proxy: McpProxyResult) {
   return {
     content: textBlock ? [{ type: "text" as const, text: String(textBlock.text ?? "") }] : [],
     structuredContent: proxy.structured as Record<string, unknown> | undefined,
-  };
-}
-
-function failed(prefix: string, err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
-  return {
-    content: [{ type: "text" as const, text: `${prefix}: ${msg}` }],
-    isError: true as const,
   };
 }
 
