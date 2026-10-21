@@ -4,7 +4,7 @@
   "app_info": {
     "display_name": "Nooticr",
     "subtitle": "Social listening, then create",
-    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nOnly one tool writes to a social network: post_comment_reply, and only after the user confirms its exact text, on a reply reviewed through draft_comment_reply first. The other audience-reply tools only draft in the creator's voice and never post.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
+    "description": "Nooticr gives ChatGPT three things: it can read real social posts across ten networks (TikTok, Instagram, YouTube, X, Reddit, LinkedIn, Douyin, Xiaohongshu, Weibo, Bilibili), understand them — the transcript, video frames returned as real images, the comments, the numbers — and help make something from what it learned: opening hooks, variants to film, a scored draft, a post rewritten for another surface.\n\nThe understanding is your own model's. Every tool fetches material and hands it over with an account of what to do with it; none of them ask a model of ours for an opinion first, so you pay for the fetch and nothing else.\n\nIt also monitors a name. search_mentions sweeps nine networks for every comment that mentions a brand inside a date window you choose, grouped under the post it was left on. search_spoken_mentions reads the words actually said out loud in videos, for the mentions that were never typed anywhere.\n\nOnly one tool writes to a social network: post_comment_reply, and only after the user confirms its exact text, on a reply reviewed through draft_comment_reply first. One more posts publicly anywhere: post_drafted_reply, the business's reply to a review on its own Trustpilot or Google Business Profile or to a message in its own Discord server, on the same terms, from a draft made with draft_review_reply or draft_discord_reply. The other audience-reply tools only draft in the creator's voice and never post.\n\nPost captions, comments, transcripts and search results come from the public internet rather than from Nooticr. Every tool that returns such text frames it as evidence to reason over rather than as instructions, and the tracker hand-off redacts contact details and defangs @handles and #numbers before the text leaves.\n\nBilled in Nooticr credits, 20 free on signup. Each tool states its own cost in its description; the ones whose price is set by an argument ask for confirmation before spending, and a call that produces no answer is not billed.",
     "category": "BUSINESS"
   },
   "tools": {
@@ -2022,6 +2022,356 @@
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Destructive: each removed entry loses the snapshot behind it, which is not recoverable through this surface. The accounts can be watched again, but their baselines restart.",
         "idempotent_justification": "Idempotent: once the accounts are off the watchlist, removing them again changes nothing."
+      }
+    },
+    "list_teams": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the workspace's AI employee teams with their members, approvals waiting and work used. Nothing is written.",
+        "open_world_justification": "Closed world: teams are rows inside Nooticr; no outside service is called.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_team_status": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one team as its page shows it, members, week plan and brief version. Nothing is written.",
+        "open_world_justification": "Closed world: the team, its members and brief are stored in Nooticr.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "list_team_templates": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the teams the workspace can build and their prices. It hires nothing and writes nothing.",
+        "open_world_justification": "Closed world: the team catalogue and its prices come from Nooticr's own configuration.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_team_draft": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the user's saved team draft and prices it as it stands, without minting a token or saving anything.",
+        "open_world_justification": "Closed world: the draft is the user's own row in Nooticr.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "update_team_draft": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it saves the user's answers, team choice or step to their team draft, creating the draft when there is none.",
+        "open_world_justification": "Closed world: it writes only the user's draft row in Nooticr.",
+        "destructive_justification": "Not destructive: it deletes or overwrites nothing the user has.",
+        "idempotent_justification": "Idempotent: saving the same answers again leaves the draft as it was."
+      }
+    },
+    "hire_team": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: the confirmed call creates a team waiting for payment. The first call only quotes and writes nothing.",
+        "open_world_justification": "Closed world: it creates the team in Nooticr; payment is completed later on the Nooticr dashboard, not by this tool.",
+        "destructive_justification": "Not destructive: it deletes or overwrites nothing the user has.",
+        "idempotent_justification": "Not idempotent: each first call mints a new quote token; a confirmed repeat with the same launchId returns the same team."
+      }
+    },
+    "update_team_brief": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a new version of a team's brief, which the team's members work from.",
+        "open_world_justification": "Closed world: the brief is stored in Nooticr.",
+        "destructive_justification": "Destructive: a patch can replace or remove fields of the brief the team works from; earlier versions are kept, but the team works from the new one.",
+        "idempotent_justification": "Not idempotent: each call stores a new brief version."
+      }
+    },
+    "pause_team": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it pauses a team's members or resumes what the team paused, changing their stored status.",
+        "open_world_justification": "Closed world: it changes stored team and member status in Nooticr.",
+        "destructive_justification": "Not destructive: it deletes or overwrites nothing the user has.",
+        "idempotent_justification": "Idempotent: pausing a paused team, or resuming an active one, changes nothing."
+      }
+    },
+    "fire_team": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: the confirmed call lets a team go and cancels its subscription at the end of the paid period. The first call only describes this.",
+        "open_world_justification": "Closed world: it changes the team's stored state in Nooticr.",
+        "destructive_justification": "Destructive: the confirmed call lets the team go; its approvals still waiting expire and the subscription is cancelled.",
+        "idempotent_justification": "Idempotent: letting go a team already let go changes nothing further."
+      }
+    },
+    "get_sales_and_traffic": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the connected Amazon store's own Sales and Traffic report. Nothing in the store or in Nooticr is changed.",
+        "open_world_justification": "Open world: it calls Amazon's Selling Partner API for the merchant's own report, so the answer depends on Amazon.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_account_health": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the connected Amazon seller's account health report. Nothing is changed.",
+        "open_world_justification": "Open world: it calls Amazon's Selling Partner API for the seller's own report.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_fba_inventory": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the connected Amazon store's FBA stock levels. Nothing about stock or shipments is changed.",
+        "open_world_justification": "Open world: it calls Amazon's Selling Partner API for the store's live stock.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_wikipedia_pageviews": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads Wikimedia's public pageview counts for the articles named. Nothing is written.",
+        "open_world_justification": "Open world: it reads Wikimedia's public API, live data outside this server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_news_volume": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it counts news articles in GDELT's public index and returns recent headlines. Nothing is written.",
+        "open_world_justification": "Open world: it reads GDELT's public news index, live data outside this server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_search_trends": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads Google Trends interest for the terms named from Google's Trends API. Nothing is written.",
+        "open_world_justification": "Open world: it calls Google's Trends API, live data outside this server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "list_connected_reviews": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads reviews of the business from the review platforms the workspace connected. Nothing is posted or stored.",
+        "open_world_justification": "Open world: it reads the review platforms' own APIs with the workspace's credentials.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "draft_review_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a reply draft to one review in Nooticr. Nothing is posted to the review platform.",
+        "open_world_justification": "Closed world: the draft is stored in Nooticr; the review is only re-read to check the reply.",
+        "destructive_justification": "Not destructive: it deletes or overwrites nothing the user has.",
+        "idempotent_justification": "Not idempotent: each call stores a new draft with its own token."
+      }
+    },
+    "discord_list_channels": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lists the text channels of the workspace's connected Discord server. Nothing is written.",
+        "open_world_justification": "Open world: it calls Discord's API for the connected server.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "discord_read_messages": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads recent messages from one channel of the connected Discord server. Nothing is posted.",
+        "open_world_justification": "Open world: it calls Discord's API for the connected server's messages.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "draft_discord_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores a reply draft to one Discord message in Nooticr. Nothing is posted to Discord.",
+        "open_world_justification": "Closed world: the draft is stored in Nooticr; nothing is sent to Discord.",
+        "destructive_justification": "Not destructive: it deletes or overwrites nothing the user has.",
+        "idempotent_justification": "Not idempotent: each call stores a new draft with its own token."
+      }
+    },
+    "post_drafted_reply": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it posts a confirmed reply publicly, as the business, to a review platform or a Discord channel.",
+        "open_world_justification": "Open world: it posts to Trustpilot, Google Business Profile or Discord, a third-party platform.",
+        "destructive_justification": "Not destructive: it deletes or overwrites nothing the user has.",
+        "idempotent_justification": "Not idempotent by declaration: it posts publicly; a repeat on the same draft returns the reply already posted rather than posting twice."
+      }
+    },
+    "list_watch_mentions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the mentions the workspace's brand watches already stored. Nothing is fetched or written.",
+        "open_world_justification": "Closed world: the mentions were stored by earlier sweeps; nothing outside Nooticr is called.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "list_app_reviews": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads the app-store reviews the daily sync stored for one product. Nothing is written.",
+        "open_world_justification": "Closed world: the reviews were stored by the daily sync; nothing outside Nooticr is called.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "check_disclosure": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it checks the caption text it is given for a partnership disclosure. Nothing is fetched or written.",
+        "open_world_justification": "Closed world: a pure check over the text passed in; no service is called.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
+      }
+    },
+    "get_tracked_conversions": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it counts the UTM-tagged events the product's own site already sent to Nooticr. Nothing is written.",
+        "open_world_justification": "Closed world: the events are rows the product's site already sent to Nooticr.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
       }
     }
   },

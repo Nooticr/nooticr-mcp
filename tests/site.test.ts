@@ -751,6 +751,35 @@ describe("tool surface", () => {
     "get_price_history",
     "track_price",
     "untrack_price",
+    // AI employee teams (teams.ts).
+    "list_teams",
+    "get_team_status",
+    "list_team_templates",
+    "get_team_draft",
+    "update_team_draft",
+    "hire_team",
+    "update_team_brief",
+    "pause_team",
+    "fire_team",
+    // The connected Amazon store's scorecard (store-read.ts).
+    "get_sales_and_traffic",
+    "get_account_health",
+    "get_fba_inventory",
+    // Free data sources (sources.ts).
+    "get_wikipedia_pageviews",
+    "get_news_volume",
+    "get_search_trends",
+    "list_connected_reviews",
+    "draft_review_reply",
+    "discord_list_channels",
+    "discord_read_messages",
+    "draft_discord_reply",
+    "post_drafted_reply",
+    // Stored mentions, app reviews, disclosure and tracked conversions (research.ts).
+    "list_watch_mentions",
+    "list_app_reviews",
+    "check_disclosure",
+    "get_tracked_conversions",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
@@ -922,6 +951,35 @@ describe("tool surface", () => {
       "untrack_price",
       "nooticr_settings_read",
       "nooticr_settings_update",
+      // AI employee teams: managing one is free; a launched team is paid on the dashboard.
+      "list_teams",
+      "get_team_status",
+      "list_team_templates",
+      "get_team_draft",
+      "update_team_draft",
+      "hire_team",
+      "update_team_brief",
+      "pause_team",
+      "fire_team",
+      // The connected store's own reports, on the merchant's own account.
+      "get_sales_and_traffic",
+      "get_account_health",
+      "get_fba_inventory",
+      // Free public sources and the workspace's own review and Discord accounts.
+      "get_wikipedia_pageviews",
+      "get_news_volume",
+      "get_search_trends",
+      "list_connected_reviews",
+      "draft_review_reply",
+      "discord_list_channels",
+      "discord_read_messages",
+      "draft_discord_reply",
+      "post_drafted_reply",
+      // Stored rows and a pure check of a caption; nothing is fetched.
+      "list_watch_mentions",
+      "list_app_reviews",
+      "check_disclosure",
+      "get_tracked_conversions",
     ];
     for (const name of EXPECTED) {
       if (free.includes(name)) continue;

@@ -64,6 +64,9 @@ import { registerCrmTools } from "./crm.js";
 import { registerIdentityTools } from "./identities.js";
 import { registerGrowthTools } from "./growth.js";
 import { registerStoreReadTools } from "./store-read.js";
+import { registerTeamTools } from "./teams.js";
+import { registerSourceTools } from "./sources.js";
+import { registerResearchTools } from "./research.js";
 import { registerGettingStarted, SERVER_INSTRUCTIONS } from "./getting-started.js";
 import { loadingPlansJson } from "./loading-plans.js";
 import { registerHandoff } from "./handoff.js";
@@ -972,6 +975,28 @@ const TOOL_NAMES = [
   "scan_marketplace_category",
   "marketplace_scan_status",
   "get_marketplace_product",
+  // AI employee teams (teams.ts): the two reads and the catalogue. The draft,
+  // the quote and the four writes stay view-less like their AI-employee
+  // siblings; scripts/host-contract.py says why for each.
+  "list_teams",
+  "get_team_status",
+  "list_team_templates",
+  // The connected Amazon store's scorecard (store-read.ts).
+  "get_sales_and_traffic",
+  "get_account_health",
+  "get_fba_inventory",
+  // Free data sources (sources.ts): three series, two review and Discord reads.
+  "get_wikipedia_pageviews",
+  "get_news_volume",
+  "get_search_trends",
+  "list_connected_reviews",
+  "discord_list_channels",
+  "discord_read_messages",
+  // research.ts: stored mentions, app reviews, a disclosure verdict, UTM counts.
+  "list_watch_mentions",
+  "list_app_reviews",
+  "check_disclosure",
+  "get_tracked_conversions",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).
@@ -3415,8 +3440,15 @@ const TOOL_NAMES = [
  registerIdentityTools(server, makeClient);
  // A product's own site in Google Search (growth.ts): performance, inspection, sitemaps, page speed.
  registerGrowthTools(server, makeClient);
- // Store connections (store-read.ts): the connect link and the catalogue read.
+ // Store connections (store-read.ts): the connect link, the catalogue read and
+ // the connected Amazon store's own scorecard.
  registerStoreReadTools(server, makeClient);
+ // AI employee teams (teams.ts, nooticr-server TM7).
+ registerTeamTools(server, makeClient);
+ // Free data sources and the workspace's own review and Discord accounts (sources.ts).
+ registerSourceTools(server, makeClient);
+ // Stored mentions, app reviews, disclosure and tracked conversions (research.ts).
+ registerResearchTools(server, makeClient);
  registerGettingStarted(server, makeClient, watchStore);
  // Neither fetches, neither takes a client: one formats what the model
  // classified for a tracker on another server, the other draws what it scored.

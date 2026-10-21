@@ -110,6 +110,16 @@ const NOT_READ_ONLY = [
   // Price history: following and unfollowing a listing write a stored row.
   "track_price",
   "untrack_price",
+  // AI employee teams: the draft, the launch and the three team writes change stored state.
+  "update_team_draft",
+  "hire_team",
+  "update_team_brief",
+  "pause_team",
+  "fire_team",
+  // Reply drafts are stored rows; post_drafted_reply posts one publicly, once confirmed.
+  "draft_review_reply",
+  "draft_discord_reply",
+  "post_drafted_reply",
 ];
 
 describe("tool annotations", () => {
@@ -130,7 +140,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(144);
+    expect(tools).toHaveLength(169);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -154,6 +164,8 @@ describe("tool annotations", () => {
       // it fetches an excerpt of the product's own website, a real reach
       // outside nooticr, so it is deliberately absent from this list.
       "analyze_product_status",
+      // Reads only the caption it is handed; makes no request.
+      "check_disclosure",
       "check_nooticr_credits",
       "connect_social_account",
       "connect_store",
@@ -173,7 +185,10 @@ describe("tool annotations", () => {
       // Creator identities: stored rows inside nooticr, and the account's own watchlist.
       "delete_creator_identity",
       "draft_comment_reply",
+      "draft_discord_reply",
       "draft_post",
+      // Reply drafts are rows inside nooticr; post_drafted_reply is open-world.
+      "draft_review_reply",
       // Holds the caller's own draft up to a rubric; makes no request at all.
       "evaluate_social_draft",
       // Lays out what the caller passes as a report; makes no request (#90).
@@ -181,6 +196,7 @@ describe("tool annotations", () => {
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.
       "fire_employee",
+      "fire_team",
       "generate_captions",
       "generate_content_plan",
       "get_brand_playbook",
@@ -194,18 +210,30 @@ describe("tool annotations", () => {
       "get_price_history",
       "get_scheduled_posts",
       "get_search_console_data",
+      "get_team_draft",
+      "get_team_status",
       "get_tool_run",
+      // Counts events the product's own site already sent to nooticr.
+      "get_tracked_conversions",
       "get_usage_report",
       "get_video_stats",
       "growth_brief",
       "hire_employee",
+      "hire_team",
+      // Reviews the daily sync stored; nothing is fetched at call time.
+      "list_app_reviews",
       "list_brand_watches",
       "list_creator_identities",
       "list_employees",
       "list_own_apps",
       "list_pending_actions",
       "list_social_connections",
+      "list_team_templates",
+      // AI employee teams: stored rows inside nooticr.
+      "list_teams",
       "list_tool_runs",
+      // What the watches' sweeps stored; nothing is fetched at call time.
+      "list_watch_mentions",
       "list_watchlist",
       // Compares two stored scans; fetches nothing.
       "marketplace_changes",
@@ -216,6 +244,7 @@ describe("tool annotations", () => {
       "nooticr_settings_read",
       "nooticr_settings_update",
       "pause_employee",
+      "pause_team",
       // Formats what the caller classified into text for a tracker on another
       // server. It holds no tracker credential and makes the call to nobody:
       // the filing happens on whichever server the host also has connected.
@@ -263,6 +292,8 @@ describe("tool annotations", () => {
       "unwatch_creator_identity",
       "update_creator_identity",
       "update_product",
+      "update_team_brief",
+      "update_team_draft",
       "update_watch_portfolio",
       "watch_creator",
       "watch_creator_identity",

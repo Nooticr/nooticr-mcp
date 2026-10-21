@@ -16,6 +16,7 @@ import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sd
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { failed } from "./passthrough.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -29,14 +30,6 @@ function toResult(proxy: McpProxyResult) {
   // No view here, so the model reads the payload from the text: carry it in both.
   const text = structured ? JSON.stringify(structured) : String(textBlock?.text ?? "");
   return { content: [{ type: "text" as const, text }], structuredContent: structured };
-}
-
-function failed(prefix: string, err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
-  return {
-    content: [{ type: "text" as const, text: `${prefix}: ${msg}` }],
-    isError: true as const,
-  };
 }
 
 /** Pipeline statuses, as the server's CRM_STATUSES. */

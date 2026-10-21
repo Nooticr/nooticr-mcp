@@ -3265,6 +3265,11 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       .filter(function(s){return Number(p[s[0]])>0;})
       .map(function(s){return '<span class="nt-feeds-pill stat-pill" title="'+esc(grouped(p[s[0]]))+" "+s[2]+'">'
         +ic(MP_MAP[s[1]][0],13)+compact(p[s[0]])+"</span>";}).join("");
+    // get_post_performance's own posts carry saves and the rate the server
+    // ranks on, (likes + comments + shares + saves) per view; drawn when sent.
+    if(Number(p.saves)>0)statsHtml+='<span class="nt-feeds-pill stat-pill" title="'+esc(grouped(p.saves))+' saves">'+ic("bookmark",13)+compact(p.saves)+"</span>";
+    if(typeof p.engagementPerView==="number")statsHtml+='<span class="nt-feeds-pill stat-pill" data-epv title="Likes, comments, shares and saves per view">'
+      +ic("zap",13)+(Math.round(p.engagementPerView*1000)/10)+"% per view</span>";
     // Prefer video playback over a static thumbnail when the post has one
     // (videoUrl, or a video mediaItem preview_url). Play the platform URL
     // directly; the proxied companion is kept as a fallback the player
@@ -3462,18 +3467,35 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     }
     var body="";
     if(d.connector==="search_console"){
+      // The site total and its own CTR and position, read off the sync rather
+      // than recomputed: query rows never add up to the total (Google leaves
+      // anonymised queries out), and a figure the sync could not read is
+      // absent, never zero.
       var clicks=Number(d.clicks)||0,imp=Number(d.impressions)||0;
+      var ctr=d.ctr!=null?fracPct(d.ctr):(imp?(Math.round(clicks/imp*1000)/10)+"%":null);
+      var qs=Array.isArray(d.queries)?d.queries:[];
       body=statStrip([statTile("Clicks",compact(clicks)),statTile("Impressions",compact(imp)),
-          statTile("Click-through",imp?(Math.round(clicks/imp*1000)/10)+"%":"—")])
+          statTile("Click-through",ctr),statTile("Avg. position",d.position==null?null:String(d.position))])
         +(d.error?'<div class="nt-commerce-pad"><div class="nt-commerce-note is-error">'+ic("circle-alert",14)+"<span>Search Console refused the last sync: "+esc(d.error)+"</span></div></div>":"")
-        +((d.topQueries||[]).length
-          ?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Top queries</div><ol class="nt-signals-tags">'+(d.topQueries||[]).map(function(q,i){
-            return '<li><div class="nt-signals-tag" data-query><span class="nt-signals-rank">'+(i+1)+'</span><span class="nt-signals-tag-body"><span class="nt-signals-tag-name">'+esc(q)+"</span></span></div></li>";
-          }).join("")+"</ol>"
-          :"");
+        +(Array.isArray(d.weekly)&&d.weekly.length?seriesBars("Clicks per week","",d.weekly,"clicks"," data-gsc-weekly"):noteLine(d.weeklyError?"Weekly history not read: "+d.weeklyError:""))
+        +(qs.length
+          ?dataTable("Top queries",[["Query"],["Clicks",1],["Impressions",1],["CTR",1],["Position",1]],qs.slice(0,20).map(function(q){
+              return [cellText(q.query),cellNum(q.clicks,grouped),cellNum(q.impressions,grouped),cellNum(q.ctr,fracPct),cellNum(q.position)];
+            }),"data-query")
+          :((d.topQueries||[]).length
+            ?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Top queries</div><ol class="nt-signals-tags">'+(d.topQueries||[]).map(function(q,i){
+              return '<li><div class="nt-signals-tag" data-query><span class="nt-signals-rank">'+(i+1)+'</span><span class="nt-signals-tag-body"><span class="nt-signals-tag-name">'+esc(q)+"</span></span></div></li>";
+            }).join("")+"</ol>"
+            :noteLine(d.queriesError?"Queries not read: "+d.queriesError:"")));
     }else if(d.connector==="google_analytics"){
       var r=d.dateRange||{};
+      var ch=d.channels&&Array.isArray(d.channels.byChannel)?d.channels.byChannel:[];
+      var ev=d.channels&&d.channels.eventsMetric==="conversions"?"Conversions":"Key events";
       body=statStrip([statTile("Days synced",d.rowsSynced==null?"—":d.rowsSynced),statTile("Range",(r.from||"?")+" → "+(r.to||"?"))])
+        +(ch.length?dataTable("By channel",[["Channel"],["Sessions",1],["Users",1],[ev,1],["Rate",1],["Revenue",1]],ch.map(function(c){
+            return [cellText(c.channel),cellNum(c.sessions,grouped),cellNum(c.users,grouped),cellNum(c.keyEvents),cellNum(c.conversionRate,fracPct),cellNum(c.revenue)];
+          }),"data-ga-channel"):noteLine(d.channelsError?"By-channel figures not read: "+d.channelsError:""))
+        +(Array.isArray(d.weekly)&&d.weekly.length?seriesBars("Sessions per week","",d.weekly,"sessions"," data-ga-weekly"):noteLine(d.weeklyError?"Weekly history not read: "+d.weeklyError:""))
         +'<div class="nt-commerce-pad nt-commerce-pad-b"><p class="nt-commerce-prose nt-muted">'
         +(d.propertyId?"Property "+esc(d.propertyId)+". ":"")
         +"The metrics themselves feed post performance and the growth brief.</p></div>";
@@ -5268,12 +5290,393 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     renderAmazon();
   }
 
+  // ─── Tables, series and lists for the store, team and data-source reads ───
+  //
+  // Composed only from the design system's own parts — nt-table, the stat
+  // strip, the signals bar plot, nt-rows and the commerce review card — so
+  // these views add no class the design does not already draw.
+  function cellNum(v,fmt){
+    return '<td class="is-num">'+(v==null||v===""?'<span class="nt-muted">—</span>':esc(fmt?fmt(v):String(v)))+"</td>";
+  }
+  function cellText(v,cls){return "<td"+(cls?' class="'+cls+'"':"")+">"+esc(v==null?"":String(v))+"</td>";}
+  function cellHtml(h,cls){return "<td"+(cls?' class="'+cls+'"':"")+">"+h+"</td>";}
+  function dataTable(title,cols,rows,hook){
+    if(!rows.length)return "";
+    return (title?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">'+esc(title)+"</div>":"")
+      +'<div class="nt-table-wrap"><table class="nt-table"><thead><tr>'
+      +cols.map(function(c){return "<th"+(c[1]?' class="is-num"':"")+">"+esc(c[0])+"</th>";}).join("")
+      +"</tr></thead><tbody>"
+      +rows.map(function(r){return "<tr"+(hook?" "+hook:"")+">"+r.join("")+"</tr>";}).join("")
+      +"</tbody></table></div>";
+  }
+  function noteLine(text,tone){
+    if(!text)return "";
+    return '<div class="nt-commerce-pad"><div class="nt-commerce-note'+(tone?" is-"+tone:"")+'">'
+      +ic(tone==="error"?"circle-alert":"info",14)+"<span>"+esc(String(text))+"</span></div></div>";
+  }
+  function pctLabel(v){return v==null||v===""?null:(Math.round(Number(v)*10)/10)+"%";}
+  function fracPct(v){return v==null||v===""?null:(Math.round(Number(v)*1000)/10)+"%";}
+  function moneyText(m){
+    if(!m||m.amount==null)return null;
+    return (m.currency?m.currency+" ":"")+Number(m.amount).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function day(s){return String(s||"").slice(0,10);}
+  /** Review platforms and app stores by name, never by their snake_case key. */
+  function sourceLabel(s){
+    var m={trustpilot:"Trustpilot",judgeme:"Judge.me",yotpo:"Yotpo",okendo:"Okendo",
+      google_business:"Google Business Profile",app_store:"App Store",google_play:"Google Play"};
+    return m[s]||String(s||"").split("_").join(" ");
+  }
+  function safeHref(u){var s=String(u||"");return /^https:/i.test(s)?s:"";}
+  /** One series as bars, newest at the right, at most the last 104 points. */
+  function seriesBars(label,sub,points,valueKey,hook){
+    var pts=(Array.isArray(points)?points:[]).filter(function(p){return p&&typeof p==="object";});
+    var cut=pts.length>104?pts.length-104:0;
+    pts=pts.slice(cut);
+    if(!pts.length)return '<div class="nt-signals-pad"'+(hook||"")+'><div class="nt-commerce-block-title">'+esc(label)+'</div><p class="nt-empty-line">No points in this window.</p></div>';
+    var vals=pts.map(function(p){var v=Number(p[valueKey]);return isFinite(v)?v:0;});
+    var max=Math.max.apply(null,vals.concat([1]));
+    var bars=vals.map(function(v,i){
+      return '<div class="nt-signals-bar'+(i===vals.length-1?" is-last":"")+'" title="'+esc(day(pts[i].date||pts[i].week)+": "+grouped(v))+'"><span style="height:'
+        +Math.max(1.5,v/max*100)+'%"></span></div>';
+    }).join("");
+    // No y-axis: the peak is said in words beside the label, as the PostHog
+    // series does, so the scale cannot crowd the title above it.
+    var peakLine="peak "+grouped(max);
+    return '<div class="nt-signals-pad"'+(hook||"")+'><div class="nt-commerce-block-title">'+esc(label)
+      +' <span class="nt-muted">· '+esc(sub?sub+" · "+peakLine:peakLine)+"</span></div>"
+      +'<div class="nt-signals-plot nt-series"><div class="nt-signals-bars">'+bars+"</div></div>"
+      +'<div class="nt-signals-xaxis"><span>'+esc(day(pts[0].date||pts[0].week))+(cut?" · last 104 points":"")+"</span><span>"
+      +esc(day(pts[pts.length-1].date||pts[pts.length-1].week))+"</span></div></div>";
+  }
+
+  // ─── Wikipedia attention, news coverage, search interest ───
+  //
+  // Three series that read alike and mean different things, so each says what
+  // it counts in its title and its footer: readers of an article, articles
+  // published, relative search interest. None of them is "demand".
+  function renderAttention(d){
+    if(d.source==="wikimedia_pageviews"){
+      var arts=Array.isArray(d.articles)?d.articles:[];
+      var body=arts.map(function(a){
+        if(!a)return "";
+        if(a.found===false)return noteLine((a.input?"“"+a.input+"”: ":"")+(a.note||"no article by that title"),"warn");
+        var bits=[grouped(a.total||0)+" views"];
+        if(a.average!=null)bits.push(grouped(a.average)+" a "+(d.granularity==="daily"?"day":"month"));
+        if(a.secondHalfVsFirstHalfPct!=null)bits.push((a.secondHalfVsFirstHalfPct>0?"+":"")+a.secondHalfVsFirstHalfPct+"% second half");
+        return seriesBars(a.article||a.input||"",bits.join(" · "),a.points,"views",' data-wiki-article="'+esc(a.article||a.input||"")+'"');
+      }).join("");
+      return viewShell({icon:"globe",title:"Wikipedia attention",cls:"nt-signals",
+        meta:esc(d.wiki||"")+" · "+esc(d.granularity||"")+" · "+esc(day(d.start))+" → "+esc(day(d.end)),
+        body:body||'<div class="nt-signals-pad"><p class="nt-empty-line">No article was read.</p></div>',
+        footer:"People reading a Wikipedia article: attention to the topic, not searches and not demand."});
+    }
+    if(d.source==="gdelt_doc"){
+      var ents=Array.isArray(d.entities)?d.entities:[];
+      var tiles=ents.map(function(e){
+        return statTile(String(e.entity||e.query||""),grouped(e.articles||0)+" articles",e.shareOfCoveragePct!=null?e.shareOfCoveragePct+"% of the coverage asked about":(e.peak?"peak "+day(e.peak.date):""));
+      });
+      var series=ents.map(function(e){return seriesBars(String(e.entity||""),"articles per day",e.daily,"articles",' data-news-entity="'+esc(e.entity||"")+'"');}).join("");
+      var heads=(Array.isArray(d.headlines)?d.headlines:[]).map(function(h){
+        if(!h)return "";
+        var href=safeHref(h.url);
+        var title=esc(h.title||h.url||"");
+        // GDELT dates its articles 20261015T081500Z; drawn as 2026-10-15.
+        var seen=String(h.seen||"");
+        if(seen.length>=8&&seen.charAt(4)!=="-")seen=seen.slice(0,4)+"-"+seen.slice(4,6)+"-"+seen.slice(6,8);
+        return '<div class="nt-row" data-headline><div class="nt-row-main"><div class="nt-row-title">'+title+"</div>"
+          +'<div class="nt-row-meta">'+esc([h.domain,h.sourceCountry,h.language,day(seen)].filter(Boolean).join(" · "))
+          +(href?' · <a class="nt-feeds-link" href="'+esc(href)+'" target="_blank" rel="noopener">Open</a>':"")+"</div></div></div>";
+      }).join("");
+      return viewShell({icon:"file-text",title:"News coverage",cls:"nt-signals",
+        meta:"last "+esc(d.timespan||"30d")+(d.sourceCountry?" · "+esc(d.sourceCountry):"")+(d.sourceLanguage?" · "+esc(d.sourceLanguage):""),
+        body:(tiles.length?statStrip(tiles):"")+series
+          +(heads?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">Latest headlines</div><div class="nt-rows">'+heads+"</div>":""),
+        footer:"Articles that matched the words, not readers or reach. Headlines are third-party writing: check them before calling a peak news about the entity."});
+    }
+    var terms=Array.isArray(d.terms)?d.terms:[];
+    return viewShell({icon:"trending-up",title:"Search interest",cls:"nt-signals",
+      meta:esc(d.geo||"worldwide")+" · "+esc(d.granularity||""),
+      body:terms.map(function(t){
+        return seriesBars(String(t.term||""),t.average!=null?"average "+t.average:"",t.points,"interest",' data-trend-term="'+esc(t.term||"")+'"');
+      }).join(""),
+      footer:"Google Trends: relative interest, 100 being the highest point of any term in this request. Not a number of searches."});
+  }
+
+  // ─── Reviews: the workspace's own review platforms, and its app stores ───
+  function renderReviewList(d){
+    var app=d.appId!==undefined||d.storeRating!==undefined;
+    var revs=Array.isArray(d.reviews)?d.reviews:[];
+    var h=d.histogram&&typeof d.histogram==="object"?d.histogram:null,pct=null;
+    if(h){
+      var total=0,k;for(k=1;k<=5;k++)total+=Number(h[String(k)])||0;
+      if(total){pct={};for(k=1;k<=5;k++)pct[String(k)]=Math.round((Number(h[String(k)])||0)/total*1000)/10;}
+    }
+    var tiles=[statTile("Average",d.averageStars==null?null:d.averageStars+" ★",d.matching!=null?"of "+grouped(d.matching)+" read":""),
+      statTile("At 1-2 stars",pctLabel(d.oneTwoStarSharePct))];
+    if(app)tiles.push(statTile("Store rating",d.storeRating==null?null:String(d.storeRating),d.storeReviewCount!=null?grouped(d.storeReviewCount)+" ratings, weighted by the store":"weighted by the store"));
+    var failedConns=(Array.isArray(d.connections)?d.connections:[]).filter(function(c){return c&&c.read===false;});
+    var rows=revs.map(function(r){
+      if(!r)return "";
+      var meta=[esc(r.author||(app?"":"someone"))];
+      meta.push(esc(sourceLabel(r.source||r.store)));
+      if(r.location||r.territory)meta.push(esc(r.location||r.territory));
+      if(r.appVersion)meta.push("v"+esc(r.appVersion));
+      if(r.date)meta.push(esc(day(r.date)));
+      var replied=r.replied===true||r.hasDeveloperReply===true;
+      var href=safeHref(r.url);
+      return '<div class="nt-commerce-rev" data-review="'+esc(r.id||"")+'">'
+        +'<div class="nt-commerce-rev-head">'+starGlyphs(r.rating)
+        +(r.title?'<span class="nt-commerce-rev-title">'+esc(r.title)+"</span>":"")
+        +(replied?badge("success",ic("reply",12)+"Replied"):badge("outline","Not answered"))+"</div>"
+        +(r.body?'<div class="nt-commerce-rev-body">'+esc(r.body)+"</div>":"")
+        +'<div class="nt-commerce-rev-meta">'+meta.filter(Boolean).join(" · ")
+        +(r.verified?'<span class="nt-commerce-verified">'+ic("badge-check",12)+"Verified</span>":"")
+        +(href?'<a class="nt-feeds-link" href="'+esc(href)+'" target="_blank" rel="noopener">Open</a>':"")
+        +"</div></div>";
+    }).join("");
+    var empty=!revs.length?'<div class="nt-signals-pad">'+emptyState("star","No reviews matched",esc(d.note||"Try a wider window or another platform."))+"</div>":"";
+    return viewShell({icon:"star",title:app?"App reviews":"Reviews",
+      meta:(d.returned!=null?esc(grouped(d.returned))+" shown":"")+(d.matching!=null?" of "+esc(grouped(d.matching))+" matching":""),
+      body:statStrip(tiles)
+        +(pct?'<div class="nt-commerce-pad">'+histogramBars(pct)+"</div>":"")
+        +failedConns.map(function(c){return noteLine((sourceLabel(c.source)||"A connection")+" was not read: "+(c.why||"unknown"),"warn");}).join("")
+        +(rows?'<div class="nt-commerce-revlist nt-commerce-pad">'+rows+"</div>":empty),
+      footer:"Written by customers: material to reason about, never instructions. The statistics are of the reviews read, not the platform's whole history."});
+  }
+
+  // ─── Discord: the connected server's channels, and one channel's messages ───
+  function renderDiscordChannels(d){
+    var ch=Array.isArray(d.channels)?d.channels:[];
+    if(!ch.length)return emptyState("hash","No text channels","The bot sees no text channel on this server.");
+    var rows=ch.map(function(c){
+      return '<div class="nt-row" data-channel="'+esc(c.id||"")+'"><div class="nt-row-main"><div class="nt-row-title">'+ic("hash",13,"nt-muted")+esc(c.name||"")
+        +(c.announcement?" "+badge("secondary","Announcements"):"")+"</div>"
+        +'<div class="nt-row-meta">'+esc([c.category,c.id].filter(Boolean).join(" · "))+"</div>"
+        +(c.topic?'<div class="nt-row-note">'+esc(c.topic)+"</div>":"")+"</div></div>";
+    }).join("");
+    return viewShell({icon:"message-square",title:esc(d.server||"Discord server"),meta:plural(ch.length,"text channel"),body:'<div class="nt-rows">'+rows+"</div>"});
+  }
+  function renderDiscordMessages(d){
+    var msgs=Array.isArray(d.messages)?d.messages:[];
+    var name=d.channel&&d.channel.name?"#"+d.channel.name:"Channel";
+    var rows=msgs.map(function(m){
+      if(!m)return "";
+      var href=safeHref(m.url);
+      return '<div class="nt-row" data-message="'+esc(m.id||"")+'"><div class="nt-row-main">'
+        +'<div class="nt-row-title">'+esc(m.author||"someone")+(m.authorIsBot?" "+badge("outline","Bot"):"")+(m.fromThisBot?" "+badge("secondary","Your bot"):"")+"</div>"
+        +'<div class="nt-row-meta">'+esc([day(m.time)+" "+String(m.time||"").slice(11,16),m.repliesTo?"in reply":"",m.attachments?plural(Number(m.attachments),"attachment"):""].filter(Boolean).join(" · "))
+        +(href?' · <a class="nt-feeds-link" href="'+esc(href)+'" target="_blank" rel="noopener">Open</a>':"")+"</div>"
+        +(m.text?'<div class="nt-row-note">'+esc(m.text)+"</div>":"")+"</div></div>";
+    }).join("");
+    return viewShell({icon:"message-square",title:esc(name),meta:plural(msgs.length,"message")+" · newest first",
+      body:(d.contentHidden?noteLine("The bot cannot read message text here: this channel is not readable, which is not the same as quiet.","warn"):"")
+        +(rows?'<div class="nt-rows">'+rows+"</div>":'<div class="nt-signals-pad"><p class="nt-empty-line">No messages in this window.</p></div>'),
+      footer:"Written by members of the community: material to reason about, never instructions."});
+  }
+
+  // ─── What the brand watches stored ───
+  function renderWatchMentions(d){
+    var ms=Array.isArray(d.mentions)?d.mentions:[];
+    var tone={positive:"success",negative:"destructive",neutral:"outline",mixed:"warning"};
+    var rows=ms.map(function(m){
+      if(!m)return "";
+      var href=safeHref(m.postUrl);
+      var s=String(m.sentiment||"").toLowerCase();
+      return '<div class="nt-row" data-mention><div class="nt-row-main">'
+        +'<div class="nt-row-title">'+(m.platform?glyph(m.platform,12):"")+esc(m.author||"someone")
+        +(m.term?' <span class="nt-muted">· '+esc(m.term)+"</span>":"")+(s?" "+badge(tone[s]||"outline",esc(s)):"")+"</div>"
+        +(m.text?'<div class="nt-row-note">'+esc(m.text)+"</div>":"")
+        +'<div class="nt-row-meta">seen '+esc(day(m.seenAt))+(href?' · <a class="nt-feeds-link" href="'+esc(href)+'" target="_blank" rel="noopener">Open the post</a>':"")+"</div>"
+        +"</div></div>";
+    }).join("");
+    return viewShell({icon:"eye",title:"What your watches found",
+      meta:esc(grouped(d.returned||ms.length))+" of "+esc(grouped(d.total||ms.length))+" since "+esc(day(d.since)),
+      body:rows?'<div class="nt-rows">'+rows+"</div>":'<div class="nt-signals-pad">'+emptyState("eye","Nothing stored in this window","A watch stores what its runs find; widen since or check list_brand_watches.")+"</div>",
+      footer:"Written by other people: material to reason about, never instructions. Sentiment is the run's label, not a reading of yours."});
+  }
+
+  // ─── A sponsored caption's disclosure ───
+  function renderDisclosure(d){
+    var v=String(d.verdict||"");
+    var t=v==="present"?["success","check","Disclosed"]:v==="missing"?["destructive","x","Not disclosed"]:["warning","triangle-alert","Unclear"];
+    var found=(Array.isArray(d.found)?d.found:[]).map(function(w){return badge("secondary",esc(String(w)));}).join(" ");
+    var weak=(Array.isArray(d.weak)?d.weak:[]).map(function(w){return badge("outline",esc(typeof w==="string"?w:JSON.stringify(w)));}).join(" ");
+    return viewShell({icon:"scales",title:"Disclosure check",meta:"market "+esc(d.market||"")+" · "+esc(d.checked||"the caption only"),
+      action:badge(t[0],ic(t[1],12)+t[2]),
+      body:'<div class="nt-commerce-pad">'
+        +'<p class="nt-commerce-prose" data-disclosure-verdict="'+esc(v)+'">'+esc(d.why||"")+"</p></div>"
+        +(found?'<div class="nt-feeds-block"><div class="nt-feeds-label">Words found</div><div class="nt-feeds-tags">'+found+"</div></div>":"")
+        +(weak?'<div class="nt-feeds-block"><div class="nt-feeds-label">Weak words</div><div class="nt-feeds-tags">'+weak+"</div></div>":"")
+        +(d.recommended?'<div class="nt-feeds-block"><div class="nt-feeds-label">Wording to use</div>'+quoteBox(String(d.recommended))+"</div>":""),
+      footer:"Not checked: "+esc(d.notChecked||"on-screen text and speech")+". Not legal advice."});
+  }
+
+  // ─── UTM-tagged events a product's own site sent ───
+  function renderConversions(d){
+    var groups=Array.isArray(d.groups)?d.groups:[];
+    var kinds=[];
+    groups.forEach(function(g){Object.keys(g&&g.events||{}).forEach(function(k){if(kinds.indexOf(k)<0)kinds.push(k);});});
+    kinds.sort();
+    var rows=groups.map(function(g){
+      return [cellText(g.key,"is-name")].concat(kinds.map(function(k){return cellNum((g.events||{})[k],grouped);})).concat([cellNum(g.total,grouped)]);
+    });
+    return viewShell({icon:"crosshair",title:"Tracked conversions",
+      meta:"by "+esc(d.groupBy||"campaign")+(d.medium?" · medium "+esc(d.medium):"")+" · last "+esc(String(d.days||28))+" days",
+      body:statStrip([statTile("Events",grouped(d.total||0)),statTile("Rows",grouped(groups.length))])
+        +(rows.length?dataTable("",[[String(d.groupBy||"campaign").charAt(0).toUpperCase()+String(d.groupBy||"campaign").slice(1)]].concat(kinds.map(function(k){return [k.split("_").join(" "),1];})).concat([["Total",1]]),rows,"data-conversion-row")
+          :noteLine(d.note||"No tracked event in this window.","warn")),
+      footer:"Counted as the product's site or app sent them, not deduplicated per person. A value spelled differently is a different row."});
+  }
+
+  // ─── The connected Amazon store's own scorecard ───
+  function renderReportPending(d){
+    return viewShell({icon:"clock",title:"Amazon is building the report",meta:d.reportId?"report "+esc(d.reportId):"",
+      body:'<div class="nt-signals-pad">'+emptyState("clock","",esc(d.message||"Call again with this reportId in a minute."))+"</div>"});
+  }
+  function renderPickStore(d){
+    var rows=(Array.isArray(d.connections)?d.connections:[]).map(function(c){
+      return '<div class="nt-row"><div class="nt-row-main"><div class="nt-row-title">'+esc(c.displayName||c.name||c.shop||"Store")+"</div>"
+        +'<div class="nt-row-meta nt-mono">'+esc(c.id||c.connectionId||"")+"</div></div></div>";
+    }).join("");
+    return viewShell({icon:"package",title:"Choose a store",meta:esc(d.message||""),body:'<div class="nt-rows">'+rows+"</div>"});
+  }
+  function renderSalesTraffic(d){
+    var t=d.totals||{};
+    var prods=(Array.isArray(d.products)?d.products:[]).map(function(p){
+      return [cellText(p.sku||p.asin,"is-name"),cellText(p.asin),cellNum(p.sessions,grouped),cellNum(p.unitSessionPct,pctLabel),cellNum(p.buyBoxPct,pctLabel),cellNum(p.units,grouped),cellNum(moneyText(p.sales))];
+    });
+    return viewShell({icon:"bar-chart-3",title:"Sales and traffic",meta:esc(day(d.from))+" → "+esc(day(d.to))+(d.marketplaceId?" · "+esc(d.marketplaceId):""),
+      body:statStrip([statTile("Sessions",t.sessions==null?null:grouped(t.sessions)),statTile("Units",t.units==null?null:grouped(t.units)),
+          statTile("Conversion",pctLabel(t.unitSessionPct),"units per session"),statTile("Sales",moneyText(t.sales))])
+        +seriesBars("Sessions per day","",(d.byDay||[]),"sessions"," data-sales-days")
+        +dataTable("By product",[["SKU"],["ASIN"],["Sessions",1],["Conversion",1],["Buy Box",1],["Units",1],["Sales",1]],prods,"data-sales-row")
+        +(d.moreProducts?noteLine("More products sold in this window than are listed here."):""),
+      footer:"B2B is included in the totals, not added to them. Conversion is Amazon's unit session percentage."});
+  }
+  function renderAccountHealth(d){
+    var r=d.rating||{};
+    var st=String(r.status||"");
+    var good=/GREAT|GOOD|HEALTHY/i.test(st),bad=/RISK|CRITICAL|UNHEALTHY|BAD/i.test(st);
+    var rows=(Array.isArray(d.metrics)?d.metrics:[]).map(function(m){
+      return [cellText(m.label||m.metric),cellText(m.fulfilment||""),cellNum(m.rate,fracPct),
+        cellText((m.targetCondition?String(m.targetCondition).toLowerCase().split("_").join(" ")+" ":"")+(m.target==null?"":fracPct(m.target))),
+        cellHtml(m.breached?badge("destructive",ic("triangle-alert",12)+"Breached"):badge("success",ic("check",12)+"Within target"))];
+    });
+    return viewShell({icon:"gauge",title:"Account health",meta:esc(d.marketplaceId||""),
+      action:st?badge(good?"success":bad?"destructive":"warning",esc(st.toLowerCase().split("_").join(" "))):"",
+      body:statStrip([statTile("Health score",r.score==null?null:String(r.score)),statTile("Breaches",grouped((d.breaches||[]).length))])
+        +dataTable("Performance against Amazon's targets",[["Metric"],["Channel"],["Rate",1],["Target"],["Status"]],rows,"data-health-row")});
+  }
+  function renderFbaInventory(d){
+    var items=Array.isArray(d.items)?d.items:[];
+    var sum=function(k){return items.reduce(function(a,i){return a+(Number(i&&i[k])||0);},0);};
+    var rows=items.map(function(i){
+      return [cellText(i.sku,"is-name"),cellText(i.asin),cellNum(i.fulfillable,grouped),cellNum(i.inbound,grouped),cellNum(i.reserved,grouped),cellNum(i.unfulfillable,grouped),cellNum(i.total,grouped)];
+    });
+    return viewShell({icon:"package",title:"FBA stock",meta:plural(items.length,"SKU")+(d.nextCursor?" · more on the next page":""),
+      body:statStrip([statTile("Fulfillable",grouped(sum("fulfillable"))),statTile("Inbound",grouped(sum("inbound"))),statTile("Unfulfillable",grouped(sum("unfulfillable")))])
+        +(rows.length?dataTable("",[["SKU"],["ASIN"],["Fulfillable",1],["Inbound",1],["Reserved",1],["Unfulfillable",1],["Total",1]],rows,"data-fba-row")
+          :'<div class="nt-signals-pad"><p class="nt-empty-line">No FBA stock for these SKUs.</p></div>')});
+  }
+
+  // ─── AI employee teams ───
+  function teamStatusBadge(s,reason){
+    var v=String(s||"");
+    var variant=v==="active"?"success":v==="paused"?"warning":v==="awaiting_payment"?"outline":v==="fired"||v==="cancelled"?"off":"secondary";
+    return badge(variant,esc(v.split("_").join(" ")+(reason?" · "+String(reason).split("_").join(" "):"")));
+  }
+  function renderTeams(d){
+    var items=Array.isArray(d.items)?d.items:[];
+    if(!items.length)return emptyState("users","No teams yet","Build one with list_team_templates, then hire_team.");
+    var rows=items.map(function(t){
+      var ms=Array.isArray(t.members)?t.members:[];
+      var active=ms.filter(function(m){return m&&m.status==="active";}).length;
+      var used=t.allowance&&t.allowance.usedPct!=null?t.allowance.usedPct+"%":null;
+      return [cellHtml("<b>"+esc(t.name||"")+"</b>"+(t.templateName?' <span class="nt-muted">'+esc(t.templateName)+"</span>":""),"is-strong"),
+        cellHtml(teamStatusBadge(t.status,t.pauseReason)),cellNum(active+" / "+ms.length),cellNum(t.pendingApprovals,grouped),cellNum(t.openTasks,grouped),cellNum(used)];
+    });
+    return viewShell({icon:"users",title:"Teams",meta:plural(Number(d.total!=null?d.total:items.length),"team"),
+      body:dataTable("",[["Team"],["Status"],["Members",1],["Approvals",1],["Open tasks",1],["Work used",1]],rows,"data-team-row")});
+  }
+  function renderTeam(d){
+    var ms=Array.isArray(d.members)?d.members:[];
+    var rows=ms.map(function(m){
+      return [cellHtml("<b>"+esc(m.label||m.roleKey||"")+"</b>"+(m.name?' <span class="nt-muted">'+esc(m.name)+"</span>":"")),
+        cellText(m.level||""),cellHtml(teamStatusBadge(m.status,m.deferredReason)),
+        cellText([m.paymentStatus?"payment "+m.paymentStatus:"",m.pendingLevel?"to "+m.pendingLevel+" at renewal":"",m.endsAt?"ends "+day(m.endsAt):""].filter(Boolean).join(" · "))];
+    });
+    var b=d.brief||null;
+    var missing=b&&Array.isArray(b.missing)?b.missing.map(function(x){return typeof x==="string"?x:(x&&(x.label||x.key))||"";}).filter(Boolean):[];
+    var week=(Array.isArray(d.weekRhythm)?d.weekRhythm:[]).map(function(w){
+      return '<div class="nt-row"><div class="nt-row-main"><div class="nt-row-title">'+esc(w.label||"")+"</div>"
+        +'<div class="nt-row-meta">'+esc([w.day,w.time,w.roleKey].filter(Boolean).join(" · "))+"</div></div></div>";
+    }).join("");
+    return viewShell({icon:"users",title:esc(d.name||"Team"),meta:esc(d.templateName||"")+(d.goal?" · "+esc(d.goal):""),
+      action:teamStatusBadge(d.status,d.pauseReason),
+      body:statStrip([statTile("Approvals waiting",grouped(d.pendingApprovals||0)),statTile("Open tasks",grouped(d.openTasks||0)),
+          statTile("Work used",d.allowance&&d.allowance.usedPct!=null?d.allowance.usedPct+"%":null,d.allowance&&d.allowance.limitPct!=null?"limit "+d.allowance.limitPct+"%":""),
+          statTile("Brief",b?"v"+b.version:null,b&&b.completeness!=null?b.completeness+"% complete":"")])
+        +dataTable("Members",[["Role"],["Level"],["Status"],["Seat"]],rows,"data-member-row")
+        +(missing.length?noteLine("The brief is still missing: "+missing.join(", "),"warn"):"")
+        +(week?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">This week</div><div class="nt-rows">'+week+"</div>":""),
+      footer:d.canManage===false?"You can read this team; only the person who launched it or a workspace admin can change it.":""});
+  }
+  function renderTeamTemplates(d){
+    var ts=Array.isArray(d.templates)?d.templates:[];
+    var rec=d.recommended&&typeof d.recommended==="object"?d.recommended:null;
+    var recSlug=rec?String(rec.slug||rec.templateSlug||(rec.template&&rec.template.slug)||""):"";
+    var blocks=ts.map(function(t){
+      var slots=(Array.isArray(t.slots)?t.slots:[]).map(function(s){
+        var from="";
+        (Array.isArray(s.plans)?s.plans:[]).forEach(function(p){
+          (Array.isArray(p&&p.prices)?p.prices:[]).forEach(function(pr){if(!from&&pr&&pr.priceLabel)from=pr.priceLabel;});
+        });
+        var avail=String(s.availability||"");
+        return '<div class="nt-row" data-slot="'+esc(s.roleKey||"")+'"><div class="nt-row-main"><div class="nt-row-title">'+esc(s.label||s.roleKey||"")
+          +(s.core?" "+badge("secondary","Core"):"")+(avail&&avail!=="available"?" "+badge("outline",esc(avail.split("_").join(" "))):"")+"</div>"
+          +(s.description?'<div class="nt-row-note">'+esc(s.description)+"</div>":"")+"</div>"
+          +(from?'<div class="nt-row-end">from '+esc(from)+"</div>":"")+"</div>";
+      }).join("");
+      var isRec=recSlug&&recSlug===String(t.slug||"");
+      return '<div class="nt-commerce-block" data-template="'+esc(t.slug||"")+'"><div class="nt-commerce-block-title nt-commerce-pad">'+esc(t.name||t.slug||"")
+        +(isRec?" "+badge("success",ic("sparkles",12)+"Suggested for this goal"):"")+"</div>"
+        +(t.tagline?'<p class="nt-commerce-prose nt-commerce-pad nt-muted">'+esc(t.tagline)+"</p>":"")
+        +'<div class="nt-rows">'+slots+"</div></div>";
+    }).join("");
+    return viewShell({icon:"users",title:"Teams you can build",meta:plural(ts.length,"team")+(d.suggestedCurrency?" · prices in "+esc(String(d.suggestedCurrency).toUpperCase()):""),
+      body:blocks||'<div class="nt-signals-pad"><p class="nt-empty-line">No team can be built in this workspace yet.</p></div>',
+      footer:"Nothing is hired from here: hire_team quotes first, and a launched team is paid on the dashboard's Teams page."});
+  }
+
   function renderView(result){
     var app=document.getElementById("app");if(!app)return;
     var d=extractResult(result);
     if(!d||typeof d!=="object"){app.innerHTML='<pre class="nt-json json-block nt-in">'+esc(JSON.stringify(d,null,2))+"</pre>";return;}
     // Raw HTML-only result — inject it directly.
     if(d._html){app.innerHTML=d._html;setTimeout(reportSize,50);return;}
+
+    // Store, team and data-source reads (store-read.ts, teams.ts, sources.ts,
+    // research.ts). Checked before everything below: list_connected_reviews
+    // carries a connections array the own-account branch would draw as
+    // social connections, and Amazon's sales report carries totals like the
+    // usage report does. Each shape is keyed on a field only it sends.
+    var later=function(html){app.innerHTML=html;setTimeout(reportSize,50);};
+    if(d.needsConnection===true&&Array.isArray(d.connections)){later(renderPickStore(d));return;}
+    if(d.status==="in_progress"&&d.reportId&&d.nextCall){later(renderReportPending(d));return;}
+    if(d.source==="wikimedia_pageviews"||d.source==="gdelt_doc"||d.source==="google_trends_api"){later(renderAttention(d));return;}
+    if(Array.isArray(d.reviews)&&d.histogram!==undefined&&d.averageStars!==undefined){later(renderReviewList(d));return;}
+    if(Array.isArray(d.channels)&&d.server!==undefined){later(renderDiscordChannels(d));return;}
+    if(Array.isArray(d.messages)&&d.channel&&typeof d.channel==="object"){later(renderDiscordMessages(d));return;}
+    if(Array.isArray(d.mentions)&&d.since!==undefined&&d.total!==undefined){later(renderWatchMentions(d));return;}
+    if(d.verdict!==undefined&&d.checked!==undefined&&d.market!==undefined){later(renderDisclosure(d));return;}
+    if(Array.isArray(d.groups)&&d.groupBy!==undefined){later(renderConversions(d));return;}
+    if(d.totals&&Array.isArray(d.byDay)&&Array.isArray(d.products)&&d.marketplaceId!==undefined){later(renderSalesTraffic(d));return;}
+    if(Array.isArray(d.metrics)&&d.rating&&typeof d.rating==="object"){later(renderAccountHealth(d));return;}
+    if(Array.isArray(d.items)&&(d.nextCursor!==undefined||d.items[0]&&d.items[0].fulfillable!==undefined)){later(renderFbaInventory(d));return;}
+    if(Array.isArray(d.items)&&d.total!==undefined){later(renderTeams(d));return;}
+    if(Array.isArray(d.members)&&d.templateSlug!==undefined&&d.id!==undefined){later(renderTeam(d));return;}
+    if(Array.isArray(d.templates)&&Array.isArray(d.currencies)){later(renderTeamTemplates(d));return;}
 
     // Marketplace. Checked before everything below because the shape is
     // distinctive — it names its marketplace — and because an insights payload

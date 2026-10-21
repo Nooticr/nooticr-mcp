@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-144 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+169 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -135,6 +135,11 @@ them caps that fan-out with an argument.
 | `stop_brand_watch` | free | Stop a watch by `watchId` or `term`. Immediate — the next run does not happen and nothing more is charged. |
 | `niche_report` | 2 | Recent posts in a niche with their stats, so the dominant formats, hook patterns and the gaps nobody fills can be read off them. One `discover_social_posts` call. Use when deciding what to make. |
 | `analyze_creator_profile` | 2 | A creator's recent posts with their stats — the material of a teardown: niche, themes, hook formula, what over- and underperforms, who the audience is. One `get_user_posts` call. |
+| `get_wikipedia_pageviews` | free | **Wikipedia attention**: how many people read up to five Wikipedia articles per day or per month, from Wikimedia's official pageviews (bots excluded). Each article's series, total, average, peak and the change between the two halves of the window. Readers of an article, never search volume or demand, and the reply says so. |
+| `get_news_volume` | free | How much news coverage a brand, competitor or topic got: articles per day in GDELT's worldwide news index over a window, each entity's share of the coverage against up to two others, and the latest headlines. Counts articles, never readers. |
+| `get_search_trends` | free | Google Trends interest for up to five terms on one 0-100 scale, from Google's official Trends API. Off until the server has access to that API (an invite-only alpha); it then refuses with `not_configured` rather than reading the Trends page. |
+| `list_watch_mentions` | free | The text your brand watches stored: platform, author, the post's words, its link, its sentiment and when a run saw it, newest first, filterable by watch, date and words. Free because the sweeps were billed when they ran. |
+| `check_disclosure` | free | Whether a sponsored caption discloses the partnership the way the creator's market requires (France's "Publicité" or "Collaboration commerciale", Germany's "Werbung", "#ad" elsewhere): present, missing or unclear, the words found and the wording to use. Reads the caption only. |
 
 ### Answer a question you actually have
 
@@ -221,6 +226,15 @@ a `scanId` for the rest.
 | `list_employees` | free | Your AI employees with status, schedule, next run and budget left; `includeFired: true` adds the ones let go. |
 | `pause_employee` | free | Pause an AI employee (it keeps its memory and thread) or resume it with `resume: true`. Only the person who hired it or a workspace admin can. |
 | `fire_employee` | free | Let an AI employee go for good: runs stop and actions awaiting approval are discarded. The first call only describes what will happen; confirm with `confirm: true`. |
+| `list_teams` | free | Your AI employee teams: status (and why one is paused), members, approvals waiting, open hand-off tasks and the share of included work used. Where a `teamId` comes from. |
+| `get_team_status` | free | One team in detail: its members with level, state and payment state, this week's plan, the brief's version and what it is missing, and whether you may change it. |
+| `list_team_templates` | free | The teams your workspace can build: their roles, whether each can start now and what it needs, and each level's monthly price. With a `goal`, the team the Build-my-team page suggests for it. Hires nothing. |
+| `get_team_draft` | free | Your team draft, the same one the Build-my-team page edits: answers so far, the step, what a launch still needs, its page link and its price as it stands. |
+| `update_team_draft` | free | Saves answers, the chosen team or the step to that draft (a JSON merge patch). Launches and charges nothing. |
+| `hire_team` | free to call | Launches a team. Two calls by design: the first returns a quote (members, levels, prices, the total, what waits for approval) and a `confirmationToken`; the confirmed call creates the team waiting for payment, which you finish on the Teams page of your Nooticr dashboard. Nobody starts before that. |
+| `update_team_brief` | free | Changes what a team works from: the patch is stored as the brief's next version, and the reply says which member picks it up when. |
+| `pause_team` | free | Pauses a team (its runs stop; the subscription does not) or resumes what the team paused. |
+| `fire_team` | free | Lets a team go. The first call only says what will happen; confirm with `confirm: true`. Nothing is refunded. |
 | `crm_upsert_creator` | free | Add a creator to your creator pipeline, or update the one already there (matched by `platform` + `handle`). Only the fields you pass change; new creators start as `prospect`. Every number cited goes in `evidence`. |
 | `crm_list_creators` | free | Your creator pipeline, most recently updated first, each with its last interaction. Filter by `status`, `appId`, `query` or `dueBefore`. |
 | `crm_update_status` | free | Move a creator to a new pipeline status and record why. `do_not_contact` stays unless a person changes it; AI employees may only use `prospect`, `shortlisted` or `paused`. |
@@ -231,6 +245,15 @@ a `scanId` for the rest.
 | `reject_action` | free | Reject one pending action, with an optional note the employee can learn from. |
 | `connect_store` | free | A link a workspace owner or admin opens to connect an Amazon seller account or a Shopify shop. They approve at the store; nothing is connected until they do, and no credential passes through the tool. |
 | `list_store_products` | free | Read the connected store's own catalogue: title, description, status, price, and Amazon listing issues. Read-only. |
+| `get_sales_and_traffic` | free | Your connected Amazon store's Sales and Traffic report for up to 90 whole days: sessions, page views, conversion (unit session %), Buy Box share, units and sales, in total, per day and per product. Amazon builds it as a report, so a first call can answer `in_progress` with the call to make a minute later. |
+| `get_account_health` | free | Your Amazon seller account's health rating and each performance rate (order defects, late shipments, cancellations, valid tracking) against Amazon's own target, with the ones breached. |
+| `get_fba_inventory` | free | Your FBA stock per SKU: fulfillable, inbound, reserved, unfulfillable and total units. Read-only. |
+| `list_connected_reviews` | free | Reviews of your business on the review platforms you connected with your own account (Trustpilot, Judge.me, Yotpo, Okendo, Google Business Profile), with the star histogram, the average and the 1-2 star share. A platform you have not connected refuses with `not_connected`. |
+| `draft_review_reply` | free | Stores a public reply to one Trustpilot or Google Business Profile review for you to approve; the reply guards run first (no link, contact detail or remedy your written policy does not name). Returns a `draftId` and a `confirmationToken`. Posts nothing. |
+| `discord_list_channels` | free | The text channels of the Discord server you connected. |
+| `discord_read_messages` | free | Recent messages in one channel of that server, newest first. When the bot lacks Discord's message content access it says the channel is not readable, rather than quiet. |
+| `draft_discord_reply` | free | Stores a reply to one Discord message for you to approve. Returns a `draftId` and a `confirmationToken`. Posts nothing. |
+| `post_drafted_reply` | free | Posts a stored review or Discord reply publicly, as the business, once you have agreed to its exact text: `draftId`, `confirm: true` and the `confirmationToken`. Each review or message is answered once. |
 | `create_product` | free | Create a product in your own workspace — the row every other own-account tool needs before it has anything to work with. Always creates in the calling session's workspace, never one you could name. `name` and `slug` are required; every other field is snake_case and read by exact key, so a camelCase `websiteUrl` lands nowhere. Writes no brand playbook. |
 | `update_product` | free | Patch a product's fields. An omitted argument leaves its column unchanged, so this cannot blank a field by not mentioning it, and the result lists what was actually written — a misspelled field shows up as one that did not change rather than as a silent no-op. |
 
@@ -244,15 +267,17 @@ Everything above reads someone else's content. These read and generate for **you
 | `create_product` | free | Create a new product in your workspace — `name`/`slug` required, plus optional `description`, `website_url`, `niche`, `product_type` and store-listing fields (snake_case — see note below). Takes no workspace id; always creates in your own. Does not generate a brand playbook — call `analyze_product` for that. |
 | `update_product` | free | Patch a product's fields — omitted arguments leave their column unchanged. Same snake_case field names as `create_product`. |
 | `get_scheduled_posts` | free | Your own scheduled and draft posts in the content pipeline — title, status, scheduled time, approval status. What is queued to publish. |
-| `get_post_performance` | free | Your own already-published posts with their engagement counters — views, likes, comments, shares, platform, post date. The raw performance history, not an interpretation of it; pair with `growth_brief` for that. |
+| `get_post_performance` | free | Your own already-published posts with their engagement counters — views, likes, comments, shares, saves, impressions, format, platform, post date — and `engagementPerView`, (likes + comments + shares + saves) ÷ views, the rate to rank on rather than raw views. No reach, watch time or follower counts. Pair with `growth_brief` for an interpretation. |
 | `get_video_stats` | free | Your own most recently synced video performance stats across every connected creator — views, likes, comments, shares, plus a running total. Reads the last sync; does not trigger a new one. |
-| `get_google_analytics_data` | free | Your product's GA4 sync **as of its last sync into nooticr, not live** — property, date range, rows synced. The metrics feed `get_post_performance` and `growth_brief`. |
-| `get_search_console_data` | free | Search Console clicks, impressions and top queries, as of the last sync — whether people search for what your content is about. |
+| `get_google_analytics_data` | free | Your product's GA4 sync **as of its last sync into nooticr, not live**: property, date range, rows synced, sessions, users, key events and revenue per default channel group, and sessions and key events per week over about 13 months. |
+| `get_search_console_data` | free | Search Console as of the last sync: the site's clicks, impressions, click-through rate and average position over the window (a site total, not a sum of query rows), up to 50 queries with their own figures, and clicks and impressions per week over about 16 months. A figure the sync could not read is absent, never zero. |
 | `get_search_performance` | free | Your product's own site in Google Search, **live** from its connected Search Console: clicks, impressions, CTR and position by query, page, country, device or date, with `filters` and `compare_to_previous`. Snake_case arguments, `app_id` required. `site` reads another Search Console property of the same site (a domain property beside a URL-prefix one) when the connected account can open it; it also applies to `inspect_url` and `get_sitemaps`. |
 | `inspect_url` | free | Whether Google indexed pages of your own site: verdict, coverage, Google's canonical against yours, last crawl, robots and fetch state. Only URLs on the connected site; at most 20 per call and 20 per agent run (each spends the site's own daily inspection quota). |
 | `get_sitemaps` | free | The sitemaps submitted for your own site, with submitted and indexed counts, errors and warnings; `url` for one sitemap's detail. Read-only: it cannot submit one. |
 | `get_page_speed` | free | Core Web Vitals for a page of your own site: real-user field data (LCP, INP, CLS) when there is enough, plus lab scores and the biggest savings. `strategy` is `mobile` (default) or `desktop`. |
 | `get_posthog_analytics` | free | Your PostHog pageview trend, as of the last sync — line a post's date up against traffic to your site. |
+| `list_app_reviews` | free | Your app's App Store and Google Play reviews as the daily sync stored them: stars, text, territory, app version and whether you replied, with the star histogram and the store's own displayed rating beside it. |
+| `get_tracked_conversions` | free | Counts of the UTM-tagged events your own site or app sent to Nooticr (link clicks, sign-ups, purchases, installs) per campaign, source or medium over up to 90 days. Counts only, no person's data. |
 | `get_content_plan` | free | The saved weekly content plan for a product, if one has been generated. `plan: null` when none has. |
 | `get_brand_playbook` | free | Your product's brand playbook — name, description and the playbook text — if one has been configured, in the dashboard or by `analyze_product`. Read-only; `available: false` when none exists. |
 | `review_post` | free | Score a draft before you publish it — hook strength, an A/B hook comparison, aesthetic and storytelling notes, rewritten hooks/captions. Never billed, same as the dashboard's own pre-publish review. |

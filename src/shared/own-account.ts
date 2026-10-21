@@ -57,6 +57,8 @@ import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { withEvidence } from "./evidence-digest.js";
 import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
+import { failed } from "./passthrough.js";
+import { SEARCHER_TEXT_NOTE } from "./growth.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -78,14 +80,6 @@ function toResult(proxy: McpProxyResult) {
       { type: "text" as const, text: structured ? withEvidence(text, structured) : text },
     ],
     structuredContent: structured,
-  };
-}
-
-function failed(prefix: string, err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
-  return {
-    content: [{ type: "text" as const, text: `${prefix}: ${msg}` }],
-    isError: true as const,
   };
 }
 
@@ -254,7 +248,9 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
       title: "Get Post Performance",
       description:
         "Your own already-published posts with their engagement counters — views, likes, " +
-        "comments, shares, platform, post date. This is the raw performance history, not an " +
+        "comments, shares, saves, impressions, format, platform, post date — and engagementPerView, " +
+        "(likes + comments + shares + saves) / views: rank on that rate rather than on views. No " +
+        "reach, watch time or follower counts are available. This is the raw performance history, not an " +
         "interpretation of it; pair with growth_brief for that. No cost to call. Use when the user asks how their own published posts performed.",
       _meta: viewMeta("get_post_performance"),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -273,7 +269,14 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
     async (args: { appId?: number; limit?: number }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });
       try {
-        return toResult(await client.callTool("get_post_performance", args));
+        const proxy = await client.callTool("get_post_performance", args);
+        const note = (proxy.structured as { note?: unknown } | undefined)?.note;
+        // The server's note says what engagementPerView is and what is not
+        // measured; it lives in the payload, so the text carries it too.
+        if (typeof note !== "string" || !note) return toResult(proxy);
+        const res = toResult(proxy);
+        res.content[0].text = `${note}\n\n${res.content[0].text}`;
+        return res;
       } catch (err) {
         return failed("get_post_performance failed", err);
       }
@@ -437,8 +440,10 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
               ? `${title.replace(/^Get /, "")} for ${String(data.appName ?? "your product")}, as of its last sync at ` +
                 `${synced} — not live. Say that date whenever you quote a number from it.`
               : `${title.replace(/^Get /, "")} for ${String(data.appName ?? "your product")}; the sync time was not reported, so do not present these as current.`;
+          // Query text was typed by searchers: framed as data, as get_search_performance frames it.
+          const framed = connector === "search_console" ? `${lead}\n\n${SEARCHER_TEXT_NOTE}` : lead;
           return {
-            content: [{ type: "text" as const, text: `${lead}\n\n${JSON.stringify(data, null, 2)}` }],
+            content: [{ type: "text" as const, text: `${framed}\n\n${JSON.stringify(data, null, 2)}` }],
             structuredContent: data,
           };
         } catch (err) {
@@ -452,9 +457,10 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
     "google_analytics",
     "Read Google Analytics Data",
     "Your own product's Google Analytics (GA4) sync, as of its last sync into nooticr — not a live " +
-      "GA4 call: the property, the date range synced and how many daily rows came in. The metrics " +
-      "themselves (installs, opens, purchases, revenue) feed get_post_performance and growth_brief " +
-      "rather than being repeated here. Returns a message rather than an error when nothing has " +
+      "GA4 call: the property, the date range synced and how many daily rows came in, sessions, " +
+      "users, key events and revenue per default channel group over that range, and sessions and key " +
+      "events per ISO week over about 13 months (oldest first). A half the sync could not read is " +
+      "named in channelsError or weeklyError, never zeroed. Returns a message rather than an error when nothing has " +
       "ever been synced; connect GA4 in API Connections first. Takes appId (optional when your " +
       "workspace has only one product). No cost to call. Use to check whether GA4 data is synced " +
       "and for which dates.",
@@ -463,8 +469,11 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
     "get_search_console_data",
     "search_console",
     "Get Search Console Data",
-    "Your own product's Google Search Console data — total clicks and impressions and the top " +
-      "search queries — as of its last sync into nooticr, not a live Search Console call. Use it " +
+    "Your own product's Google Search Console data — the site's total clicks, impressions, " +
+      "click-through rate (ctr, a fraction) and average position, up to 50 queries with their own " +
+      "clicks, impressions, ctr and position, and clicks and impressions per ISO week over about 16 " +
+      "months (days < 7 marks a partial week) — as of its last sync into nooticr, not a live Search " +
+      "Console call. A figure the sync could not read is absent, never zero. Use it " +
       "to see whether people search for what your social content is about. Returns a message " +
       "rather than an error when nothing has been synced; connect Search Console in API " +
       "Connections first. Takes appId (optional when your workspace has only one product). No " +

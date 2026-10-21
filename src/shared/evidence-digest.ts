@@ -132,6 +132,17 @@ function stats(row: Row): string {
   if (views) parts.push(`${compactCount(views)} views`);
   if (likes) parts.push(`${compactCount(likes)} likes`);
   if (comments) parts.push(`${compactCount(comments)} comments`);
+  // The user's own published posts (get_post_performance) carry the rate the
+  // server ranks on, and the shares and saves it is made of; a digest without
+  // them would hand the model the raw views the guidance says not to rank on.
+  const perView = num(row.engagementPerView);
+  if (typeof row.engagementPerView === "number") {
+    const shares = num(row.shares);
+    const saves = num(row.saves);
+    if (shares) parts.push(`${compactCount(shares)} shares`);
+    if (saves) parts.push(`${compactCount(saves)} saves`);
+    parts.push(`${((perView ?? 0) * 100).toFixed(1)}% engagement per view`);
+  }
   return parts.join(", ");
 }
 

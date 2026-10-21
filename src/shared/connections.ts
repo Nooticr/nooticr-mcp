@@ -25,6 +25,7 @@ import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 // especially, since "unknown" means nobody recorded the scope and must never
 // be drawn as the refusal it is not.
 import { viewMeta } from "./view-meta.js";
+import { failed } from "./passthrough.js";
 
 interface MakeClient {
   (ctx: { authInfo?: AuthInfo; requestId?: string | number; arguments?: unknown }):
@@ -37,14 +38,6 @@ function toResult(proxy: McpProxyResult) {
   return {
     content: textBlock ? [{ type: "text" as const, text: String(textBlock.text ?? "") }] : [],
     structuredContent: proxy.structured as Record<string, unknown> | undefined,
-  };
-}
-
-function failed(prefix: string, err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
-  return {
-    content: [{ type: "text" as const, text: `${prefix}: ${msg}` }],
-    isError: true as const,
   };
 }
 
