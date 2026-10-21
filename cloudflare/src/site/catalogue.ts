@@ -365,6 +365,18 @@ export const TOOLS: Tool[] = [
     when: "Demand research: who has the pain, in what words. Not searchable here: LinkedIn.",
   },
   {
+    name: "export_report", cost: 0, group: "research",
+    args: "title, summary?, sections",
+    desc: "The posts, comments and listings a session found, as cards between your own analysis \u2014 markdown plus a standalone HTML document to paste into a report.",
+    when: "Writing up what you found for someone else, with the real posts quoted rather than summarised.",
+  },
+  {
+    name: "measure_audience_overlap", cost: 4, group: "research",
+    args: "usernames, platform?, postsPerCreator?",
+    desc: "The commenters two accounts share, and the overlap in each direction \u2014 4 credits for the two post lists plus 2 per post opened, 16 at the default of 3 each.",
+    when: "Deciding between collaboration finalists: commenters, not followers, so it says how thin the sample is.",
+  },
+  {
     name: "answer_my_audience", cost: 2, group: "research",
     args: "username, platform?, limit?",
     desc: "Your own recent posts and the comments under them, so you can write the replies \u2014 2 credits for the post list plus 2 per post opened, 14 at the default of 6.",
@@ -573,6 +585,12 @@ export const TOOLS: Tool[] = [
     args: "id",
     desc: "Stops a watch immediately: the run that was due does not happen and nothing further is charged.",
     when: "Works at a zero balance, because someone out of credits is exactly who needs to turn off what is spending them.",
+  },
+  {
+    name: "set_brand_watch_alerts", cost: 0, group: "research",
+    args: "watchId, email, slack, minNew",
+    desc: "Turns a watch's email and Slack alerts on or off, and sets how many new items a run must find before it alerts. Every run still posts to the watch's thread.",
+    when: "When findings should reach the team's Slack rather than one inbox, or a watch is too noisy.",
   },
   {
     name: "update_watch_portfolio", cost: 0, group: "research",

@@ -602,6 +602,7 @@ describe("tool surface", () => {
     "list_brand_watches",
     "stop_brand_watch",
     "update_watch_portfolio",
+    "set_brand_watch_alerts",
     "list_own_apps",
     // Creative assets (creative.ts).
     "creative_assets_list",
@@ -689,6 +690,8 @@ describe("tool surface", () => {
     // The job tools (jobs.ts): compositions of the calls above, named after
     // the question rather than the endpoint.
     "answer_my_audience",
+    "measure_audience_overlap",
+    "export_report",
     "show_audience_replies",
     "track_creator",
     // The comparison track_creator computes and discards: two fetching
@@ -910,6 +913,8 @@ describe("tool surface", () => {
       "reject_action",
       // Compares two stored scans; fetches nothing.
       "marketplace_changes",
+      // Lays out what the caller passes; fetches nothing (#90).
+      "export_report",
       // Reads stored observations back; fetches nothing.
       "get_price_history",
       // A row in the workspace's own price listings; fetches nothing.

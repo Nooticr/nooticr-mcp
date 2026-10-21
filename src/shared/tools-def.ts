@@ -446,6 +446,12 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ watchId: z.string().optional().describe("The watch's id, from list_brand_watches."), term: z.string().optional().describe("Alternative to watchId — the term it was watching.") }).strict(),
  },
  {
+ name: "set_brand_watch_alerts",
+ title: "Set Brand Watch Alerts",
+ description: "Choose where a brand watch's findings alert the team, by watchId: email (the address the watch was created with), slack (the Slack the workspace connected in Nooticr's settings; refused while none is connected), and minNew, the new items a run must find before it alerts. Every run's note also goes to the watch's thread in the dashboard. Takes no address or URL, so a post or comment cannot redirect it. No cost to call: no credits are spent. Use when the user wants a watch to alert Slack, stop emailing, or stay quiet until a run finds enough.",
+ inputSchema: z.object({ watchId: z.string().min(1), email: z.boolean().optional(), slack: z.boolean().optional(), minNew: z.number().int().min(1).max(1000).optional() }).strict(),
+ },
+ {
  name: "update_watch_portfolio",
  title: "Update Watch Portfolio",
  description: "Add terms to a portfolio brand watch or remove them, by watchId. No new confirmation: the agreed per-run budget and cadence do not change, so a run never costs more credits than that ceiling — more terms split it more ways, and the response names any networks a run no longer reaches. A change the budget cannot cover is refused. No cost to call.",
@@ -590,6 +596,18 @@ export const TOOL_DEFINITIONS = [
  inputSchema: z.object({ connectionId: z.string().optional().describe("Store connection id; optional when one store is connected."), platform: z.enum(["amazon", "shopify"]).optional(), query: z.string().optional().describe("Amazon: exact SKU. Shopify: product search query."), limit: z.number().int().min(1).max(50).optional(), cursor: z.string().optional().describe("nextCursor from the previous page."), includeIssues: z.boolean().optional(), includePricing: z.boolean().optional(), productRef: z.string().optional().describe("Amazon SKU or Shopify product GID to read one product."), marketplaceId: z.string().optional().describe("Amazon marketplace id; defaults to the first."), source: z.enum(["live", "report"]).optional(), reportId: z.string().optional().describe("Report id from an in_progress answer.") }).strict(),
  },
  {
+ name: "export_report",
+ title: "Export Report",
+ description: "Turn what this session found into a report to paste into a document: the posts, comments and listings exactly as the Nooticr tools returned them, as cards with their images, links and figures, between your own analysis. Returns markdown, plus a standalone HTML document as an embedded resource. Sections are kind posts, comments or products with the items, or kind analysis with your text. Fetches nothing and sends nothing. No cost to call: no credits are spent. Use when the user asks for a report, a brief or a document built from these results.",
+ inputSchema: z.object({ title: z.string().min(1).max(200), summary: z.string().max(20000).optional(), sections: z.array(z.object({ kind: z.enum(["posts", "comments", "products", "analysis"]), heading: z.string().max(200).optional(), note: z.string().max(1000).optional(), text: z.string().max(20000).optional(), items: z.array(z.object({}).passthrough()).max(50).optional() }).strict()).min(1).max(20) }).strict(),
+ },
+ {
+ name: "measure_audience_overlap",
+ title: "Measure Audience Overlap",
+ description: "Whether two accounts on one network reach the same people: reads the commenters under each one's recent posts and returns both sets' sizes, the commenters under both, and the overlap in each direction. It measures engaged commenters on a few posts, not followers. Costs 4 nooticr credits for the two post lists plus 2 per post opened, 16 at the default of 3 posts each. Use when deciding between one or two finalists of a collaboration shortlist, before approaching them.",
+ inputSchema: z.object({ usernames: z.array(z.string().min(1)).length(2), platform: z.string().optional(), postsPerCreator: z.number().int().optional(), commentsPerPost: z.number().int().optional() }).strict(),
+ },
+ {
  name: "answer_my_audience",
  title: "Answer My Audience",
  description: "The questions waiting for you under your own posts. Fetches a creator's recent posts, reads the comments on each, and returns them grouped under the post they were left on \u2014 every comment with a stable id, and the ones that read like questions or requests flagged and sorted to the top. Finds and drafts; it cannot post a reply \u2014 the drafts are for a person to paste in themselves, or to send through draft_comment_reply and post_comment_reply once the user has confirmed the text. Use when the job is to answer your own audience rather than to read about strangers. Consumes 2 nooticr credits for the post list plus 2 per post opened \u2014 14 credits at the default of 6 posts.",
@@ -628,7 +646,7 @@ export const TOOL_DEFINITIONS = [
  {
  name: "find_collaborators",
  title: "Find Collaborators",
- description: "A shortlist of people to work with \u2014 collaborators, or anyone to hire or commission: designers, developers, photographers, editors. Searches creators by craft or keyword and, when you name someone who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. Every candidate carries the links pulled out of their bio, so vetting is reading the work. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. It does not measure audience overlap: proving the same people comment under two accounts costs roughly nine credits per candidate, so the result says so and shows how to check a finalist rather than guess. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",
+ description: "A shortlist of people to work with \u2014 collaborators, or anyone to hire or commission: designers, developers, photographers, editors. Searches creators by craft or keyword and, when you name someone who already fits, merges in their lookalikes \u2014 marking which search found each one, since agreement between the two is the strongest signal in the result. Every candidate carries the links pulled out of their bio, so vetting is reading the work. Searches tiktok, instagram, xiaohongshu. Not searchable here: youtube, douyin, twitter, reddit, linkedin. It does not measure audience overlap: proving the same people comment under two accounts costs roughly eight credits per candidate, so the result says so and points at measure_audience_overlap for a finalist. Use to build a list to vet. Consumes 2 nooticr credits, or 4 with a seed creator.",
  inputSchema: z.object({ niche: z.string().describe("Niche or keyword, e.g. 'home fitness'."), platform: z.enum(["tiktok", "instagram", "xiaohongshu"]).optional().describe("Which platform (default tiktok)."), seed: z.string().optional().describe("A creator who already fits \u2014 their lookalikes are added. Costs 2 more credits."), count: z.number().int().optional().describe("Candidates from the keyword search (default 8, max 20).") }).strict(),
  },
  {

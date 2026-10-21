@@ -52,6 +52,7 @@ import {
   type WatchStore,
 } from "./watchlist.js";
 import { registerJobTools } from "./jobs.js";
+import { REPORT_POINTER, registerReportTool } from "./report.js";
 import { registerBrandWatch } from "./brand-watch.js";
 import { registerCreativeTools } from "./creative.js";
 import { registerSheetsTools } from "./sheets.js";
@@ -893,6 +894,11 @@ const TOOL_NAMES = [
   // the three that return posts render as a gallery, and the two shaped like
   // a search_mentions result render in the monitoring view.
   "answer_my_audience",
+  // A report built from what the session found (#90): its view draws the
+  // same HTML the tool hands the model.
+  "export_report",
+  // Two accounts' commenters side by side (#31), drawn by its own table.
+  "measure_audience_overlap",
   "show_audience_replies",
   "track_creator",
   // The comparison track_creator computes per creator and never puts side
@@ -3071,7 +3077,7 @@ const TOOL_NAMES = [
      classifyGuidance(
       `They are comments naming "${args.term}", grouped under the ${groups} posts they were left on.`,
       groups,
-     ),
+     ) + (groups ? `\n\n${REPORT_POINTER}` : ""),
     );
    } catch (err) {
     return toolError("search_mentions failed", err);
@@ -3392,6 +3398,8 @@ const TOOL_NAMES = [
  registerWatchlist(server, makeClient, watchStore);
  registerJobTools(server, makeClient, watchStore);
  registerBrandWatch(server, makeClient);
+ // The cards a session drew, handed back as a document (#90). Fetches nothing.
+ registerReportTool(server);
  registerOwnAccountTools(server, makeClient);
  // Creative assets (creative.ts): the free reads of nooticr-server's creative_* family.
  registerCreativeTools(server, makeClient);

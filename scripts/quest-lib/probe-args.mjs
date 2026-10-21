@@ -113,6 +113,18 @@ export const ARG_OVERRIDES = {
   // in the surface as orphans: the pass that would have named them never got
   // far enough into either tool to see the pointer.
   mention_trend: { term: "nooticr", days: 90 },
+  // A report from material the session would have: a post and the model's read of it.
+  export_report: {
+    title: "Morning routines: what is landing",
+    sections: [
+      { kind: "posts", items: [{ platform: "tiktok", caption: "the habit that actually stuck", creatorHandle: "lena.mornings", externalUrl: STUB_URL, views: 15400 }] },
+      { kind: "analysis", text: "One habit per post outperforms a full routine in this set." },
+    ],
+  },
+  // Two handles exactly; the fixture gives each creator's posts their own regulars.
+  measure_audience_overlap: { usernames: ["lena.mornings", "fixture_creator_1"], platform: "tiktok" },
+  // Needs at least one switch, or it refuses before reaching the backend.
+  set_brand_watch_alerts: { watchId: "watch-fixture-1", slack: true, minNew: 3 },
   compare_creators: { usernames: ["fixture_creator_1", "fixture_creator_2"], platform: "tiktok" },
 };
 

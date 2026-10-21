@@ -329,6 +329,29 @@ export class NooticrClient {
     };
   }
 
+  /**
+   * Which alerts a brand watch sends (#103), through the dashboard's own
+   * `PATCH /ai/watches/{id}`: `/mcp` has no tool for it. Every note always
+   * lands in the watch's thread; email goes to the address the watch was
+   * created with, Slack to the incoming webhook the workspace connected in
+   * Settings, and `minNew` holds both back until a run finds that many new
+   * items. The server refuses Slack while none is connected rather than
+   * storing an alert that reaches nobody.
+   */
+  async setWatchAlerts(
+    watchId: string,
+    alerts: { minNew?: number; email?: boolean; slack?: boolean }
+  ): Promise<Record<string, unknown>> {
+    const body: Record<string, unknown> = {};
+    if (alerts.minNew !== undefined) body.alertMinNew = alerts.minNew;
+    if (alerts.email !== undefined) body.alertEmail = alerts.email;
+    if (alerts.slack !== undefined) body.alertSlack = alerts.slack;
+    return this.request<Record<string, unknown>>("PATCH", `/ai/watches/${encodeURIComponent(watchId)}`, {
+      auth: true,
+      body,
+    });
+  }
+
   async getJob(jobId: string): Promise<JobStatus> {
     return this.request<JobStatus>("GET", `/ai/analyze-post?jobId=${encodeURIComponent(jobId)}`, {
       auth: true,

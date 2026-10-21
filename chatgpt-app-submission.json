@@ -106,6 +106,34 @@
         "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call has no additional effect."
       }
     },
+    "export_report": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it lays out the posts, comments and listings it is passed as a report and returns it. Nothing is stored or sent.",
+        "open_world_justification": "Closed domain. It makes no request at all; it formats what the caller passes.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Idempotent: the same sections produce the same report, under the same URI."
+      }
+    },
+    "measure_audience_overlap": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it fetches two creators' recent posts and the comments on them, and compares who commented. Nothing is written.",
+        "open_world_justification": "Reaches the public internet: nooticr's API fetches from third-party social networks, so the result depends on live data outside this server and cannot be predicted from the arguments alone.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Not idempotent: every call is charged again (2 nooticr credits per post list plus 2 per post opened), and it fetches live data that can change between calls."
+      }
+    },
     "answer_my_audience": {
       "annotations": {
         "readOnlyHint": true,
@@ -1308,6 +1336,20 @@
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API — no third-party network is contacted and no public content is fetched.",
         "destructive_justification": "Destructive: it halts a recurring watch. Nothing further is charged and the due run does not happen, which is deliberate — a user out of credits is exactly the user who needs to turn off what is spending them.",
         "idempotent_justification": "Idempotent: stopping a watch that is already stopped changes nothing."
+      }
+    },
+    "set_brand_watch_alerts": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it changes whether a scheduled watch alerts by email or Slack, and how many new items a run must find first.",
+        "open_world_justification": "Closed domain. It edits one row of the caller's own nooticr workspace over nooticr's API; it takes no address or URL, and nothing is fetched when it runs.",
+        "destructive_justification": "Not destructive: it flips three settings that can be flipped back, and every run's note is still kept in the watch's thread.",
+        "idempotent_justification": "Idempotent: the same switches set twice leave the watch as the first call did."
       }
     },
     "update_watch_portfolio": {

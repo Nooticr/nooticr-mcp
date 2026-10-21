@@ -46,6 +46,8 @@ const NOT_READ_ONLY = [
   "stop_brand_watch",
   // Rewrites a portfolio watch's stored terms.
   "update_watch_portfolio",
+  // Turns a watch's email/Slack alerts on or off (#103).
+  "set_brand_watch_alerts",
   // Saves the generated plan. Its siblings draft_post, generate_captions and
   // growth_brief spend the same plan AI credits but store nothing, so they are
   // read-only (#259): spending credits is billing, not a change to the user's data.
@@ -128,7 +130,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(141);
+    expect(tools).toHaveLength(144);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -174,6 +176,8 @@ describe("tool annotations", () => {
       "draft_post",
       // Holds the caller's own draft up to a rubric; makes no request at all.
       "evaluate_social_draft",
+      // Lays out what the caller passes as a report; makes no request (#90).
+      "export_report",
       // AI employees: stored rows inside nooticr. approve_action is absent on
       // purpose: running the action reaches a public platform.
       "fire_employee",
@@ -219,6 +223,8 @@ describe("tool annotations", () => {
       "reject_action",
       "review_post",
       "save_creator_identity",
+      // A watch's alert switches; the destinations are already set up (#103).
+      "set_brand_watch_alerts",
       // The show_* family: each draws what the caller already wrote/fetched
       // and reaches nothing. Sorted, so the renames in #45 moved two of them.
       //

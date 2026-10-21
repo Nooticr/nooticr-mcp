@@ -361,6 +361,26 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
       },
     ],
   },
+  export_report: { label: "Laying out the report", kind: "text", n: 1, steps: [], free: true },
+  measure_audience_overlap: {
+    label: "Comparing who comments",
+    kind: "list",
+    n: 2,
+    steps: [step("get_user_posts"), step("get_user_posts")],
+    perUnit: [
+      {
+        via: "get_post_comments",
+        label: "Opening a post",
+        detail: "reading who commented under it",
+        credits: BACKEND_CALL_CREDITS.get_post_comments,
+        arg: "postsPerCreator",
+        per: { arg: "usernames", defaultCount: 2 },
+        defaultCount: 3,
+        min: 1,
+        max: 8,
+      },
+    ],
+  },
   track_creator: {
     label: "Reading what they shipped",
     kind: "strip",
@@ -616,6 +636,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   sheets_add_sheet: { label: "Adding a tab to the spreadsheet", kind: "text", n: 1, steps: [], free: true },
   list_brand_watches: { label: "Reading your watches", kind: "list", n: 3, steps: [], free: true },
   stop_brand_watch: { label: "Stopping the watch", kind: "text", n: 1, steps: [], free: true },
+  set_brand_watch_alerts: { label: "Updating the watch's alerts", kind: "text", n: 1, steps: [], free: true },
   update_watch_portfolio: { label: "Updating the portfolio", kind: "text", n: 1, steps: [], free: true },
 
   // ─── AI employees (employees.ts): managing one is free; its runs are billed when they happen ───

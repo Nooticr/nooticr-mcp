@@ -113,6 +113,7 @@ export const CAPABILITIES: Readonly<Record<string, Capability>> = {
       "content_ideas_from_audience",
       "benchmark_post",
       "answer_my_audience",
+      "measure_audience_overlap",
     ],
   },
   creatorSearch: {

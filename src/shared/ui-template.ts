@@ -3903,6 +3903,50 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
         +"baseline is itself moving — that needs a second point in time."});
   }
 
+  // ─── Audience overlap (measure_audience_overlap, #31) ───
+  // Both directions side by side, because they answer different questions and
+  // differ whenever the two sets differ in size; then the shared commenters,
+  // who are the evidence the percentage rests on. The footer says what the
+  // sample is: commenters on a few posts, never followers.
+  function renderOverlap(d){
+    var cr=Array.isArray(d.creators)?d.creators:[];
+    var a=cr[0]||{},b=cr[1]||{};
+    var an="@"+String(a.username||""),bn="@"+String(b.username||"");
+    var pct=function(v){return v==null?"–":(Math.round(Number(v)*1000)/10)+"%";};
+    var dirs=(Array.isArray(d.overlap)?d.overlap:[]).map(function(o){
+      return '<tr><td class="nt-feeds-st-who"><div class="nt-feeds-st-id"><b>@'+esc(String(o.from||""))+"</b>"
+        +'<span class="nt-feeds-muted">also under @'+esc(String(o.to||""))+"</span></div></td>"
+        +'<td class="is-num" data-label="Commenters">'+esc(grouped(o.commenters||0))+"</td>"
+        +'<td class="is-num" data-label="Under both">'+esc(grouped(o.alsoUnderOther||0))+"</td>"
+        +'<td class="is-num" data-label="Share">'+pct(o.share)+"</td></tr>";
+    }).join("");
+    var shared=Array.isArray(d.shared)?d.shared:[];
+    // The phone layout stacks each cell under its label, three to a row; a
+    // long handle as a label runs into the next one.
+    var short=function(h){return h.length>13?h.slice(0,12)+"…":h;};
+    var al=short(an),bl=short(bn);
+    var rows=shared.slice(0,50).map(function(s){
+      return '<tr data-overlap-user="'+esc(String(s.username||""))+'"><td class="nt-feeds-st-who"><b>@'+esc(String(s.username||""))+"</b></td>"
+        +'<td class="is-num" data-label="'+esc(al)+'">'+esc(grouped(s.commentsUnderFirst||0))+"</td>"
+        +'<td class="is-num" data-label="'+esc(bl)+'">'+esc(grouped(s.commentsUnderSecond||0))+"</td></tr>";
+    }).join("");
+    var meta=(d.platform?glyph(d.platform,12)+" "+esc(pTitle(d.platform))+" · ":"")
+      +esc(plural(Number(a.postsOpened)||0,"post"))+" of "+esc(an)+" · "+esc(plural(Number(b.postsOpened)||0,"post"))+" of "+esc(bn);
+    var body='<div class="nt-feeds-st-wrap"><div class="nt-table-wrap"><table class="nt-table nt-feeds-st nt-overlap-dirs">'
+      +'<thead><tr><th>Direction</th><th class="is-num">Commenters</th><th class="is-num">Under both</th><th class="is-num">Share</th></tr></thead>'
+      +"<tbody>"+dirs+"</tbody></table></div></div>"
+      +(d.thinSample?'<p class="nt-feeds-lede">'+badge("warning",ic("triangle-alert",12)+"Thin sample")+" One side has too few commenters for the share to mean much.</p>":"")
+      +(shared.length
+        ?'<div class="nt-feeds-st-wrap"><div class="nt-table-wrap"><table class="nt-table nt-feeds-st nt-overlap-shared">'
+          +'<thead><tr><th>Commented under both</th><th class="is-num">'+esc(an)+'</th><th class="is-num">'+esc(bn)+"</th></tr></thead>"
+          +"<tbody>"+rows+"</tbody></table></div></div>"
+          +(shared.length>50?'<p class="nt-feeds-lede">and '+esc(grouped(shared.length-50))+" more.</p>":"")
+        :'<div class="nt-signals-pad">'+emptyState("users","Nobody commented under both","These samples did not meet; that is not proof the audiences are separate.")+"</div>");
+    return viewShell({icon:"users",title:"Audience overlap · "+esc(an)+" × "+esc(bn),meta:meta,cls:"nt-feeds-standings nt-overlap",body:body,
+      footer:"Measured on people who commented on these posts, not followers. A large account’s commenters are a thin slice "
+        +"of its audience, so a low share says these samples did not meet, not that the audiences are separate."});
+  }
+
   // ─── Transcript (get_post_transcript / generate_captions) ───
   // Timed when the track carried timings, plain otherwise, and a switch
   // between the two. Copy copies what is on screen. A cue from
@@ -5248,6 +5292,10 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     // sends, so a real create_product fell through to the raw-JSON branch.
     if(d.appId!==undefined&&d.slug!==undefined){
       app.innerHTML=renderProduct(d);setTimeout(reportSize,50);return;}
+
+    // Audience overlap (#31). Before the creator and single-post branches
+    // below, which its creators array and platform field would otherwise match.
+    if(d.tool==="measure_audience_overlap"&&Array.isArray(d.overlap)){app.innerHTML=renderOverlap(d);setTimeout(reportSize,50);return;}
 
     // Analysis
     if(d.analysis&&(d.post||d.url)){app.innerHTML=analysisCard(d);return;}

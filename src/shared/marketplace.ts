@@ -39,6 +39,7 @@ import { OUTPUT_SCHEMAS } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { withEvidence } from "./evidence-digest.js";
 import { confirmSpend, declinedResult } from "./spend.js";
+import { REPORT_POINTER } from "./report.js";
 import {
   allReviews,
   categoryGuidance,
@@ -315,7 +316,7 @@ export function marketplaceResult(payload: Record<string, unknown>, m: Market, f
     // show_amazon_category_insights would have it draw a Lazada scan as an
     // Amazon one.
     insightsTool: "show_marketplace_category_insights",
-  });
+  }) + (payload.complete !== false && products.length ? `\n\n${REPORT_POINTER}` : "");
 
   const structuredPayload = {
     guidance,

@@ -63,6 +63,7 @@ NO_APP = {
     "create_brand_watch",
     "stop_brand_watch",
     "update_watch_portfolio",
+    "set_brand_watch_alerts",  # a confirmation of three switches, like stop_brand_watch
     "list_brand_watches",
     "list_own_apps",
     # Creative assets (creative.ts): the asset list would be a gallery and the job a status

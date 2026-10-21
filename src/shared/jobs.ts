@@ -514,9 +514,9 @@ function collabGuidance(a: { niche: string; found: number; seed?: string; platfo
       "comment under both accounts — is the signal that would decide this, and it is not here: " +
       "it needs a post list and several comment fetches per candidate, which is roughly nine " +
       "credits each and around eighty for a shortlist this size. That is a decision for the user " +
-      "to make, not one to make silently on their behalf. For a finalist or two, " +
-      "answer_my_audience on each account returns commenters with their handles, and the " +
-      "intersection is the overlap; say so rather than guessing at it.",
+      "to make, not one to make silently on their behalf. For a finalist or two, offer " +
+      "measure_audience_overlap with the finalist and the user's own handle: it reads both " +
+      "accounts' commenters and returns the intersection; say so rather than guessing at it.",
     "",
     "Do not rank on follower count alone. A creator ten times the user's size is a different " +
       "conversation from a peer, and both can be right depending on what they want — say which " +
@@ -790,6 +790,75 @@ function spokenMentionGuidance(a: {
   return lines.join("\n");
 }
 
+/** Fewer distinct commenters than this on either side and a ratio says more about the sample than the audience. */
+export const OVERLAP_THIN_SAMPLE = 20;
+
+/** How many shared commenters the guidance names by handle; the rest are in `shared`. */
+const OVERLAP_NAMED = 25;
+
+/**
+ * measure_audience_overlap's guidance (#31). The shared handles are named in
+ * the text, not only in the payload: a host that shows the model only text
+ * blocks would otherwise be told "7 commented under both" and never see who.
+ */
+export function overlapGuidance(a: {
+  handles: string[];
+  platform: string;
+  sizes: number[];
+  opened: number[];
+  shared: Array<{ username: string; commentsUnderFirst: number; commentsUnderSecond: number }>;
+  overlap: Array<{ share: number | null }>;
+  thin: boolean;
+  failed: number;
+}): string {
+  const [x, y] = a.handles.map((h) => `@${h}`);
+  const pct = (v: number | null) => (v === null ? "n/a" : `${Math.round(v * 1000) / 10}%`);
+  const lines = [
+    `${x} and ${y} on ${a.platform}: ${a.sizes[0]} people commented under ${x}'s ${a.opened[0]} most recent ` +
+      `post${a.opened[0] === 1 ? "" : "s"} and ${a.sizes[1]} under ${y}'s ${a.opened[1]}; ` +
+      `${a.shared.length} commented under both — ${pct(a.overlap[0].share)} of ${x}'s commenters and ` +
+      `${pct(a.overlap[1].share)} of ${y}'s.`,
+  ];
+  if (a.shared.length) {
+    const named = a.shared.slice(0, OVERLAP_NAMED).map(
+      (s) => `@${s.username} (${s.commentsUnderFirst} under ${x}, ${s.commentsUnderSecond} under ${y})`,
+    );
+    const more = a.shared.length - named.length;
+    lines.push("", `Commented under both, most active first: ${named.join("; ")}${more > 0 ? `; and ${more} more in \`shared\`` : ""}.`);
+    lines.push(
+      "Read those handles before reading the number: a brand account, a giveaway bot, or either creator's " +
+        "own team commenting under both inflates the overlap without saying anything about the audience. " +
+        "Say so if you see one.",
+    );
+  }
+  lines.push(
+    "",
+    "What this measures: people who commented on a few recent posts, not followers. A large account's " +
+      "commenters are a thin slice of its audience and a few posts are a thin slice of its commenters, so a " +
+      "low overlap says these samples did not meet, not that the audiences are separate. Say what the " +
+      "coverage cannot reach rather than inferring past it. The two directions differ because the sets " +
+      "differ in size: quote the one that answers the user's question (will working with them reach " +
+      "people who do not already follow us, or the reverse).",
+  );
+  if (a.thin) {
+    lines.push(
+      "",
+      `At least one side has fewer than ${OVERLAP_THIN_SAMPLE} distinct commenters, which is too few for ` +
+        "the percentage to mean much; report the counts, and offer to open more posts (postsPerCreator) " +
+        "if the decision depends on it.",
+    );
+  }
+  if (a.failed) {
+    lines.push(
+      "",
+      `${a.failed} fetch${a.failed === 1 ? "" : "es"} failed and ${a.failed === 1 ? "is" : "are"} listed under ` +
+        "`unavailable`; the sets above are smaller than asked for by that much.",
+    );
+  }
+  lines.push("", ownIt);
+  return lines.join("\n");
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Registration
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1037,6 +1106,169 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         byCategory: { wants_a_reply: flagged, unclear: totalComments - flagged },
         threads,
         posts: threads.map((t) => t.post as Row),
+        unavailable,
+        creditsCharged: spend.credits,
+        mcpCredits: spend.payload,
+      });
+    },
+  );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 1b. measure_audience_overlap (#31)
+  //
+  // The signal show_collab_shortlist and find_collaborators name and price but
+  // could not measure: whether two accounts are talking to the same people.
+  // Comment authorship is the only overlap signal the backend can reach
+  // (follower lists are fetched nowhere), so this measures engaged commenters
+  // on a few recent posts, and says so in both channels.
+  // ───────────────────────────────────────────────────────────────────────────
+  server.registerTool(
+    "measure_audience_overlap",
+    {
+      title: "Measure Audience Overlap",
+      _meta: viewMeta("measure_audience_overlap"),
+      description:
+        "Whether two accounts on one network reach the same people: reads the commenters under each " +
+        "one's recent posts and returns both sets' sizes, the commenters who appear under both, and " +
+        "the overlap in each direction (the share of A's commenters also under B is a different " +
+        "number from the share of B's also under A). It measures engaged commenters on a few posts, " +
+        "not followers. Pass two handles, or one plus your own. Costs 4 nooticr credits for the two " +
+        "post lists plus 2 per post opened — 16 credits at the default of 3 posts each; " +
+        "postsPerCreator is the price. Use when deciding between one or two finalists of a collaboration " +
+        "shortlist, before approaching them.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      outputSchema: OUTPUT_SCHEMAS.measure_audience_overlap,
+      inputSchema: z
+        .object({
+          usernames: z
+            .array(z.string().min(1))
+            .length(2)
+            .describe("The two handles to compare, with or without @, on the same network."),
+          platform: z.string().optional().describe(PLATFORM_ARG),
+          postsPerCreator: z
+            .number()
+            .int()
+            .optional()
+            .describe("Recent posts to open per account (default 3, max 8). Each one is a comment fetch, so this is the price."),
+          commentsPerPost: z.number().int().optional().describe("Comments to read per post (default 50, max 50)."),
+        })
+        .strict(),
+    },
+    async (
+      args: { usernames: string[]; platform?: string; postsPerCreator?: number; commentsPerPost?: number },
+      extra,
+    ) => {
+      const client = await makeClient({ ...extra, arguments: args });
+      const handles = args.usernames.map(normaliseHandle);
+      const platform = (args.platform || "tiktok").toLowerCase();
+      if (!handles[0] || handles[0] === handles[1]) {
+        return failed("measure_audience_overlap", "pass two different handles; nothing was fetched or charged.");
+      }
+      const cap = clamp(args.postsPerCreator, 3, 1, 8);
+      const perPost = clamp(args.commentsPerPost, 50, 1, 50);
+      const spend = new Spend();
+      const unavailable: Row[] = [];
+
+      // The two post lists first (4 credits, under the threshold), so the
+      // confirmation names the real number of posts rather than the cap.
+      const feeds: Row[][] = [];
+      for (const handle of handles) {
+        try {
+          const res = await client.callTool("get_user_posts", { username: handle, platform, limit: cap });
+          const structured = structuredOf(res);
+          spend.record("get_user_posts", structured);
+          feeds.push(rowsOf(structured.posts).slice(0, cap));
+        } catch (err) {
+          spend.attempted("get_user_posts");
+          unavailable.push({ username: handle, url: null, reason: reason(err) });
+          feeds.push([]);
+        }
+      }
+      const toOpen = feeds.map((posts) =>
+        posts.map((p) => String(p.externalUrl ?? p.url ?? "")).filter((u) => u.length > 0),
+      );
+      if (!toOpen[0].length || !toOpen[1].length) {
+        const missing = handles.filter((_, i) => !toOpen[i].length).map((h) => `@${h}`).join(" and ");
+        const guidance =
+          `No overlap could be measured: ${missing} had no recent posts on ${platform} to read commenters from. ` +
+          "Only the post lists were fetched, so no comments were charged. Check the handle and the network " +
+          "rather than reading this as no overlap.";
+        return evidence(guidance, {
+          mode: "evidence",
+          tool: "measure_audience_overlap",
+          measures: "engaged_commenters",
+          platform,
+          creators: handles.map((h, i) => ({ username: h, postsOpened: 0, comments: 0, commenters: 0, postsFound: feeds[i].length })),
+          shared: [],
+          sharedCount: 0,
+          overlap: [],
+          unavailable,
+          creditsCharged: spend.credits,
+          mcpCredits: spend.payload,
+        });
+      }
+
+      const opening = toOpen[0].length + toOpen[1].length;
+      const fanOut = costOf(Array.from({ length: opening }, () => "get_post_comments"));
+      const decision = await confirmSpend(server.server, {
+        credits: fanOut,
+        summary: `Read the commenters on ${opening} recent posts by @${handles[0]} and @${handles[1]}.`,
+        cheaper: 'Lower "postsPerCreator" to open fewer posts.',
+      });
+      if (!decision.proceed) {
+        return declinedResult(fanOut, `Reading ${opening} posts' commenters`, 'Lower "postsPerCreator" to open fewer posts.');
+      }
+
+      // username -> comments left, per side. The two accounts themselves are
+      // left out: a creator replying under their own post is not audience.
+      const sides: Array<Map<string, number>> = [new Map(), new Map()];
+      const comments = [0, 0];
+      const opened = [0, 0];
+      for (const side of [0, 1]) {
+        for (const url of toOpen[side]) {
+          try {
+            const res = await client.callTool("get_post_comments", { url, limit: perPost });
+            const structured = structuredOf(res);
+            spend.record("get_post_comments", structured);
+            opened[side] += 1;
+            for (const c of rowsOf(structured.comments)) {
+              const who = normaliseHandle(String(c.author ?? c.username ?? ""));
+              if (!who || handles.includes(who)) continue;
+              comments[side] += 1;
+              sides[side].set(who, (sides[side].get(who) ?? 0) + 1);
+            }
+          } catch (err) {
+            spend.attempted("get_post_comments");
+            unavailable.push({ username: handles[side], url, reason: reason(err) });
+          }
+        }
+      }
+
+      const shared = [...sides[0].keys()]
+        .filter((u) => sides[1].has(u))
+        .map((u) => ({ username: u, commentsUnderFirst: sides[0].get(u) ?? 0, commentsUnderSecond: sides[1].get(u) ?? 0 }))
+        .sort((a, b) => b.commentsUnderFirst + b.commentsUnderSecond - (a.commentsUnderFirst + a.commentsUnderSecond) || a.username.localeCompare(b.username));
+      const sizes = [sides[0].size, sides[1].size];
+      const share = (n: number) => (n > 0 ? Math.round((shared.length / n) * 1000) / 1000 : null);
+      const overlap = [
+        { from: handles[0], to: handles[1], commenters: sizes[0], alsoUnderOther: shared.length, share: share(sizes[0]) },
+        { from: handles[1], to: handles[0], commenters: sizes[1], alsoUnderOther: shared.length, share: share(sizes[1]) },
+      ];
+      const thin = sizes.some((n) => n < OVERLAP_THIN_SAMPLE);
+      const guidance = overlapGuidance({ handles, platform, sizes, opened, shared, overlap, thin, failed: unavailable.length });
+      return evidence(guidance, {
+        mode: "evidence",
+        tool: "measure_audience_overlap",
+        evidenceFrom: ["get_user_posts", "get_post_comments"],
+        // Stated in the payload as well as the prose: a view or a model that
+        // reads `share` as "of their audience" overstates it.
+        measures: "engaged_commenters",
+        platform,
+        creators: handles.map((h, i) => ({ username: h, postsOpened: opened[i], comments: comments[i], commenters: sizes[i] })),
+        shared,
+        sharedCount: shared.length,
+        overlap,
+        thinSample: thin,
         unavailable,
         creditsCharged: spend.credits,
         mcpCredits: spend.payload,
@@ -1473,8 +1705,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
         "Not searchable here: youtube, douyin, twitter, reddit, linkedin — if the ask names one of those, " +
         "say it cannot be searched rather than quietly substituting a network that can. " +
         "It does NOT measure audience " +
-        "overlap: proving the same people comment under two accounts costs roughly nine credits " +
-        "per candidate, so the result says so and tells you how to check a finalist yourself. " +
+        "overlap: proving the same people comment under two accounts costs roughly eight credits " +
+        "per candidate, so the result says so and points at measure_audience_overlap for a finalist. " +
         "Consumes 2 nooticr credits, or 4 with a seed creator. Use to build a list to vet; " +
         "get_similar_creators is the raw lookalike call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
@@ -1612,8 +1844,8 @@ export function registerJobTools(server: McpServer, makeClient: MakeClient, stor
               `credits each, roughly ${creators.length * 9} for this shortlist — so it is the ` +
               "user's call, not a silent charge.",
             howTo:
-              "For one or two finalists, call answer_my_audience on each account and intersect " +
-              "the commenter handles. That is the real signal, measured rather than guessed.",
+              "For one or two finalists, call measure_audience_overlap with the finalist and the " +
+              "user's own handle. That is the real signal, measured rather than guessed.",
           },
           unavailable,
           creditsCharged: spend.credits,

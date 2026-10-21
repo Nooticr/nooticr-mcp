@@ -2628,3 +2628,63 @@ test("a view with unchecked rows says so, and a checked one stays quiet", async 
   });
   await expect(page.locator('[data-verification="unverified"]')).toHaveCount(0);
 });
+
+// #31: measure_audience_overlap draws both directions and the shared
+// commenters, not the creator gallery its `creators` array would otherwise hit.
+test("an audience overlap draws both directions and who commented under both", async ({ page }) => {
+  await renderTemplate(page, {
+    mode: "evidence", tool: "measure_audience_overlap", measures: "engaged_commenters", platform: "tiktok",
+    creators: [
+      { username: "lena.mornings", postsOpened: 3, comments: 120, commenters: 80 },
+      { username: "brewlab", postsOpened: 3, comments: 60, commenters: 40 },
+    ],
+    shared: [
+      { username: "priya_makes", commentsUnderFirst: 3, commentsUnderSecond: 1 },
+      { username: "sam.h", commentsUnderFirst: 1, commentsUnderSecond: 2 },
+    ],
+    sharedCount: 2,
+    overlap: [
+      { from: "lena.mornings", to: "brewlab", commenters: 80, alsoUnderOther: 2, share: 0.025 },
+      { from: "brewlab", to: "lena.mornings", commenters: 40, alsoUnderOther: 2, share: 0.05 },
+    ],
+    thinSample: false,
+  });
+  await expect(page.locator(".nt-view-title")).toContainText("@lena.mornings × @brewlab");
+  await expect(page.locator(".nt-overlap-dirs tbody tr")).toHaveCount(2);
+  await expect(page.locator(".nt-overlap-dirs")).toContainText("2.5%");
+  await expect(page.locator(".nt-overlap-dirs")).toContainText("5%");
+  await expect(page.locator("[data-overlap-user]")).toHaveCount(2);
+  await expect(page.locator(".nt-view-foot")).toContainText("not followers");
+  await expect(page.locator("body")).not.toContainText("Thin sample");
+
+  await renderTemplate(page, {
+    tool: "measure_audience_overlap", platform: "tiktok", thinSample: true,
+    creators: [{ username: "a", postsOpened: 1, commenters: 3 }, { username: "b", postsOpened: 1, commenters: 2 }],
+    shared: [], sharedCount: 0,
+    overlap: [{ from: "a", to: "b", commenters: 3, alsoUnderOther: 0, share: 0 }, { from: "b", to: "a", commenters: 2, alsoUnderOther: 0, share: 0 }],
+  });
+  await expect(page.locator("body")).toContainText("Nobody commented under both");
+  await expect(page.locator("body")).toContainText("Thin sample");
+});
+
+// #90: export_report's view draws the same report the tool hands the model.
+test("an exported report draws its cards, escaped, in the view", async ({ page }) => {
+  const { buildReport } = await import("../../src/shared/report.js");
+  const report = buildReport({
+    title: "Morning routines",
+    summary: "- One habit per post.",
+    sections: [
+      { kind: "posts", items: [{ platform: "tiktok", caption: "<b>not bold</b>", creatorHandle: "lena", externalUrl: "https://www.tiktok.com/@lena/video/1", views: 15400 }] },
+      { kind: "comments", items: [{ text: "does this work with kids", author: "sam.h", likes: 47 }] },
+    ],
+  });
+  await renderTemplate(page, { tool: "export_report", reportUri: report.uri, html: report.html, markdown: report.markdown, _html: report.fragment });
+  await expect(page.locator(".nt-report h1")).toHaveText("Morning routines");
+  await expect(page.locator(".nt-report-post")).toHaveCount(1);
+  await expect(page.locator(".nt-report-post")).toContainText("<b>not bold</b>");
+  await expect(page.locator(".nt-report-post b", { hasText: "not bold" })).toHaveCount(0);
+  await expect(page.locator(".nt-report-comment")).toContainText("@sam.h");
+  await expect(page.locator(".nt-report-list li")).toHaveCount(1);
+  const listStyle = await page.locator(".nt-report-list").evaluate((el) => getComputedStyle(el).listStyleType);
+  expect(listStyle).toBe("disc");
+});

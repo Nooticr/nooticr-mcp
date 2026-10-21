@@ -7,7 +7,8 @@
  * The paid creative tools register here when they ship. The ElevenLabs half (CR2):
  * `creative_voices_search` is free; `creative_voiceover`, `creative_sfx` and `creative_music` are paid.
  * `creative_image` and `creative_image_edit` (CR3) and `creative_video` (CR4) are paid. All paid tools use the server's
- * quote-then-confirm handshake. `creative_test_render` is a server test fixture and is never registered.
+ * quote-then-confirm handshake. `creative_test_render` is a server test fixture and is never registered;
+ * `creative_allowance_status` is backend-only (see backend-only.ts). `creative_upscale` has no server handler yet.
  * Neither tool has a view yet: the asset list would be a gallery, which the
  * design system has no card for.
  */
