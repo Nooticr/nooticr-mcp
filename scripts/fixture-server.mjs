@@ -1630,17 +1630,33 @@ function handleMcpCall(name, args, workspaceId) {
       return { content: [{ type: "text", text: "2 audit events." }], structuredContent: sc };
     }
     case "hire_employee": {
-      // A subscription hire's confirm (nooticr-server BM3) answers with a Stripe
-      // Checkout link meant for the dashboard; the edge must drop it.
-      if (args?.confirm === true && args?.confirmationToken === "fixture-subscription-token") {
+      // A subscription hire (nooticr-server BM3, asked for here with a `level`):
+      // the server mints a hireId whenever none is sent and binds the token to
+      // it, so a confirm that does not send the quote's hireId back is quoted
+      // again under a new id (#281).
+      if (args?.level !== undefined || args?.hireId !== undefined) {
+        const hireId = args.hireId ?? randomUUID();
+        // The confirm answers with a Stripe Checkout link meant for the
+        // dashboard; the edge must drop it.
+        if (args.confirm === true && args.confirmationToken === `fixture-subscription-token:${hireId}`) {
+          return {
+            content: [{ type: "text", text: "Hired; pay at https://checkout.stripe.com/c/pay/cs_fixture" }],
+            structuredContent: {
+              created: true, hireId, billingState: "awaiting_payment",
+              checkoutUrl: "https://checkout.stripe.com/c/pay/cs_fixture",
+              checkoutExpiresAt: "2026-10-20T09:00:00Z",
+              employee: { id: hireId, name: "Maya", status: "paused", billingState: "awaiting_payment" },
+              instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+            },
+          };
+        }
         return {
-          content: [{ type: "text", text: "Hired; pay at https://checkout.stripe.com/c/pay/cs_fixture" }],
+          content: [{ type: "text", text: "Quote ready; confirm to hire." }],
           structuredContent: {
-            created: true, hireId: "00000000-0000-0000-0000-0000000000a7", billingState: "awaiting_payment",
-            checkoutUrl: "https://checkout.stripe.com/c/pay/cs_fixture",
-            checkoutExpiresAt: "2026-10-20T09:00:00Z",
-            employee: { id: "00000000-0000-0000-0000-0000000000a7", name: "Maya", status: "paused", billingState: "awaiting_payment" },
-            instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+            created: false, requiresConfirmation: true, confirmationToken: `fixture-subscription-token:${hireId}`,
+            expiresInSeconds: 900, hireId,
+            quote: { template: args.template, level: args.level ?? "base", price: { amountMinor: 4900, currency: args.currency ?? "usd", interval: "month", display: args.currency === "eur" ? "49 €" : "$49" } },
+            instructions: "Nothing has been created and nothing charged. Call again with confirm: true, this confirmationToken and this hireId only if they explicitly agree.",
           },
         };
       }

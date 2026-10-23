@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { FINISH_ON_DASHBOARD, registerEmployeeTools } from "../src/shared/employees.js";
+import { FINISH_ON_DASHBOARD, HIRE_ID_RULE, registerEmployeeTools } from "../src/shared/employees.js";
 
 const NAMES = [
   "hire_employee",
@@ -155,6 +155,81 @@ describe("employee tools", () => {
     expect(sc).not.toHaveProperty("checkoutExpiresAt");
     expect(sc.instructions).toBe(FINISH_ON_DASHBOARD);
     expect(JSON.stringify(res)).not.toContain("stripe.com");
+  });
+
+  // nooticr-server mints a hireId whenever none is sent and binds the
+  // subscription quote's token to it (employees/billing.rs), so the confirm
+  // has to carry the quote's hireId back or it is quoted again forever (#281).
+  // The stub below does what the server does.
+  it("round-trips the quote's hireId into the confirm (#281)", async () => {
+    const calls: Record<string, unknown>[] = [];
+    let minted = 0;
+    const stub = {
+      callTool: async (_name: string, args: Record<string, unknown>) => {
+        calls.push(args);
+        const hireId = (args.hireId as string | undefined) ?? `00000000-0000-4000-8000-00000000000${++minted}`;
+        if (args.confirm === true && args.confirmationToken === `tok:${hireId}:${args.level}:${args.currency}`) {
+          return { contentBlocks: [], structured: { created: true, hireId, billingState: "awaiting_payment" } };
+        }
+        return {
+          contentBlocks: [{ type: "text", text: "Quote ready." }],
+          structured: {
+            created: false,
+            requiresConfirmation: true,
+            confirmationToken: `tok:${hireId}:${args.level}:${args.currency}`,
+            hireId,
+            quote: { level: args.level, currency: args.currency },
+            instructions: "Call again with confirm: true, this confirmationToken and this hireId only if they explicitly agree.",
+          },
+        };
+      },
+    };
+    const server = new McpServer({ name: "t", version: "0" });
+    registerEmployeeTools(server, (() => stub) as never);
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "c", version: "0" });
+    await Promise.all([client.connect(a), server.connect(b)]);
+
+    const terms = { template: "social-media-manager", level: "plus", currency: "eur" };
+    const quote = await client.callTool({ name: "hire_employee", arguments: terms });
+    expect(quote.isError).toBeFalsy();
+    const q = quote.structuredContent as Record<string, string>;
+    expect(q.hireId).toBe("00000000-0000-4000-8000-000000000001");
+    // The id to send back is named in the guidance, in both channels.
+    expect(q.instructions).toContain(`hireId "${q.hireId}"`);
+    expect((quote.content as Array<{ text: string }>)[0].text).toContain(`hireId \\"${q.hireId}\\"`);
+
+    const confirmed = await client.callTool({
+      name: "hire_employee",
+      arguments: { ...terms, confirm: true, confirmationToken: q.confirmationToken, hireId: q.hireId },
+    });
+    expect(confirmed.isError).toBeFalsy();
+    expect(confirmed.structuredContent).toMatchObject({ created: true, hireId: q.hireId });
+    expect(calls[1]).toEqual({ ...terms, confirm: true, confirmationToken: q.confirmationToken, hireId: q.hireId });
+
+    // Without it, the server mints a new id and the token no longer matches.
+    const lost = await client.callTool({
+      name: "hire_employee",
+      arguments: { ...terms, confirm: true, confirmationToken: q.confirmationToken },
+    });
+    expect(lost.structuredContent).toMatchObject({ requiresConfirmation: true });
+    expect((lost.structuredContent as Record<string, string>).hireId).not.toBe(q.hireId);
+  });
+
+  it("tells the host to send the hireId back and checks level, currency and hireId", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const hire = tools.find((t) => t.name === "hire_employee")!;
+    expect(hire.description).toContain(HIRE_ID_RULE);
+    const props = hire.inputSchema.properties as Record<string, { enum?: string[] }>;
+    expect(props.level?.enum).toEqual(["base", "plus", "pro", "enterprise"]);
+    expect(props.currency?.enum).toEqual(["usd", "eur"]);
+    expect(props.hireId).toBeTruthy();
+    for (const bad of [{ currency: "gbp" }, { level: "gold" }, { hireId: "not-a-uuid" }]) {
+      const res = await client.callTool({ name: "hire_employee", arguments: { template: "t", ...bad } });
+      expect(res.isError, JSON.stringify(bad)).toBe(true);
+    }
+    expect(calls).toEqual([]);
   });
 
   it("leaves a result with no payment link untouched", async () => {

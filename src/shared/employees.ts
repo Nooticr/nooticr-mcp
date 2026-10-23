@@ -68,6 +68,37 @@ export const TWO_STEP_RULE =
   "user, and call again with confirm: true and the token only after the user explicitly agrees — " +
   "never confirm on the user's behalf.";
 
+/**
+ * A subscription hire's confirmation token is bound to the hireId the server
+ * minted for its quote, and the server mints a new one for any call that does
+ * not send it (nooticr-server employees/billing.rs). A confirm without the
+ * quote's hireId is therefore quoted again under a new id, and again after
+ * that, so the hire never happens (#281). A test pins this sentence.
+ */
+export const HIRE_ID_RULE =
+  "A subscription quote also returns a hireId: send it back unchanged with confirm: true and the " +
+  "confirmationToken, with the same template, level and currency, because the token is bound to " +
+  "that hireId and a confirm without it only gets a new quote.";
+
+/** nooticr-server's `Level::parse` and `plans::CURRENCIES`. */
+const HIRE_LEVELS = ["base", "plus", "pro", "enterprise"] as const;
+const HIRE_CURRENCIES = ["usd", "eur"] as const;
+
+/**
+ * A quote that carries a hireId, with that id named in its instructions. The
+ * server's own sentence says "this hireId"; naming the value as well puts the
+ * id the confirm needs in the same sentence that asks for it, in both channels.
+ */
+export function withHireIdToSendBack(proxy: McpProxyResult): McpProxyResult {
+  const structured = proxy.structured as Record<string, unknown> | undefined;
+  if (structured?.requiresConfirmation !== true || typeof structured.hireId !== "string") return proxy;
+  const sendBack =
+    `To confirm, send hireId "${structured.hireId}" back with confirm: true, this confirmationToken ` +
+    "and the same template, level and currency.";
+  const prior = typeof structured.instructions === "string" ? `${structured.instructions} ` : "";
+  return { ...proxy, structured: { ...structured, instructions: prior + sendBack } };
+}
+
 const confirm = z.boolean().optional();
 
 export function registerEmployeeTools(server: McpServer, makeClient: MakeClient): void {
@@ -89,6 +120,8 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
         "this workspace. Pass `template` and optionally name, instructions, products (the string all, or a list of product ids; appId is deprecated), schedule, " +
         "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify (channels, and recipients: hirer, admins or member user ids). " +
         TWO_STEP_RULE +
+        " " +
+        HIRE_ID_RULE +
         " Public actions (publish, email, reply, listing or price changes) wait for the user's " +
         "approval unless autopilot is turned on. The hiring user is billed for runs, up to the " +
         "monthly budget. No cost to call. Use when the user wants recurring work done on a schedule by an AI employee.",
@@ -117,6 +150,19 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           language: z.string().optional().describe("BCP-47 tag of the language the employee works and writes in, e.g. fr or pt-BR. Defaults to en. Ask the user rather than guess."),
           confirm,
           confirmationToken: z.string().optional().describe("Token returned in the quote."),
+          level: z
+            .enum(HIRE_LEVELS)
+            .optional()
+            .describe("Subscription hires only: the level to hire at; the lowest one on sale when left out."),
+          hireId: z
+            .string()
+            .uuid()
+            .optional()
+            .describe("Subscription hires only: the hireId the quote returned. Leave it out to get a quote; send it back unchanged with confirm: true. Retrying with the same hireId never hires twice."),
+          currency: z
+            .enum(HIRE_CURRENCIES)
+            .optional()
+            .describe("Subscription hires only: the currency to pay in, before the account's first payment; ignored once it is billed in one. Leave it out unless the user asks."),
         })
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.hire_employee,
@@ -124,7 +170,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
     async (args: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
       const client = await makeClient({ ...extra, arguments: args });
       try {
-        return toResult(withoutPurchaseLink(await client.callTool("hire_employee", args)));
+        return toResult(withHireIdToSendBack(withoutPurchaseLink(await client.callTool("hire_employee", args))));
       } catch (err) {
         return failed("hire_employee failed", err);
       }

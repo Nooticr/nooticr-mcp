@@ -2129,6 +2129,7 @@ export const OUTPUT_SCHEMAS = {
     created: scalar(),
     requiresConfirmation: scalar(),
     confirmationToken: scalar(),
+    hireId: scalar().describe("Subscription hires: send it back unchanged with confirm: true and the confirmationToken."),
     message: scalar(),
     instructions: scalar(),
     offer: anyObject().nullish(),
