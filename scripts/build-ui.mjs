@@ -20,8 +20,8 @@
  * the same reason the CSS is: the view is one self-contained file and a remote
  * <img> renders as nothing. They are generated rather than pasted because the
  * alternative is twenty kilobytes of path data maintained by hand in a file
- * nobody reads to the end, and because nooticr-server's copy of this template
- * is produced from the same assets (scripts/sync-rust-ui.cjs) — two
+ * nobody reads to the end, and because nooticr-server serves this same
+ * template, vendored from here by its own scripts/vendor-ui-template.mjs — two
  * hand-edited copies of a logo is how one of them ends up a version behind.
  */
 import { execFileSync } from "node:child_process";
