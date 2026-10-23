@@ -1465,6 +1465,8 @@ function handleMcpCall(name, args, workspaceId) {
             creditsPerDay: Math.round(costPerRun * runsPerDay * 100) / 100,
             budgetPerRun: args.budgetCredits ?? costPerRun,
             deliverTo: args.deliverTo ?? "fixture-user@example.com",
+            // The products the confirming call named, deduplicated, as the server ties them.
+            appIds: [...new Set([...(args.appId !== undefined ? [args.appId] : []), ...(args.appIds ?? [])])].sort((a, b) => a - b),
             firstRun: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
             message: `Watching for "${args.term}" on ${platforms.join(", ")}, ${cadence}.`,
           },
@@ -1630,17 +1632,33 @@ function handleMcpCall(name, args, workspaceId) {
       return { content: [{ type: "text", text: "2 audit events." }], structuredContent: sc };
     }
     case "hire_employee": {
-      // A subscription hire's confirm (nooticr-server BM3) answers with a Stripe
-      // Checkout link meant for the dashboard; the edge must drop it.
-      if (args?.confirm === true && args?.confirmationToken === "fixture-subscription-token") {
+      // A subscription hire (nooticr-server BM3, asked for here with a `level`):
+      // the server mints a hireId whenever none is sent and binds the token to
+      // it, so a confirm that does not send the quote's hireId back is quoted
+      // again under a new id (#281).
+      if (args?.level !== undefined || args?.hireId !== undefined) {
+        const hireId = args.hireId ?? randomUUID();
+        // The confirm answers with a Stripe Checkout link meant for the
+        // dashboard; the edge must drop it.
+        if (args.confirm === true && args.confirmationToken === `fixture-subscription-token:${hireId}`) {
+          return {
+            content: [{ type: "text", text: "Hired; pay at https://checkout.stripe.com/c/pay/cs_fixture" }],
+            structuredContent: {
+              created: true, hireId, billingState: "awaiting_payment",
+              checkoutUrl: "https://checkout.stripe.com/c/pay/cs_fixture",
+              checkoutExpiresAt: "2026-10-20T09:00:00Z",
+              employee: { id: hireId, name: "Maya", status: "paused", billingState: "awaiting_payment" },
+              instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+            },
+          };
+        }
         return {
-          content: [{ type: "text", text: "Hired; pay at https://checkout.stripe.com/c/pay/cs_fixture" }],
+          content: [{ type: "text", text: "Quote ready; confirm to hire." }],
           structuredContent: {
-            created: true, hireId: "00000000-0000-0000-0000-0000000000a7", billingState: "awaiting_payment",
-            checkoutUrl: "https://checkout.stripe.com/c/pay/cs_fixture",
-            checkoutExpiresAt: "2026-10-20T09:00:00Z",
-            employee: { id: "00000000-0000-0000-0000-0000000000a7", name: "Maya", status: "paused", billingState: "awaiting_payment" },
-            instructions: "Give the user this payment link. Nothing starts until payment is confirmed.",
+            created: false, requiresConfirmation: true, confirmationToken: `fixture-subscription-token:${hireId}`,
+            expiresInSeconds: 900, hireId,
+            quote: { template: args.template, level: args.level ?? "base", price: { amountMinor: 4900, currency: args.currency ?? "usd", interval: "month", display: args.currency === "eur" ? "49 €" : "$49" } },
+            instructions: "Nothing has been created and nothing charged. Call again with confirm: true, this confirmationToken and this hireId only if they explicitly agree.",
           },
         };
       }
@@ -1897,6 +1915,21 @@ function handleMcpCall(name, args, workspaceId) {
               "Set the brand voice (tone, do's and don'ts) in Settings, or pass guidance for this reply, then ask again. Nothing was charged.",
             data: { code: "no_brand_grounding" },
           },
+        };
+      }
+      // Several comments (nooticr-server #124): one written reply and token each.
+      if (Array.isArray(args?.commentIds)) {
+        const drafts = args.commentIds.map((commentId, i) => ({
+          draftId: `draft-fixture-${i + 1}`,
+          reply: "Thanks! The 600 ml one folds flat, so it fits a jacket pocket.",
+          rationale: "Answers the size question directly, in the brand's friendly, brief tone.",
+          comment: { commentId, author: "@hiker_jo", snippet: "does it fit a pocket?" },
+          status: "pending",
+          expiresInSeconds: 3600,
+          confirmationToken: `tok-fixture-${i + 1}`,
+        }));
+        return {
+          structuredContent: { drafts, skipped: [], mcpCredits: { cost: drafts.length, balance: 42 - drafts.length } },
         };
       }
       const written = !args?.text;

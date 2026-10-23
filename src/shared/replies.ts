@@ -61,6 +61,21 @@ function isNoBrandGrounding(err: unknown): boolean {
   return body?.code === "no_brand_grounding";
 }
 
+/**
+ * What is wrong with the comments a draft_comment_reply call names, if
+ * anything: one comment is `commentId` with its `postId`, several are
+ * `commentIds` (nooticr-server social_replies, #124), never both.
+ */
+function commentTargetProblem(args: Record<string, unknown>): string | null {
+  const one = args.commentId !== undefined;
+  const several = args.commentIds !== undefined;
+  if (one === several) {
+    return "Name the comment to answer: commentId with its postId for one, or commentIds for several, not both. Nothing was drafted or charged.";
+  }
+  if (one && args.postId === undefined) return "postId is required with commentId. Nothing was drafted or charged.";
+  return null;
+}
+
 export function registerReplyTools(server: McpServer, makeClient: MakeClient): void {
   server.registerTool(
     "list_comments_to_answer",
@@ -109,14 +124,25 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         "is refused, free, when there is no brand voice, no product and no guidance to write it from. " +
         "Replies may not contain links, " +
         "emails, phone numbers or @-mentions of anyone but the commenter. Returns a draftId and a " +
-        "confirmationToken: show the reply to the user first, then post it with post_comment_reply. Use when the user wants to answer one comment from list_comments_to_answer.",
+        "confirmationToken: show the reply to the user first, then post it with post_comment_reply. " +
+        "For several comments on one account, pass commentIds (up to 10) in place of commentId and " +
+        "postId: each gets its own written reply, at 1 nooticr credit per reply drafted, and the " +
+        "answer lists `drafts`, each with its own draftId and confirmationToken, and the `skipped` " +
+        "comments with why; text cannot be used then, and a postId given then must be the post " +
+        "every comment is on. Use when the user wants to answer one comment from list_comments_to_answer, or several.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       outputSchema: OUTPUT_SCHEMAS.draft_comment_reply,
       inputSchema: z
         .object({
           platform: platform.describe("The network the comment is on."),
-          commentId: z.string().describe("Comment id from list_comments_to_answer."),
-          postId: z.string().describe("Post id the comment is on."),
+          commentId: z.string().optional().describe("Comment id from list_comments_to_answer. Required with postId unless commentIds is given."),
+          postId: z.string().optional().describe("Post id the comment is on. Required with commentId; with commentIds, optional, and every comment must be on it."),
+          commentIds: z
+            .array(z.string())
+            .min(1)
+            .max(10)
+            .optional()
+            .describe("In place of commentId: up to 10 comment ids from list_comments_to_answer, each answered with its own written reply (1 credit per reply drafted). text cannot be used with it."),
           text: z.string().optional().describe("The reply to store, in the user's words. Omit to have one written (1 credit)."),
           influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."),
           account: z.union([z.number().int(), z.string()]).optional().describe("Connection id (`connectionId` from list_social_connections) when the profile has more than one account on the platform."),
@@ -126,6 +152,10 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         .strict(),
     },
     async (args: Record<string, unknown>, extra) => {
+      // The two shapes the server accepts, checked here so a call naming no
+      // comment, or both kinds, never reaches it. The rest is the server's.
+      const refusal = commentTargetProblem(args);
+      if (refusal) return { content: [{ type: "text" as const, text: refusal }], isError: true as const };
       const client = await makeClient({ ...extra, arguments: args });
       try {
         const proxy = await client.callTool("draft_comment_reply", args);

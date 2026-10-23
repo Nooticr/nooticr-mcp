@@ -1,7 +1,7 @@
 /**
  * Store connections (nooticr-server C1): get the link a workspace owner opens to
- * connect an Amazon seller account or a Shopify shop, and read that store's own
- * catalogue. Both are passthroughs to the server's `POST /mcp` dispatch; the
+ * connect an Amazon seller account, a Shopify shop or a WooCommerce store, and
+ * read that store's own catalogue (a PrestaShop store's too). Both are passthroughs to the server's `POST /mcp` dispatch; the
  * server owns the owner/admin check, the one-time link and the platform calls.
  *
  * The connected Amazon store's own scorecard (nooticr-server#1413) is here too:
@@ -40,7 +40,14 @@ function toResult(proxy: McpProxyResult) {
   return { content: [{ type: "text" as const, text }], structuredContent: structured };
 }
 
-const platform = z.enum(["amazon", "shopify"]);
+/**
+ * The platforms `list_store_products` reads (nooticr-server commerce `Platform`).
+ * `connect_store` takes every one but PrestaShop: that one connects with a
+ * webservice key, which the server refuses to take through a chat, so offering
+ * it here would only mint a refusal.
+ */
+const storePlatform = z.enum(["amazon", "shopify", "woocommerce", "prestashop"]);
+const connectPlatform = z.enum(["amazon", "shopify", "woocommerce"]);
 
 export function registerStoreReadTools(server: McpServer, makeClient: MakeClient): void {
   const passthrough = (name: string) => async (args: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
@@ -58,16 +65,19 @@ export function registerStoreReadTools(server: McpServer, makeClient: MakeClient
       title: "Connect Store",
       description:
         "Get a link a workspace owner or admin opens to connect an Amazon seller account " +
-        "(platform \"amazon\", optional region na/eu/fe) or a Shopify shop (platform \"shopify\", " +
-        "shop \"your-store.myshopify.com\"). Optionally appId ties the store to one product. The " +
-        "owner approves at Amazon or Shopify; nothing is connected until they do, and no " +
-        "credential passes through this tool. Nooticr only asks for access to listing copy and " +
-        "prices. Each call mints a fresh link. No cost to call. Use when the user wants to connect their Amazon or Shopify store.",
+        "(platform \"amazon\", optional region na/eu/fe), a Shopify shop (platform \"shopify\", " +
+        "shop \"your-store.myshopify.com\") or a WooCommerce store (platform \"woocommerce\", shop " +
+        "\"https://your-store.com\"). Optionally appId ties the store to one product. The owner " +
+        "approves at the store; nothing is connected until they do, and no credential passes " +
+        "through this tool. A PrestaShop store is connected in the dashboard's Settings with a key, " +
+        "never through chat. Nooticr writes only listing copy and prices; it also reads orders " +
+        "and stock on Shopify, and sales, traffic, account health and FBA stock on Amazon. " +
+        "Each call mints a fresh link. No cost to call. Use when the user wants to connect their Amazon, Shopify or WooCommerce store.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
-          platform: platform.describe("Which store platform to connect."),
-          shop: z.string().optional().describe("Shopify shop domain, e.g. your-store.myshopify.com."),
+          platform: connectPlatform.describe("Which store platform to connect. PrestaShop is connected in Settings, never here."),
+          shop: z.string().optional().describe("Shopify shop domain (your-store.myshopify.com), or the WooCommerce store's https address."),
           region: z.enum(["na", "eu", "fe"]).optional().describe("Amazon region; defaults to na."),
           appId: z.string().optional().describe("Product id to tie the store to."),
         })
@@ -84,22 +94,24 @@ export function registerStoreReadTools(server: McpServer, makeClient: MakeClient
       description:
         "Read the connected store's own catalogue: title, bullets, description, status, price, " +
         "currency and Amazon listing issues. connectionId is optional when one store is " +
-        "connected; with several, the answer lists them and asks you to choose. query (Amazon: " +
-        "exact SKU; Shopify: product search), limit (up to 50), cursor from nextCursor, " +
-        "productRef to read one product by SKU or GID, includeIssues, includePricing (Amazon). " +
+        "connected; with several, the answer lists them and asks you to choose. platform is amazon, " +
+        "shopify, woocommerce or prestashop. query (Amazon: exact SKU; Shopify: product search; " +
+        "WooCommerce, PrestaShop: words in the product name), limit (up to 50), cursor from " +
+        "nextCursor, productRef to read one product by Amazon SKU, Shopify GID or WooCommerce/" +
+        "PrestaShop product id, includeIssues, includePricing (Amazon). " +
         "For Amazon, source \"report\" reads the whole catalogue through a report: it answers " +
         "status in_progress with a reportId and poll arguments until done. Read-only. No cost to call. Use when the user asks about the products in their connected store.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       inputSchema: z
         .object({
           connectionId: z.string().optional().describe("Store connection id; optional when one store is connected."),
-          platform: platform.optional(),
-          query: z.string().optional().describe("Amazon: exact SKU. Shopify: product search query."),
+          platform: storePlatform.optional(),
+          query: z.string().optional().describe("Amazon: exact SKU. Shopify: product search query. WooCommerce, PrestaShop: words in the product name."),
           limit: z.number().int().min(1).max(50).optional(),
           cursor: z.string().optional().describe("nextCursor from the previous page."),
           includeIssues: z.boolean().optional(),
           includePricing: z.boolean().optional(),
-          productRef: z.string().optional().describe("Amazon SKU or Shopify product GID to read one product."),
+          productRef: z.string().optional().describe("Amazon SKU, Shopify product GID, or WooCommerce/PrestaShop product id, to read one product."),
           marketplaceId: z.string().optional().describe("Amazon marketplace id; defaults to the first."),
           source: z.enum(["live", "report"]).optional(),
           reportId: z.string().optional().describe("Report id from an in_progress answer."),
