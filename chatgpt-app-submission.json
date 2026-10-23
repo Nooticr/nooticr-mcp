@@ -282,7 +282,7 @@
         "idempotentHint": false
       },
       "justifications": {
-        "read_only_justification": "Not read-only: it mints a fresh one-time authorisation link. No store is connected until the owner approves at Amazon or Shopify, and no credential passes through this tool.",
+        "read_only_justification": "Not read-only: it mints a fresh one-time authorisation link. No store is connected until the owner approves at Amazon, Shopify or WooCommerce, and no credential passes through this tool.",
         "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace over nooticr's API; the store is contacted only when the owner opens the link.",
         "destructive_justification": "Not destructive: each call mints a new link rather than replacing a connection, and nothing is connected until the owner approves.",
         "idempotent_justification": "Not idempotent: each call mints a fresh store-authorisation link."
@@ -297,7 +297,7 @@
       },
       "justifications": {
         "read_only_justification": "Read-only: it reads the connected store's catalogue. Nothing is written to the store or to nooticr.",
-        "open_world_justification": "Reaches a third party: nooticr's API reads the merchant's Amazon or Shopify store live, so the result depends on data outside this server.",
+        "open_world_justification": "Reaches a third party: nooticr's API reads the merchant's Amazon, Shopify, WooCommerce or PrestaShop store live, so the result depends on data outside this server.",
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
         "idempotent_justification": "Idempotent: free and writes nothing, so a repeat has no additional effect; it may return newer data from the live service."
       }

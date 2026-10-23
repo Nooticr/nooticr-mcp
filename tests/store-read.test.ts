@@ -55,6 +55,34 @@ describe("store read tools", () => {
     expect(calls).toEqual([]);
   });
 
+  // nooticr-server's commerce `Platform` (#282). PrestaShop is read but never
+  // connected here: its webservice key would sit in the chat, so the server
+  // refuses it, and the schema refuses it first.
+  it("reads the four store platforms the server serves and connects all but PrestaShop", async () => {
+    const { client, calls } = await connect();
+    const { tools } = await client.listTools();
+    const enumOf = (name: string) =>
+      ((tools.find((t) => t.name === name)!.inputSchema.properties as Record<string, { enum?: string[] }>).platform)?.enum;
+    expect(enumOf("list_store_products")).toEqual(["amazon", "shopify", "woocommerce", "prestashop"]);
+    expect(enumOf("connect_store")).toEqual(["amazon", "shopify", "woocommerce"]);
+
+    const woo = { platform: "woocommerce", shop: "https://shop.example.fr" };
+    expect((await client.callTool({ name: "connect_store", arguments: woo })).isError).toBeFalsy();
+    for (const platform of ["woocommerce", "prestashop"]) {
+      const res = await client.callTool({ name: "list_store_products", arguments: { platform, query: "mug" } });
+      expect(res.isError, platform).toBeFalsy();
+    }
+    const presta = await client.callTool({ name: "connect_store", arguments: { platform: "prestashop" } });
+    expect(presta.isError).toBe(true);
+    expect(calls).toEqual([
+      { name: "connect_store", args: woo },
+      { name: "list_store_products", args: { platform: "woocommerce", query: "mug" } },
+      { name: "list_store_products", args: { platform: "prestashop", query: "mug" } },
+    ]);
+    const connectDesc = tools.find((t) => t.name === "connect_store")!.description ?? "";
+    expect(connectDesc).toContain("PrestaShop store is connected in the dashboard's Settings");
+  });
+
   it("marks the catalogue read as read-only", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
