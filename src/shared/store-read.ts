@@ -70,8 +70,9 @@ export function registerStoreReadTools(server: McpServer, makeClient: MakeClient
         "\"https://your-store.com\"). Optionally appId ties the store to one product. The owner " +
         "approves at the store; nothing is connected until they do, and no credential passes " +
         "through this tool. A PrestaShop store is connected in the dashboard's Settings with a key, " +
-        "never through chat. Nooticr only asks for access to listing copy and " +
-        "prices. Each call mints a fresh link. No cost to call. Use when the user wants to connect their Amazon, Shopify or WooCommerce store.",
+        "never through chat. Nooticr writes only listing copy and prices; it also reads orders " +
+        "and stock on Shopify, and sales, traffic, account health and FBA stock on Amazon. " +
+        "Each call mints a fresh link. No cost to call. Use when the user wants to connect their Amazon, Shopify or WooCommerce store.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
