@@ -390,8 +390,8 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "draft_comment_reply", cost: 0, costNote: "Free with your text, else 1 cr", group: "own",
-    args: "platform, commentId, postId, text?, guidance?, appId?",
-    desc: "Stores a reply to one comment; nothing is posted. Free with your own text, 1 credit when nooticr writes it in your brand voice, with its rationale; refused at no cost when there is no brand voice, product or guidance to write from. Returns a draftId and confirmationToken.",
+    args: "platform, commentId and postId (or commentIds), text?, guidance?, appId?",
+    desc: "Stores a reply to one comment, or written replies to up to 10 with commentIds; nothing is posted. Free with your own text, 1 credit per reply nooticr writes in your brand voice, with its rationale; refused at no cost when there is no brand voice, product or guidance to write from. Returns a draftId and confirmationToken per reply.",
     when: "After list_comments_to_answer, to have a reply ready for the user to read.",
   },
   {
@@ -450,13 +450,13 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "create_brand_watch", cost: 0, group: "research",
-    args: "term or handle, kind?, cadence?, budgetCredits?, deliverTo?",
+    args: "term or handle, kind?, cadence?, budgetCredits?, deliverTo?, appIds?",
     desc: "Schedules a recurring sweep and emails only what is new. Free to create; each run bills like the tool it repeats \u2014 2 credits per network (5 for Xiaohongshu), or a flat 2 for a competitor watch.",
     when: "You want the answer to keep arriving. It quotes the cost and asks before creating anything.",
   },
   {
     name: "list_brand_watches", cost: 0, group: "research",
-    args: "\u2014",
+    args: "appId?",
     desc: "Every watch you have: cadence, cost per run, credits spent, runs made, next run due, and whether it is stopped.",
     when: "Before creating one \u2014 a second watch on the same term is a second recurring charge for the same answer.",
   },
@@ -926,7 +926,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "connect_social_account", cost: 0, group: "own",
-    args: "platform",
+    args: "platform, capabilities?",
     desc: "A link to open so the user can connect one account. They approve at the provider; no credential passes through this tool.",
     when: "list_social_connections showed the platform is connectable and not yet connected.",
   },

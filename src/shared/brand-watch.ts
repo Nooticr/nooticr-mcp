@@ -61,6 +61,9 @@ export const SCHEDULABLE_JOBS = ["niche_report", "discover_social_posts"] as con
 /** Mirrors `MAX_PORTFOLIO_TERMS` (and the migration's check). */
 const MAX_PORTFOLIO_TERMS = 25;
 
+/** Mirrors `MAX_PRODUCTS` in nooticr-server's `watch_products`. */
+const MAX_WATCH_PRODUCTS = 50;
+
 interface JobArgs {
   niche: string;
   platform?: string;
@@ -503,8 +506,8 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "beat that creator's own recent median — a raw view count would just measure follower size, " +
         "so a run only mails what is unusually good for them; kind: \"report\" runs one tool on the " +
         "schedule, given as job: {tool, args} — niche_report (the report is mailed as written every " +
-        "run) or discover_social_posts (only posts no earlier run mailed) — billed at that tool's " +
-        "own price; kind: \"portfolio\" sweeps several terms at once (a brand, its products and its " +
+        "run) or discover_social_posts (only posts no earlier run mailed) — billed per run as set " +
+        "out below; kind: \"portfolio\" sweeps several terms at once (a brand, its products and its " +
         "competitors, up to 25) across the same platforms under one budget and mails one digest with " +
         "each term's share of voice — the budget is split evenly across the terms and trims " +
         "networks, never terms, and a term whose sweep fails is refunded. Add or remove a " +
@@ -521,16 +524,20 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "uncreated rather than starting a recurring charge nobody agreed to. Where the client " +
         "supports it, the confirming call also puts the recurring cost to the user directly and " +
         "creates nothing if they decline, so relaying the quote is not the only thing standing " +
-        "between them and a standing charge. Each run bills exactly what the same call costs when a " +
-        "person asks for it themselves: for a mentions watch, 2 credits per network swept, 5 for " +
+        "between them and a standing charge. Each run bills what the server charges for the same " +
+        "work: for a mentions watch, 2 credits per network swept, 5 for " +
         "Xiaohongshu; for a competitor watch, a flat 2 credits (one get_user_posts call), whatever " +
-        "the platform; for a report, the job tool's own price (niche_report 3, discover_social_posts " +
-        "2, plus 1 per post opened for comments); for a portfolio, a mentions sweep per term. " +
+        "the platform; for a report, niche_report 3 (a run writes the report it mails, which the " +
+        "niche_report tool here leaves to you, so it costs 1 more than its 2) and discover_social_posts " +
+        "2, plus 1 per post opened for comments; for a portfolio, a mentions sweep per term. " +
         "budgetCredits is a hard per-run ceiling enforced on the server, not a " +
         "suggestion — a mentions sweep that would cost more is trimmed to the networks that fit, " +
         "never widened. A run that turns up nothing new — or, for a competitor watch, nothing above " +
         "median — sends no mail. cadence is hourly, every_6_hours, every_12_hours, daily or weekly, " +
-        "and defaults to daily. No cost to call.",
+        "and defaults to daily. appIds (product ids from list_own_apps) ties the watch to those " +
+        "products of this workspace, so list_brand_watches with one of them as appId finds it; " +
+        "without it the watch is workspace-wide. Pass the same appIds on both calls: the confirming " +
+        "call is the one that ties them. No cost to call.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({
@@ -631,6 +638,15 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
                 "risk, and it repeats every run. Setting it requires the user to approve the " +
                 "destination, and the watch is not created where that cannot be shown.",
             ),
+          appId: z.number().int().optional().describe("One product this watch is about (an id from list_own_apps)."),
+          appIds: z
+            .array(z.number().int())
+            .max(MAX_WATCH_PRODUCTS)
+            .optional()
+            .describe(
+              "Products this watch is about (ids from list_own_apps, up to 50). Omit for a " +
+                "workspace-wide watch. Send the same list on the confirming call.",
+            ),
           confirm: z
             .boolean()
             .optional()
@@ -670,15 +686,24 @@ export function registerBrandWatch(server: McpServer, makeClient: MakeClient): v
         "Every scheduled brand-monitoring watch in this workspace (every member's watches, not only yours): term, networks, cadence, cost per " +
         "run, credits spent so far, how many runs it has made, when the next one is due, and " +
         "whether it is stopped and why. Read this before creating a watch — a second watch on the " +
-        "same term is a second recurring charge for the same answer. No cost to call. Use to see which scheduled watches exist and what they cost before creating, changing or stopping one.",
+        "same term is a second recurring charge for the same answer. Pass appId to see only the " +
+        "watches tied to that product, plus the workspace-wide ones. No cost to call. Use to see which scheduled watches exist and what they cost before creating, changing or stopping one.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: z.object({}).strict(),
+      inputSchema: z
+        .object({
+          appId: z
+            .number()
+            .int()
+            .optional()
+            .describe("Only the watches tied to this product (an id from list_own_apps), plus the workspace-wide ones."),
+        })
+        .strict(),
       outputSchema: OUTPUT_SCHEMAS.list_brand_watches,
     },
-    async (_args, extra) => {
-      const client = await makeClient({ ...extra, arguments: {} });
+    async (args, extra) => {
+      const client = await makeClient({ ...extra, arguments: args });
       try {
-        return toResult(await client.callTool("list_brand_watches", {}));
+        return toResult(await client.callTool("list_brand_watches", args));
       } catch (err) {
         return failed("list_brand_watches failed", err);
       }

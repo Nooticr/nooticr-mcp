@@ -1465,6 +1465,8 @@ function handleMcpCall(name, args, workspaceId) {
             creditsPerDay: Math.round(costPerRun * runsPerDay * 100) / 100,
             budgetPerRun: args.budgetCredits ?? costPerRun,
             deliverTo: args.deliverTo ?? "fixture-user@example.com",
+            // The products the confirming call named, deduplicated, as the server ties them.
+            appIds: [...new Set([...(args.appId !== undefined ? [args.appId] : []), ...(args.appIds ?? [])])].sort((a, b) => a - b),
             firstRun: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
             message: `Watching for "${args.term}" on ${platforms.join(", ")}, ${cadence}.`,
           },
@@ -1913,6 +1915,21 @@ function handleMcpCall(name, args, workspaceId) {
               "Set the brand voice (tone, do's and don'ts) in Settings, or pass guidance for this reply, then ask again. Nothing was charged.",
             data: { code: "no_brand_grounding" },
           },
+        };
+      }
+      // Several comments (nooticr-server #124): one written reply and token each.
+      if (Array.isArray(args?.commentIds)) {
+        const drafts = args.commentIds.map((commentId, i) => ({
+          draftId: `draft-fixture-${i + 1}`,
+          reply: "Thanks! The 600 ml one folds flat, so it fits a jacket pocket.",
+          rationale: "Answers the size question directly, in the brand's friendly, brief tone.",
+          comment: { commentId, author: "@hiker_jo", snippet: "does it fit a pocket?" },
+          status: "pending",
+          expiresInSeconds: 3600,
+          confirmationToken: `tok-fixture-${i + 1}`,
+        }));
+        return {
+          structuredContent: { drafts, skipped: [], mcpCredits: { cost: drafts.length, balance: 42 - drafts.length } },
         };
       }
       const written = !args?.text;

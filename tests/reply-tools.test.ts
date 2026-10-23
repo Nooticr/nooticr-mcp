@@ -62,6 +62,25 @@ describe("reply tools", () => {
     expect(calls).toEqual([{ name: "draft_comment_reply", args }]);
   });
 
+  // nooticr-server #124: several comments on one account in one call, each
+  // its own written reply. The server refuses the mixed shapes too; checking
+  // them here keeps a call naming no comment from ever reaching it.
+  it("draft_comment_reply forwards commentIds and refuses the shapes the server refuses", async () => {
+    const { client, calls } = await connect();
+    const batch = { platform: "youtube", commentIds: ["c1", "c2"], guidance: "thank them" };
+    expect((await client.callTool({ name: "draft_comment_reply", arguments: batch })).isError).toBeFalsy();
+    for (const bad of [
+      { platform: "youtube", commentIds: ["c1"], commentId: "c2", postId: "p1" },
+      { platform: "youtube", commentId: "c1" },
+      { platform: "youtube", commentIds: [] },
+      { platform: "youtube", commentIds: Array.from({ length: 11 }, (_, i) => `c${i}`) },
+    ]) {
+      const res = await client.callTool({ name: "draft_comment_reply", arguments: bad });
+      expect(res.isError, JSON.stringify(bad)).toBe(true);
+    }
+    expect(calls).toEqual([{ name: "draft_comment_reply", args: batch }]);
+  });
+
   it("list_comments_to_answer bounds sinceDays and limit like the server", async () => {
     const { client } = await connect();
     expect((await client.callTool({ name: "list_comments_to_answer", arguments: { sinceDays: 31 } })).isError).toBe(true);

@@ -1467,6 +1467,7 @@ export const OUTPUT_SCHEMAS = {
     creditsPerDay: scalar(),
     budgetPerRun: scalar(),
     deliverTo: scalar(),
+    appIds: listOf(z.number()).describe("The products the watch is tied to; empty for a workspace-wide watch."),
     firstRun: scalar(),
     message: scalar(),
   }),
@@ -2100,6 +2101,12 @@ export const OUTPUT_SCHEMAS = {
     rejected: scalar(),
     instructions: scalar(),
     mcpCredits: open({ cost: scalar(), balance: scalar() }).nullish(),
+    drafts: listOf(
+      open({ draftId: scalar(), reply: scalar(), rationale: scalar(), confirmationToken: scalar() }),
+    ).describe("commentIds only: one stored draft per comment answered, each shown to the user and posted on its own."),
+    skipped: listOf(open({ commentId: scalar(), reason: scalar() })).describe(
+      "commentIds only: the comments not drafted, with why. None of them was charged.",
+    ),
   }),
   post_comment_reply: open({
     posted: scalar(),

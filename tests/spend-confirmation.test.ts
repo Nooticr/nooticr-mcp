@@ -416,6 +416,45 @@ describe("a report watch and a portfolio watch", () => {
 });
 
 /**
+ * A watch can be about some of the workspace's products (nooticr-server #683):
+ * `appId`/`appIds` on creation, and `appId` on the list to find it under one.
+ * The confirming call is the one that ties them, so both calls take them.
+ */
+describe("a watch tied to products (#283)", () => {
+  it("forwards appIds on the quote and on the confirmed call", async () => {
+    const { client, calls } = await connect("accept");
+    const watch = { term: "acme", platforms: ["reddit"], appIds: [3, 4] };
+    await client.callTool({ name: "create_brand_watch", arguments: watch });
+    await client.callTool({
+      name: "create_brand_watch",
+      arguments: { ...watch, confirm: true, confirmationToken: "t" },
+    });
+    expect(calls.filter((c) => c.name === "create_brand_watch").map((c) => c.args)).toEqual([
+      watch,
+      { ...watch, confirm: true, confirmationToken: "t" },
+    ]);
+  });
+
+  it("lists one product's watches by appId", async () => {
+    const { client, calls } = await connect(null);
+    const res = await client.callTool({ name: "list_brand_watches", arguments: { appId: 3 } });
+    expect(res.isError).toBeFalsy();
+    expect(calls).toEqual([{ name: "list_brand_watches", args: { appId: 3 } }]);
+  });
+
+  it("refuses a product id the server would not read", async () => {
+    // The server reads appId with as_i64: a string would be ignored and the
+    // list would silently come back workspace-wide.
+    const { client, calls } = await connect(null);
+    const a = await client.callTool({ name: "list_brand_watches", arguments: { appId: "3" } });
+    const b = await client.callTool({ name: "create_brand_watch", arguments: { term: "acme", appIds: ["3"] } });
+    expect(a.isError).toBe(true);
+    expect(b.isError).toBe(true);
+    expect(calls).toEqual([]);
+  });
+});
+
+/**
  * deliverTo is the argument that can carry the answer somewhere the user did
  * not choose, on a schedule. The model picks it, and the model spends its day
  * reading captions and comments written by strangers.
