@@ -86,8 +86,34 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
+      # `--with-deps` apt-installs the browser's system libraries, and the
+      # runner's Ubuntu mirror is intermittently very slow: the same 26 MB took
+      # 1 s in one job and 12 minutes in another of the same dashboard run
+      # (2026-10-23). apt keeps what it downloads in a directory the cache
+      # below saves and restores, so a slow mirror costs a run only the
+      # packages that changed since the week's cache was written.
+      - name: Keep apt's downloads where the cache can reach them
+        id: apt
+        run: |
+          mkdir -p "$HOME/.apt-archives/partial"
+          printf 'Dir::Cache::Archives "%s/";\nAPT::Sandbox::User "root";\n' "$HOME/.apt-archives" \
+            | sudo tee /etc/apt/apt.conf.d/90-ci-archives >/dev/null
+          # The runner image's Ubuntu release; a runner variable, not in `env`.
+          echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.apt-archives/*.deb
+          key: apt-playwright-${{ steps.apt.outputs.os }}-${{ steps.apt.outputs.week }}
+          restore-keys: apt-playwright-${{ steps.apt.outputs.os }}-
+
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: |
+          npx playwright install --with-deps chromium
+          # Drops the packages the index no longer offers, so the cache holds
+          # this week's set rather than every version it has ever seen.
+          sudo apt-get autoclean -qq
 
       - name: Browser end-to-end tests
         run: npx playwright test
