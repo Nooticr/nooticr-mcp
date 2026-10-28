@@ -76,7 +76,7 @@ export const TWO_STEP_RULE =
  * that, so the hire never happens (#281). A test pins this sentence.
  */
 export const HIRE_ID_RULE =
-  "A subscription quote also returns a hireId: send it back unchanged with confirm: true and the " +
+  "The quote also returns a hireId: send it back unchanged with confirm: true and the " +
   "confirmationToken, with the same template, level and currency, because the token is bound to " +
   "that hireId and a confirm without it only gets a new quote.";
 
@@ -118,13 +118,13 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Hire an AI employee (for example a Social Media Manager) that works on a schedule inside " +
         "this workspace. Pass `template` and optionally name, instructions, products (the string all, or a list of product ids; appId is deprecated), schedule, " +
-        "monthlyBudgetCredits, maxCreditsPerRun, approvalPolicy and notify (channels, and recipients: hirer, admins or member user ids). " +
+        "level, currency, approvalPolicy and notify (channels, and recipients: hirer, admins or member user ids). " +
         TWO_STEP_RULE +
         " " +
         HIRE_ID_RULE +
         " Public actions (publish, email, reply, listing or price changes) wait for the user's " +
-        "approval unless autopilot is turned on. The hiring user is billed for runs, up to the " +
-        "monthly budget. No cost to call. Use when the user wants recurring work done on a schedule by an AI employee.",
+        "approval unless autopilot is turned on. Every employee is a monthly subscription to its " +
+        "role's plan: the quote names the price, and its work is bounded by the plan, never charged in credits. No cost to call. Use when the user wants recurring work done on a schedule by an AI employee.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: z
         .object({
@@ -140,8 +140,6 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
             .object({}).passthrough()
             .optional()
             .describe("{kind:'weekly',days:['mon'],times:['09:00'],tz:'Europe/Paris'} | {kind:'interval',minutes:N>=60} | {kind:'manual'}."),
-          monthlyBudgetCredits: z.number().int().min(1).optional(),
-          maxCreditsPerRun: z.number().int().min(1).optional(),
           approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."),
           notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
           model: z.string().optional().describe("Optional model."),
@@ -153,16 +151,16 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
           level: z
             .enum(HIRE_LEVELS)
             .optional()
-            .describe("Subscription hires only: the level to hire at; the lowest one on sale when left out."),
+            .describe("The level to hire at; the lowest one on sale when left out."),
           hireId: z
             .string()
             .uuid()
             .optional()
-            .describe("Subscription hires only: the hireId the quote returned. Leave it out to get a quote; send it back unchanged with confirm: true. Retrying with the same hireId never hires twice."),
+            .describe("The hireId the quote returned. Leave it out to get a quote; send it back unchanged with confirm: true. Retrying with the same hireId never hires twice."),
           currency: z
             .enum(HIRE_CURRENCIES)
             .optional()
-            .describe("Subscription hires only: the currency to pay in, before the account's first payment; ignored once it is billed in one. Leave it out unless the user asks."),
+            .describe("The currency to pay in, before the account's first payment; ignored once it is billed in one. Leave it out unless the user asks."),
         })
         .strict(),
       outputSchema: OUTPUT_SCHEMAS.hire_employee,
@@ -182,7 +180,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
     {
       title: "List Employees",
       description:
-        "List this workspace's AI employees with status, schedule, next run and budget left. " +
+        "List this workspace's AI employees with status, schedule, next run and how much of its plan's included work this month is used. " +
         "Pass includeFired: true to include ones that were let go. No cost to call. Use when the user asks which AI employees exist or what they are doing.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({ includeFired: z.boolean().optional() }).strict(),
