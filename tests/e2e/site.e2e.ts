@@ -116,7 +116,8 @@ test.beforeAll(async () => {
       res.end(JSON.stringify({ revoked: true }));
       return;
     }
-    const render = ROUTES[path];
+    // Own keys only: a path like "/constructor" must not reach Object.prototype.
+    const render = Object.hasOwn(ROUTES, path) ? ROUTES[path] : undefined;
     if (!render) {
       res.writeHead(404).end("not found");
       return;

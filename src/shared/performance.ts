@@ -1,3 +1,4 @@
+import { trimTrailingSlashes } from "./strings.js";
 /**
  * Outperformance, measured against the creator's own baseline.
  *
@@ -177,7 +178,7 @@ function normaliseUrl(raw?: string): string {
     // YouTube is the exception: the id lives in the query, so the query cannot
     // simply be dropped the way it can everywhere else.
     const v = u.searchParams.get("v");
-    const path = u.pathname.replace(/\/+$/, "");
+    const path = trimTrailingSlashes(u.pathname);
     return `${u.hostname.replace(/^www\./, "")}${path}${v ? `?v=${v}` : ""}`.toLowerCase();
   } catch {
     return value.toLowerCase();

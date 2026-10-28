@@ -75,17 +75,37 @@ export function isClientIdMetadataUrl(clientId: string): boolean {
 function isInternalHost(hostname: string): boolean {
   const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal")) return true;
-  if (h === "::1" || h === "0.0.0.0") return true;
-  // Link-local, including the 169.254.169.254 metadata service.
-  if (h.startsWith("169.254.")) return true;
+  // Unspecified and loopback, in every spelling the URL parser leaves us.
+  if (h === "::" || h === "::1" || h === "0.0.0.0") return true;
   // IPv6 unique-local and link-local.
   if (h.startsWith("fc") || h.startsWith("fd") || h.startsWith("fe80:")) return true;
+  // IPv4-mapped IPv6: `https://[::ffff:127.0.0.1]/` reaches 127.0.0.1, and the
+  // URL parser normalises it to `::ffff:7f00:1`, so no dotted quad is left to
+  // match. Decode it back to IPv4 and judge that.
+  const mapped = h.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (mapped) {
+    const hi = parseInt(mapped[1], 16);
+    return isInternalV4(hi >> 8, hi & 0xff);
+  }
+  // The parser also turns decimal, hex and octal hosts (`2130706433`,
+  // `0x7f.1`) into dotted quads before we see them.
   const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (!v4) return false;
-  const [a, b] = [Number(v4[1]), Number(v4[2])];
-  if (a === 10 || a === 127) return true;
+  return isInternalV4(Number(v4[1]), Number(v4[2]));
+}
+
+/** Private, loopback, link-local, shared, benchmark and reserved IPv4 ranges. */
+function isInternalV4(a: number, b: number): boolean {
+  if (a === 0 || a === 10 || a === 127) return true;
+  // Link-local, including the 169.254.169.254 metadata service.
+  if (a === 169 && b === 254) return true;
   if (a === 172 && b >= 16 && b <= 31) return true;
-  if (a === 192 && b === 168) return true;
+  if (a === 192 && (b === 168 || b === 0)) return true;
+  // Carrier-grade NAT (100.64.0.0/10) and benchmarking (198.18.0.0/15).
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  // Multicast and reserved.
+  if (a >= 224) return true;
   return false;
 }
 

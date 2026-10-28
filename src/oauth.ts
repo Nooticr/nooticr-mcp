@@ -27,6 +27,7 @@ import {
   verifyPkce,
 } from "./shared/oauth.js";
 import { isClientIdMetadataUrl, verifyClientIdMetadata } from "./shared/cimd.js";
+import { trimTrailingSlashes } from "./shared/strings.js";
 
 // Re-export the shared primitives so consumers and tests keep one import path.
 export {
@@ -122,7 +123,7 @@ export class OAuthManager {
   private sessions = new Map<string, McpSession>();
 
   constructor(opts: OAuthManagerOptions) {
-    this.publicUrl = opts.publicUrl.replace(/\/+$/, "");
+    this.publicUrl = trimTrailingSlashes(opts.publicUrl);
     this.client = opts.client;
     this.onSession = opts.onSession;
   }
