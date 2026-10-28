@@ -2238,9 +2238,11 @@ const server = http.createServer(async (req, res) => {
 
     sendJson(res, 404, { error: `fixture-server: no route for ${req.method} ${req.url}` });
   } catch (err) {
-    // The stack goes to the fixture's own log, not into the response body.
+    // The error goes to the fixture's own log, never into the response body:
+    // `String(err)` of a thrown value is exception text all the same, and
+    // CodeQL (js/stack-trace-exposure) rightly treats it as such.
     console.error("fixture-server:", err);
-    sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
+    sendJson(res, 500, { error: "fixture-server: internal error (see its log)" });
   }
 });
 
