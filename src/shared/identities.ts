@@ -31,7 +31,7 @@ import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/proto
 import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
-import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
 import { failed } from "./passthrough.js";
 
 interface MakeClient {
@@ -58,7 +58,7 @@ const ACCOUNTS = z
         platform: z.string().describe("Social network: tiktok, instagram, youtube, ..."),
         handle: z.string().describe("Account handle, with or without @."),
         evidence: z
-          .array(z.object({}).passthrough())
+          .array(anyObject())
           .optional()
           .describe("What showed these are one person, e.g. suggest_creator_identity's evidence."),
       })

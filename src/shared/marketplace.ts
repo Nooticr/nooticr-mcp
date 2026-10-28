@@ -35,7 +35,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { NooticrClient } from "./nooticr.js";
-import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, open } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { withEvidence } from "./evidence-digest.js";
 import { confirmSpend, declinedResult } from "./spend.js";
@@ -776,7 +776,7 @@ export function registerMarketplaceTools(server: McpServer, makeClient: MakeClie
         openWorldHint: false,
       },
       outputSchema: OUTPUT_SCHEMAS.show_marketplace_category_insights,
-      inputSchema: z.object({ marketplace: marketplaceArg, ...insightsInputShape }).passthrough(),
+      inputSchema: open({ marketplace: marketplaceArg, ...insightsInputShape }),
     },
     async (args: Record<string, unknown>, extra) => {
       const m = BY_SLUG.get(String(args.marketplace ?? ""));

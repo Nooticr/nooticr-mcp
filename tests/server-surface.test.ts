@@ -381,6 +381,11 @@ describe("prompts", () => {
     for (const p of prompts) {
       expect(p.title, `${p.name} has no title to show`).toBeTruthy();
       expect(p.description, `${p.name} has no description`).toBeTruthy();
+      // A completable optional argument is a wrapper around the described
+      // schema, and zod 4 does not carry a description onto a wrapper: nine
+      // arguments lost theirs in the zod 4 upgrade until prompts.ts re-described them.
+      for (const a of p.arguments ?? [])
+        expect(a.description, `${p.name}.${a.name} has no description`).toBeTruthy();
     }
   });
 
