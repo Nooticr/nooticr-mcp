@@ -68,7 +68,7 @@ export async function check({
     registry = entry?.server.version ?? null;
     publishedAt = entry?.meta.publishedAt ?? null;
     const pkg = packageJson.name ?? "@nooticr/mcp";
-    npm = (await getJson(`${NPM}/${pkg.replace("/", "%2f")}/latest`, io)).version;
+    npm = (await getJson(`${NPM}/${pkg.replaceAll("/", "%2f")}/latest`, io)).version;
   } catch (e) {
     return { code: 2, line: null, text: `Could not check the registry or npm: ${e.message}` };
   }

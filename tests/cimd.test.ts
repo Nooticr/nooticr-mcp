@@ -169,6 +169,15 @@ describe("server-side request forgery", () => {
     ["private 192.168/16", "https://192.168.1.1/client.json"],
     ["internal tld", "https://vault.internal/client.json"],
     ["ipv6 unique-local", "https://[fd00::1]/client.json"],
+    ["ipv4-mapped loopback", "https://[::ffff:127.0.0.1]/client.json"],
+    ["ipv4-mapped metadata", "https://[::ffff:169.254.169.254]/latest/meta-data/"],
+    ["unspecified v6", "https://[::]/client.json"],
+    ["this network 0/8", "https://0.1.2.3/client.json"],
+    ["decimal loopback", "https://2130706433/client.json"],
+    ["hex loopback", "https://0x7f.0.0.1/client.json"],
+    ["carrier-grade NAT", "https://100.100.100.200/client.json"],
+    ["benchmark 198.18/15", "https://198.18.0.1/client.json"],
+    ["multicast", "https://239.1.1.1/client.json"],
   ])("refuses to fetch %s", async (_label, id) => {
     let fetched = false;
     const impl = (async () => {
@@ -178,6 +187,15 @@ describe("server-side request forgery", () => {
     const res = await fetchClientMetadata(id, impl);
     expect(res.ok).toBe(false);
     expect(fetched, "the request must not leave the box at all").toBe(false);
+  });
+
+  it("still fetches an ordinary public host", async () => {
+    // The ranges above must not swallow public addresses next to them.
+    for (const id of ["https://100.63.0.1/c.json", "https://172.32.0.1/c.json", "https://8.8.8.8/c.json"]) {
+      const { impl, calls } = serving({ ...GOOD_DOC, client_id: id });
+      await fetchClientMetadata(id, impl);
+      expect(calls, id).toEqual([id]);
+    }
   });
 
   it("refuses a non-https or pathless client_id before fetching", async () => {

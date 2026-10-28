@@ -23,6 +23,7 @@ import {
   type McpSession,
   SCOPES,
 } from "./oauth.js";
+import { bearerToken as parseBearer } from "../../src/shared/strings.js";
 
 /**
  * Protocol version advertised during re-init. Must be >= 2025-11-25 so the
@@ -652,8 +653,7 @@ export function requestKey(bodyText: string): string | undefined {
 function bearerToken(request: Request): string | undefined {
   const header = request.headers.get("authorization");
   if (!header) return undefined;
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  return match ? match[1].trim() : undefined;
+  return parseBearer(header);
 }
 
 function jsonResponse(

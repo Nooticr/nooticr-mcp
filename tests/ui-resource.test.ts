@@ -146,7 +146,7 @@ describe("app-view tool results", () => {
 describe("UI template validity", () => {
   it("template HTML contains valid JavaScript (no syntax errors)", async () => {
     const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script\b[^>]*>/i);
     expect(scriptMatch).not.toBeNull();
     const script = scriptMatch![1];
 
@@ -173,7 +173,7 @@ describe("UI template validity", () => {
 
   it("template does not contain broken regex patterns (// at start of expression)", async () => {
     const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script\b[^>]*>/i);
     const script = scriptMatch![1];
     // A broken regex like /ui:\/\/... becomes //ui:\/\/... which is a comment.
     // Check that no line starts with a bare // followed by a known keyword.
@@ -189,7 +189,7 @@ describe("UI template validity", () => {
 
   it("template has no unescaped apostrophes that break JS strings", async () => {
     const { NOOTICR_UI_TEMPLATE } = await import("../src/shared/ui-template.js");
-    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script>/);
+    const scriptMatch = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*?)<\/script\b[^>]*>/i);
     const script = scriptMatch![1];
     // Find single-quoted strings and check for unescaped apostrophes
     const singleQuoteStrings = script.match(/'[^'\\]*(?:\\.[^'\\]*)*'/g) ?? [];

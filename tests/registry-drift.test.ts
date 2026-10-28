@@ -20,7 +20,7 @@ const fail = (status: number) => ({ ok: false, status, json: async () => ({}) })
 function run(registry: Array<ReturnType<typeof ok>>) {
   const queue = [...registry];
   const fetch = vi.fn(async (url: string) =>
-    url.includes("registry.npmjs.org") ? ok({ version: "1.26.56" }) : queue.shift() ?? fail(500),
+    new URL(url).hostname === "registry.npmjs.org" ? ok({ version: "1.26.56" }) : queue.shift() ?? fail(500),
   );
   return check({ serverJson, packageJson, fetch, sleep: async () => {} }).then((r: any) => ({ r, fetch }));
 }
