@@ -320,6 +320,13 @@ describe("an argument a tool documents is an argument it reads", () => {
   for (const { tool, arg, value } of GUIDANCE_ARGS) {
     it(
       `${tool} changes what it asks for when given ${arg}`,
+      // Two full tool round-trips each, and analyze_creator_profile's is a
+      // 30-post profile — that one measured ~4.8s against the 5s default and
+      // failed intermittently long enough to look like a real defect twice.
+      // Every other slow case in this file already carries this timeout; this
+      // loop was simply missed. (Options go second: Vitest 4 removed the
+      // trailing-options signature.)
+      { timeout: 30_000 },
       async () => {
         const { client } = await connect();
         const base = await guidanceOf(client, tool, ARGS[tool]);
@@ -330,12 +337,6 @@ describe("an argument a tool documents is an argument it reads", () => {
           `${tool} accepts "${arg}" and its guidance is identical without it — the builder never reads it`,
         ).not.toBe(base);
       },
-      // Two full tool round-trips each, and analyze_creator_profile's is a
-      // 30-post profile — that one measured ~4.8s against the 5s default and
-      // failed intermittently long enough to look like a real defect twice.
-      // Every other slow case in this file already carries this timeout; this
-      // loop was simply missed.
-      { timeout: 30_000 },
     );
   }
 
