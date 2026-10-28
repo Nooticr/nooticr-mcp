@@ -15,7 +15,7 @@ import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/proto
 import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
-import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
 import { failed } from "./passthrough.js";
 
 interface MakeClient {
@@ -74,7 +74,7 @@ export function registerCrmTools(server: McpServer, makeClient: MakeClient): voi
           fitScore: z.number().int().min(0).max(100).optional(),
           fitReasons: z.array(z.string()).optional(),
           risks: z.array(z.string()).optional(),
-          evidence: z.array(z.object({}).passthrough()).optional(),
+          evidence: z.array(anyObject()).optional(),
           nextStep: z.string().optional(),
           nextStepDue: z.string().optional().describe("YYYY-MM-DD"),
           appId: z.number().int().optional().describe("Product this creator is for."),

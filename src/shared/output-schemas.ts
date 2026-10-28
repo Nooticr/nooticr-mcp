@@ -17,8 +17,17 @@
  */
 import { z } from "zod";
 
-/** Loose by construction: see the note above. */
-const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough();
+/**
+ * Loose by construction: see the note above.
+ *
+ * The `meta` is what keeps this rendering as `additionalProperties: true`.
+ * Without it zod 4 renders a loose object as `additionalProperties: {}` — the
+ * empty-schema spelling of the same permission, which `anyObject` below
+ * explains is the wrong one to send. Exported so an input schema that is
+ * deliberately open says so the same way.
+ */
+export const open = <T extends z.ZodRawShape>(shape: T) =>
+  z.looseObject(shape).meta({ additionalProperties: true });
 
 /**
  * A union branch that renders as its own `type`, instead of being folded into
@@ -32,18 +41,20 @@ const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough(
  * with no error this repo would ever see. The whole surface emitted 1,286 of
  * them, from this helper and `listOf` alone.
  *
- * The fold happens in zod-to-json-schema's union parser, which collapses a
- * union whose every member is a bare primitive carrying no checks. There are
- * only two ways out, and only one of them is free:
+ * The fold happens in zod's JSON Schema generator (`compactTypeUnion`), which
+ * collapses a union whose every branch renders as nothing but a `type` —
+ * zod-to-json-schema did the same under zod 3. There are only two ways out,
+ * and only one of them is cheap:
  *
- *   - Give a member a check. `z.number().finite()` renders as plain
- *     `{ type: "number" }` and defeats the fold, but it also stops accepting
- *     `Infinity` — which a ratio-to-baseline division by a zero median really
- *     does produce, and which this file exists to keep from turning a working
- *     call into a hard failure. Rejected for that reason, not on taste.
- *   - Give a member a wrapper whose type name is not a primitive.
- *     `.readonly()` is the one that costs nothing: on a primitive it is a
- *     runtime no-op (`Object.freeze` of a string is that string), the parsed
+ *   - Give a member a check that renders as a keyword, e.g. a `.min()`. That
+ *     changes what the schema accepts, which this file exists not to do.
+ *     (Under zod 3 the tempting one was `.finite()`; zod 4's `z.number()`
+ *     already refuses `Infinity`, so every division that reaches a
+ *     structuredContent must be guarded — `performance.ts`'s ratio is.)
+ *   - Give a member a wrapper that adds a keyword to its branch.
+ *     `.readonly()` is the one that costs only `readOnly: true`, an
+ *     annotation no validator acts on. On a primitive it is a runtime no-op
+ *     (`Object.freeze` of a string is that string), the parsed
  *     value is discarded by the SDK's output validation anyway, and
  *     `Readonly<string>` is `string`, so nothing downstream sees a new type.
  *     It also happens to be true — these are output schemas.
@@ -51,6 +62,10 @@ const open = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough(
  * So the wrapper is load-bearing and is not about readonly-ness. Removing it
  * silently reintroduces all 1,286, which is what
  * `tests/output-schema-shape.test.ts` is there to catch.
+ *
+ * One wrapped branch is enough: the fold gives up on a union as soon as any
+ * branch carries a second keyword. So `scalar()` wraps only its first, which
+ * keeps the `readOnly: true` it costs to one per leaf rather than three.
  */
 const oneType = <T extends z.ZodTypeAny>(branch: T) => branch.readonly();
 
@@ -82,12 +97,12 @@ export const orNull = <T extends z.ZodTypeAny>(inner: T) =>
  * keys and their descriptions are the contract, and the types are deliberately
  * as wide as the data can be.
  *
- * Which is why the branches are wrapped in `oneType()` and null is a member of
+ * Which is why a branch is wrapped in `oneType()` and null is a member of
  * the union rather than a `.nullish()` around it. Both exist to control the
  * JSON Schema this renders as, and neither changes what the schema accepts —
  * see `oneType` below.
  */
-const scalar = () => z.union([oneType(z.string()), oneType(z.number()), oneType(z.boolean()), z.null()]).optional();
+const scalar = () => z.union([oneType(z.string()), z.number(), z.boolean(), z.null()]).optional();
 /** Same reasoning for lists: a null list, and a null element, must both pass. */
 const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([oneType(item), z.null()])).nullish();
 /**
@@ -101,25 +116,36 @@ const listOf = <T extends z.ZodTypeAny>(item: T) => z.array(z.union([oneType(ite
  * on the client while passing every server-side test. `z.any()` renders as an
  * empty schema in item position, which accepts anything, which is the point.
  */
-const anyList = () => z.array(z.any()).nullish();
+const anyList = () => anyArray().nullish();
 
 /**
  * "An object whose contents we are not constraining" — for input schemas.
  *
  * Exported from a file about output schemas because the concern is the same
  * one documented above: what a zod type renders as on the wire. The natural
- * spelling, `z.record(z.unknown())`, renders as
+ * spelling, `z.record(z.string(), z.unknown())`, renders as
  * `{ type: "object", additionalProperties: {} }`, and that `{}` carries no
  * validation keyword at all — the object-literal spelling of a bare `true`,
  * which reads to a strict client as an unvalidated schema rather than a
- * deliberately open one. `z.object({}).passthrough()` accepts exactly the same
- * values and says `additionalProperties: true`, which is the same permission
- * stated in a keyword rather than by omission.
+ * deliberately open one. `open({})` accepts exactly the same values and says
+ * `additionalProperties: true`, which is the same permission stated in a
+ * keyword rather than by omission. (A bare loose object no longer does: under
+ * zod 4 it renders `{}` as well, which is why `open` carries a `meta`.)
  *
- * The array counterpart needs no helper: `z.array(z.unknown())` emits
- * `items: {}` for the same reason, and `z.array(z.any())` simply omits `items`.
+ * The array counterpart is `anyArray` below.
  */
-export const anyObject = () => z.object({}).passthrough();
+export const anyObject = () => open({});
+
+/**
+ * "A list of anything" — an array with no `items` rule at all.
+ *
+ * Under zod 4 both `z.array(z.unknown())` and `z.array(z.any())` render
+ * `items: {}`: the same keywordless schema `anyObject` avoids, in item
+ * position. zod 3 simply left `items` out for `z.array(z.any())`, which is the
+ * spelling that says "no rule" by having none, so the `meta` puts that back —
+ * an `undefined` key is dropped when the result is serialised.
+ */
+export const anyArray = () => z.array(z.any()).meta({ items: undefined });
 
 /** Every paid tool reports what it charged. */
 const mcpCredits = open({
@@ -691,7 +717,8 @@ export const OUTPUT_SCHEMAS = {
     scoredCount: scalar(),
     unverifiedCount: scalar().describe("Candidates scored without anything having been opened."),
     creators: listOf(
-      creator.extend({
+      open({
+        ...creator.shape,
         id: scalar(),
         rank: scalar(),
         score: scalar().describe("The calling model's score out of 100 — not a nooticr rating."),
@@ -745,7 +772,7 @@ export const OUTPUT_SCHEMAS = {
     verification: checkedAgainstSession,
     url: scalar(),
     post: post.nullish().describe("The post analyze_post/analyze_post_text/understand_social_post handed back."),
-    analysis: open({}).passthrough().nullish().describe(
+    analysis: open({}).nullish().describe(
       "Your own analysis, any of the fields analyze_post's guidance asked for — summary, " +
         "hookStrength, scriptStructure, whyItWorks, suggestedHook, keyQuotes, suggestedHashtags, " +
         "variationIdeas, viralTriggers, targetAudience and more all render if present; every field " +
@@ -951,7 +978,8 @@ export const OUTPUT_SCHEMAS = {
     platform: scalar(),
     seed: scalar().describe("The creator whose lookalikes were added, if one was given."),
     creators: listOf(
-      creator.extend({
+      open({
+        ...creator.shape,
         id: scalar().describe("Addressable — `creator:<platform>:<handle>`."),
         foundBy: scalar().describe("search, similar, or both — both is the strongest signal here."),
         links: listOf(bioLink).describe(
@@ -1886,7 +1914,7 @@ export const OUTPUT_SCHEMAS = {
         shares: scalar(),
       }),
     ),
-    posts: listOf(open({}).passthrough()),
+    posts: listOf(open({})),
     summary: open({ totalViews: scalar(), totalLikes: scalar() }).nullish(),
     appId: scalar(),
     appName: scalar(),
@@ -1932,7 +1960,6 @@ export const OUTPUT_SCHEMAS = {
       improvedHooks: listOf(z.string()),
       improvedCaptions: listOf(z.string()),
     })
-      .passthrough()
       .nullish(),
     degraded: scalar().describe("Hoisted from review.degraded so it's never missed."),
     warning: scalar().describe("Present when degraded — treat the scores as placeholders."),
@@ -1964,11 +1991,10 @@ export const OUTPUT_SCHEMAS = {
     ok: scalar(),
     brief: open({
       headline: scalar(),
-      wins: listOf(open({}).passthrough()),
-      risks: listOf(open({}).passthrough()),
-      actions: listOf(open({}).passthrough()),
+      wins: listOf(open({})),
+      risks: listOf(open({})),
+      actions: listOf(open({})),
     })
-      .passthrough()
       .nullish(),
   }),
   /**

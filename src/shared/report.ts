@@ -25,7 +25,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { NOOTICR_UI_TEMPLATE } from "./ui-template.js";
 
@@ -305,7 +305,7 @@ export function buildReport(input: { title: string; summary?: string; sections: 
   };
 }
 
-const looseItem = z.object({}).passthrough();
+const looseItem = anyObject();
 
 export function registerReportTool(server: McpServer): void {
   server.registerTool(

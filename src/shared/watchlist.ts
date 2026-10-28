@@ -56,7 +56,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient } from "./nooticr.js";
 import { confirmSpend, declinedResult, CREDITS_PER_CREATOR } from "./spend.js";
 import { PLATFORM_ARG } from "./evidence.js";
-import { orNull } from "./output-schemas.js";
+import { anyObject, open, orNull } from "./output-schemas.js";
 
 export const WATCHLIST_URI = "nooticr://watchlist";
 
@@ -576,13 +576,11 @@ export function registerWatchlist(
           note: z.string().optional().describe("Why you are watching them — shown back to you later."),
         })
         .strict(),
-      outputSchema: z
-        .object({
-          watching: orNull(z.number()),
-          added: orNull(z.string()),
-          entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
-        })
-        .passthrough(),
+      outputSchema: open({
+        watching: orNull(z.number()),
+        added: orNull(z.string()),
+        entries: z.array(z.union([anyObject(), z.null()])).nullish(),
+      }),
     },
     async (args: { username: string; platform?: string; note?: string }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });
@@ -618,13 +616,11 @@ export function registerWatchlist(
           platform: z.string().optional().describe(PLATFORM_ARG),
         })
         .strict(),
-      outputSchema: z
-        .object({
-          removed: orNull(z.boolean()),
-          watching: orNull(z.number()),
-          entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
-        })
-        .passthrough(),
+      outputSchema: open({
+        removed: orNull(z.boolean()),
+        watching: orNull(z.number()),
+        entries: z.array(z.union([anyObject(), z.null()])).nullish(),
+      }),
     },
     async (args: { username: string; platform?: string }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });
@@ -658,13 +654,11 @@ export function registerWatchlist(
         "unwatch_creator needs, before paying for catch_up_watchlist. No cost to call.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       inputSchema: z.object({}).strict(),
-      outputSchema: z
-        .object({
-          watching: orNull(z.number()),
-          entries: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
-          byIdentity: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
-        })
-        .passthrough(),
+      outputSchema: open({
+        watching: orNull(z.number()),
+        entries: z.array(z.union([anyObject(), z.null()])).nullish(),
+        byIdentity: z.array(z.union([anyObject(), z.null()])).nullish(),
+      }),
     },
     async (_args: Record<string, never>, extra) => {
       const client = await makeClient({ ...extra, arguments: {} });
@@ -706,14 +700,12 @@ export function registerWatchlist(
           platform: z.string().optional().describe("Only check creators on this platform."),
         })
         .strict(),
-      outputSchema: z
-        .object({
-          checked: orNull(z.number()),
-          creators: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish(),
-          posts: z.array(z.union([z.object({}).passthrough(), z.null()])).nullish().describe("Everything new, flattened, for the card view."),
-          mcpCredits: z.object({}).passthrough().nullish(),
-        })
-        .passthrough(),
+      outputSchema: open({
+        checked: orNull(z.number()),
+        creators: z.array(z.union([anyObject(), z.null()])).nullish(),
+        posts: z.array(z.union([anyObject(), z.null()])).nullish().describe("Everything new, flattened, for the card view."),
+        mcpCredits: anyObject().nullish(),
+      }),
     },
     async (args: { limit?: number; platform?: string }, extra) => {
       const client = await makeClient({ ...extra, arguments: args });

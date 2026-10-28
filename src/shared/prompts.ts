@@ -72,7 +72,11 @@ function completableOptional(
   // The outer marker sits on a ZodOptional, so its completer is handed
   // `string | undefined` — an argument the user has not started typing.
   const optionalComplete = (value: string | undefined) => complete(value ?? "");
-  return completable(completable(schema, complete).optional(), optionalComplete);
+  // Re-described because zod 4 keeps a description on the schema it was given,
+  // not on a wrapper around it: the SDK reads `.description` off the outer
+  // ZodOptional, which would otherwise publish the argument with none.
+  const optional = completable(schema, complete).optional();
+  return completable(schema.description ? optional.describe(schema.description) : optional, optionalComplete);
 }
 
 /**

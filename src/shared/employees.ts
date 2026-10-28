@@ -15,7 +15,7 @@ import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/proto
 import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
-import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
 import { failed } from "./passthrough.js";
 
 interface MakeClient {
@@ -136,14 +136,13 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
             .union([z.literal("all"), z.array(z.number().int()).min(1)])
             .optional()
             .describe('"all" (every product, including ones added later) or a list of product ids the employee covers.'),
-          schedule: z
-            .object({}).passthrough()
+          schedule: anyObject()
             .optional()
             .describe("{kind:'weekly',days:['mon'],times:['09:00'],tz:'Europe/Paris'} | {kind:'interval',minutes:N>=60} | {kind:'manual'}."),
           monthlyBudgetCredits: z.number().int().min(1).optional(),
           maxCreditsPerRun: z.number().int().min(1).optional(),
-          approvalPolicy: z.object({}).passthrough().optional().describe("Action type -> 'approval' | 'auto'."),
-          notify: z.object({}).passthrough().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
+          approvalPolicy: anyObject().optional().describe("Action type -> 'approval' | 'auto'."),
+          notify: anyObject().optional().describe("{channels:['email'|'slack'], recipients?:'hirer'|'admins'|[member user ids, max 25]}."),
           model: z.string().optional().describe("Optional model."),
           effort: z.string().optional().describe("low | medium | high."),
           notInFrance: z.boolean().optional().describe("Only for a template that is not offered in France (the Bookkeeper) while the workspace has no country set: true once the user has confirmed their business is not based in France. Never set it without asking them."),
@@ -155,8 +154,7 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
             .optional()
             .describe("Subscription hires only: the level to hire at; the lowest one on sale when left out."),
           hireId: z
-            .string()
-            .uuid()
+            .guid()
             .optional()
             .describe("Subscription hires only: the hireId the quote returned. Leave it out to get a quote; send it back unchanged with confirm: true. Retrying with the same hireId never hires twice."),
           currency: z
