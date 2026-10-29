@@ -86,7 +86,7 @@ import {
 import { trimTrailingSlashes } from "./strings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.95";
+export const MCP_SERVER_VERSION = "1.26.96";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
