@@ -54,7 +54,7 @@ describe("employee tools", () => {
   it("forwards each call to the backend tool of the same name with its arguments", async () => {
     const { client, calls } = await connect();
     const args: Record<string, Record<string, unknown>> = {
-      hire_employee: { template: "social-media-manager", products: [3, 4], monthlyBudgetCredits: 50 },
+      hire_employee: { template: "social-media-manager", products: [3, 4], level: "base" },
       list_employees: { includeFired: true },
       pause_employee: { employeeId: "e1", resume: true },
       fire_employee: { employeeId: "e1", confirm: true },

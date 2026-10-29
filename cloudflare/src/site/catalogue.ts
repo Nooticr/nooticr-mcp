@@ -634,14 +634,14 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "hire_employee", cost: 0, group: "own",
-    args: "template, name?, instructions?, schedule?, monthlyBudgetCredits?, maxCreditsPerRun?, level?, currency?, hireId?",
-    desc: "Hires an AI employee that works on a schedule inside your workspace. Free to call: it quotes first and creates nothing until you confirm, sending back the quote's hireId on a subscription hire; the runs are billed to the hiring user, up to the monthly budget.",
+    args: "template, name?, instructions?, schedule?, level?, currency?, hireId?",
+    desc: "Hires an AI employee that works on a schedule inside your workspace. Free to call: it quotes first and creates nothing until you confirm, sending back the quote's hireId. Every employee is a monthly subscription to its role's plan, never charged in credits.",
     when: "You want recurring work done for you. Public actions wait for your approval unless autopilot is on.",
   },
   {
     name: "list_employees", cost: 0, group: "own",
     args: "includeFired?",
-    desc: "Your workspace's AI employees with status, schedule, next run and budget left. Free.",
+    desc: "Your workspace's AI employees with status, schedule, next run and how much of its plan's included work is used this month. Free.",
     when: "Before hiring another, or to see what is running.",
   },
   {
