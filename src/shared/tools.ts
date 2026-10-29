@@ -83,9 +83,10 @@ import {
  type NooticrSettings,
  type SettingsStore,
 } from "./settings.js";
+import { trimTrailingSlashes } from "./strings.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.93";
+export const MCP_SERVER_VERSION = "1.26.95";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
@@ -192,7 +193,7 @@ function appsSdkResource(tool: string): string {
  * host falls back to its default per-conversation origin.
  */
 async function computeAppDomain(): Promise<string | undefined> {
- const publicUrl = (process.env.PUBLIC_URL || "").trim().replace(/\/+$/, "");
+ const publicUrl = trimTrailingSlashes((process.env.PUBLIC_URL || "").trim());
  if (!publicUrl) return undefined;
  try {
   const endpoint = `${publicUrl}/mcp`;
@@ -1088,7 +1089,7 @@ const TOOL_NAMES = [
  ];
  const apiUrl = process.env.NOOTICR_API_URL || process.env.NOOTICR_BASE_URL;
  if (apiUrl && apiUrl.trim()) {
-  domains.push(apiUrl.trim().replace(/\/+$/, ""));
+  domains.push(trimTrailingSlashes(apiUrl.trim()));
  }
 
 /**

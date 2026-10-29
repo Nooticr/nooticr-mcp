@@ -63,7 +63,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         .object({
           appId: z.number().int().optional().describe("Only this product's assets."),
           kind: z.enum(CREATIVE_ASSET_KINDS).optional(),
-          briefId: z.string().uuid().optional(),
+          briefId: z.guid().optional(),
           since: z.string().datetime({ offset: true }).optional().describe("ISO 8601 timestamp."),
           limit: z.number().int().min(1).max(100).optional(),
           cursor: z.string().optional().describe("nextCursor from the previous page."),
@@ -83,7 +83,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         "canceled, with the finished assets and the credits quoted, charged and refunded. Poll " +
         "after pollAfterSeconds. No cost to call. Use after a creative tool returns a jobId, until the job is done or failed.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: z.object({ jobId: z.string().uuid().describe("jobId returned when the job was started.") }).strict(),
+      inputSchema: z.object({ jobId: z.guid().describe("jobId returned when the job was started.") }).strict(),
       outputSchema: OUTPUT_SCHEMAS.creative_job_status,
     },
     passthrough("creative_job_status"),
@@ -98,7 +98,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
     .strict()
     .describe("A voiceRef from creative_voices_search.");
   const handshake = {
-    briefId: z.string().uuid().optional().describe("Optional. The id of the creative brief this is for, from creative_brief_list. Leave it out when there is none, as for a request made in chat."),
+    briefId: z.guid().optional().describe("Optional. The id of the creative brief this is for, from creative_brief_list. Leave it out when there is none, as for a request made in chat."),
     confirm: z.boolean().optional().describe("Set true only once the user has agreed to the quoted credits."),
     confirmationToken: z.string().optional().describe("The token the quote returned."),
   };
@@ -148,8 +148,8 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
         .object({
           appId: z.number().int(),
           prompt: z.string().min(1).max(4000),
-          imageAssetIds: z.array(z.string().uuid()).min(1).max(4).describe("1-4 image asset ids, from creative_assets_list or a previous creative_image."),
-          maskAssetId: z.string().uuid().optional().describe("Optional. An image asset id, from creative_assets_list, to use as the edit mask."),
+          imageAssetIds: z.array(z.guid()).min(1).max(4).describe("1-4 image asset ids, from creative_assets_list or a previous creative_image."),
+          maskAssetId: z.guid().optional().describe("Optional. An image asset id, from creative_assets_list, to use as the edit mask."),
           size: imageSize,
           ...handshake,
         })
@@ -272,8 +272,8 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
           prompt: z.string().min(1).max(2000),
           durationSeconds: z.number().int().min(3).max(30).optional().describe("Length to aim for; default 6. Rendered at the nearest length the model offers."),
           aspect: z.enum(["9:16", "16:9"]).optional().describe("Default 9:16 (vertical)."),
-          firstFrameAssetId: z.string().uuid().optional().describe("An image asset to start the clip from."),
-          referenceAssetIds: z.array(z.string().uuid()).min(1).max(3).optional().describe("Up to 3 image assets to stay consistent with."),
+          firstFrameAssetId: z.guid().optional().describe("An image asset to start the clip from."),
+          referenceAssetIds: z.array(z.guid()).min(1).max(3).optional().describe("Up to 3 image assets to stay consistent with."),
           audio: z.enum(["ambient", "none"]).optional().describe("Default ambient. Never dialogue or music."),
           ...handshake,
         })
@@ -287,7 +287,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
   // outside call is optional stock music.
   const composeSegment = z
     .object({
-      assetId: z.string().uuid().describe("An asset id, from creative_assets_list or the creative tool that made it."),
+      assetId: z.guid().describe("An asset id, from creative_assets_list or the creative tool that made it."),
       start: z.number().min(0).optional(),
       end: z.number().min(0).optional(),
       motion: z.enum(["zoom_in", "zoom_out", "pan_left", "pan_right", "none"]).optional(),
@@ -315,7 +315,7 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
           aspect: z.enum(["9:16", "4:5", "1:1"]).optional(),
           draft: z.boolean().optional().describe("A lower-priced 540-wide preview."),
           segments: z.array(composeSegment).min(1).max(12),
-          voiceoverAssetId: z.string().uuid().optional().describe("Optional. A voice-over asset id, from creative_voiceover or creative_assets_list."),
+          voiceoverAssetId: z.guid().optional().describe("Optional. A voice-over asset id, from creative_voiceover or creative_assets_list."),
           captions: z
             .union([
               z.enum(["voiceover", "none"]),
@@ -325,12 +325,12 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
             .describe("\"voiceover\" (from the voice-over's word timings; the default when one is given), \"none\", or your own lines with start/end in seconds."),
           music: z
             .union([
-              z.object({ assetId: z.string().uuid().describe("A music asset id, from creative_music or creative_assets_list.") }).strict(),
+              z.object({ assetId: z.guid().describe("A music asset id, from creative_music or creative_assets_list.") }).strict(),
               z.object({ source: z.literal("stock"), query: z.string() }).strict(),
               z.null(),
             ])
             .optional(),
-          sfx: z.array(z.object({ assetId: z.string().uuid().describe("A sound-effect asset id, from creative_sfx or creative_assets_list."), at: z.number().min(0) }).strict()).max(6).optional(),
+          sfx: z.array(z.object({ assetId: z.guid().describe("A sound-effect asset id, from creative_sfx or creative_assets_list."), at: z.number().min(0) }).strict()).max(6).optional(),
           safeZone: z.enum(["tiktok", "reels", "shorts", "feed"]).optional(),
           brandKit: z.boolean().optional(),
           endCard: z.object({ text: z.string().max(60), seconds: z.number().min(0.5).max(5).optional() }).strict().optional(),
@@ -428,12 +428,12 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
       inputSchema: z
         .object({
-          briefId: z.string().uuid().describe("Id from creative_brief_list or creative_brief_create."),
+          briefId: z.guid().describe("Id from creative_brief_list or creative_brief_create."),
           status: z.enum(["in_progress", "awaiting_pick", "delivered", "failed", "canceled"]).optional(),
           notes: z.string().optional(),
-          draftAssetIds: z.array(z.string().uuid()).max(12).optional(),
-          deliveredAssetIds: z.array(z.string().uuid()).max(12).optional(),
-          actionIds: z.array(z.string().uuid()).max(12).optional(),
+          draftAssetIds: z.array(z.guid()).max(12).optional(),
+          deliveredAssetIds: z.array(z.guid()).max(12).optional(),
+          actionIds: z.array(z.guid()).max(12).optional(),
           creditsSpent: z.number().int().min(0).optional(),
         })
         .strict(),

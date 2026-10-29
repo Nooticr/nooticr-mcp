@@ -1,3 +1,4 @@
+import { trimTrailingSlashes } from "./strings.js";
 /**
  * Runtime-agnostic nooticr API client — the single source of truth for the
  * Node package (`@nooticr/mcp`) and the Cloudflare Worker (mcp.nooticr.com).
@@ -161,7 +162,7 @@ export class NooticrClient {
     idempotencyKey?: string,
     extraHeaders: Record<string, string> = {}
   ) {
-    this.baseUrl = baseUrl.replace(/\/+$/, "");
+    this.baseUrl = trimTrailingSlashes(baseUrl);
     this.tokenProvider = tokenProvider;
     this.idempotencyKey = idempotencyKey;
     this.extraHeaders = extraHeaders;
@@ -410,7 +411,7 @@ export class NooticrClient {
   }
 
   static async login(baseUrl: string, email: string, password: string): Promise<NooticrSession> {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/auth/login`, {
+    const res = await fetch(`${trimTrailingSlashes(baseUrl)}/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -434,7 +435,7 @@ export class NooticrClient {
     code: string,
     workspaceId?: string
   ): Promise<NooticrSession> {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/auth/oauth/complete`, {
+    const res = await fetch(`${trimTrailingSlashes(baseUrl)}/auth/oauth/complete`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(workspaceId !== undefined ? { code, workspaceId } : { code }),
@@ -454,7 +455,7 @@ export class NooticrClient {
 
   /** Redeems a refresh token for a fresh nooticr session (rotating the refresh token). */
   static async refreshSession(baseUrl: string, refreshToken: string): Promise<NooticrSession> {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/auth/refresh`, {
+    const res = await fetch(`${trimTrailingSlashes(baseUrl)}/auth/refresh`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ refreshToken }),

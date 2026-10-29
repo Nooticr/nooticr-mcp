@@ -38,6 +38,7 @@ import { createMcpServer } from "./shared/tools.js";
 import { stdioIdempotencyKey } from "./idempotency.js";
 import { FileWatchStore } from "./shared/watchlist.js";
 import path from "node:path";
+import { bearerToken as parseBearer } from "./shared/strings.js";
 
 /**
  * The watchlist lives beside the credentials: one machine, one signed-in user,
@@ -115,8 +116,7 @@ function sendHtml(res: http.ServerResponse, status: number, body: string): void 
 function bearerToken(req: http.IncomingMessage): string | undefined {
   const header = req.headers.authorization;
   if (!header) return undefined;
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  return match ? match[1].trim() : undefined;
+  return parseBearer(header);
 }
 
 /**

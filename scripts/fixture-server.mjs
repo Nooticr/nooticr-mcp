@@ -618,7 +618,7 @@ function sendJson(res, status, body) {
 
 function bearerToken(req) {
   const header = req.headers.authorization;
-  const match = header && /^Bearer\s+(.+)$/i.exec(header);
+  const match = header && /^Bearer\s+(\S.*)$/i.exec(header);
   return match ? match[1].trim() : undefined;
 }
 
@@ -2238,7 +2238,9 @@ const server = http.createServer(async (req, res) => {
 
     sendJson(res, 404, { error: `fixture-server: no route for ${req.method} ${req.url}` });
   } catch (err) {
-    sendJson(res, 500, { error: String(err?.stack ?? err) });
+    // The stack goes to the fixture's own log, not into the response body.
+    console.error("fixture-server:", err);
+    sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
   }
 });
 

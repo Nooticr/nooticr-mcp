@@ -39,7 +39,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { NooticrClient } from "./nooticr.js";
-import { OUTPUT_SCHEMAS, anyObject } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, anyObject, open } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { withEvidence } from "./evidence-digest.js";
 import { confirmSpend, declinedResult } from "./spend.js";
@@ -724,7 +724,7 @@ export function registerAmazonTools(server: McpServer, makeClient: MakeClient): 
         openWorldHint: false,
       },
       outputSchema: OUTPUT_SCHEMAS.show_amazon_category_insights,
-      inputSchema: z.object(insightsInputShape).passthrough(),
+      inputSchema: open(insightsInputShape),
     },
     async (args: Record<string, unknown>, extra) =>
       insightsResult(args, () => makeClient({ ...extra, arguments: args }), { marketplace: "amazon" }),

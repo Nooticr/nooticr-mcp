@@ -55,7 +55,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { NooticrClient, McpProxyResult } from "./nooticr.js";
 import { withEvidence } from "./evidence-digest.js";
-import { OUTPUT_SCHEMAS } from "./output-schemas.js";
+import { OUTPUT_SCHEMAS, anyArray } from "./output-schemas.js";
 import { viewMeta } from "./view-meta.js";
 import { failed } from "./passthrough.js";
 import { SEARCHER_TEXT_NOTE } from "./growth.js";
@@ -586,7 +586,7 @@ export function registerOwnAccountTools(server: McpServer, makeClient: MakeClien
           caption: z.string().optional(),
           contentType: z.string().optional(),
           thumbnailUrl: z.string().optional().describe("Looked at by the reviewer when given."),
-          mediaItems: z.array(z.any()).optional(),
+          mediaItems: anyArray().optional(),
           platform: z.string().optional(),
           influencerId: z.number().int().optional(),
         })

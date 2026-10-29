@@ -1,12 +1,13 @@
 import path from "node:path";
 import os from "node:os";
+import { trimTrailingSlashes } from "./shared/strings.js";
 
 export const DEFAULT_BASE_URL = "https://api.nooticr.com";
 export const DEFAULT_PUBLIC_URL = "http://localhost:3457";
 export const DEFAULT_PORT = 3457;
 
 export function stripTrailingSlash(url: string): string {
-  return url.replace(/\/+$/, "");
+  return trimTrailingSlashes(url);
 }
 
 export function getBaseUrl(): string {

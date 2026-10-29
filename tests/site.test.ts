@@ -334,7 +334,7 @@ describe("support page", () => {
     // its bare mailto and every field was silently dropped, with nothing
     // thrown anywhere a person would look. `new Function` is the cheapest
     // thing that would have caught it.
-    const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+    const script = html.match(/<script>([\s\S]*?)<\/script\b[^>]*>/i)?.[1];
     expect(script, "no composer script in the page").toBeTruthy();
     expect(() => new Function(script as string)).not.toThrow();
     // And it must still be building the body from the fields.
@@ -575,7 +575,7 @@ describe("UI template dual-host safety", () => {
     ).toEqual([]);
 
     // And the resolved template must still be parseable.
-    const script = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*)<\/script>/)?.[1] ?? "";
+    const script = NOOTICR_UI_TEMPLATE.match(/<script>([\s\S]*)<\/script\b[^>]*>/i)?.[1] ?? "";
     expect(() => new Function(script)).not.toThrow();
   });
 });
@@ -1299,7 +1299,7 @@ describe("plugin manifest", () => {
     const plugin = await read(".claude-plugin/plugin.json");
     const blob = `${plugin.description} ${(plugin.keywords ?? []).join(" ")}`.toLowerCase();
     for (const p of PLATFORMS) {
-      const needle = p.name.toLowerCase().replace("x", "x").split("/")[0];
+      const needle = p.name.toLowerCase().split("/")[0];
       expect(blob, `${p.name} missing from the plugin manifest`).toContain(needle);
     }
   });

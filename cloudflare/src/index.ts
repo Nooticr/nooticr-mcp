@@ -42,13 +42,14 @@ import {
   unsupportedScopes,
   type McpSession,
 } from "./oauth.js";
+import { bearerToken as parseBearer, trimTrailingSlashes } from "../../src/shared/strings.js";
 
 export { McpEndpoint } from "./endpoint.js";
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-     const path = url.pathname.replace(/\/+$/, "") || "/";
+     const path = trimTrailingSlashes(url.pathname) || "/";
      const method = request.method;
 
     // Both RFCs tell a client to build the metadata URL by inserting the
@@ -606,8 +607,7 @@ async function handleCheckout(request: Request, env: Env): Promise<Response> {
 function bearerToken(request: Request): string | undefined {
   const header = request.headers.get("authorization");
   if (!header) return undefined;
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  return match ? match[1].trim() : undefined;
+  return parseBearer(header);
 }
 
 // --- OAuth routing ----------------------------------------------------------

@@ -1,3 +1,4 @@
+import { trimTrailingSlashes } from "./strings.js";
 /**
  * What nooticr actually returned in this session, so a `show_*` view can
  * draw nooticr's figures rather than the model's copy of them (#107).
@@ -31,10 +32,10 @@ export function postKey(url: unknown): string {
   try {
     const u = new URL(raw);
     const host = u.hostname.toLowerCase().replace(/^(www|m|mobile)\./, "");
-    const keep = host.endsWith("youtube.com") && u.searchParams.get("v") ? `?v=${u.searchParams.get("v")}` : "";
-    return `${host}${u.pathname.replace(/\/+$/, "")}${keep}`;
+    const keep = (host === "youtube.com" || host.endsWith(".youtube.com")) && u.searchParams.get("v") ? `?v=${u.searchParams.get("v")}` : "";
+    return `${host}${trimTrailingSlashes(u.pathname)}${keep}`;
   } catch {
-    return raw.replace(/[?#].*$/, "").replace(/\/+$/, "").toLowerCase();
+    return trimTrailingSlashes(raw.replace(/[?#].*$/, "")).toLowerCase();
   }
 }
 
