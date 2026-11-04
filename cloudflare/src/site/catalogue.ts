@@ -1092,6 +1092,12 @@ export const TOOLS: Tool[] = [
     desc: "Counts of the UTM-tagged events your own site or app sent (clicks, sign-ups, purchases, installs) per campaign, source or medium. Free.",
     when: "What your social links and creators actually brought in.",
   },
+  {
+    name: "sdr_find_companies", cost: 2, group: "research",
+    args: "icp { industry?, keywords?, categories?, country, city?, naf?, sic?, db07?, departments?, headcount?, sizeHint? }, language?, limit?",
+    desc: "Companies that fit an ideal customer profile, from Overture Maps listings and, in France, the UK and Denmark, the company register by activity code: domain, register number and, for a small company, its leader. Free when the same search ran this week.",
+    when: "Building a prospect list in one country.",
+  },
 
   // ── account ──
   {

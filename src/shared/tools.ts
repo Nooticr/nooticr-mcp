@@ -998,6 +998,8 @@ const TOOL_NAMES = [
   "list_app_reviews",
   "check_disclosure",
   "get_tracked_conversions",
+  // The AI SDR's company search over open data and company registers (research.ts).
+  "sdr_find_companies",
  ];
 
  // Human-readable resource name per tool (used in resources/list + tools/list).

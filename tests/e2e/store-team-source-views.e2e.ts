@@ -230,3 +230,43 @@ test("own published posts show saves and engagement per view", async ({ page }) 
   await render(page, { posts: [{ platform: "instagram", title: "Five plants", views: 3000, likes: 240, comments: 22, shares: 90, saves: 150, engagementPerView: 0.1673 }] });
   await expect(page.locator("[data-epv]")).toContainText("16.7% per view");
 });
+
+test("a company search draws one row per company with its register number, buyer and credit", async ({ page }) => {
+  await render(page, {
+    query: "bougies Lyon", country: "FR", lists: [], alreadySaved: [], sizeHint: null, errors: [], cost: 2,
+    companies: [
+      { name: INJECTION, domain: "cire-et-meche.fr", sourceUrl: "https://annuaire-entreprises.data.gouv.fr/entreprise/882145367", evidence: "20.41Z", foundIn: "company register", siren: "882145367", likelyBuyer: { name: "Claire Dumont", role: "Présidente" }, sources: [] },
+      { name: "Les Bougies de Lou", domain: "lesbougiesdelou.fr", sourceUrl: "https://www.lesbougiesdelou.fr/", evidence: "candle_store", foundIn: "business listings", sources: [] },
+    ],
+    withoutWebsite: [{ name: "LUMIÈRE DES MONTS", address: "69440 Mornant", siren: "901774532", likelyBuyer: { name: "Sophie Garnier", role: "Gérante" } }],
+    setAside: { directoriesAndMarketplaces: 3, listingsWithoutAWebsite: 0 },
+    attribution: [
+      { source: "Overture Maps places", attribution: "© Overture Maps Foundation", licence: "CDLA-Permissive-2.0" },
+      { source: "Recherche d'entreprises", attribution: "Recherche d'entreprises, DINUM, from INSEE's Sirene and the RNE", licence: "Licence Ouverte 2.0 (Etalab)" },
+    ],
+  });
+  await expect(page.locator(".nt-view-title")).toHaveText("Companies that fit");
+  const rows = page.locator("[data-company-row]");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("SIREN 882145367");
+  await expect(rows.first()).toContainText("Claire Dumont");
+  await expect(rows.first().locator('a[href="https://cire-et-meche.fr/"]')).toHaveText("cire-et-meche.fr");
+  // A company name is third-party text: drawn as text, never as markup.
+  await expect(rows.first()).toContainText("<b>post</b>");
+  await expect(rows.first().locator("b b")).toHaveCount(0);
+  await expect(page.locator("[data-company-nosite]")).toContainText("SIREN 901774532");
+  await expect(page.locator("[data-attribution]")).toContainText("© Overture Maps Foundation");
+  await expect(page.locator("[data-attribution]")).toContainText("Licence Ouverte 2.0");
+});
+
+test("a country whose listings are not loaded says why instead of drawing no companies", async ({ page }) => {
+  await render(page, {
+    query: "candles", country: "US", companies: [], lists: [], withoutWebsite: [], alreadySaved: [], sizeHint: null, cost: 0,
+    setAside: { directoriesAndMarketplaces: 0, listingsWithoutAWebsite: 0 },
+    errors: ["business listings for US are not loaded yet; find companies with web_search meanwhile"],
+    attribution: [{ source: "Overture Maps places", attribution: "© Overture Maps Foundation" }],
+  });
+  await expect(page.locator(".nt-commerce-note")).toContainText("not loaded yet");
+  await expect(page.locator(".nt-view-desc")).toContainText("no charge");
+  await expect(page.locator("[data-company-row]")).toHaveCount(0);
+});

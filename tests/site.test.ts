@@ -48,6 +48,9 @@ const DATA_PRICING: Record<string, number> = {
   summarize_post_comments: 2,
   // Per creator checked, not per call — the unit price is what the pages show.
   catch_up_watchlist: 2,
+  // Charged by the backend's own SDR billing, not mcp_tool_cost; 0 when the
+  // same search ran this week.
+  sdr_find_companies: 2,
 };
 
 const SERVER_PRICING: Record<string, number> = {
@@ -780,6 +783,8 @@ describe("tool surface", () => {
     "list_app_reviews",
     "check_disclosure",
     "get_tracked_conversions",
+    // The AI SDR's company search over open data and company registers (research.ts).
+    "sdr_find_companies",
   ];
 
   it("declares exactly the tools we intend to ship", async () => {
