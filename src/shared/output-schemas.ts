@@ -1927,7 +1927,18 @@ export const OUTPUT_SCHEMAS = {
   get_brand_playbook: open({
     available: scalar().describe("false when no playbook has been configured yet."),
     name: scalar(),
-    brand_playbook: scalar().describe("The playbook text itself, or null when unavailable."),
+    /**
+     * An object, not text: the backend stores the playbook as JSON (`apps.brand_playbook`,
+     * written by the Analyze job and by an employee's save_brand_playbook: positioning,
+     * audience, competitors and claims as lists, tone, employeeWritten, learnedBy). Declared
+     * `scalar()`, every call on a product that had a playbook failed output validation with
+     * "Invalid input at brand_playbook" — only the empty case ever passed. A string is still
+     * accepted, in case an older row holds text.
+     */
+    brand_playbook: z
+      .union([oneType(open({})), z.string(), z.null()])
+      .optional()
+      .describe("The playbook as stored: an object of its fields, or null when unavailable."),
     description: scalar(),
     appId: scalar(),
     appName: scalar(),
