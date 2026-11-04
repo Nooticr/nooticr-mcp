@@ -263,3 +263,43 @@ describe("declared shapes match what the backend sends", () => {
     expect(keys).not.toContain("captions");
   });
 });
+
+// 2026-11-04, the SDR's first two runs: every get_brand_playbook failed output validation
+// with "Invalid input at brand_playbook", right after save_brand_playbook had written one for
+// the workspace's saas product. The payload below is the shape nooticr-server returns for
+// that round trip (its test `save_brand_playbook_round_trips_through_get_brand_playbook`
+// pins the same keys): the playbook is an object, with lists inside.
+describe("get_brand_playbook", () => {
+  const saved = {
+    available: true,
+    name: "Nooticr",
+    description: "AI employees for growth teams",
+    brand_playbook: {
+      positioning: "AI employees that do the growth work",
+      audience: "Founders of small B2B SaaS companies",
+      competitors: ["Example Rival"],
+      claims: ["Hires in minutes"],
+      tone: "Plain and direct",
+      employeeWritten: ["positioning", "audience", "competitors", "claims", "tone"],
+      learnedBy: { employeeId: "00000000-0000-0000-0000-000000000000", name: "Sales", at: "2026-11-04T20:27:41+00:00", sources: ["https://nooticr.com/"] },
+    },
+    appId: "app_15",
+    appName: "Nooticr",
+  };
+  const schema = OUTPUT_SCHEMAS.get_brand_playbook as z.ZodTypeAny;
+
+  it("accepts a playbook saved by an employee", () => {
+    const r = schema.safeParse(saved);
+    expect(r.success, r.success ? "" : JSON.stringify(r.error.issues)).toBe(true);
+  });
+
+  it("accepts no playbook, and an older text one", () => {
+    expect(schema.safeParse({ ...saved, available: false, brand_playbook: null }).success).toBe(true);
+    expect(schema.safeParse({ ...saved, brand_playbook: "Plain text playbook" }).success).toBe(true);
+  });
+
+  it("accepts it through the JSON Schema a client validates with", () => {
+    const json = z.toJSONSchema(schema, { io: "output" }) as { properties: Record<string, unknown> };
+    expect(JSON.stringify(json.properties.brand_playbook)).toContain('"object"');
+  });
+});
