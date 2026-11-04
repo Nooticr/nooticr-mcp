@@ -2373,6 +2373,20 @@
         "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
         "idempotent_justification": "Idempotent: it writes nothing, so a repeat has no additional effect; it may return newer data."
       }
+    },
+    "sdr_find_companies": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it searches open business listings and public company registers for companies that fit a profile. Nothing is saved; the only change is the credit charge for the search.",
+        "open_world_justification": "Reaches outside this server: it reads Overture Maps business listings and the French, UK and Danish public company registers, so the result depends on third-party open data that can change between calls.",
+        "destructive_justification": "Not destructive: it changes nothing, so there is nothing for it to destroy.",
+        "idempotent_justification": "Not idempotent: a new search is charged again (2 nooticr credits), though the same search within a week is answered from the week's results at no charge, and the registers can change between calls."
+      }
     }
   },
   "test_cases": [

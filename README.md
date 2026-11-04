@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-169 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+170 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -139,6 +139,7 @@ them caps that fan-out with an argument.
 | `get_news_volume` | free | How much news coverage a brand, competitor or topic got: articles per day in GDELT's worldwide news index over a window, each entity's share of the coverage against up to two others, and the latest headlines. Counts articles, never readers. |
 | `get_search_trends` | free | Google Trends interest for up to five terms on one 0-100 scale, from Google's official Trends API. Off until the server has access to that API (an invite-only alpha); it then refuses with `not_configured` rather than reading the Trends page. |
 | `list_watch_mentions` | free | The text your brand watches stored: platform, author, the post's words, its link, its sentiment and when a run saw it, newest first, filterable by watch, date and words. Free because the sweeps were billed when they ran. |
+| `sdr_find_companies` | 2 | **Companies that fit an ideal customer profile**, from open data: Overture Maps business listings in one of 16 countries and, in France, the UK and Denmark, the official company register by activity code (`naf`, `sic`, `db07`; France also by department and headcount). Each with its own domain, the listing or register entry, its register number (SIREN, Companies House number or CVR) and, for a small company, the register's leader as `likelyBuyer`. A listing is not proof of fit, and the results are credited as `attribution` says (© Overture Maps Foundation and the register's licence). A country whose listings are not loaded yet says so in `errors` and charges nothing. 2 credits per call, nothing when the same search ran this week. |
 | `check_disclosure` | free | Whether a sponsored caption discloses the partnership the way the creator's market requires (France's "Publicité" or "Collaboration commerciale", Germany's "Werbung", "#ad" elsewhere): present, missing or unclear, the words found and the wording to use. Reads the caption only. |
 
 ### Answer a question you actually have

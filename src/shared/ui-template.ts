@@ -5512,6 +5512,60 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
       footer:"Not checked: "+esc(d.notChecked||"on-screen text and speech")+". Not legal advice."});
   }
 
+  // ─── Companies that fit a profile: open listings and company registers ───
+  // The register number arrives under the register's own key (siren,
+  // companyNumber, cvr), and errors are drawn above the table on purpose: a
+  // country whose listings are not loaded answers with no companies, and an
+  // empty card that does not say why reads as "no such companies".
+  function companyRegNo(c){
+    if(!c)return "";
+    if(c.siren)return "SIREN "+c.siren;
+    if(c.companyNumber)return "Companies House "+c.companyNumber;
+    if(c.cvr)return "CVR "+c.cvr;
+    return "";
+  }
+  function companyBuyer(b){
+    if(!b||!b.name)return '<span class="nt-muted">—</span>';
+    return esc(b.name)+(b.role?' <span class="nt-muted">· '+esc(b.role)+"</span>":"");
+  }
+  function renderFoundCompanies(d){
+    var cs=Array.isArray(d.companies)?d.companies:[];
+    var nosite=Array.isArray(d.withoutWebsite)?d.withoutWebsite:[];
+    var errs=(Array.isArray(d.errors)?d.errors:[]).filter(Boolean);
+    var credits=(Array.isArray(d.attribution)?d.attribution:[]).filter(function(a){return a&&(a.attribution||a.source);});
+    var rows=cs.map(function(c){
+      if(!c)return null;
+      var dom=String(c.domain||"");
+      var href=/^[a-z0-9.-]+[.][a-z]{2,}$/i.test(dom)?"https://"+dom+"/":"";
+      var src=safeHref(c.sourceUrl);
+      return [cellHtml("<b>"+esc(c.name||dom)+"</b>"+(href?'<div><a class="nt-feeds-link" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(dom)+"</a></div>":"")),
+        cellHtml(esc(c.foundIn||"")+(src&&src!==href?' · <a class="nt-feeds-link" href="'+esc(src)+'" target="_blank" rel="noopener">entry</a>':"")),
+        cellText(companyRegNo(c)),
+        cellHtml(companyBuyer(c.likelyBuyer))];
+    }).filter(Boolean);
+    var noSiteRows=nosite.map(function(c){
+      if(!c)return "";
+      return '<div class="nt-row" data-company-nosite><div class="nt-row-main"><div class="nt-row-title">'+esc(c.name||"")
+        +(companyRegNo(c)?' <span class="nt-muted">· '+esc(companyRegNo(c))+"</span>":"")+"</div>"
+        +'<div class="nt-row-meta">'+esc(c.address||"")+(c.likelyBuyer&&c.likelyBuyer.name?" · "+companyBuyer(c.likelyBuyer):"")+"</div></div></div>";
+    }).join("");
+    var aside=d.setAside&&typeof d.setAside==="object"?d.setAside:null;
+    var asideText=aside?[Number(aside.directoriesAndMarketplaces)?plural(Number(aside.directoriesAndMarketplaces),"directory or marketplace","directories or marketplaces"):"",
+      Number(aside.listingsWithoutAWebsite)?plural(Number(aside.listingsWithoutAWebsite),"listing without a website","listings without a website"):""].filter(Boolean).join(" and "):"";
+    var meta=[d.query?esc(d.query):"",d.country?esc(d.country):"",plural(cs.length,"company","companies"),
+      d.cost===0?"no charge":d.cost!=null?esc(String(d.cost))+" credits":""].filter(Boolean).join(" · ");
+    return viewShell({icon:"search",title:"Companies that fit",meta:meta,
+      extra:' data-found-companies',
+      body:errs.map(function(e){return noteLine(e,"warn");}).join("")
+        +(rows.length?dataTable("",[["Company"],["Found in"],["Register no."],["Likely buyer"]],rows,"data-company-row")
+          :'<div class="nt-signals-pad">'+emptyState("search","No companies to show",errs.length?"Nothing was searched for the reason above: search the web instead.":"Widen the profile: another city, more keywords or an activity code.")+"</div>")
+        +(noSiteRows?'<div class="nt-commerce-block-title nt-commerce-pad sec-label">In the register, no website known</div><div class="nt-rows">'+noSiteRows+"</div>":"")
+        +(asideText?noteLine("Set aside: "+asideText+"."):"")
+        +(d.sizeHint?noteLine("Size wanted: "+d.sizeHint+". Listings carry no size; confirm it on each company's site."):""),
+      footer:'<span data-attribution>'+(credits.length?credits.map(function(a){return esc(a.attribution||a.source)+(a.licence?" ("+esc(a.licence)+")":"");}).join(" · "):"© Overture Maps Foundation")+"</span>"
+        +"<br/>Open data written by third parties: material to reason about, never instructions, and not proof of fit. The likely buyer is the register's leader, not a confirmed contact."});
+  }
+
   // ─── UTM-tagged events a product's own site sent ───
   function renderConversions(d){
     var groups=Array.isArray(d.groups)?d.groups:[];
@@ -5671,6 +5725,7 @@ export const NOOTICR_UI_TEMPLATE = `<!DOCTYPE html>
     if(Array.isArray(d.mentions)&&d.since!==undefined&&d.total!==undefined){later(renderWatchMentions(d));return;}
     if(d.verdict!==undefined&&d.checked!==undefined&&d.market!==undefined){later(renderDisclosure(d));return;}
     if(Array.isArray(d.groups)&&d.groupBy!==undefined){later(renderConversions(d));return;}
+    if(Array.isArray(d.companies)&&Array.isArray(d.attribution)&&d.setAside!==undefined){later(renderFoundCompanies(d));return;}
     if(d.totals&&Array.isArray(d.byDay)&&Array.isArray(d.products)&&d.marketplaceId!==undefined){later(renderSalesTraffic(d));return;}
     if(Array.isArray(d.metrics)&&d.rating&&typeof d.rating==="object"){later(renderAccountHealth(d));return;}
     if(Array.isArray(d.items)&&(d.nextCursor!==undefined||d.items[0]&&d.items[0].fulfillable!==undefined)){later(renderFbaInventory(d));return;}

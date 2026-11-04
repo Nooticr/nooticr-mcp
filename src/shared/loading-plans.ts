@@ -693,6 +693,14 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   list_app_reviews: { label: "Reading your app reviews", kind: "list", n: 4, steps: [], free: true },
   check_disclosure: { label: "Checking the disclosure", kind: "text", n: 1, steps: [], free: true },
   get_tracked_conversions: { label: "Counting tracked events", kind: "list", n: 3, steps: [], free: true },
+  // Billed by the backend itself, not through mcp_tool_cost, so it has no
+  // BACKEND_CALL_CREDITS entry; 0 when the same search ran this week.
+  sdr_find_companies: {
+    label: "Finding companies",
+    kind: "list",
+    n: 5,
+    steps: [{ via: "sdr_find_companies", label: "Searching listings and registers", detail: "free when the same search ran this week", credits: 2 }],
+  },
 
   // ─── Own-account reads: nooticr's own stored rows, never an upstream call ───
   list_own_apps: { label: "Reading your products", kind: "list", n: 3, steps: [], free: true },
