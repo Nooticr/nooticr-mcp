@@ -638,6 +638,10 @@ nooticr-mcp --help             Show help
 | `NOOTICR_PUBLIC_URL` | `http://localhost:3457` | public base URL advertised in OAuth metadata (HTTP mode) |
 | `NOOTICR_PORT` | `3457` | port for `--http` and `login` |
 | `NOOTICR_TRANSPORT` | `stdio` | `stdio` or `http` (same as `--http`) |
+| `POSTHOG_PROJECT_TOKEN` | — | Nooticr's own PostHog project token (`phc_`): reports this server's own failures (a result breaking its tool's output schema, nooticr unreachable, a bug) as `$exception`s, ids and templates only. Off when unset; a self-hosted install leaves it unset |
+| `POSTHOG_HOST` | `https://eu.i.posthog.com` | where those reports go |
+| `POSTHOG_ENVIRONMENT` | `production` | the `environment` on each report |
+| `NOOTICR_MCP_BUILD_SHA` | `unknown` | the `release` on each report |
 
 ## How authentication works
 

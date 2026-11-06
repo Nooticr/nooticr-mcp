@@ -19,6 +19,7 @@
  * An `isError` result is not validated against the tool's output schema (the
  * SDK skips it), so the `error` object needs no entry in output-schemas.ts.
  */
+import { noteFailure } from "./error-report.js";
 import { NooticrError, type McpProxyResult } from "./nooticr.js";
 
 type Text = { type: "text"; text: string };
@@ -67,10 +68,14 @@ export function failed(prefix: string, err: unknown): {
   const msg = err instanceof Error ? err.message : String(err);
   const { rpcCode, code, data } = refusalOf(err);
   if (!data) {
-    return { content: [{ type: "text" as const, text: `${prefix}: ${msg}` }], isError: true as const };
+    const plain = { content: [{ type: "text" as const, text: `${prefix}: ${msg}` }], isError: true as const };
+    // What it failed on, for error reporting (error-report.ts): only a failure of
+    // ours is reported, and only the result's wrapper knows the tool and caller.
+    noteFailure(plain, err);
+    return plain;
   }
   const named = code ? `\nRefusal code: ${code}.` : "";
-  return {
+  const refused = {
     content: [{ type: "text" as const, text: `${prefix}: ${msg}${named}\nRefusal data: ${JSON.stringify(data)}` }],
     // `message` is the whole first line, prefix included, so whatever the
     // server's sentence steers to (another tool, a setting) reads the same on
@@ -78,4 +83,6 @@ export function failed(prefix: string, err: unknown): {
     structuredContent: { error: { message: `${prefix}: ${msg}`, code: code ?? null, rpcCode: rpcCode ?? null, data } },
     isError: true as const,
   };
+  noteFailure(refused, err);
+  return refused;
 }
