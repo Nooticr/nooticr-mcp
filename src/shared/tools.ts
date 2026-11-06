@@ -84,6 +84,7 @@ import {
  type SettingsStore,
 } from "./settings.js";
 import { trimTrailingSlashes } from "./strings.js";
+import { forwardedByServer, observeToolCall, ownFailure, reportToolFailure } from "./error-report.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
 export const MCP_SERVER_VERSION = "1.26.96";
@@ -791,7 +792,19 @@ export function createMcpServer(
      // A preferences-store outage must not take down ordinary MCP tools.
     }
    }
-   const result = (await handler(...callArgs)) as { structuredContent?: unknown; isError?: boolean } | undefined;
+   let result: { structuredContent?: unknown; isError?: boolean } | undefined;
+   try {
+    result = (await handler(...callArgs)) as typeof result;
+   } catch (err) {
+    // The SDK turns a throw into an isError result nobody hears of; one of
+    // ours is reported (error-report.ts), a backend refusal is not.
+    const own = forwardedByServer(rawExtra) ? null : ownFailure(name, err);
+    if (own) reportToolFailure(own);
+    throw err;
+   }
+   // Before the SDK validates it: a result that breaks its own outputSchema is
+   // turned into an isError result there, after this wrapper is gone.
+   await observeToolCall(name, (config as { outputSchema?: unknown } | undefined)?.outputSchema, rawExtra, result);
    // Login recovery promises to retry what the caller originally supplied.
    // The settings layer's effective defaults belong to this attempt only.
    if (result?.isError && pendingAfterLogin?.name === name && rawArgs && typeof rawArgs === "object") {
