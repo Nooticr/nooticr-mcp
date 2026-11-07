@@ -23,6 +23,10 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "The public surface does not publish (#92, decided 2026-10-16): a post goes out when a person approves an AI employee's schedule_post action in the dashboard Inbox, or on its own if the customer turned on autopilot for publishing for that employee.",
   schedule_post:
     "The public surface does not publish (#92, decided 2026-10-16): AI employees propose it as an action, which a person approves in the dashboard Inbox unless the customer turned on autopilot for publishing for that employee.",
+  publish_post_now:
+    "The public surface does not publish (#92, decided 2026-10-16): it sends a post already approved in the dashboard out now instead of at its time. On the backend an owner asks their Social Media Manager for it in the dashboard chat (nooticr-server #1707); a Claude or ChatGPT host has no approval to stand on.",
+  reschedule_post:
+    "Moves a post already in the publishing schedule, which the public surface has no part in (#92, decided 2026-10-16: schedule_post and publishing stay with the dashboard and its approval queue). On the backend an owner asks their Social Media Manager for it in the dashboard chat (nooticr-server #1707).",
   get_batch_history:
     "History of the dashboard's compose batches, which only exist once rendering does; stays with #92.",
   get_latest_analysis:
