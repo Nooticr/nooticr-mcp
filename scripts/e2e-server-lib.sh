@@ -16,7 +16,16 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVER_DIR="${NOOTICR_SERVER_DIR:-${REPO_ROOT}/../nooticr-server}"
-BASE_URL="http://localhost:8080"
+# NOOTICR_E2E_PORT moves the fixture backend off 8080, and "auto" takes any
+# free port. CI runs on hosts shared with other repositories' jobs, where 8080
+# is the first port anything else reaches for — and the health check below
+# cannot tell whose server answered it. Real mode keeps 8080: that is where
+# nooticr-server listens.
+E2E_PORT="${NOOTICR_E2E_PORT:-8080}"
+if [[ "${E2E_PORT}" == "auto" ]]; then
+  E2E_PORT="$(node -e 'const s=require("net").createServer();s.listen(0,"127.0.0.1",()=>{console.log(s.address().port);s.close()})')"
+fi
+BASE_URL="http://localhost:${E2E_PORT}"
 APP_URL="http://localhost:5173" # server only requires this be a loopback origin
 NIL_UUID="00000000-0000-0000-0000-000000000000"
 # "real" boots the actual nooticr-server (Rust/Postgres) — the only mode
@@ -58,10 +67,17 @@ e2e_require_prereqs() {
 
 e2e_start_server() {
   SERVER_LOG="$(mktemp)"
+  # Something already answering here would pass the health check below and
+  # every test after it would be run against a server that is not ours.
+  if curl -sS -o /dev/null -m 2 "${BASE_URL}/health" 2>/dev/null; then
+    e2e_say "error: something is already listening on ${BASE_URL}. Stop it, or set"
+    e2e_say "       NOOTICR_E2E_PORT (\"auto\" picks a free port) in fixture mode."
+    exit 1
+  fi
   if [[ "${BACKEND_MODE}" == "fixture" ]]; then
     e2e_say "==> booting scripts/fixture-server.mjs (NOOTICR_E2E_BACKEND=fixture — see its header"
     e2e_say "    for what this does and doesn't prove; it is not nooticr-server)"
-    node "${REPO_ROOT}/scripts/fixture-server.mjs" >"${SERVER_LOG}" 2>&1 &
+    node "${REPO_ROOT}/scripts/fixture-server.mjs" "${E2E_PORT}" >"${SERVER_LOG}" 2>&1 &
     SERVER_PID=$!
   else
     e2e_say "==> booting nooticr-server (test mode) from ${SERVER_DIR}"
@@ -77,6 +93,9 @@ e2e_start_server() {
   e2e_say "==> waiting for ${BASE_URL}/health"
   local ready=""
   for _ in $(seq 1 180); do
+    if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
+      break # it exited (a port it could not bind, say): the log says why
+    fi
     if curl -sS -o /dev/null "${BASE_URL}/health" 2>/dev/null; then
       ready="1"
       break
