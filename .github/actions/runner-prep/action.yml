@@ -1,0 +1,57 @@
+name: Prepare a shared self-hosted runner
+description: >-
+  Checks the host has the few tools every job here takes from it, and points
+  every cache and config directory this repo's tools write into at the job's
+  own temp directory, so nothing this repo does outlives the job on a host
+  that other repositories' jobs run on next.
+
+# The nooticr-ci hosts are stopped, not destroyed, between jobs, and the next
+# job on one may come from any Nooticr repository. So everything a tool here
+# would normally leave in $HOME (npm's cache, npx's downloads, wrangler's
+# config and metrics consent, uv's interpreters) goes under $RUNNER_TEMP,
+# which the runner empties at the start of every job. The cost is a cold npm
+# cache every run; the alternative is a cache another repository's job can
+# write into and this one then trusts.
+#
+# What this deliberately leaves on the host: Node in the runner's tool cache
+# (actions/setup-node, keyed by exact version, read-only once written) and the
+# Playwright image in Docker's image store (keyed by exact version tag). Both
+# are what any job asking for that same version expects to find.
+
+runs:
+  using: composite
+  steps:
+    - name: Host tools this workflow takes as given
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Everything else (Node, Python, the browser, wrangler, the MCP CLIs)
+        # each job installs for itself. These four it cannot: checkout needs
+        # git to keep history (the version job commits and tags), the deploy
+        # checks use curl, and the browser tests run in a container.
+        missing=()
+        for t in git curl docker; do command -v "$t" >/dev/null || missing+=("$t"); done
+        if [ "${#missing[@]}" -gt 0 ]; then
+          echo "::error title=Runner is missing tools::${missing[*]} not on PATH on $(hostname). The nooticr-ci image needs them."
+          exit 1
+        fi
+        if ! docker info >/dev/null 2>&1; then
+          echo "::error title=Docker is not usable::the runner user on $(hostname) cannot reach the Docker daemon."
+          exit 1
+        fi
+
+    - name: Keep caches and config inside this job
+      shell: bash
+      run: |
+        set -euo pipefail
+        base="$RUNNER_TEMP/nooticr-mcp"
+        mkdir -p "$base"/{npm-cache,config,cache,data,tmp}
+        {
+          echo "npm_config_cache=$base/npm-cache"
+          echo "npm_config_update_notifier=false"
+          echo "XDG_CONFIG_HOME=$base/config"
+          echo "XDG_CACHE_HOME=$base/cache"
+          echo "XDG_DATA_HOME=$base/data"
+          echo "TMPDIR=$base/tmp"
+          echo "WRANGLER_SEND_METRICS=false"
+        } >> "$GITHUB_ENV"

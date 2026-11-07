@@ -8,12 +8,27 @@ name: CI
 # and npm were on 1.19.0 — the legal pages a connector review fetches were
 # 404 for days. Publishing and deploying now hang off the same green run.
 #
-# Runs on GitHub-hosted runners. The self-hosted box that builds nooticr-server
-# is registered to that repository only, so `runs-on: ubuntu-latest` here queued
-# forever with nothing to pick it up. Nothing in this workflow needs that
-# machine — it is Node, a browser and wrangler — and the runners are free for
-# a public repo. To move it back, register the runner at the organisation
-# level (or add this repo to it) and swap the three runs-on lines.
+# Runs on the org's self-hosted runners (`[self-hosted, nooticr-ci]`), like
+# every other Nooticr repository. It was on GitHub-hosted runners only while
+# those EC2 runners were registered to nooticr-server alone; once the runner
+# group took this repository too, keeping one repo on a second CI fleet was
+# just a second set of behaviours to keep in mind.
+#
+# Two things follow from that, and every job below is written for them:
+#
+# - This repository is public, and a self-hosted runner must never run code
+#   someone outside Nooticr wrote. The triggers stay push-to-main and
+#   workflow_dispatch, and every job carries the same guard (this repository,
+#   not a fork of it, and no pull request from one), so adding a
+#   `pull_request` trigger later cannot put a fork's code on the runner.
+# - The hosts are shared and outlive the job: they stop when idle rather than
+#   being replaced, and the next job may be any repository's. The image was
+#   built for Rust and Docker, so each job installs what it needs (Node via
+#   setup-node, Python via setup-uv, the browser as a pinned Playwright
+#   container, wrangler and the MCP CLIs from npm) and
+#   .github/actions/runner-prep keeps every cache and config they write inside
+#   the job's temp directory. Nothing here runs sudo, installs globally, or
+#   listens on a fixed host port.
 
 on:
   push:
@@ -32,16 +47,35 @@ permissions:
 jobs:
   verify:
     name: Verify
-    runs-on: ubuntu-latest
+    # A self-hosted runner never runs a fork's code: see the header.
+    if: >-
+      github.repository == 'Nooticr/nooticr-mcp'
+      && !github.event.repository.fork
+      && (github.event.pull_request == null
+          || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, nooticr-ci]
     steps:
       # Full history: the version step below asks what this push changed.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Shared host: check what it must provide, keep caches inside this job.
+      - uses: ./.github/actions/runner-prep
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # The host-contract, compatibility and conformance verdicts and the
+      # fixture e2e helpers are Python. The runner image's own python3, if it
+      # has one, is whatever its distro shipped; uv fetches a standalone
+      # interpreter (under XDG_DATA_HOME, which runner-prep put in this job's
+      # temp dir) and puts it first on PATH as python3.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          activate-environment: true
 
       - name: Install (root)
         run: npm ci --no-audit --no-fund
@@ -86,37 +120,37 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
-      # `--with-deps` apt-installs the browser's system libraries, and the
-      # runner's Ubuntu mirror is intermittently very slow: the same 26 MB took
-      # 1 s in one job and 12 minutes in another of the same dashboard run
-      # (2026-10-23). apt keeps what it downloads in a directory the cache
-      # below saves and restores, so a slow mirror costs a run only the
-      # packages that changed since the week's cache was written.
-      - name: Keep apt's downloads where the cache can reach them
-        id: apt
-        run: |
-          mkdir -p "$HOME/.apt-archives/partial"
-          printf 'Dir::Cache::Archives "%s/";\nAPT::Sandbox::User "root";\n' "$HOME/.apt-archives" \
-            | sudo tee /etc/apt/apt.conf.d/90-ci-archives >/dev/null
-          # The runner image's Ubuntu release; a runner variable, not in `env`.
-          echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
-          echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.apt-archives/*.deb
-          key: apt-playwright-${{ steps.apt.outputs.os }}-${{ steps.apt.outputs.week }}
-          restore-keys: apt-playwright-${{ steps.apt.outputs.os }}-
-
-      - name: Install Playwright browser
-        run: |
-          npx playwright install --with-deps chromium
-          # Drops the packages the index no longer offers, so the cache holds
-          # this week's set rather than every version it has ever seen.
-          sudo apt-get autoclean -qq
-
+      # In the official Playwright image for exactly the @playwright/test the
+      # lockfile installs, rather than `playwright install --with-deps`. That
+      # apt-installs the browser's system libraries with sudo — onto a shared
+      # host whose image was built for Rust, may not be Ubuntu, and keeps
+      # whatever it is given for the next repository's job. The container
+      # brings its own libraries and browser and takes them with it.
+      #
+      # It also gives the suite its own network namespace: the visual tests
+      # boot the fixture backend on 8080 and 8081, which on this host are
+      # the first ports anything else reaches for.
+      #
+      # Run as the runner's own uid so test-results/ is not left root-owned in
+      # the workspace, where the next checkout could not delete it. The name is
+      # unique to this run so the cleanup step below removes this container and
+      # only this one, if the job is cancelled while it runs.
       - name: Browser end-to-end tests
-        run: npx playwright test
+        id: pw
+        run: |
+          set -euo pipefail
+          PW="$(node -p 'require("./node_modules/@playwright/test/package.json").version')"
+          NAME="nooticr-mcp-playwright-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          docker run --rm --init --ipc=host --name "$NAME" \
+            --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+            -v "$PWD:$PWD" -w "$PWD" \
+            "mcr.microsoft.com/playwright:v${PW}-noble" \
+            npx playwright test
+
+      - name: Remove the browser test container
+        if: always() && steps.pw.outputs.name != ''
+        run: docker rm -f "${{ steps.pw.outputs.name }}" >/dev/null 2>&1 || true
 
       - name: Build the npm package
         run: npm run build
@@ -131,6 +165,9 @@ jobs:
       # backend — see nooticr-server/.github/workflows/agentic-e2e.yml).
       - name: Agentic E2E smoke (fixture backend)
         run: npm run test:e2e-smoke:fixture
+        env:
+          # Any free port, not 8080: this host is shared (see the header).
+          NOOTICR_E2E_PORT: auto
 
       # The host contract, checked with the official inspector rather than a
       # bespoke client. Every UI bug this server has shipped was a metadata or
@@ -163,6 +200,8 @@ jobs:
       # Fixture backend, so this needs no secret and no Rust toolchain.
       - name: Chain map (guidance actually reaches a host)
         run: npm run chain:map
+        env:
+          NOOTICR_E2E_PORT: auto
 
       # Per-host verdicts from a third-party host catalog, which is the one
       # thing the official inspector does not give: it validates the MCP Apps
@@ -243,7 +282,13 @@ jobs:
   version:
     name: Version
     needs: verify
-    runs-on: ubuntu-latest
+    # A self-hosted runner never runs a fork's code: see the header.
+    if: >-
+      github.repository == 'Nooticr/nooticr-mcp'
+      && !github.event.repository.fork
+      && (github.event.pull_request == null
+          || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, nooticr-ci]
     outputs:
       version: ${{ steps.pkg.outputs.version }}
       published: ${{ steps.pkg.outputs.published }}
@@ -258,6 +303,9 @@ jobs:
         with:
           fetch-depth: 0
           ssh-key: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.RELEASE_DEPLOY_KEY || '' }}
+
+      # Shared host: check what it must provide, keep caches inside this job.
+      - uses: ./.github/actions/runner-prep
 
       - uses: actions/setup-node@v4
         with:
@@ -391,14 +439,26 @@ jobs:
   publish:
     name: Publish to npm
     needs: [verify, version]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.version.outputs.published == 'false'
-    runs-on: ubuntu-latest
+    # The repository/fork guard every job carries (see the header), then the
+    # job's own condition.
+    if: >-
+      github.repository == 'Nooticr/nooticr-mcp'
+      && !github.event.repository.fork
+      && (github.event.pull_request == null
+          || github.event.pull_request.head.repo.full_name == github.repository)
+      && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.version.outputs.published == 'false'
+    runs-on: [self-hosted, nooticr-ci]
     steps:
       # main, not the pushed SHA: verify may have committed the version bump
       # on top of it, and that is the tree npm must receive.
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+      - uses: ./.github/actions/runner-prep
+      # registry-url makes setup-node write the token's .npmrc under
+      # $RUNNER_TEMP (NPM_CONFIG_USERCONFIG), not the runner user's ~/.npmrc,
+      # so the token does not outlive this job on a shared host.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -432,11 +492,15 @@ jobs:
     # Deploys every green push to main, whether or not the package version
     # moved — the Worker and the npm package version independently. Skipped
     # (not failed) when no token is configured; the version job warns in that
-    # case.
-    if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # case. The repository/fork guard is the one every job carries.
+    if: >-
+      github.repository == 'Nooticr/nooticr-mcp'
+      && !github.event.repository.fork
+      && (github.event.pull_request == null
+          || github.event.pull_request.head.repo.full_name == github.repository)
+      && github.event_name == 'push' && github.ref == 'refs/heads/main'
       && needs.version.outputs.can_deploy == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nooticr-ci]
     steps:
       # main, so /health reports the version npm just received rather than the
       # one it replaced — production drifting from the package is the whole
@@ -444,6 +508,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+
+      # Shared host: check what it must provide, keep caches inside this job.
+      - uses: ./.github/actions/runner-prep
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
