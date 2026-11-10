@@ -45,6 +45,8 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "Not a deliberate exclusion: a candidate for the public surface once it has a trend view to draw. Listed so it reads as pending, not forgotten.",
   creative_slides:
     "Hands a slideshow to an Opus design session paid from an AI employee's cost ledger (nooticr-server #1765); the server refuses it outside an employee's work (not_in_employee_work), so from a Claude or ChatGPT host it could only refuse.",
+  creative_video_design:
+    "Hands a short video to an Opus design session paid from an AI employee's cost ledger, like creative_slides; the session asks for its voice-over and music through that employee's own tools. The server refuses it outside an employee's work (not_in_employee_work), so from a Claude or ChatGPT host it could only refuse.",
   creative_allowance_status:
     "Reports an AI employee's remaining included work, keyed to the employee's run on the server (#333 BM5); employees reach it through the server's own /mcp. From a Claude or ChatGPT host there is no employee, so it could only answer that creative tools are paid in credits, which every creative tool's quote and creative_settings_get already say.",
   bank_list_accounts:
