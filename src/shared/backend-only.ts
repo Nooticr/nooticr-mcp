@@ -61,6 +61,8 @@ export const BACKEND_ONLY_TOOLS: Readonly<Record<string, string>> = {
     "Employee-internal (nooticr-server E3b): it looks up the order a customer wrote about, and only inside a Customer Care employee's run tied to that support thread, which is what scopes a buyer's order details to the person asking. A Claude or ChatGPT host has no support thread, so there is nothing for it to look up against.",
   add_team_member:
     "The confirmed call adds a paid seat to a team and charges the workspace's card on the spot (Stripe's prorated amount due now). That is a purchase of a digital good made from the host, which the public surface does not offer (#100) and which, unlike hire_team, has no payment page to hand off to the dashboard; seats are added on the team's page.",
+  sdr_draft_first_email:
+    "Emails a first-party lead (someone the business met in person, a referral, an inbound request, an existing customer) in the business's name, one to one through agentmail, once a workspace owner or admin approves it in the dashboard's action queue, which shows who the lead is, how the business knows them, and the whole email; it is never on autopilot. A Claude or ChatGPT host has no approval to stand on, and the server keeps it out of the dashboard chat for the same reason (nooticr-server NOT_IN_CHAT).",
   change_member_level:
     "An upgrade's confirmed call charges the workspace's card on the spot for the difference, a purchase of a digital good made from the host, which the public surface does not offer (#100); levels are changed on the team's page.",
 };
