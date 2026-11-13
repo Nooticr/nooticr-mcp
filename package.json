@@ -74,6 +74,7 @@
     "vitest": "^4.1.12"
   },
   "overrides": {
-    "hono": "^4.13.5"
+    "hono": "^4.13.16",
+    "@hono/node-server": "^2.1.6"
   }
 }
