@@ -382,8 +382,8 @@ export const TOOL_DEFINITIONS = [
  {
  name: "creative_job_status",
  title: "Creative Job Status",
- description: "Status of an asynchronous creative job by jobId: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after pollAfterSeconds. No cost to call.",
- inputSchema: z.object({ jobId: z.string().describe("jobId returned when the job was started.") }).strict(),
+ description: "Status of an asynchronous creative job by jobId: queued, running, done, failed or canceled, with the finished assets and the credits quoted, charged and refunded. Poll after pollAfterSeconds, or pass waitSeconds to have the answer wait for the job to finish (up to 30 s). No cost to call.",
+ inputSchema: z.object({ jobId: z.string().describe("jobId returned when the job was started."), waitSeconds: z.number().int().min(0).max(30).optional().describe("Answer as soon as the job is done, failed or canceled, or after this many seconds with its status then.") }).strict(),
  },
  {
  name: "sheets_create",

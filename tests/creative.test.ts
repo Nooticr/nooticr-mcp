@@ -48,7 +48,7 @@ describe("creative tools", () => {
     const { client, calls } = await connect();
     const args: Record<string, Record<string, unknown>> = {
       creative_assets_list: { appId: 3, kind: "image", briefId: "11111111-1111-4111-8111-111111111111", since: "2026-01-01T00:00:00Z", limit: 10, cursor: "c" },
-      creative_job_status: { jobId: "22222222-2222-4222-8222-222222222222" },
+      creative_job_status: { jobId: "22222222-2222-4222-8222-222222222222", waitSeconds: 30 },
       creative_voices_search: { query: "warm", language: "en", gender: "female", useCase: "advertisement", limit: 5 },
       creative_voiceover: { appId: 3, text: "Hello", voiceRef: { publicOwnerId: "o", voiceId: "v" }, quality: "draft", speed: 1, confirm: true, confirmationToken: "tok" },
       creative_sfx: { appId: 3, description: "whoosh", durationSeconds: 2 },
@@ -110,6 +110,7 @@ describe("creative tools", () => {
       ["creative_assets_list", { kind: "gif" }],
       ["creative_assets_list", { bogus: 1 }],
       ["creative_job_status", {}],
+      ["creative_job_status", { jobId: id(2), waitSeconds: 31 }],
       ["creative_voiceover", { appId: 3, text: "x".repeat(2501) }],
       ["creative_voiceover", { text: "no app" }],
       ["creative_sfx", { appId: 3, description: "x", durationSeconds: 11 }],

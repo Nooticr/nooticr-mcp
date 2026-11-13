@@ -81,9 +81,23 @@ export function registerCreativeTools(server: McpServer, makeClient: MakeClient)
       description:
         "Status of an asynchronous creative job by jobId: queued, running, done, failed or " +
         "canceled, with the finished assets and the credits quoted, charged and refunded. Poll " +
-        "after pollAfterSeconds. No cost to call. Use after a creative tool returns a jobId, until the job is done or failed.",
+        "after pollAfterSeconds, or pass waitSeconds to have the answer wait for the job to finish " +
+        "(up to 30 s). No cost to call. Use after a creative tool returns a jobId, until the job is done or failed.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: z.object({ jobId: z.guid().describe("jobId returned when the job was started.") }).strict(),
+      // The backend's schema takes waitSeconds and its own guidance says "waitSeconds 30"; left out
+      // here, every call that followed that guidance was refused (nooticr-server#1939).
+      inputSchema: z
+        .object({
+          jobId: z.guid().describe("jobId returned when the job was started."),
+          waitSeconds: z
+            .number()
+            .int()
+            .min(0)
+            .max(30)
+            .optional()
+            .describe("Answer as soon as the job is done, failed or canceled, or after this many seconds with its status then."),
+        })
+        .strict(),
       outputSchema: OUTPUT_SCHEMAS.creative_job_status,
     },
     passthrough("creative_job_status"),
