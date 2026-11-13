@@ -87,7 +87,7 @@ import { trimTrailingSlashes } from "./strings.js";
 import { forwardedByServer, observeToolCall, ownFailure, reportToolFailure } from "./error-report.js";
 
 /** Current MCP server version — bumped on every deploy for traceability. */
-export const MCP_SERVER_VERSION = "1.26.100";
+export const MCP_SERVER_VERSION = "1.26.101";
 
 /** MCP Apps extension identifier */
 const UI_EXTENSION = "io.modelcontextprotocol/ui";
