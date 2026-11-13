@@ -2163,6 +2163,15 @@ function handleMcpCall(name, args, workspaceId) {
         confirmationToken: "tok-srd-1",
         next: "Show the user the reply and, once they agree to its exact text, call post_drafted_reply with draftId, confirm: true and the confirmationToken.",
       } };
+    case "draft_discord_post":
+      // As the server stores a new message: replyTo names the channel and quotes nothing.
+      return { structuredContent: {
+        draftId: "srd-discord-post-1", status: "drafted", source: "discord",
+        replyTo: { id: `post:${args?.channelId ?? "1100000000000000002"}:2026-10-21`, author: "#plant-help", text: "" },
+        reply: args?.text ?? "Show us your 12 cm pot setups: which plant is thriving in it this month?",
+        confirmationToken: "tok-srd-1",
+        next: "Nothing is posted. Show the user the message and, once they agree to its exact text, call post_drafted_reply with draftId, confirm: true and the confirmationToken.",
+      } };
     case "post_drafted_reply":
       if (args?.confirm !== true || args?.confirmationToken !== "tok-srd-1") {
         return { error: { code: -32602, message: "That confirmation token does not match this draft (it expired, was for another draft, or the text changed); draft the reply again.", data: { code: "invalid_arguments" } } };

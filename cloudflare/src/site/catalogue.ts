@@ -385,7 +385,7 @@ export const TOOLS: Tool[] = [
   {
     name: "list_comments_to_answer", cost: 0, group: "own",
     args: "platform?, influencerId?, postId?, sinceDays?, limit?, includeAnswered?",
-    desc: "Recent comments on your own connected account that nobody has answered yet, newest first. Read-only; sends nothing. Free.",
+    desc: "Recent comments on your own connected YouTube or X account that nobody has answered yet, newest first. Read-only; sends nothing. Free.",
     when: "You want to answer your audience and the account is connected with comment management.",
   },
   {
@@ -1063,9 +1063,15 @@ export const TOOLS: Tool[] = [
     when: "Answering someone in your Discord.",
   },
   {
+    name: "draft_discord_post", cost: 0, group: "own",
+    args: "channelId, text",
+    desc: "Stores a new message for one channel of your Discord server for you to approve. Mentions no one; links only from your brand playbook; one a day per channel. Nothing is posted. Free.",
+    when: "Starting a conversation in your Discord.",
+  },
+  {
     name: "post_drafted_reply", cost: 0, group: "own",
     args: "draftId, confirm, confirmationToken",
-    desc: "Posts a stored review or Discord reply as the business, once you have agreed to its exact text. Each review or message is answered once. Free.",
+    desc: "Posts a stored review or Discord reply, or a new Discord message, as the business, once you have agreed to its exact text. Each review or message is answered once. Free.",
     when: "You have read the draft and said to send it.",
   },
   {

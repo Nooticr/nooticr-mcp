@@ -81,6 +81,25 @@ describe("reply tools", () => {
     expect(calls).toEqual([{ name: "draft_comment_reply", args: batch }]);
   });
 
+  // nooticr-server answers the replies under an X account's own posts; X is
+  // `twitter` here as everywhere else in this server. A network it does not
+  // answer on is refused before the backend, not sent to fail there.
+  it("list_comments_to_answer and draft_comment_reply take X as twitter, and no other new network", async () => {
+    const { client, calls } = await connect();
+    const list = { platform: "twitter" };
+    const draft = { platform: "twitter", commentId: "1850000000000000001", postId: "1849999999999999999", text: "Thank you!" };
+    expect((await client.callTool({ name: "list_comments_to_answer", arguments: list })).isError).toBeFalsy();
+    expect((await client.callTool({ name: "draft_comment_reply", arguments: draft })).isError).toBeFalsy();
+    for (const platform of ["x", "tiktok"]) {
+      const res = await client.callTool({ name: "draft_comment_reply", arguments: { ...draft, platform } });
+      expect(res.isError, platform).toBe(true);
+    }
+    expect(calls).toEqual([
+      { name: "list_comments_to_answer", args: list },
+      { name: "draft_comment_reply", args: draft },
+    ]);
+  });
+
   it("list_comments_to_answer bounds sinceDays and limit like the server", async () => {
     const { client } = await connect();
     expect((await client.callTool({ name: "list_comments_to_answer", arguments: { sinceDays: 31 } })).isError).toBe(true);

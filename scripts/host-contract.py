@@ -148,6 +148,7 @@ NO_APP = {
     # the host's chat, then a post receipt. Nothing for a widget to draw.
     "draft_review_reply",
     "draft_discord_reply",
+    "draft_discord_post",
     "post_drafted_reply",
 }
 

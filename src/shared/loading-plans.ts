@@ -686,6 +686,7 @@ export const LOADING_PLANS: Record<string, LoadingPlan> = {
   discord_list_channels: { label: "Reading your Discord channels", kind: "list", n: 4, steps: [], free: true },
   discord_read_messages: { label: "Reading the channel", kind: "list", n: 4, steps: [], free: true },
   draft_discord_reply: { label: "Storing the reply draft", kind: "text", n: 1, steps: [], free: true },
+  draft_discord_post: { label: "Storing the message draft", kind: "text", n: 1, steps: [], free: true },
   post_drafted_reply: { label: "Posting the approved reply", kind: "text", n: 1, steps: [], free: true },
 
   // ─── research.ts: stored rows and a pure check, none of it fetched now ───

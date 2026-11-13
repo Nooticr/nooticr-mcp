@@ -777,6 +777,7 @@ describe("tool surface", () => {
     "discord_list_channels",
     "discord_read_messages",
     "draft_discord_reply",
+    "draft_discord_post",
     "post_drafted_reply",
     // Stored mentions, app reviews, disclosure and tracked conversions (research.ts).
     "list_watch_mentions",
@@ -979,6 +980,7 @@ describe("tool surface", () => {
       "discord_list_channels",
       "discord_read_messages",
       "draft_discord_reply",
+      "draft_discord_post",
       "post_drafted_reply",
       // Stored rows and a pure check of a caption; nothing is fetched.
       "list_watch_mentions",
