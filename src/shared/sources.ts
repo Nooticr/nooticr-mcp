@@ -26,7 +26,8 @@
  *
  * ## Posting
  *
- * The two drafts store a reply and post nothing. `post_drafted_reply` posts one,
+ * The three drafts (a reply to a review, a reply to a Discord message, a new
+ * Discord message) store text and post nothing. `post_drafted_reply` posts one,
  * publicly, under the business's own account, and only with the draft's id,
  * `confirm: true` and the single-use `confirmationToken` the draft returned:
  * the same gate as `post_comment_reply`, required by the schema here so a model
@@ -308,13 +309,40 @@ export function registerSourceTools(server: McpServer, makeClient: MakeClient): 
   );
 
   server.registerTool(
+    "draft_discord_post",
+    {
+      title: "Draft Discord Post",
+      description:
+        "Use when the user wants to start a conversation in their connected Discord server rather " +
+        "than answer someone. Stores a new message (not a reply) for one text channel, for the user to " +
+        "approve before it is posted: channelId (from discord_list_channels), text (at most 1000 " +
+        "characters) and optional connectionId. Never @everyone, @here, a role or a member: the " +
+        "message notifies no one. A link must be one the brand playbook holds. One new message a day " +
+        "per channel, and one waiting at a time. The reply guards run first. Returns the draftId and a " +
+        "confirmationToken: show the user the message, then post it with post_drafted_reply. Nothing " +
+        "is posted. No cost to call.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      inputSchema: z
+        .object({
+          channelId: z.string().describe("A text channel's id from discord_list_channels."),
+          text: z.string().max(1000).describe("The message, without @-mentions; a link only from the brand playbook."),
+          connectionId,
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.draft_discord_post,
+    },
+    passthrough("draft_discord_post"),
+  );
+
+  server.registerTool(
     "post_drafted_reply",
     {
       title: "Post Drafted Reply",
       description:
         "Use only once the user has seen and agreed to the exact text of a reply stored with " +
-        "draft_review_reply or draft_discord_reply. Posts it publicly, under the business's own " +
-        "account, as the business's reply to that review or Discord message: pass the draftId, " +
+        "draft_review_reply or draft_discord_reply, or of a new Discord message stored with " +
+        "draft_discord_post. Posts it publicly, under the business's own account, as the business's " +
+        "reply to that review or Discord message, or as its new message in that channel: pass the draftId, " +
         "confirm: true and the confirmationToken returned with the draft (single use, ten minutes; an " +
         "expired one means drafting again). Never confirm on the user's behalf. Each review or message " +
         "takes one posted reply, and a repeat returns the reply already posted. It writes to a " +
@@ -322,7 +350,7 @@ export function registerSourceTools(server: McpServer, makeClient: MakeClient): 
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       inputSchema: z
         .object({
-          draftId: z.string().describe("The draft id from draft_review_reply or draft_discord_reply."),
+          draftId: z.string().describe("The draft id from draft_review_reply, draft_discord_reply or draft_discord_post."),
           confirm: z.boolean().describe("true only once the user has agreed to the exact text."),
           confirmationToken: z.string().describe("The token returned with the draft."),
         })

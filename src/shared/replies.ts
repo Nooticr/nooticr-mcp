@@ -31,7 +31,12 @@ function toResult(proxy: McpProxyResult) {
   };
 }
 
-const platform = z.enum(["youtube", "instagram"]);
+/**
+ * The networks nooticr-server answers comments on (social_replies). `twitter`
+ * is X, under the name every other tool here gives it; the server reads the
+ * replies under the account's own posts, last 7 days, as its API plan allows.
+ */
+const platform = z.enum(["youtube", "instagram", "twitter"]);
 
 /**
  * The commenter is a stranger, and a written reply's rationale reasons over
@@ -84,7 +89,9 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
       description:
         "List recent comments on the user's own connected account that nobody has answered yet, " +
         "newest first. Only the user's own posts, through their own connection: YouTube works once " +
-        "connected with capabilities: [\"manage_comments\"] (see connect_social_account); networks " +
+        "connected with capabilities: [\"manage_comments\"] (see connect_social_account), and X " +
+        "(platform \"twitter\") with a connected account as it is: the replies to its own posts, the " +
+        "last 7 days only, when X's API plan allows reading them. Networks " +
         "that cannot be answered come back under `unsupported` with the reason. Optional platform, " +
         "influencerId, postId, sinceDays (1-30, default 7), limit (1-100, default 30), " +
         "includeAnswered. Read-only: it sends nothing. No cost to call. Use when the user wants to reply to comments on their own connected account.",
@@ -92,7 +99,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
       outputSchema: OUTPUT_SCHEMAS.list_comments_to_answer,
       inputSchema: z
         .object({
-          platform: platform.optional().describe("Only this network."),
+          platform: platform.optional().describe("Only this network; twitter is X."),
           influencerId: z.number().int().optional().describe("Creator profile id when more than one account is connected."),
           account: z.union([z.number().int(), z.string()]).optional().describe("Connection id (`connectionId` from list_social_connections) when the profile has more than one account on the platform."),
           postId: z.string().optional().describe("Only comments on this video/media id."),
@@ -123,7 +130,8 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
         "steers the writing and `appId` names the product when the workspace has several. A written reply " +
         "is refused, free, when there is no brand voice, no product and no guidance to write it from. " +
         "Replies may not contain links, " +
-        "emails, phone numbers or @-mentions of anyone but the commenter. Returns a draftId and a " +
+        "emails, phone numbers or @-mentions of anyone but the commenter, and one on X must fit X's " +
+        "280 characters. Returns a draftId and a " +
         "confirmationToken: show the reply to the user first, then post it with post_comment_reply. " +
         "For several comments on one account, pass commentIds (up to 10) in place of commentId and " +
         "postId: each gets its own written reply, at 1 nooticr credit per reply drafted, and the " +
@@ -134,7 +142,7 @@ export function registerReplyTools(server: McpServer, makeClient: MakeClient): v
       outputSchema: OUTPUT_SCHEMAS.draft_comment_reply,
       inputSchema: z
         .object({
-          platform: platform.describe("The network the comment is on."),
+          platform: platform.describe("The network the comment is on; twitter is X."),
           commentId: z.string().optional().describe("Comment id from list_comments_to_answer. Required with postId unless commentIds is given."),
           postId: z.string().optional().describe("Post id the comment is on. Required with commentId; with commentIds, optional, and every comment must be on it."),
           commentIds: z

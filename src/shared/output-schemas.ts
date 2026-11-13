@@ -486,7 +486,7 @@ const reviewStats = {
   note: scalar(),
 };
 
-/** A stored reply to a review or a Discord message (nooticr-server sources/replies.rs). */
+/** A stored reply to a review or a Discord message, or a new Discord message (nooticr-server sources/replies.rs). */
 const sourceDraft = open({
   guidance: framingNote,
   draftId: scalar(),
@@ -2562,6 +2562,8 @@ export const OUTPUT_SCHEMAS = {
     note: scalar(),
   }),
   draft_discord_reply: sourceDraft,
+  // A new message: `replyTo` names the channel (`#name`) and carries no text.
+  draft_discord_post: sourceDraft,
   post_drafted_reply: open({
     draftId: scalar(),
     status: scalar(),

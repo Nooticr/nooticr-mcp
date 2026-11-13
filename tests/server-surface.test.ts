@@ -119,6 +119,7 @@ const NOT_READ_ONLY = [
   // Reply drafts are stored rows; post_drafted_reply posts one publicly, once confirmed.
   "draft_review_reply",
   "draft_discord_reply",
+  "draft_discord_post",
   "post_drafted_reply",
 ];
 
@@ -140,7 +141,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(170);
+    expect(tools).toHaveLength(171);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -185,6 +186,7 @@ describe("tool annotations", () => {
       // Creator identities: stored rows inside nooticr, and the account's own watchlist.
       "delete_creator_identity",
       "draft_comment_reply",
+      "draft_discord_post",
       "draft_discord_reply",
       "draft_post",
       // Reply drafts are rows inside nooticr; post_drafted_reply is open-world.

@@ -137,6 +137,7 @@ export const ARG_OVERRIDES = {
   // Ids the fixture's own reads hand out.
   discord_read_messages: { channelId: "1100000000000000002" },
   draft_review_reply: { source: "trustpilot", reviewId: "tp-r-301", text: "Sorry the reservoir cracked, Maya. A replacement is on its way." },
+  draft_discord_post: { channelId: "1100000000000000002", text: "Show us your 12 cm pot setups: which plant is thriving in it this month?" },
   draft_discord_reply: { channelId: "1100000000000000002", messageId: "msg-9001", text: "Sorry about that. Send us a photo and we will replace the reservoir." },
   check_disclosure: { text: "Mon nouveau pot Fernleaf #collab", market: "FR" },
   list_app_reviews: { appId: 1 },

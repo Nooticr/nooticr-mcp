@@ -83,6 +83,31 @@ describe("post_drafted_reply", () => {
   });
 });
 
+describe("draft_discord_post", () => {
+  it("is a closed-world write that tells the model to show the message before posting", async () => {
+    const { client } = await connect(() => ({}));
+    const tool = (await client.listTools()).tools.find((t) => t.name === "draft_discord_post")!;
+    expect(tool.annotations).toMatchObject({ readOnlyHint: false, openWorldHint: false, destructiveHint: false });
+    expect([...(tool.inputSchema.required ?? [])].sort()).toEqual(["channelId", "text"]);
+    expect(tool.description).toMatch(/Nothing is posted/);
+    expect(tool.description).toMatch(/post_drafted_reply/);
+    const post = (await client.listTools()).tools.find((t) => t.name === "post_drafted_reply")!;
+    expect(post.description).toMatch(/draft_discord_post/);
+  });
+
+  it("stores a message by passing its arguments through, and refuses one over 1000 characters", async () => {
+    const draft = { draftId: "d2", status: "drafted", source: "discord", reply: "Hello", confirmationToken: "tok" };
+    const { client, calls } = await connect(() => draft);
+    const args = { channelId: "c1", text: "Which plant is thriving in your pot this month?" };
+    const res = await client.callTool({ name: "draft_discord_post", arguments: args });
+    expect(res.isError).toBeFalsy();
+    expect(res.structuredContent).toMatchObject({ draftId: "d2", confirmationToken: "tok" });
+    const long = await client.callTool({ name: "draft_discord_post", arguments: { channelId: "c1", text: "a".repeat(1001) } });
+    expect(long.isError).toBe(true);
+    expect(calls).toEqual([{ name: "draft_discord_post", args }]);
+  });
+});
+
 describe("a refusal keeps its code and data", () => {
   it("not_connected reaches the host in the text and in structuredContent", async () => {
     const { client } = await connect(() => {
