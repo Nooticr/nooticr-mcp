@@ -1688,6 +1688,40 @@ function handleMcpCall(name, args, workspaceId) {
       if (args.verify === true) sc.verify = { ok: true, checked: 2, firstSeq: 1, lastSeq: 2, headHash: "h2", brokenAt: null, reason: null, verifiedAt: "2026-10-15T10:00:00Z" };
       return { content: [{ type: "text", text: "2 audit events." }], structuredContent: sc };
     }
+    case "get_employee_settings":
+    case "update_employee_settings": {
+      // nooticr-server#1989: an Influencer Marketing Manager's vetting bars. Reach is
+      // in basis points of followers (200 = 2%), and Instagram's is set for product 1.
+      const settings = [
+        { key: "min_reach_bps_instagram", label: "Minimum reach on Instagram", help: "Average views per post as a share of followers, in basis points (200 = 2%). Creators below it are not shortlisted.", kind: "number", options: [], perProduct: true, value: 150, default: 150, min: 0, max: 10000, set: false, overrides: [{ appId: 1, value: 250 }] },
+        { key: "min_reach_bps_tiktok", label: "Minimum reach on TikTok", help: "Average views per post as a share of followers, in basis points.", kind: "number", options: [], perProduct: true, value: 800, default: 800, min: 0, max: 10000, set: false, overrides: [] },
+        { key: "min_shortlist_score", label: "Shortlist score", help: "The vetting score, out of 100, a creator needs to reach the shortlist.", kind: "number", options: [], perProduct: false, value: 70, default: 65, min: 0, max: 100, set: true, overrides: [] },
+        { key: "follower_band", label: "Follower band", help: "Which creators to look at, by audience size.", kind: "choice", options: [{ value: 0, label: "Nano (1k-10k)" }, { value: 1, label: "Micro (10k-100k)" }, { value: 2, label: "Mid-tier (100k-500k)" }], perProduct: false, value: 1, default: 1, min: null, max: null, set: false, overrides: [] },
+      ];
+      const employee = { id: args?.employeeId ?? "00000000-0000-0000-0000-0000000000e1", name: "Influencer Marketing Manager" };
+      if (name === "get_employee_settings") {
+        return { content: [{ type: "text", text: `${settings.length} settings.` }], structuredContent: { employee, settings } };
+      }
+      // As the server checks every key and value before writing any (400, nothing changes).
+      const appId = args?.appId ?? null;
+      for (const [key, value] of Object.entries(args?.values ?? {})) {
+        const s = settings.find((x) => x.key === key);
+        if (!s) return { error: { code: -32602, message: `This employee's role has no setting "${key}".`, data: { code: "invalid_arguments" } } };
+        if (value === null) {
+          if (appId === null) return { error: { code: -32602, message: `null removes one product's own value: pass appId with it.`, data: { code: "invalid_arguments" } } };
+          s.overrides = s.overrides.filter((o) => o.appId !== appId);
+          continue;
+        }
+        const ok = s.kind === "choice" ? s.options.some((o) => o.value === value) : value >= s.min && value <= s.max;
+        if (!ok) return { error: { code: -32602, message: `${s.label} must be ${s.kind === "choice" ? "one of its choices" : `between ${s.min} and ${s.max}`}; nothing was changed.`, data: { code: "invalid_arguments" } } };
+        if (appId !== null && s.perProduct) s.overrides = [...s.overrides.filter((o) => o.appId !== appId), { appId, value }];
+        else { s.value = value; s.set = true; }
+      }
+      return {
+        content: [{ type: "text", text: "Settings saved." }],
+        structuredContent: { employee, appId, settings, note: "Saved. The employee works to these from its next run." },
+      };
+    }
     case "hire_employee": {
       // A subscription hire (nooticr-server BM3, asked for here with a `level`):
       // the server mints a hireId whenever none is sent and binds the token to

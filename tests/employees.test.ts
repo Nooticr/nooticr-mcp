@@ -11,6 +11,8 @@ const NAMES = [
   "fire_employee",
   "list_pending_actions",
   "get_employee_audit",
+  "get_employee_settings",
+  "update_employee_settings",
   "approve_action",
   "reject_action",
 ];
@@ -33,7 +35,7 @@ async function connect() {
 }
 
 describe("employee tools", () => {
-  it("registers exactly the eight server tools", async () => {
+  it("registers exactly the ten server tools", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...NAMES].sort());
@@ -51,6 +53,29 @@ describe("employee tools", () => {
     expect(audit.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false, destructiveHint: false });
   });
 
+  // nooticr-server#1989. Reading settings is a closed-world read; changing them is a
+  // closed-world write that a retry repeats harmlessly. The server owns each range and
+  // refuses a value outside it, so the edge passes values through unchecked.
+  it("annotates the settings pair and names one from the other", async () => {
+    const { client } = await connect();
+    const { tools } = await client.listTools();
+    const get = tools.find((t) => t.name === "get_employee_settings")!;
+    const update = tools.find((t) => t.name === "update_employee_settings")!;
+    expect(get.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false });
+    expect(update.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false });
+    expect(get.description).toContain("update_employee_settings");
+    expect(update.description).toContain("get_employee_settings");
+    expect(update.description).toMatch(/hired it or a workspace admin/);
+    expect(update.description).toMatch(/refused and nothing changes/);
+  });
+
+  it("refuses an update with no values before the backend", async () => {
+    const { client, calls } = await connect();
+    const missing = await client.callTool({ name: "update_employee_settings", arguments: { employeeId: "e1" } });
+    expect(missing.isError).toBe(true);
+    expect(calls).toEqual([]);
+  });
+
   it("forwards each call to the backend tool of the same name with its arguments", async () => {
     const { client, calls } = await connect();
     const args: Record<string, Record<string, unknown>> = {
@@ -60,6 +85,8 @@ describe("employee tools", () => {
       fire_employee: { employeeId: "e1", confirm: true },
       list_pending_actions: { employeeId: "e1", limit: 5 },
       get_employee_audit: { employeeId: "e1", from: "2026-10-01T00:00:00Z", to: "2026-10-16T00:00:00Z", types: ["tool.call", "action.executed"], runId: "r1", actionId: "a1", limit: 20, verify: true },
+      get_employee_settings: { employeeId: "e1" },
+      update_employee_settings: { employeeId: "e1", values: { min_reach_bps_instagram: 200, min_shortlist_score: null }, appId: 3 },
       approve_action: { actionId: "a1", confirm: true, confirmationToken: "tok", note: "ok" },
       reject_action: { actionId: "a1", note: "off brand" },
     };

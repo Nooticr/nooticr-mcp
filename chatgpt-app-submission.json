@@ -1800,6 +1800,34 @@
         "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call has no additional effect."
       }
     },
+    "get_employee_settings": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Read-only: it reads one AI employee's tunable settings, with their ranges, choices and per-product values. Nothing is written.",
+        "open_world_justification": "Closed domain. It reads only the caller's own nooticr workspace.",
+        "destructive_justification": "Not destructive: it changes nothing.",
+        "idempotent_justification": "Idempotent: free and writes nothing, so repeating the call has no additional effect."
+      }
+    },
+    "update_employee_settings": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Not read-only: it stores new values for an AI employee's settings, for every product or for one product.",
+        "open_world_justification": "Closed domain. It touches only the caller's own nooticr workspace; no third-party platform is contacted.",
+        "destructive_justification": "Not destructive: it changes tunable values within the ranges the role allows and deletes no content; every setting keeps its default, and removing a product's own value (null with appId) falls back to the value for every product.",
+        "idempotent_justification": "Idempotent: saving the same values twice leaves the same settings."
+      }
+    },
     "approve_action": {
       "annotations": {
         "readOnlyHint": false,

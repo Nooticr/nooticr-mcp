@@ -142,6 +142,8 @@ export const ARG_OVERRIDES = {
   check_disclosure: { text: "Mon nouveau pot Fernleaf #collab", market: "FR" },
   list_app_reviews: { appId: 1 },
   get_tracked_conversions: { appId: 1 },
+  // The employee list_employees hands out, with a value inside the fixture's range.
+  update_employee_settings: { employeeId: "00000000-0000-0000-0000-0000000000e1", values: { min_reach_bps_instagram: 200 }, appId: 1 },
   // A French register search: the fixture answers it with a register company and its leader.
   sdr_find_companies: { icp: { industry: "bougies", country: "FR", naf: ["20.41Z"] }, limit: 5 },
 };

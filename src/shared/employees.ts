@@ -1,13 +1,19 @@
 /**
  * AI employees (nooticr-server P1): hire one, see what it is waiting to do,
- * approve or reject that, pause it, let it go. Every tool here is a passthrough
+ * approve or reject that, pause it, tune its settings, let it go. Every tool here is a passthrough
  * to the server's `POST /mcp` dispatch; the server owns the quote, the
  * confirmation token, the permission check (the hiring user or a workspace
  * admin) and the stored action that approve_action runs exactly once. get_employee_audit reads
  * an employee's hash-chained audit trail, for workspace owners and admins only (AU1).
+ * get_employee_settings and update_employee_settings read and change what a role's owner
+ * tunes (nooticr-server#1989). The server owns each setting's range and choices and refuses
+ * a value outside them, or a key the role lacks, before writing any, so `values` is an open
+ * object here: a `z.record` of integers would render an object-valued additionalProperties,
+ * which strict clients misread (output-schema-shape.test.ts).
  *
- * None of these has a view yet: the lists would be drawn as tables and the
- * quotes as confirmation cards, and the design system has no card for either.
+ * None of these has a view yet: the lists would be drawn as tables, the
+ * quotes as confirmation cards and the settings as a form, and the design
+ * system has no card for any of them.
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -271,6 +277,53 @@ export function registerEmployeeTools(server: McpServer, makeClient: MakeClient)
       outputSchema: OUTPUT_SCHEMAS.get_employee_audit,
     },
     passthrough("get_employee_audit"),
+  );
+
+  server.registerTool(
+    "get_employee_settings",
+    {
+      title: "Get Employee Settings",
+      description:
+        "Read an AI employee's settings: what its owner tunes, such as a Web & Growth Analyst's " +
+        "articles a day or an Influencer Marketing Manager's vetting bars (reach per platform, " +
+        "shortlist score, follower band). Each setting comes with its value, its default, its range " +
+        "(min and max) or its choices, and, for a per-product setting, its own value for each product " +
+        "where one is set. Change one with update_employee_settings, using the keys returned here. " +
+        "No cost to call. Use when the user asks how an AI employee is set up, or before changing one of its settings.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({ employeeId: z.string().describe("Employee id from list_employees.") })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.get_employee_settings,
+    },
+    passthrough("get_employee_settings"),
+  );
+
+  server.registerTool(
+    "update_employee_settings",
+    {
+      title: "Update Employee Settings",
+      description:
+        "Change an AI employee's settings, for every product or, with appId, for one product only " +
+        '(for example "raise the reach bar to 2%"). values maps a setting key from ' +
+        "get_employee_settings to an integer within its range or one of its choices' values; with " +
+        "appId, null removes that product's own value so the setting for every product applies again. " +
+        "A value outside a setting's range or choices, or a key the role does not have, is refused and " +
+        "nothing changes. Only the person who hired it or a workspace admin can. No cost to call. " +
+        "Use when the user asks to change how an AI employee works.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: z
+        .object({
+          employeeId: z.string().describe("Employee id from list_employees."),
+          values: anyObject().describe(
+            "Setting key (from get_employee_settings) -> integer value; null, with appId, removes that product's own value.",
+          ),
+          appId: z.number().int().optional().describe("Only this product's value; leave it out to change the setting for every product."),
+        })
+        .strict(),
+      outputSchema: OUTPUT_SCHEMAS.update_employee_settings,
+    },
+    passthrough("update_employee_settings"),
   );
 
   server.registerTool(

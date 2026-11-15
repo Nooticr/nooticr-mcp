@@ -498,6 +498,22 @@ const sourceDraft = open({
   next: scalar(),
 });
 
+/** One setting as nooticr-server#1989 answers it; get and update return the same list. */
+const EMPLOYEE_SETTING = open({
+  key: scalar(),
+  label: scalar(),
+  help: scalar(),
+  kind: scalar().describe('"number" (an integer between min and max) or "choice" (one of options).'),
+  options: listOf(open({ value: scalar(), label: scalar() })),
+  perProduct: scalar(),
+  value: scalar(),
+  default: scalar(),
+  min: scalar(),
+  max: scalar(),
+  set: scalar(),
+  overrides: listOf(open({ appId: scalar(), value: scalar() })).describe("This setting's own value for each product that has one."),
+});
+
 export const OUTPUT_SCHEMAS = {
   analyze_post: open({ ...analyzed, ...evidence }),
   analyze_post_text: open({ ...evidence, ...analyzed }),
@@ -2255,6 +2271,15 @@ export const OUTPUT_SCHEMAS = {
       reason: scalar(),
       verifiedAt: scalar(),
     }).nullish().describe("Present only when verify: true was passed."),
+  }),
+  // nooticr-server#1989 (employees/settings): what a role's owner tunes, with each
+  // setting's range or choices and its per-product values.
+  get_employee_settings: open({ employee: anyObject().nullish(), settings: listOf(EMPLOYEE_SETTING) }),
+  update_employee_settings: open({
+    employee: anyObject().nullish(),
+    appId: scalar(),
+    settings: listOf(EMPLOYEE_SETTING),
+    note: scalar(),
   }),
   // A diff of two stored scans, drawn by no view: the rows are the answer.
   marketplace_changes: open({
