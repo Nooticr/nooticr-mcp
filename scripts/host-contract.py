@@ -99,14 +99,16 @@ NO_APP = {
     "list_comments_to_answer",
     "draft_comment_reply",
     "post_comment_reply",
-    # AI employees (employees.ts). View pending for all seven: the two lists would be
-    # tables and the two quotes confirmation cards, which the design system has no card for.
+    # AI employees (employees.ts). View pending: the lists would be tables, the quotes
+    # confirmation cards and the settings a form, which the design system has no card for.
     "hire_employee",  # view pending: a hire quote and its confirm step
     "list_employees",  # view pending: a table of employees with status and budget left
     "pause_employee",  # pure state mutation: nothing to draw
     "fire_employee",  # view pending: the confirm step; otherwise a pure state mutation
     "list_pending_actions",  # view pending: a queue of previews awaiting approval
     "get_employee_audit",  # view pending: a timeline of an employee's audited events
+    "get_employee_settings",  # view pending: a settings form with ranges, choices and per-product values
+    "update_employee_settings",  # pure state mutation: the reply is the same settings list, nothing new to draw
     "approve_action",  # view pending: the preview and its confirm step
     "reject_action",  # pure state mutation: nothing to draw
     # Creator CRM (crm.ts): the pipeline would be a table the design system has no card for;

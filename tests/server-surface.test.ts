@@ -91,6 +91,8 @@ const NOT_READ_ONLY = [
   "fire_employee",
   "approve_action",
   "reject_action",
+  // Changing an employee's settings writes stored values; reading them does not.
+  "update_employee_settings",
   // Creator CRM: upserting, re-statusing and logging write stored rows; the list only reads.
   "crm_upsert_creator",
   "crm_update_status",
@@ -141,7 +143,7 @@ describe("tool annotations", () => {
     const { tools } = await (await connect()).listTools();
     const bare = tools.filter((t) => !t.annotations || Object.keys(t.annotations).length === 0);
     expect(bare.map((t) => t.name), "tools a host cannot reason about").toEqual([]);
-    expect(tools).toHaveLength(171);
+    expect(tools).toHaveLength(173);
   });
 
   it("marks read-only exactly where it is true", async () => {
@@ -205,6 +207,7 @@ describe("tool annotations", () => {
       "get_content_plan",
       // AU1: reads the employee's audit rows inside nooticr.
       "get_employee_audit",
+      "get_employee_settings",
       "get_google_analytics_data",
       "get_post_performance",
       "get_posthog_analytics",
@@ -293,6 +296,7 @@ describe("tool annotations", () => {
       "unwatch_creator",
       "unwatch_creator_identity",
       "update_creator_identity",
+      "update_employee_settings",
       "update_product",
       "update_team_brief",
       "update_team_draft",

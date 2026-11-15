@@ -651,6 +651,18 @@ export const TOOLS: Tool[] = [
     when: "You want it to stop for a while rather than for good.",
   },
   {
+    name: "get_employee_settings", cost: 0, group: "own",
+    args: "employeeId",
+    desc: "What an AI employee's owner tunes (articles a day, vetting bars, follower band), each with its value, range or choices, and its value per product where one is set. Free.",
+    when: "Before changing how an employee works, or to see why it chose what it did.",
+  },
+  {
+    name: "update_employee_settings", cost: 0, group: "own",
+    args: "employeeId, values, appId?",
+    desc: "Changes an AI employee's settings, for every product or for one. A value outside a setting's range or choices is refused and nothing changes. Only its hirer or a workspace admin can. Free.",
+    when: "You want it to work to a different bar, such as a higher reach threshold on one network.",
+  },
+  {
     name: "fire_employee", cost: 0, group: "own",
     args: "employeeId",
     desc: "Lets an AI employee go for good and discards what was waiting for approval. Describes the effect first and acts only on confirmation. Free.",

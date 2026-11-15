@@ -52,7 +52,7 @@ npx @nooticr/mcp login   # one-time sign-in (Google)
 
 ## Tools
 
-171 tools, grouped by what you are trying to do. Prices are in nooticr credits and
+173 tools, grouped by what you are trying to do. Prices are in nooticr credits and
 match what the server actually charges.
 
 The job tools under **Answer a question you actually have** are not
@@ -226,6 +226,8 @@ a `scanId` for the rest.
 | `hire_employee` | free to call | Hire an AI employee (for example a Social Media Manager) that works on a schedule inside your workspace. Two calls by design: the first creates nothing and returns a quote and a `confirmationToken`; call again with `confirm: true` and that token only after you say yes. Every employee is a monthly subscription to its role's plan (`level` and `currency` pick it), never charged in credits; the quote names the price and a `hireId`: the confirm sends it back unchanged, since the token is bound to it. Public actions wait for your approval unless autopilot is on. |
 | `list_employees` | free | Your AI employees with status, schedule, next run and how much of its plan's included work is used this month; `includeFired: true` adds the ones let go. |
 | `pause_employee` | free | Pause an AI employee (it keeps its memory and thread) or resume it with `resume: true`. Only the person who hired it or a workspace admin can. |
+| `get_employee_settings` | free | What an AI employee's owner tunes (a Web & Growth Analyst's articles a day, an Influencer Marketing Manager's reach per platform, shortlist score and follower band), each with its value, default, range or choices, and its own value per product where one is set. |
+| `update_employee_settings` | free | Change those settings, for every product or, with `appId`, for one (`null` with `appId` removes that product's own value). A value outside a setting's range or choices, or a key the role lacks, is refused and nothing changes. Only the person who hired it or a workspace admin can. |
 | `fire_employee` | free | Let an AI employee go for good: runs stop and actions awaiting approval are discarded. The first call only describes what will happen; confirm with `confirm: true`. |
 | `list_teams` | free | Your AI employee teams: status (and why one is paused), members, approvals waiting, open hand-off tasks and the share of included work used. Where a `teamId` comes from. |
 | `get_team_status` | free | One team in detail: its members with level, state and payment state, this week's plan, the brief's version and what it is missing, and whether you may change it. |

@@ -748,6 +748,8 @@ describe("tool surface", () => {
     "get_page_speed",
     "list_pending_actions",
     "get_employee_audit",
+    "get_employee_settings",
+    "update_employee_settings",
     "approve_action",
     "reject_action",
     "marketplace_changes",
@@ -944,6 +946,8 @@ describe("tool surface", () => {
       "get_page_speed",
       "list_pending_actions",
       "get_employee_audit",
+      "get_employee_settings",
+      "update_employee_settings",
       "approve_action",
       "reject_action",
       // Compares two stored scans; fetches nothing.

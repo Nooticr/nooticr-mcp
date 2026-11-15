@@ -752,6 +752,18 @@ export const TOOL_DEFINITIONS = [
   inputSchema: z.object({ employeeId: z.string().describe("Employee id from list_employees."), from: z.string().optional().describe("Only events at or after this RFC 3339 time."), to: z.string().optional().describe("Only events before this RFC 3339 time."), types: z.array(z.string()).optional().describe("Event types, e.g. run.started, tool.call, action.executed."), runId: z.string().optional().describe("Only this run's events."), actionId: z.string().optional().describe("Only this action's events."), limit: z.number().int().min(1).max(100).optional(), verify: z.boolean().optional().describe("Also re-check the hash chain.") }).strict(),
  },
  {
+  name: "get_employee_settings",
+  title: "Get Employee Settings",
+  description: "Read an AI employee's settings: what its owner tunes, such as a Web & Growth Analyst's articles a day or an Influencer Marketing Manager's vetting bars (reach per platform, shortlist score, follower band). Each setting comes with its value, its default, its range (min and max) or its choices, and, for a per-product setting, its own value for each product where one is set. Change one with update_employee_settings, using the keys returned here. No cost to call.",
+  inputSchema: z.object({ employeeId: z.string().describe("Employee id from list_employees.") }).strict(),
+ },
+ {
+  name: "update_employee_settings",
+  title: "Update Employee Settings",
+  description: "Change an AI employee's settings, for every product or, with appId, for one product only (for example \"raise the reach bar to 2%\"). values maps a setting key from get_employee_settings to an integer within its range or one of its choices' values; with appId, null removes that product's own value so the setting for every product applies again. A value outside a setting's range or choices, or a key the role does not have, is refused and nothing changes. Only the person who hired it or a workspace admin can. No cost to call.",
+  inputSchema: z.object({ employeeId: z.string().describe("Employee id from list_employees."), values: z.object({}).passthrough().describe("Setting key (from get_employee_settings) -> integer value; null, with appId, removes that product's own value."), appId: z.number().int().optional().describe("Only this product's value; leave it out to change the setting for every product.") }).strict(),
+ },
+ {
   name: "approve_action",
   title: "Approve Action",
   description: "Approve one pending AI-employee action by actionId. The first call changes nothing and returns a preview and a confirmationToken; show it to the user, and call again with confirm: true and the token only after the user explicitly agrees — never confirm on the user's behalf. The stored action then runs exactly once, and it may publish or send something publicly. Only the hiring user or a workspace admin can. No cost to call.",
